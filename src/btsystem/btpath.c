@@ -179,6 +179,11 @@ int get_segment_pwl(btpath_pwl *pth,btreal s)
    }
   return -1;
 }
+btreal getnodes_pwl(btpath_pwl *pth,int idx)
+{
+  return pth->s[idx];
+  
+}
 /** Find the point location at arc-distance s into the curve
 
 */

@@ -148,6 +148,9 @@ int LoadWAM(char *wamfile);
 void SaveWAM(char *wamfile);
 void DumpWAM2Syslog();
 void WAMControlThread(void *data);
+int getGcomp();
+void setGcomp( int onoff);
+void toggleGcomp();
 
 void SetWAMpos(vect_n *wv);
 void MoveWAM(vect_n *pos);

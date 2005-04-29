@@ -115,19 +115,19 @@ int InitWAM(wam_struct *wamDriverDat, char *wamfile)
   WAM.Cki = new_v3();
   WAM.use_new = 0;
   
-  new_btrobot(&WAM.robot,4);
+  new_bot(&WAM.robot,4);
   
-  link_geom_btrobot(&WAM.robot,0,0.0,0.0,0.0,-pi/2.0);
-  link_geom_btrobot(&WAM.robot,1,0.0,0.0,0.0,pi/2.0);
-  link_geom_btrobot(&WAM.robot,2,0.0,0.550,0.045,-pi/2.0);
-  link_geom_btrobot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
-  link_geom_btrobot(&WAM.robot,4,0.0,0.3574,0.0,0.0);
+  link_geom_bot(&WAM.robot,0,0.0,0.0,0.0,-pi/2.0);
+  link_geom_bot(&WAM.robot,1,0.0,0.0,0.0,pi/2.0);
+  link_geom_bot(&WAM.robot,2,0.0,0.550,0.045,-pi/2.0);
+  link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
+  link_geom_bot(&WAM.robot,4,0.0,0.3574,0.0,0.0);
   
-  link_mass_btrobot(&WAM.robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
-  link_mass_btrobot(&WAM.robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
-  link_mass_btrobot(&WAM.robot,2,C_v3(-0.0443,0.2549,0.0),2.08);
-  link_mass_btrobot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
-  link_mass_btrobot(&WAM.robot,4,C_v3(0.0,0.0,0.03),2.000);
+  link_mass_bot(&WAM.robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
+  link_mass_bot(&WAM.robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
+  link_mass_bot(&WAM.robot,2,C_v3(-0.0443,0.2549,0.0),2.08);
+  link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
+  link_mass_bot(&WAM.robot,4,C_v3(0.0,0.0,0.03),2.000);
   //init_wam_btrobot(&(WAM.robot));
   fill_vn(WAM.robot.dq,0.0);
   fill_vn(WAM.robot.ddq,0.0);
@@ -317,9 +317,9 @@ void WAMControlThread(void *data)
     
     set_vn(WAM.robot.q,WAM.Jpos);
 
-    eval_fk_btrobot(&WAM.robot);
-    eval_fd_btrobot(&WAM.robot);
-    get_fkpos_btrobot(&WAM.robot,4,WAM.Cpos,WAM.Cpoint);
+    eval_fk_bot(&WAM.robot);
+    eval_fd_bot(&WAM.robot);
+    set_v3(WAM.Cpos,Ln_to_W_bot(&WAM.robot,4,WAM.Cpoint));
     if (WAM.trj.state){
       WAM.F = evaluate_traptrj(&WAM.trj,dt);
       set_vn((vect_n*)WAM.Cref,getval_pwl(&WAM.pth, WAM.F));
@@ -329,8 +329,8 @@ void WAMControlThread(void *data)
     }
     
     
-    apply_force_btrobot(&WAM.robot,4, WAM.Cpoint, WAM.Cforce, C_v3(0.0,0.0,0.0));
-    eval_bd_btrobot(&WAM.robot);
+    apply_force_bot(&WAM.robot,4, WAM.Cpoint, WAM.Cforce, C_v3(0.0,0.0,0.0));
+    eval_bd_bot(&WAM.robot);
     
     set_vn(WAM.Ttrq,WAM.robot.t);
     
@@ -545,7 +545,7 @@ void ToolCartesianMoveWAM(vect_n *pos, btreal vel, btreal acc)
   setprofile_traptrj(&WAM.trj,  vel, acc);
   clear_pwl(&WAM.pth);
   add_arclen_point_pwl(&WAM.pth,(vect_n*)WAM.Cref);
-  add_arclen_point_pwl(&WAM.pth,(vect_n*)tool_frame_pos_btrobot(&WAM.robot,pos));
+  add_arclen_point_pwl(&WAM.pth,(vect_n*)T_to_W_bot(&WAM.robot,(vect_3*)pos));
   start_traptrj(&WAM.trj, arclength_pwl(&WAM.pth));
   
   while (!done)
@@ -632,6 +632,27 @@ void getWAMmotor_position(int *mp)
 BTINLINE int MotorID_From_ActIdx(int idx)
 {
   return WAM.motor_position[idx];
+}
+int getGcomp()
+{
+  return WAM.Gcomp;
+}
+/** Enable or disable the gravity compensation calculation
+ */
+void setGcomp( int onoff)
+{
+  WAM.Gcomp = onoff;
+
+}
+/** Toggle the gravity compensation calculation
+ */
+void toggleGcomp()
+{
+  WAM.Gcomp = !WAM.Gcomp;
+  if(WAM.Gcomp)
+	  set_gravity_bot(&WAM.robot, 1.0);
+  else
+	  set_gravity_bot(&WAM.robot, 0.0);
 }
 
 void setSafetyLimits(double jointVel, double tipVel, double elbowVel)
