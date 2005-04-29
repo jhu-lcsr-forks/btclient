@@ -95,6 +95,7 @@ typedef struct {
   btrobot robot;
   
 //Motion Control
+  
   //Jointspace state controller
   SimpleCtl sc[7];
   

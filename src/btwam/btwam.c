@@ -183,7 +183,16 @@ SimpleCtl * GetWAMsc()
 {
   return WAM.sc;
 }
-
+/** 
+ Actuator Idx starts at 0 and counts up to number of actuators. 
+ MotorID is keyed to the location on the wam (and hense the joint it drives)
+ This relationship allows only calculating the control info for the joints that
+ are in use.
+*/
+BTINLINE int MotorID_From_ActIdx(int idx)
+{
+  return WAM.motor_position[idx];
+}
 /** Returns a pointer to the WAM structure
 */
 wam_struct * GetWAM()
@@ -288,6 +297,7 @@ void WAMControlThread(void *data)
   int                 cnt;
   //    wam_vector          Gtrq;
   int                 idx;
+  int Mid;
   //DoubleBuffer_struct *db;
   //data_to_log         *dat;
   double              dt = 0.002;
@@ -314,7 +324,15 @@ void WAMControlThread(void *data)
     rt_make_hard_real_time();
     ActAngle2Mpos((WAM.Mpos)); //Move motor angles into a wam_vector variable
     Mpos2Jpos((WAM.Mpos), (WAM.Jpos)); //Convert from motor angles to joint angles
+    // Joint space stuff
+
+    for (cnt = 0; cnt < WAM.num_actuators; cnt++) //Calculate control torque for each joint.
+        {
+            Mid = MotorID_From_ActIdx(cnt); //idx = joint we are controlling
+            setval_vn(WAM.Jtrq,Mid,SCevaluate(&(WAM.sc[Mid]),getval_vn(WAM.Jpos,Mid), dt));
+        }
     
+    // Cartesian space stuff
     set_vn(WAM.robot.q,WAM.Jpos);
 
     eval_fk_bot(&WAM.robot);
@@ -331,19 +349,12 @@ void WAMControlThread(void *data)
     
     apply_force_bot(&WAM.robot,4, WAM.Cpoint, WAM.Cforce, C_v3(0.0,0.0,0.0));
     eval_bd_bot(&WAM.robot);
-    
-    set_vn(WAM.Ttrq,WAM.robot.t);
-    
+    get_t_bot(&WAM.robot,WAM.Ttrq);
+
     if(isZeroed)
     {
-      //if (WAM.use_new){
-        set_vn(WAM.Jtrq,WAM.Ttrq);
-      //}
-      //else
-      //  effectGandFComp(&WAM, NULL);
-
+        set_vn(WAM.Jtrq,add_vn(WAM.Jtrq,WAM.Ttrq));
     }
-
     
     Jtrq2Mtrq((WAM.Jtrq), (WAM.Mtrq));  //Convert from joint torques to motor torques
     Mtrq2ActTrq(WAM.Mtrq); //Move motor torques from wam_vector variable into actuator database
@@ -623,16 +634,7 @@ void getWAMmotor_position(int *mp)
     mp[cnt] = WAM.motor_position[cnt];
   }
 }
-/** 
- Actuator Idx starts at 0 and counts up to number of actuators. 
- MotorID is keyed to the location on the wam (and hense the joint it drives)
- This relationship allows only calculating the control info for the joints that
- are in use.
-*/
-BTINLINE int MotorID_From_ActIdx(int idx)
-{
-  return WAM.motor_position[idx];
-}
+
 int getGcomp()
 {
   return WAM.Gcomp;
