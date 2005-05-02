@@ -86,7 +86,7 @@ int isZeroed = FALSE;
   \retval 0 Completed successfully
   \retval -1 Some error occured, Check syslog.
 */
-int InitWAM(wam_struct *wamDriverDat, char *wamfile)
+int InitWAM(char *wamfile)
 {
   int cnt,ret;
   const double pi = 3.14159;
@@ -161,14 +161,7 @@ int InitWAM(wam_struct *wamDriverDat, char *wamfile)
     SCsetpid(&(WAM.sc[cnt]),getval_vn(WAM.Kp,cnt),getval_vn(WAM.Kd,cnt),getval_vn(WAM.Ki,cnt),getval_vn(WAM.saturation,cnt));
     SCsettrjprof(&(WAM.sc[cnt]),getval_vn(WAM.vel,cnt),getval_vn(WAM.acc,cnt));
   }
-  for(cnt = 7; cnt < 10; cnt++)
-  {
-    SCinit(&(WAM.sc[cnt]));
-  }
-  //-------------------
-
-
-
+  
   return 0;
 }
 
@@ -318,7 +311,7 @@ void WAMControlThread(void *data)
   while (!shutdown_threads)
   {
     rt_task_wait_period();
-
+    counter++;
     rt_make_soft_real_time();
     GetPositions();
     rt_make_hard_real_time();

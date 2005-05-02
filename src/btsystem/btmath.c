@@ -58,7 +58,7 @@ address of your pointer, and will allocate memory and redirect your pointer for 
 
 //#DEFINE VECT_N_DEBUG
 //#DEFINE VECT_N_BOUNDS  //perform bounds checking
-
+//#DEFINE MATR_N_DEBUG 
 
 int num_btptrs = 0;
 void *btptrs[MAX_BTPTRS];
@@ -1598,7 +1598,7 @@ BTINLINE void setmul_mh(matr_h* a,matr_h* b)
 BTINLINE vect_3* matXvec_mh(matr_h* a, vect_3* b)
 {
   btreal ret[3];
-  
+
   ret[0] = a->q[0]*b->q[0] + a->q[1]*b->q[1] + a->q[2]*b->q[2] + a->q[3];
   ret[1] = a->q[4]*b->q[0] + a->q[5]*b->q[1] + a->q[6]*b->q[2] + a->q[7];
   ret[2] = a->q[8]*b->q[0] + a->q[9]*b->q[1] + a->q[10]*b->q[2] + a->q[11];

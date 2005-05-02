@@ -58,7 +58,7 @@ int SCinit(SimpleCtl *sc)
     sc->trj.state = 0;
     sc->trj.acc = .00000001;
     sc->trj.vel = .00000001;
-    PIDinit(&(sc->pid),0, 0, 0, 0);
+    PIDinit(&(sc->pid),0, 0, 0, 0.002);
     
     test_and_log(
       pthread_mutex_init(&(sc->mutex),NULL),
@@ -511,7 +511,7 @@ double PIDcalc(PIDregulator *pid)
     pid->laste = pid->e;
 
     pid->se += pid->e;
-    pid->fe = eval_btfilter(pid->se_filter,pid->se);
+    //pid->fe = eval_btfilter(pid->se_filter,pid->se);
     if (pid->saturation != 0)
         if ((fabs(pid->se)*pid->Ki) > pid->saturation)
         pid->se = sign(pid->se)*pid->saturation;

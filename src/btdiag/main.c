@@ -111,7 +111,7 @@ int WACKYplay       = FALSE;
 int showWhere       = FALSE;
 int disp_puck       = FALSE;
 int useTRC          = FALSE;
-btrobot robot;
+
 wam_struct *wam;
 //extern wam_struct WAM;  // this is a hack that will be resolved - sc
 extern int isZeroed;
@@ -119,7 +119,7 @@ static RT_TASK *mainTask;
 vect_3 *p,*o;
 vect_n *t,*targ,*negtarg;
 vect_n *Mpos, *Mtrq, *Jpos, *Jtrq, *wv;
-matr_h *tmh;
+
 
 
 
@@ -162,7 +162,6 @@ int main(int argc, char **argv)
   Jpos = new_vn(10);
   Jtrq = new_vn(10);
   wv = new_vn(10);
-  tmh = new_mh();
   const_vn(wv, 0.0, -2.017, -0.011, 0.88, 0.0, 0.0, 0.0);
 
   /* Initialize the ncurses screen library */
@@ -206,7 +205,7 @@ int main(int argc, char **argv)
   wam = GetWAM();
 
   /* Set up the WAM data structure, init kinematics, dynamics, haptics */
-  err =  InitWAM(wam, "wam.dat");
+  err =  InitWAM("wam.dat");
   if(err)
     {
       CloseSystem();
@@ -497,10 +496,6 @@ void RenderScreen() //{{{
     mvprintw(line, column_offset + column_width*cnt, "%+8.4f ", commands[cnt]);
     ++line;
     ++line;
-  }
-  cnt2 = line;
-  fer (cnt, 10 ){
-    line = cnt2;
     mvprintw(line, column_offset + column_width*cnt, "%+8.4f ", wam->sc[cnt].pid.yref);
     ++line;
     if (wam->sc[cnt].trj.state == 0)
@@ -509,6 +504,7 @@ void RenderScreen() //{{{
       mvprintw(line, column_offset + column_width*cnt, "%+8.4f ", wam->sc[cnt].trj.end_point);
     ++line;
   }
+
 
   refresh();
 } //}}}

@@ -127,7 +127,7 @@ origin is first point
 line between first and second point is x axis
 perpindicular between x axis and third point is y axis
 */
-
+void test_btrobot();
 
 #ifdef __cplusplus
 }

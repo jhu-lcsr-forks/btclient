@@ -433,6 +433,32 @@ void init_4dof_wam_bot(btrobot* robot)
   tool_mass_bot(robot,C_v3(0.0,0.0,0.0235),2.148);
 }
 
-
+void test_btrobot()
+{
+  vect_3 *Cpos,*Cpoint;
+  btrobot robot;
+  const double pi = 3.14159;
+  new_bot(&robot,4);
+  
+  Cpos = new_v3();
+  Cpoint = new_v3();
+  link_geom_bot(&robot,0,0.0,0.0,0.0,-pi/2.0);
+  link_geom_bot(&robot,1,0.0,0.0,0.0,pi/2.0);
+  link_geom_bot(&robot,2,0.0,0.550,0.045,-pi/2.0);
+  link_geom_bot(&robot,3,0.0,0.0,-0.045,pi/2.0);
+  link_geom_bot(&robot,4,0.0,0.3574,0.0,0.0);
+  
+  link_mass_bot(&robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
+  link_mass_bot(&robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
+  link_mass_bot(&robot,2,C_v3(-0.0443,0.2549,0.0),2.08);
+  link_mass_bot(&robot,3,C_v3(0.01465,0.0,0.1308),1.135);
+  link_mass_bot(&robot,4,C_v3(0.0,0.0,0.03),2.000);
+  
+  eval_fk_bot(&robot);
+  eval_fd_bot(&robot);
+  set_v3(Cpos,Ln_to_W_bot(&robot,4,Cpoint));
+  print_vn((vect_n*)Cpos);
+  
+}
 
 

@@ -16,7 +16,7 @@ int main( int argc, char **argv )
   btfilter *visFilt[4],*test;
    
   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
-
+  test_btrobot();
    /*
   test = new_btfilter(4);
   for (cnt = 0; cnt < 3; cnt ++){
@@ -32,7 +32,7 @@ int main( int argc, char **argv )
 
   //new_vn_group(3,4,&q,&dq,&ddq);
   
-  test_vr(1.0);
+  //test_vr(1.0);
   //test_vn(1.0);
   
   //const_vn(q,0.0,1.5707963268,0.0,0.0);
