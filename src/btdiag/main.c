@@ -55,6 +55,7 @@
 #include "control_loop.h"
 #include "btmath.h"
 #include "btrobot.h"
+#include "btlogger.h"
 
 /*==============================*
  * PRIVATE DEFINED constants    *
@@ -120,7 +121,7 @@ vect_3 *p,*o;
 vect_n *t,*targ,*negtarg;
 vect_n *Mpos, *Mtrq, *Jpos, *Jtrq, *wv;
 
-
+btlogger log;
 
 
 /*==============================*
@@ -216,6 +217,16 @@ int main(int argc, char **argv)
     }
 
 
+  PrepDL(&(wam->log),6);
+  AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*4,4,"Jpos");
+  AddDataDL(&(wam->log),valptr_vn(wam->Jtrq),sizeof(btreal)*4,4,"Jtrq");
+  AddDataDL(&(wam->log),&(wam->loop_time),sizeof(long long),3,"Loop Time");
+  AddDataDL(&(wam->log),&(wam->loop_period),sizeof(long long),3,"Loop Period");
+  AddDataDL(&(wam->log),&(wam->readpos_time),sizeof(long long),3,"Position Time");
+  AddDataDL(&(wam->log),&(wam->writetrq_time),sizeof(long long),3,"Torque Time");
+
+  InitDL(&(wam->log),1000,"datafile.dat");
+  
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
 
   npucks = wam->num_actuators; // Get the number of initialized actuators
@@ -233,13 +244,17 @@ int main(int argc, char **argv)
     
     if ((chr = getch()) != ERR) //Check buffer for keypress
       ProcessInput(chr);
-
+    
+    evalDL(&(wam->log));
     usleep(100000); // Sleep for 0.1s
   }
   
   Shutdown();
   syslog(LOG_ERR, "CloseSystem");
   CloseSystem();
+  CloseDL(&(wam->log));
+  DecodeDL("datafile.dat","dat.csv");
+  freebtptr();
 }
 
 /* Initialize the ncurses screen library */
@@ -327,6 +342,10 @@ void DisplayThread()
   {
     test_and_log(
       pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+    
+      
+    
+      
     switch (present_screen)
     {
     case MAIN_SCREEN:
@@ -534,6 +553,12 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
   cMid = MotorID_From_ActIdx(cpuck);
   switch (c)
   {
+    case 'L':
+      DLon(&(wam->log));
+      break;
+    case 'l':
+      DLoff(&(wam->log));
+      break;      
     case 'F': // Force zero
       isZeroed = TRUE;
       break;

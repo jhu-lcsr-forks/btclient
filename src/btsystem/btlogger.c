@@ -49,6 +49,7 @@ void loop()
 #include "btlogger.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "btmath.h"
 /*****************************************************************************/
 /** Allocate a specified number of fields
 You can add fewer fields than specified by PrepDL() but you cannot AddDataDL() 
@@ -180,15 +181,17 @@ void TriggerDL(btlogger *db)
 {
   int tmp,cnt;
   void *start,*run;
-
-  start = db->DL + db->DLidx * db->data_size; //point to the present location in the buffer
-
-  for(cnt = 0;cnt < db->fields; cnt++)
+  if (db->Log_Data) //If data logging is turned on
   {
-    memcpy(start,db->data[cnt].data,db->data[cnt].size); //copy user data to buffer
-    start += db->data[cnt].size;
+    start = db->DL + db->DLidx * db->data_size; //point to the present location in the buffer
+
+    for(cnt = 0;cnt < db->fields; cnt++)
+    {
+      memcpy(start,db->data[cnt].data,db->data[cnt].size); //copy user data to buffer
+      start += db->data[cnt].size;
+    }
+    UpdateDL(db);
   }
-  UpdateDL(db);
 }
 
 /** (internal)Writes the header of a binary data file.
@@ -205,9 +208,9 @@ void InitDataFileDL(btlogger *db)
 
   for(cnt = 0;cnt < db->fields; cnt++)
   {
-    fwrite(&(db->data->type),sizeof(int),1,datfile);
-    fwrite(&(db->data->size),sizeof(int),1,datfile); //block size = arraysize + sizeof(variable)
-    fwrite(&(db->data->name),sizeof(char),50,datfile);
+    fwrite(&(db->data[cnt].type),sizeof(int),1,datfile);
+    fwrite(&(db->data[cnt].size),sizeof(int),1,datfile); //block size = arraysize + sizeof(variable)
+    fwrite(db->data[cnt].name,sizeof(char),50,datfile);
   }
 }
 
@@ -302,7 +305,7 @@ void evalDL(btlogger *db)
 int DecodeDL(char *infile, char *outfile)
 {
   btlogger db; //use this just because it is convinient
-  int numfields=0;
+  int numfields=0,raysize;
   FILE *inf,*outf;
   int fieldcnt;
   int current_index;
@@ -314,7 +317,7 @@ int DecodeDL(char *infile, char *outfile)
   int *intdata;
   double *doubledata;
   long *longdata;
-
+  long long *exlongdata;
 
   syslog(LOG_ERR,"DecodeDL: Starting logfile decode from %s -> %s",infile,outfile);
 
@@ -335,6 +338,7 @@ int DecodeDL(char *infile, char *outfile)
   //figure out fields
   //print fields
   fread(&fieldcnt,sizeof(int),1,inf);
+  syslog(LOG_ERR,"DecodeDL:Fields %d",fieldcnt);
   PrepDL(&db,fieldcnt); //allocate memory for our field info
 
   // Read header info, write text header
@@ -342,10 +346,42 @@ int DecodeDL(char *infile, char *outfile)
   {
     fread(&(db.data[cnt].type),sizeof(int),1,inf);
     fread(&(db.data[cnt].size),sizeof(int),1,inf);
-    fread(&(db.data[cnt].name),sizeof(char),50,inf);
-    fprintf(outf,"%s",db.data[cnt].name);
-    if (cnt < fieldcnt - 1)
-      fprintf(outf,",");
+    fread(db.data[cnt].name,sizeof(char),50,inf);
+
+    switch (db.data[cnt].type)
+    {
+    case 0://integer
+      array_len = db.data[cnt].size / sizeof(int);
+      break;
+    case 1://long
+      array_len = db.data[cnt].size / sizeof(long);
+      break;
+    case 2://double
+      array_len = db.data[cnt].size / sizeof(double);
+      break;
+    case 3://long long
+      array_len = db.data[cnt].size / sizeof(long long);
+      break;
+    case 4://btreal
+      array_len = db.data[cnt].size / sizeof(btreal);
+      break;
+    }
+    if (array_len > 1)
+    {
+      for (ridx = 0; ridx < array_len; ridx++)
+      {
+        fprintf(outf,"%s[%d]",db.data[cnt].name,ridx);
+        if ((ridx < array_len - 1) || (cnt < fieldcnt - 1))
+          fprintf(outf,",");
+      }
+    }
+    else
+    {
+      fprintf(outf,"%s",db.data[cnt].name);
+      if (cnt < fieldcnt - 1)
+        fprintf(outf,",");
+    }
+    syslog(LOG_ERR,"DecodeDL:Field %d - type: %d size: %d, name: %s",cnt,db.data[cnt].type,db.data[cnt].size,db.data[cnt].name);
   }
   fprintf(outf,"\n");
 
@@ -412,6 +448,34 @@ int DecodeDL(char *infile, char *outfile)
             if (ridx < array_len - 1)
               fprintf(outf,",");
             dataidx +=  sizeof(double);
+          }
+          cnt+=db.data[idx].size;
+          break;
+        case 3://long long
+          array_len = db.data[idx].size / sizeof(long long);
+          if ((db.data[idx].size % sizeof(long long)) != 0)
+            syslog(LOG_ERR,"DecodeDL: This block is not an even multiple of our datatype (int)");
+          for (ridx = 0; ridx < array_len; ridx++)
+          {
+            exlongdata = (long long *)dataidx;
+            fprintf(outf," %lld ",*exlongdata);
+            if (ridx < array_len - 1)
+              fprintf(outf,",");
+            dataidx +=  sizeof(long long);
+          }
+          cnt+=db.data[idx].size;
+          break;
+        case 4://btreal
+          array_len = db.data[idx].size / sizeof(btreal);
+          if ((db.data[idx].size % sizeof(btreal)) != 0)
+            syslog(LOG_ERR,"DecodeDL: This block is not an even multiple of our datatype (int)");
+          for (ridx = 0; ridx < array_len; ridx++)
+          {
+            doubledata = (btreal *)dataidx;
+            fprintf(outf," %f ",*doubledata);
+            if (ridx < array_len - 1)
+              fprintf(outf,",");
+            dataidx +=  sizeof(btreal);
           }
           cnt+=db.data[idx].size;
           break;

@@ -19,13 +19,14 @@
 #ifndef _BTWAM_H
 #define _BTWAM_H
 
-
+#include <rtai_lxrt.h>
 #include "btsystem.h"
 #include "SimpleControl.h"
 #include "btmath.h"
 #include "btrobot.h"
 #include "btcontrol.h"
 #include "btpath.h"
+#include "btlogger.h"
 
 
 #define WAM2004
@@ -65,7 +66,14 @@ typedef struct {
     7DOF    = 7-DOF WAM
 */
 enum {WAM_4DOF, WAM_4DOF_G, WAM_7DOF} wamType;
-/**
+/** This structure maintains the present state of the wam
+
+wam_struct is used by the WAM control loop and WAM API to maintain information 
+about the state of the wam and to maintain the control and calculation data structures.
+
+One (and only one) instance of this structure is created for each process. It is 
+available to users to get information about the wam and to get pointers to the 
+control objects.
 
 */
 typedef struct {
@@ -116,6 +124,13 @@ typedef struct {
   btpath_pwl pth;
   
   btreal F;
+  
+  //Loop timing info
+  RTIME loop_time,loop_period,readpos_time,writetrq_time,user_time;
+  pthread_mutex_t loop_mutex; //This mutex is set while the wam control loop is in operation. It is to help slow loops access control loop data
+  
+  //Data logging
+  btlogger log;
 }wam_struct;
 
 

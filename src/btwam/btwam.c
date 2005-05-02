@@ -161,7 +161,11 @@ int InitWAM(char *wamfile)
     SCsetpid(&(WAM.sc[cnt]),getval_vn(WAM.Kp,cnt),getval_vn(WAM.Kd,cnt),getval_vn(WAM.Ki,cnt),getval_vn(WAM.saturation,cnt));
     SCsettrjprof(&(WAM.sc[cnt]),getval_vn(WAM.vel,cnt),getval_vn(WAM.acc,cnt));
   }
-  
+     
+  test_and_log(
+      pthread_mutex_init(&(WAM.loop_mutex),NULL),
+      "Could not initialize mutex for WAM control loop.");
+      
   return 0;
 }
 
@@ -197,7 +201,6 @@ wam_struct * GetWAM()
  
 \verbatim
 wam file format
-<A>,<B>,<C>
 <motor_position> x7  //matches actuator indexes to motor indexes. See Actangle2Mpos
 <Zero0> x7
 <StopTorque> x7
@@ -299,7 +302,7 @@ void WAMControlThread(void *data)
   long unsigned       counter = 0;
   int                 doTE;
   int period;
-  RTIME startTime, endTime, durTime;
+  RTIME last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
   RT_TASK *WAMControlThreadTask;
 
   WAMControlThreadTask = rt_task_init(nam2num("WAMCon"), 0, 0, 0);
@@ -312,8 +315,23 @@ void WAMControlThread(void *data)
   {
     rt_task_wait_period();
     counter++;
+    
+    loop_start = rt_get_cpu_time_ns();
+    WAM.loop_period = loop_start - last_loop;
+    
+    test_and_log(
+      pthread_mutex_lock(&(WAM.loop_mutex)),"WAMControlThread lock mutex failed");
+    
+    
     rt_make_soft_real_time();
+    
+    pos1_time = rt_get_cpu_time_ns();
+    
     GetPositions();
+    
+    pos2_time = rt_get_cpu_time_ns();
+    WAM.readpos_time = pos2_time - pos1_time;
+    
     rt_make_hard_real_time();
     ActAngle2Mpos((WAM.Mpos)); //Move motor angles into a wam_vector variable
     Mpos2Jpos((WAM.Mpos), (WAM.Jpos)); //Convert from motor angles to joint angles
@@ -351,11 +369,24 @@ void WAMControlThread(void *data)
     
     Jtrq2Mtrq((WAM.Jtrq), (WAM.Mtrq));  //Convert from joint torques to motor torques
     Mtrq2ActTrq(WAM.Mtrq); //Move motor torques from wam_vector variable into actuator database
-    rt_make_soft_real_time();
-    SetTorques();
-    rt_make_hard_real_time();
-
     
+    rt_make_soft_real_time();
+    
+    trq1_time = rt_get_cpu_time_ns();
+    
+    SetTorques();
+    
+    trq2_time = rt_get_cpu_time_ns();
+    WAM.writetrq_time = trq2_time - trq1_time;
+    
+    rt_make_hard_real_time();
+    
+    loop_end = rt_get_cpu_time_ns();
+    WAM.loop_time = loop_end - loop_start;
+    last_loop = loop_start;
+    
+    pthread_mutex_unlock(&(WAM.loop_mutex));
+    TriggerDL(&(WAM.log));
   }
   syslog(LOG_ERR, "WAM Control Thread: exiting");
   rt_make_soft_real_time();

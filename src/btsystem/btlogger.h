@@ -77,11 +77,13 @@ typedef struct
 }btlogger;
 
 // Private functions
-void flushDL(btlogger *db);
-void DLwrite(btlogger *db);
+
 void InitDataFileDL(btlogger *db);
 int DataSizeDL(btlogger *db);
 void UpdateDL(btlogger *db);
+void flushDL(btlogger *db);
+void DLwrite(btlogger *db);
+
 // public functions
 int PrepDL(btlogger *db, int fields);
 int AddDataDL(btlogger *db,void *data, int size, int type,char *name);
