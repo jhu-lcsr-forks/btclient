@@ -55,7 +55,7 @@ int SCinit(SimpleCtl *sc)
     sc->kill_torque = 500000;
     sc->last_dt = 1;
     sc->command_torque = 0;
-    sc->trj.state = 0;
+    sc->trj.state = BTTRAJ_DONE;
     sc->trj.acc = .00000001;
     sc->trj.vel = .00000001;
     PIDinit(&(sc->pid),0, 0, 0, 0.002);

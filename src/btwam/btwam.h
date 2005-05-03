@@ -17,7 +17,7 @@
  *  Technology, Inc. be liable for any lost development expenses, lost  *
  *  lost profits, or any incidental, special, or consequential damage.  *
  *======================================================================*/
-=======
+
 /*======================================================================*
  *  Module .............libbtwam
  *  File ...............btwam.h

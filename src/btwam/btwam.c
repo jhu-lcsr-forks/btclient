@@ -539,12 +539,14 @@ void MoveWAM(vect_n *pos)
 {
   int cnt,ctr,idx,done = 0,count =0,Mid;
   
-  Mid = MotorID_From_ActIdx(cnt);
-  
+
+  syslog(LOG_ERR,"MoveWAM start");
   for (cnt = 0;cnt < WAM.num_actuators;cnt++)
   {
+    Mid = MotorID_From_ActIdx(cnt);
        SCstarttrj(&(WAM.sc[Mid]),getval_vn(pos,Mid));
   }
+  syslog(LOG_ERR,"MoveWAM:Trajectory initialized");
   while (!done)
   {
     count++;
@@ -556,20 +558,23 @@ void MoveWAM(vect_n *pos)
     }
     if (ctr == 0)
       done = 1;
-    usleep(1000);
-    //if ((count % 1000) == 0)  syslog(LOG_ERR,"waited 1 second to reach position");
+    usleep(50000);
+    if ((count % 20) == 0)  syslog(LOG_ERR,"waited 1 second to reach position");
+    if ((count % 200) == 0)  {done = 1; syslog(LOG_ERR,"Aborting move");}
   }
 }
 /** Set the velocity and acceleration of a wam move
 */
 void MovePropsWAM(vect_n *vel, vect_n *acc)
 {
-  int cnt,ctr,idx,done = 0,count =0;
+  int cnt,ctr,idx,done = 0,count =0,Mid;
 
   for (cnt = 0;cnt < WAM.num_actuators;cnt++)
   {
-    SCsettrjprof(&(WAM.sc[WAM.motor_position[cnt]]),getval_vn(vel,WAM.motor_position[cnt]),getval_vn(acc,WAM.motor_position[cnt]));
+    Mid = MotorID_From_ActIdx(cnt);
+    SCsettrjprof(&(WAM.sc[Mid]),getval_vn(vel,Mid),getval_vn(acc,Mid));
   }
+  syslog(LOG_ERR,"MovePropsWAM:Trajectory initialized");
 }
 /** Perform a Cartesian move of the wam
 */
@@ -701,8 +706,8 @@ void GCompSample(vect_n *trq, double p1, double p2, double p3, double p4)
     //wam_vector pos[1];
     //wam_vector t2,t3,t4;
 
-    
-    MoveWAM(const_vn(trq, p1, p2, p3, p4));
+    const_vn(trq, p1, p2, p3, p4);
+    MoveWAM(trq);
     //MoveWAM(pos, &WAM.vel,&WAM.acc);
     usleep(4000000);
     //trq->q[0] = WAM.Jtrq.q[0];
