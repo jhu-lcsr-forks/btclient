@@ -30,7 +30,7 @@ extern "C"
 {
 #endif/* __cplusplus */
 #include "btsystem.h"
-#include "SimpleControl.h"
+#include "btjointcontrol.h"
 
   
 typedef struct 
