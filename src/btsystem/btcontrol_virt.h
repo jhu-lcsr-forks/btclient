@@ -34,7 +34,7 @@ extern "C"
 #define PI 3.141596
 #endif /*PI*/
 
-enum trjstate {BTTRAJ_OFF,BTTRAJ_DONE,BTTRAJ_RUN,BTTRAJ_FILE,BTTRAJ_READY,BTTRAJ_ESTOP,BTTRAJ_PAUSING,BTTRAJ_UNPAUSING,BTTRAJ_PAUSED};
+enum trjstate {BTTRAJ_OFF,BTTRAJ_DONE = 0,BTTRAJ_RUN,BTTRAJ_FILE,BTTRAJ_READY,BTTRAJ_ESTOP,BTTRAJ_PAUSING,BTTRAJ_UNPAUSING,BTTRAJ_PAUSED};
 
 /*================================================Position object================================*/
 /** A virtual interface for position control

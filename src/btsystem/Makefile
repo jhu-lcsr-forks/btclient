@@ -3,7 +3,7 @@ LIB_OBJS =  btsystem.o control_loop.o btjointcontrol.o playlist.o \
             btos.o btpath.o btcontrol.o serial.o bthaptics.o btcontrol_virt.o
 INCL_FILES = btcan.h btsystem.h control_loop.h btlogger.h btjointcontrol.h \
             btmath.h btrobot.h btos.h btpath.h btcontrol.h serial.h bthaptics.h \
-            btcontrol_virt.h
+            btcontrol_virt.h playlist.h
 LIB_TARG = ./libbtsystem.a
 SLIB_TARG = ./libbtsystem.so
 CC = gcc

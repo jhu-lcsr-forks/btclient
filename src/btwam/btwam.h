@@ -186,6 +186,7 @@ void ParkWAM();
 // Continuous Teach & Play Recording
 void StartContinuousTeach(int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
 void StopContinuousTeach(); 
+void ServiceContinuousTeach();
 
 int BlankWAMcallback(struct btwam_struct *wam);
 void registerWAMcallback(void *func);

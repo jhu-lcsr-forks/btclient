@@ -245,6 +245,8 @@ int main(int argc, char **argv)
       ProcessInput(chr);
     
     evalDL(&(wam->log));
+    ServiceContinuousTeach();
+    
     usleep(100000); // Sleep for 0.1s
   }
   
@@ -507,13 +509,6 @@ void RenderScreen() //{{{
       mvprintw(line, column_offset + column_width*cnt, "%+8.4f ", getval_vn(Jtrq,Mid));
       ++line;
     }
-
-    mvprintw(line, column_offset + column_width*cnt, "%8d ", temperatures[wam->act[cnt].puck.ID] );
-    ++line;
-
-    mvprintw(line, column_offset + column_width*cnt, "%+8.4f ", commands[cnt]);
-    ++line;
-    ++line;
     mvprintw(line, column_offset + column_width*cnt, "%+8.4f ", wam->sc[cnt].pid.yref);
     ++line;
     if (wam->sc[cnt].trj.state == 0)
@@ -521,6 +516,13 @@ void RenderScreen() //{{{
     else
       mvprintw(line, column_offset + column_width*cnt, "%+8.4f ", wam->sc[cnt].trj.end_point);
     ++line;
+    mvprintw(line, column_offset + column_width*cnt, "%8d ", temperatures[wam->act[cnt].puck.ID] );
+    ++line;
+
+    mvprintw(line, column_offset + column_width*cnt, "%+8.4f ", commands[cnt]);
+    ++line;
+    ++line;
+
   }
 
 

@@ -51,6 +51,7 @@ to make it easier to find and maintaind later
  * INCLUDES - Project Files     *
  *==============================*/
 #include "btjointcontrol.h"
+#include "btcontrol_virt.h"
 #include "btcan.h"
 #include "btsystem.h"
 #include "control_loop.h"
@@ -135,6 +136,7 @@ int InitWAM(char *wamfile)
   WAM.F = 0.0;
   WAM.isZeroed = FALSE;
   WAM.cteach.Log_Data = 0; ///cteach
+  WAM.force_callback = BlankWAMcallback;
   
   if(test_and_log(
     InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),"Failed to initialize system"))
@@ -535,11 +537,13 @@ void SetWAMpos(vect_n *wv)
 */
 void MoveWAM(vect_n *pos)
 {
-  int cnt,ctr,idx,done = 0,count =0;
-
+  int cnt,ctr,idx,done = 0,count =0,Mid;
+  
+  Mid = MotorID_From_ActIdx(cnt);
+  
   for (cnt = 0;cnt < WAM.num_actuators;cnt++)
   {
-       SCstarttrj(&(WAM.sc[WAM.motor_position[cnt]]),getval_vn(pos,WAM.motor_position[cnt]));
+       SCstarttrj(&(WAM.sc[Mid]),getval_vn(pos,Mid));
   }
   while (!done)
   {
@@ -547,7 +551,8 @@ void MoveWAM(vect_n *pos)
     ctr = 0;
     for (cnt = 0;cnt < WAM.num_actuators;cnt++)
     {
-      ctr+=WAM.sc[WAM.motor_position[cnt]].trj.state;
+      if (WAM.sc[Mid].trj.state != BTTRAJ_DONE)
+        ctr++;
     }
     if (ctr == 0)
       done = 1;
@@ -581,7 +586,7 @@ void CartesianMoveWAM(vect_n *pos, btreal vel, btreal acc)
   
   while (!done)
   {
-    if (WAM.trj.state == 0)
+    if (WAM.trj.state == BTTRAJ_DONE)
       done = 1;
     usleep(50000);
     //if ((count % 1000) == 0)  syslog(LOG_ERR,"waited 1 second to reach position");
@@ -603,7 +608,7 @@ void ToolCartesianMoveWAM(vect_n *pos, btreal vel, btreal acc)
   
   while (!done)
   {
-    if (WAM.trj.state == 0)
+    if (WAM.trj.state == BTTRAJ_DONE)
       done = 1;
     usleep(50000);
     //if ((count % 1000) == 0)  syslog(LOG_ERR,"waited 1 second to reach position");
@@ -736,14 +741,23 @@ void StartContinuousTeach(int Joint,int Div,char *filename) //joint: 0 = Cartesi
     InitDL(&(WAM.cteach),1000,filename);
     DLon(&(WAM.cteach));
   }
-  
-  
+  else { //Just records position. No orientation
+    PrepDL(&(WAM.cteach),2);
+    AddDataDL(&(WAM.cteach),&(WAM.teach_time),sizeof(btreal),4,"Time");
+    AddDataDL(&(WAM.cteach),valptr_vn((vect_n*)WAM.Cpos),sizeof(btreal)*3,4,"Cpos");
+    InitDL(&(WAM.cteach),1000,filename);
+    DLon(&(WAM.cteach));    
+  }
 }  
 void StopContinuousTeach()
 {
   
   DLoff(&(WAM.cteach));
   CloseDL(&(WAM.cteach));
+}
+void ServiceContinuousTeach()
+{
+  evalDL(&(WAM.cteach));
 }
 void registerWAMcallback(void *func)
 {
