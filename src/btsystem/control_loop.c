@@ -67,25 +67,25 @@ pthread_t timer_thd_id;
 pthread_t control_thd_id;
 int shutdown_threads=1;
 uint64_t ms_timer,sem_cntr;
-long sample_period2;
-
+double Sample_Period; //RTAI
+RTIME sample_period2;
 /** Creates a timing thread and links it to your control loop function 
 
   \param priority The priority to run the timer and control loop threads at.
-  \param sample_period An integer to multiply the system clock base epoch by. 
-  If an integer multiple is not used, there will be problems of missing control 
-  loops.
+  \param sample_period An double with units of ms
 
 */
-void start_control_threads(int priority, long sample_period, void *function,void *args)
+void start_control_threads(int priority, double sample_period, void *function,void *args)
 {
-
+  double tmp;
   pthread_attr_t       control_attr;
   struct sched_param   control_param;
-
   RTIME sampleCount;
-  sample_period2 = sample_period;
-  sampleCount = nano2count((RTIME) sample_period);
+  
+  Sample_Period = sample_period;
+  tmp = sample_period * 1000000000.0;
+  sample_period2 = (RTIME)tmp;
+  sampleCount = nano2count(sample_period2);
 
   rt_set_periodic_mode(); /* for clarity */
 
@@ -107,9 +107,6 @@ void start_control_threads(int priority, long sample_period, void *function,void
   }
 
   start_rt_timer(sampleCount);
-
-
-  
 }
 /** Stops the control threads
 
@@ -118,11 +115,12 @@ void stop_control_threads()
 {
   
  shutdown_threads = 1;
- usleep(2E5);
+ usleep(200000);
 
 }
 
 /** Example control loop for use with start_control_threads() Do not use this! */
+/*
 void ControlThread(void *data)
 {
   int num_actuators;
@@ -135,21 +133,26 @@ void ControlThread(void *data)
   act = ((control_thd_parms *)data)->act;
   sc = ((control_thd_parms *)data)->sc;
 
+  RTIME last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
+  RT_TASK *WAMControlThreadTask;
+
+  WAMControlThreadTask = rt_task_init(nam2num("WAMCon"), 0, 0, 0);
+  rt_make_hard_real_time();
+  rt_task_make_periodic_relative_ns(WAMControlThreadTask, sample_period2, sample_period2);
+
+
   
-  
-  while(!shutdown_threads)
+  while (!shutdown_threads)
   {
-    sem_wait(&timer_semaphore);
+    rt_task_wait_period();
 
-
-  
-    //TimedPuckGet(act->P.puck_ID,ACTUAL_POSITION,&position,10000);  
-    
     
   }
-  
+
+  rt_make_soft_real_time();
+  rt_task_delete(WAMControlThreadTask);
   pthread_exit(NULL);
-}
+}*/
 /*======================================================================*
  *                                                                      *
  *          Copyright (c) 2003, 2004 Barrett Technology, Inc.           *

@@ -38,7 +38,7 @@ enum {BTLOG_INT,BTLOG_LONG,BTLOG_DOUBLE};
 typedef struct
 {
   size_t size; //!< size of the data being recorded. = sizeof(datatype)*arrayLength
-  int type; //!< 0 = int, 1 = long, 2 = double
+  int type; //!< 0 = int, 1 = long, 2 = double 3 = long long 4 = btreal
   void *data; //!< pointer to the data start
   char name[50]; //!< null terminated string describing the data. No ','s allowed
 }btdata_info;
@@ -97,7 +97,7 @@ void TriggerDL(btlogger *db);
 void evalDL(btlogger *db);
 void CloseDL(btlogger *db);
 
-int DecodeDL(char *infile, char *outfile);
+int DecodeDL(char *infile, char *outfile, int header);
 
 #ifdef __cplusplus
 }

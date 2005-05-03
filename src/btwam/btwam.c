@@ -19,6 +19,15 @@
 on a CAN bus. It provides some high-level functions to help people get up and
 running quickly.
 */
+/* Tags - 
+This is a list of tags for functionality integrated into the InitWAM and WAMControlThread code
+to make it easier to find and maintaind later
+
+  ///cteach = Continuous teach & play
+  ///prof = Loop time profiling
+  ///log = Data logging
+
+*/
 
 /*==============================*
  * INCLUDES - System Files      *
@@ -53,25 +62,12 @@ running quickly.
 /*==============================*
  * GLOBAL file-scope variables  *
  *==============================*/
-extern sem_t     timer_semaphore;
-extern int shutdown_threads,sample_period2;
 
+extern int shutdown_threads,sample_period2;
+extern double Sample_Period;
 wam_struct WAM;
 
-double  **trajList;
 extern int gimbalsInit;
-
-
-int isZeroed = FALSE;
-
-/* Define WAM link parameters in meters */
-#define L3 0.558
-#define L4 0.291
-#define Lb 0.291 //4-DOF blank link length (not correct)
-#define L7 0.065
-#define d3 0.04763
-#define Gx 0.1524
-#define Gy 0.4097
 
 #define LOW_TRQ_COEFFICIENT (0.75)
 
@@ -137,7 +133,8 @@ int InitWAM(char *wamfile)
   init_btPID(&(WAM.pid[1]));
   init_btPID(&(WAM.pid[2]));
   WAM.F = 0.0;
-  
+  WAM.isZeroed = FALSE;
+  WAM.cteach.Log_Data = 0; ///cteach
   
   if(test_and_log(
     InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),"Failed to initialize system"))
@@ -285,39 +282,43 @@ void DumpWAM2Syslog()
 }
 
 /** This function closes the control loop on the WAM using a PID regulator in joint space.
+
+The following functionality is in this loop:
+ - Joint Space Controller (pid, point-to-point trapezoidal trajectories)
+ - Loop profiling - Period time, Read pos time, Write trq time, Calc time
+ - Newton-Euler Recursive kinematics & dynamics
+ \todo Make control loop profiling a compiler switch so it is not normally compiled
 */
 
 void WAMControlThread(void *data)
 {
-  int                 i;
   int                 cnt;
-  //    wam_vector          Gtrq;
   int                 idx;
-  int Mid;
-  //DoubleBuffer_struct *db;
-  //data_to_log         *dat;
-  double              dt = 0.002;
-  double              newCmd,newYref;
+  int                 Mid;
+  double              dt,dt_targ;
   int                 err;
   long unsigned       counter = 0;
-  int                 doTE;
-  int period;
   RTIME last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
   RT_TASK *WAMControlThreadTask;
 
   WAMControlThreadTask = rt_task_init(nam2num("WAMCon"), 0, 0, 0);
-
+  
   rt_make_hard_real_time();
   syslog(LOG_ERR,"WAMControl initial hard");
   rt_task_make_periodic_relative_ns(WAMControlThreadTask, sample_period2, sample_period2);
-  syslog(LOG_ERR,"WAMControl periodic %d", sample_period2);
+  dt_targ = Sample_Period;
+  dt = dt_targ;
+  syslog(LOG_ERR,"WAMControl periodic %d, %f", sample_period2,dt);
+  
   while (!shutdown_threads)
   {
     rt_task_wait_period();
     counter++;
     
-    loop_start = rt_get_cpu_time_ns();
-    WAM.loop_period = loop_start - last_loop;
+    loop_start = rt_get_cpu_time_ns(); ///prof
+    WAM.loop_period = loop_start - last_loop; ///prof
+    dt = (double)WAM.loop_period / 1000000000.0;
+    
     
     test_and_log(
       pthread_mutex_lock(&(WAM.loop_mutex)),"WAMControlThread lock mutex failed");
@@ -325,12 +326,12 @@ void WAMControlThread(void *data)
     
     rt_make_soft_real_time();
     
-    pos1_time = rt_get_cpu_time_ns();
+    pos1_time = rt_get_cpu_time_ns(); ///prof
     
     GetPositions();
     
-    pos2_time = rt_get_cpu_time_ns();
-    WAM.readpos_time = pos2_time - pos1_time;
+    pos2_time = rt_get_cpu_time_ns(); ///prof
+    WAM.readpos_time = pos2_time - pos1_time; ///prof
     
     rt_make_hard_real_time();
     ActAngle2Mpos((WAM.Mpos)); //Move motor angles into a wam_vector variable
@@ -362,7 +363,7 @@ void WAMControlThread(void *data)
     eval_bd_bot(&WAM.robot);
     get_t_bot(&WAM.robot,WAM.Ttrq);
 
-    if(isZeroed)
+    if(WAM.isZeroed)
     {
         set_vn(WAM.Jtrq,add_vn(WAM.Jtrq,WAM.Ttrq));
     }
@@ -372,23 +373,31 @@ void WAMControlThread(void *data)
     
     rt_make_soft_real_time();
     
-    trq1_time = rt_get_cpu_time_ns();
+    trq1_time = rt_get_cpu_time_ns(); ///prof
     
     SetTorques();
     
-    trq2_time = rt_get_cpu_time_ns();
-    WAM.writetrq_time = trq2_time - trq1_time;
+    trq2_time = rt_get_cpu_time_ns(); ///prof
+    WAM.writetrq_time = trq2_time - trq1_time; ///prof
     
     rt_make_hard_real_time();
     
-    loop_end = rt_get_cpu_time_ns();
-    WAM.loop_time = loop_end - loop_start;
-    last_loop = loop_start;
+    loop_end = rt_get_cpu_time_ns(); ///prof
+    WAM.loop_time = loop_end - loop_start; ///prof
+    last_loop = loop_start; ///prof
     
     pthread_mutex_unlock(&(WAM.loop_mutex));
-    TriggerDL(&(WAM.log));
+    TriggerDL(&(WAM.log)); ///log
+    ///cteach {
+    if (WAM.cteach.Log_Data){ 
+      WAM.counter++;
+      WAM.teach_time += dt;
+      if ((counter % WAM.divider) == 0)
+        TriggerDL(&(WAM.cteach));
+    }///cteach }
   }
   syslog(LOG_ERR, "WAM Control Thread: exiting");
+  syslog(LOG_ERR,"WAMControl last dt %f",dt);
   rt_make_soft_real_time();
   rt_task_delete(WAMControlThreadTask);
   pthread_exit(NULL);
@@ -511,7 +520,7 @@ void SetWAMpos(vect_n *wv)
   /* Tell the safety logic start monitoring tip velocity */
   SetByID(SAFETY_MODULE, ZERO, 1); /* 0 = Joint velocity, 1 = Tip velocity */
 
-  isZeroed = TRUE;
+  WAM.isZeroed = TRUE;
 }
 /** Perform a coordinated move of the wam
 */
@@ -648,16 +657,6 @@ void getWAMjoints(vect_n *Mpos,vect_n *Mtrq,vect_n *Jpos,vect_n *Jtrq)
   set_vn(Jpos,WAM.Jpos);
   set_vn(Jtrq,WAM.Jtrq );
 }
-/** Get data the matches actuator index to wam motor index
-*/
-void getWAMmotor_position(int *mp)
-{
-  int cnt;
-  for(cnt = 0; cnt < 7; cnt++)
-  {
-    mp[cnt] = WAM.motor_position[cnt];
-  }
-}
 
 int getGcomp()
 {
@@ -704,6 +703,41 @@ void setSafetyLimits(double jointVel, double tipVel, double elbowVel)
   }
 
 }
+/** Initialize Continuous teach and play
+
+Notes: 
+ - Variable numbers of joints are handled by polling the robot structure
+
+\param Joint 0 = Cartesian space record, 1 = Joint space record
+\param Div An integer amount to divide the sample period by
+\param filename The file you want to write the path to
+*/
+void StartContinuousTeach(int Joint,int Div,char *filename) //joint: 0 = Cartesian, 1 = Joint Space
+{ 
+  int joints;
+  
+  WAM.teach_time = 0.0;
+  WAM.counter = 0;
+  WAM.divider = Div;
+  if (Joint){ //Only for joint space recording for now
+    joints = WAM.robot.num_links;
+    PrepDL(&(WAM.cteach),2);
+    AddDataDL(&(WAM.cteach),&(WAM.teach_time),sizeof(btreal),4,"Time");
+    AddDataDL(&(WAM.cteach),valptr_vn(WAM.Jpos),sizeof(btreal)*joints,4,"Jpos");
+    InitDL(&(WAM.cteach),1000,filename);
+    DLon(&(WAM.cteach));
+  }
+  
+  
+}  
+void StopContinuousTeach()
+{
+  
+  DLoff(&(WAM.cteach));
+  CloseDL(&(WAM.cteach));
+}
+
+
 /*
 int playViaTrajectoryFile(char *fileName, double timeScale)
 {

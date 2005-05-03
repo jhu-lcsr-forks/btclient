@@ -83,6 +83,7 @@ typedef struct {
   int wrist_attached; //0 no wrist, 1 yes wrist is attached.
   int use_new;
   int type; //enum {WAM_4DOF, WAM_4DOF_G, WAM_7DOF, Wrist_3DOF} 
+  int isZeroed;
   
 //Actuator info
   actuator_struct *act;
@@ -101,6 +102,7 @@ typedef struct {
 //Kinematics & Dynamics
   double sample_rate;
   btrobot robot;
+  
   
 //Motion Control
   
@@ -131,6 +133,11 @@ typedef struct {
   
   //Data logging
   btlogger log;
+  
+  //Continuous path record
+  btlogger cteach;
+  int divider,counter;
+  btreal teach_time;
 }wam_struct;
 
 
@@ -150,12 +157,9 @@ int write_vect_n(FILE *out,vect_n *wv);
 int dump_vect_n(vect_n *wv);
 
 void getWAMjoints(vect_n *Mpos,vect_n *Mtrq,vect_n *Jpos,vect_n *Jtrq);
-void getWAMmotor_position(int *mp);
 int MotorID_From_ActIdx(int idx);
 
 wam_struct * GetWAM(void);
-
-int playViaTrajectoryFile(char *fileName, double timeScale);
 
 int InitWAM(char *wamfile);
 void CloseWAM();
@@ -174,10 +178,9 @@ void MovePropsWAM(vect_n *vel, vect_n *acc);
 void CartesianMoveWAM(vect_n *pos, btreal vel, btreal acc); 
 void ParkWAM();
 
-
-
-
-
+// Continuous Teach & Play Recording
+void StartContinuousTeach(int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
+void StopContinuousTeach(); 
 
 #endif /*_BTWAM_H*/
 

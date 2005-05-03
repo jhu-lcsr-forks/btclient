@@ -302,7 +302,7 @@ void evalDL(btlogger *db)
 }
 /*************************** binary file to text file converter ***********/
 
-int DecodeDL(char *infile, char *outfile)
+int DecodeDL(char *infile, char *outfile, int header)
 {
   btlogger db; //use this just because it is convinient
   int numfields=0,raysize;
@@ -366,6 +366,7 @@ int DecodeDL(char *infile, char *outfile)
       array_len = db.data[cnt].size / sizeof(btreal);
       break;
     }
+    if (header) {
     if (array_len > 1)
     {
       for (ridx = 0; ridx < array_len; ridx++)
@@ -381,9 +382,10 @@ int DecodeDL(char *infile, char *outfile)
       if (cnt < fieldcnt - 1)
         fprintf(outf,",");
     }
+    }
     syslog(LOG_ERR,"DecodeDL:Field %d - type: %d size: %d, name: %s",cnt,db.data[cnt].type,db.data[cnt].size,db.data[cnt].name);
   }
-  fprintf(outf,"\n");
+  if (header) fprintf(outf,"\n");
 
   while(!feof(inf))
   {

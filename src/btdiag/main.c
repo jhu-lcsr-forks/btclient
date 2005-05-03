@@ -201,9 +201,7 @@ int main(int argc, char **argv)
   mainTask = rt_task_init(nam2num("main01"), 0, 0, 0); /* defaults */
 
 
-  /* This is a hack for now, so references to global WAM don't
-     have to be updated through all the driver code */
-  wam = GetWAM();
+
 
   /* Set up the WAM data structure, init kinematics, dynamics, haptics */
   err =  InitWAM("wam.dat");
@@ -215,8 +213,11 @@ int main(int argc, char **argv)
       exit(1);
 
     }
+    
+  /* Obtain a pointer to the wam state object */
+  wam = GetWAM();
 
-
+  /* Initialize our data logging structure */
   PrepDL(&(wam->log),6);
   AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*4,4,"Jpos");
   AddDataDL(&(wam->log),valptr_vn(wam->Jtrq),sizeof(btreal)*4,4,"Jtrq");
@@ -224,14 +225,13 @@ int main(int argc, char **argv)
   AddDataDL(&(wam->log),&(wam->loop_period),sizeof(long long),3,"Loop Period");
   AddDataDL(&(wam->log),&(wam->readpos_time),sizeof(long long),3,"Position Time");
   AddDataDL(&(wam->log),&(wam->writetrq_time),sizeof(long long),3,"Torque Time");
-
   InitDL(&(wam->log),1000,"datafile.dat");
   
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
 
   npucks = wam->num_actuators; // Get the number of initialized actuators
 
-  start_control_threads(0, 2000000L, WAMControlThread, (void *)0);
+  start_control_threads(10, 0.002, WAMControlThread, (void *)0);
 
   signal(SIGINT, sigint_handler); //register the interrupt handler
   startup_stage = 1;
@@ -253,7 +253,7 @@ int main(int argc, char **argv)
   syslog(LOG_ERR, "CloseSystem");
   CloseSystem();
   CloseDL(&(wam->log));
-  DecodeDL("datafile.dat","dat.csv");
+  DecodeDL("datafile.dat","dat.csv",1);
   freebtptr();
 }
 
@@ -560,7 +560,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       DLoff(&(wam->log));
       break;      
     case 'F': // Force zero
-      isZeroed = TRUE;
+      wam->isZeroed = TRUE;
       break;
     case 'f': // Eliminate torque fault
       setProperty(0,10,TL2,FALSE,8200);
@@ -693,6 +693,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
           SCsettrjprof(&(wam->sc[Mid]), newpid[0], newpid[1]);
         }
         finish_entry();
+    break;
+    case 'Y':
+        StartContinuousTeach(1,50,"teachpath");
+    break;
+    case 'y':
+        StopContinuousTeach(); 
+        DecodeDL("teachpath","teach.csv",0);
     break;
     case 27: //Handle and discard extended keyboard characters (like arrows)
       if ((chr = getch()) != ERR)

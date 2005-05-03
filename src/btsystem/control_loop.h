@@ -40,7 +40,7 @@ typedef struct
   SimpleCtl *sc;
 }control_thd_parms;
 
-void start_control_threads(int priority, long sample_period, void *function,void *args);
+void start_control_threads(int priority, double sample_period, void *function,void *args);
 void stop_control_threads();
 void TimerThread();
 void ControlThread(void *data);
