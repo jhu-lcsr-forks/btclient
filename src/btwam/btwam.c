@@ -669,7 +669,7 @@ void getWAMjoints(vect_n *Mpos,vect_n *Mtrq,vect_n *Jpos,vect_n *Jtrq)
   set_vn(Mpos,WAM.Mpos);
   set_vn(Mtrq,WAM.Mtrq);
   set_vn(Jpos,WAM.Jpos);
-  set_vn(Jtrq,WAM.Jtrq );
+  set_vn(Jtrq,WAM.Jtrq);
 }
 
 int getGcomp()
@@ -693,6 +693,62 @@ void toggleGcomp()
   else
 	  set_gravity_bot(&WAM.robot, 0.0);
 }
+
+/** Sample the torques required to hold a given position
+*/
+void GCompSample(vect_n *trq, double p1, double p2, double p3, double p4)
+{
+    //wam_vector pos[1];
+    //wam_vector t2,t3,t4;
+
+    
+    MoveWAM(const_vn(trq, p1, p2, p3, p4));
+    //MoveWAM(pos, &WAM.vel,&WAM.acc);
+    usleep(4000000);
+    //trq->q[0] = WAM.Jtrq.q[0];
+    trq->q[1] = WAM.Jtrq->q[1];
+    trq->q[2] = WAM.Jtrq->q[2];
+    trq->q[3] = WAM.Jtrq->q[3];
+}
+
+/** Take 4DOF measurements to estimate the coefficients for calculating the effect of gravity
+*/
+void getLagrangian4(double *A, double *B, double *C, double *D)
+{
+    //int cnt,cnt2,idx;
+    double t41,t21,t42,t22,t23,t33; //,t24,t44,t25,t35,te,tf,a,b,c,d;
+    //wam_vector pos[1],trq[1];
+    vect_n *trq;
+    
+    trq = new_vn(4);
+
+    //PowerWAM();
+
+    MovePropsWAM(WAM.vel,WAM.acc);
+
+    GCompSample(trq,0,-1.5708,0,0);
+    t41 = trq->q[3];
+    t21 = trq->q[1];
+
+    GCompSample(trq,0,-1.5708,0,1.5708);
+    t42 = trq->q[3];
+    //t22 = trq->q[1];
+
+    GCompSample(trq,0,-1.5708,-1.5708,1.5708);
+    //t23 = trq->q[1];
+    t33 = trq->q[2];
+
+    *A = -t42;
+    *B = -t41;
+    *C = t33 + *B;
+    *D = t21 - t41;
+    //  WAM.Gcomp = 1;
+
+    //SaveWAM("gcomp.dat");
+
+}
+
+
 
 void setSafetyLimits(double jointVel, double tipVel, double elbowVel)
 {
