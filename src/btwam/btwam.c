@@ -295,8 +295,8 @@ void WAMControlThread(void *data)
   int                 cnt;
   int                 idx;
   int                 Mid;
-  double              dt,dt_targ;
-  int                 err;
+  double              dt,dt_targ,skiptarg,skipmax = 0.0;
+  int                 err,skipcnt = 0;
   long unsigned       counter = 0;
   RTIME last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
   RT_TASK *WAMControlThreadTask;
@@ -307,6 +307,7 @@ void WAMControlThread(void *data)
   syslog(LOG_ERR,"WAMControl initial hard");
   rt_task_make_periodic_relative_ns(WAMControlThreadTask, sample_period2, sample_period2);
   dt_targ = Sample_Period;
+  skiptarg = 1.5 * dt_targ;
   dt = dt_targ;
   syslog(LOG_ERR,"WAMControl periodic %d, %f", sample_period2,dt);
   
@@ -318,6 +319,11 @@ void WAMControlThread(void *data)
     loop_start = rt_get_cpu_time_ns(); ///prof
     WAM.loop_period = loop_start - last_loop; ///prof
     dt = (double)WAM.loop_period / 1000000000.0;
+    if (dt > skiptarg){
+      skipcnt++;
+      if (dt > skipmax) skipmax = dt;
+    }
+      
     
     
     test_and_log(
@@ -397,7 +403,7 @@ void WAMControlThread(void *data)
     }///cteach }
   }
   syslog(LOG_ERR, "WAM Control Thread: exiting");
-  syslog(LOG_ERR,"WAMControl last dt %f",dt);
+  syslog(LOG_ERR,"WAMControl Skipped cycles %d, Max dt: %f",skipcnt,skipmax);
   rt_make_soft_real_time();
   rt_task_delete(WAMControlThreadTask);
   pthread_exit(NULL);
