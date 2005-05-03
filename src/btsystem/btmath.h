@@ -73,7 +73,7 @@ void inject_vn(vect_n* dest, btreal* src); //copy btreal array to vector
 btreal* valptr_vn(vect_n* src); //return a pointer to the btreal array holding the data
 void setval_vn(vect_n* dest, int idx, btreal val); //function to set single value, zero indexed
 btreal getval_vn(vect_n* dest, int idx);
-void const_vn(vect_n* a, ...); //set vector to a constant array of btreals
+vect_n* const_vn(vect_n* a, ...); //set vector to a constant array of btreals
 void einit_vn(vect_n* dest,int i); // einit_vn(&a,3) = <0,0,0,1,0,0>
 void fill_vn(vect_n* dest, btreal val);
 

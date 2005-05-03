@@ -282,7 +282,7 @@ BTINLINE btreal getval_vn(vect_n* dest, int idx)
 \bug If the function arguments are constant integers (instead of constant btreals)
 you will get bogus results and segfaults. ex: const_vn(&t1,2.0,3.0,3.0) is OK, const_vn(&t1,2,3,3) is NOT
 */
-void const_vn(vect_n* a, ...) //set vector to a constant array of btreals
+vect_n* const_vn(vect_n* a, ...) //set vector to a constant array of btreals
 {
   int cnt;
   btreal val;
@@ -294,7 +294,7 @@ void const_vn(vect_n* a, ...) //set vector to a constant array of btreals
     a->q[cnt] = va_arg(ap, btreal);
   }
     va_end(ap);
-
+  return a;
 }
 /**
 \bug No bounds checking for i
