@@ -550,10 +550,18 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
   char fn[50];
   int i;
   int cMid,Mid;
+  double A, B, C, D;
+  FILE *outFile;
   
   cMid = MotorID_From_ActIdx(cpuck);
   switch (c)
   {
+    case 'u':
+      getLagrangian4(&A, &B, &C, &D);
+      outFile = fopen("gcomp.dat", "w");
+      fprintf(outFile, "%f\n%f\n%f\n%f\n", A, B, C, D);
+      fclose(outFile);
+      break;
     case 'L':
       DLon(&(wam->log));
       break;
