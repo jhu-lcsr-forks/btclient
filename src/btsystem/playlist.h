@@ -18,7 +18,7 @@
 #ifndef _PLAYLIST_H
 #define _PLAYLIST_H
 
-#include "SimpleControl.h"
+#include "btjointcontrol.h"
 
 /** Data that defines one leg of a trajectory through multiple points.
 */

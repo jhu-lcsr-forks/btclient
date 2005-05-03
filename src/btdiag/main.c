@@ -51,7 +51,6 @@
 #include "btsystem.h"
 #include "gimbals.h"
 #include "btwam.h"
-#include "playlist.h"
 #include "control_loop.h"
 #include "btmath.h"
 #include "btrobot.h"
@@ -78,7 +77,7 @@ enum {HELP_SCREEN, MAIN_SCREEN, GCOMP_SCREEN, HOMING_SCREEN, TIMING_SCREEN, PLAY
  * GLOBAL file-scope variables  *
  *==============================*/
 char divider[column_offset + (column_width * MAX_NODES)];
-SC_move_list ml;
+ 
 matr_h *myFrame;
 
 

@@ -21,7 +21,7 @@
 
 #include <rtai_lxrt.h>
 #include "btsystem.h"
-#include "SimpleControl.h"
+#include "btjointcontrol.h"
 #include "btmath.h"
 #include "btrobot.h"
 #include "btcontrol.h"
@@ -66,6 +66,8 @@ typedef struct {
     7DOF    = 7-DOF WAM
 */
 enum {WAM_4DOF, WAM_4DOF_G, WAM_7DOF} wamType;
+
+
 /** This structure maintains the present state of the wam
 
 wam_struct is used by the WAM control loop and WAM API to maintain information 
@@ -76,7 +78,7 @@ available to users to get information about the wam and to get pointers to the
 control objects.
 
 */
-typedef struct {
+typedef struct btwam_struct{
   int id;
 //State Variables
   int Gcomp; //0 = no gravity comp, 1 = gravity comp
@@ -84,6 +86,9 @@ typedef struct {
   int use_new;
   int type; //enum {WAM_4DOF, WAM_4DOF_G, WAM_7DOF, Wrist_3DOF} 
   int isZeroed;
+  
+//user callback
+  int (*force_callback)(struct btwam_struct *wam);
   
 //Actuator info
   actuator_struct *act;
@@ -182,6 +187,8 @@ void ParkWAM();
 void StartContinuousTeach(int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
 void StopContinuousTeach(); 
 
+int BlankWAMcallback(struct btwam_struct *wam);
+void registerWAMcallback(void *func);
 #endif /*_BTWAM_H*/
 
 /*======================================================================*

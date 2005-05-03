@@ -366,6 +366,9 @@ void WAMControlThread(void *data)
     
     
     apply_force_bot(&WAM.robot,4, WAM.Cpoint, WAM.Cforce, C_v3(0.0,0.0,0.0));
+    
+    (*WAM.force_callback)(&WAM);
+    
     eval_bd_bot(&WAM.robot);
     get_t_bot(&WAM.robot,WAM.Ttrq);
 
@@ -742,8 +745,16 @@ void StopContinuousTeach()
   DLoff(&(WAM.cteach));
   CloseDL(&(WAM.cteach));
 }
+void registerWAMcallback(void *func)
+{
+  if (func != NULL)
+    WAM.force_callback = func;
 
-
+}
+int BlankWAMcallback(struct btwam_struct *wam)
+{
+  return 0;
+}
 /*
 int playViaTrajectoryFile(char *fileName, double timeScale)
 {
