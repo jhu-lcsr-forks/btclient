@@ -49,6 +49,7 @@ typedef struct {
   double radius;
 }bthaptic_sphere;
 
+int new_bthaptic_scene(bthaptic_scene *bth, int size);
 vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *wamTipLoc, vect_n *tipforce);
 int addobject_bth(bthaptic_scene *bth,bthaptic_object *object);
 void removeobject_bth(bthaptic_scene *bth,int index);

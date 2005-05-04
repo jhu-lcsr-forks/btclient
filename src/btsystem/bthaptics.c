@@ -16,6 +16,17 @@
 #include "btmath.h"
 #include "bthaptics.h"
 
+int new_bthaptic_scene(bthaptic_scene *bth, int size)
+{
+  bth->num_objects = 0;
+  bth->max_objects = 0;
+  bth->list = (bthaptic_object*)malloc(size * sizeof(void*));
+  if (bth->list == NULL){
+    syslog(LOG_ERR,"Can't allocate memory for haptic scene");
+    return -1;
+  }
+  return 0;
+}
 
 /**
  each object adds it's effect to the tipforce
