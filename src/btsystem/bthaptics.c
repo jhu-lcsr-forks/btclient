@@ -15,12 +15,13 @@
 #include <stdio.h>
 #include "btmath.h"
 #include "bthaptics.h"
+#include <syslog.h>
 
 int new_bthaptic_scene(bthaptic_scene *bth, int size)
 {
   bth->num_objects = 0;
   bth->max_objects = 0;
-  bth->list = (bthaptic_object*)malloc(size * sizeof(void*));
+  bth->list = (bthaptic_object**)malloc(size * sizeof(void*));
   if (bth->list == NULL){
     syslog(LOG_ERR,"Can't allocate memory for haptic scene");
     return -1;

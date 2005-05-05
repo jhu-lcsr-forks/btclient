@@ -221,7 +221,7 @@ void eval_fk_bot(btrobot* robot) //forward kinematics
     getcol_mh(robot->tool->z,robot->tool->origin,2);
     getcol_mh(robot->tool->o,robot->tool->origin,3);
 }
-void eval_fk_bot(btrobot* robot) //forward jacobian
+void eval_fj_bot(btrobot* robot) //forward jacobian
 {
   // J = [J1J2J3J4J5...]
   // Ji = z(i-1)X(On - O(i-1)]
@@ -352,8 +352,7 @@ void eval_bd_bot(btrobot* robot) //backward kinematics
         add_v3(robot->tool->dw,
                cross_v3(robot->tool->w,
                         matXvec_m3(robot->tool->I,robot->tool->w)))))));
-                        
-    setval_vn(robot->t,cnt,dot_v3(robot->tool->t,robot->tool->b));
+
   
   for (cnt = robot->num_links-1;cnt >= 0;cnt--){
     
@@ -419,6 +418,21 @@ void apply_force_bot(btrobot* robot,int link, vect_3* pos, vect_3 *force, vect_3
     
   set_v3(robot->links[link].eforce.f,
     add_v3(robot->links[link].eforce.f,matTXvec_m3(robot->links[link].origin,force)));
+}
+void apply_tool_force_bot(btrobot* robot, vect_3* pos, vect_3 *force, vect_3* torque)
+{
+  //pos + res = cog :=> cog - pos = res | res is vector from force point to cog.
+  //The idea is to sum this force,torque with other force torques acting on the COG of this link.
+  const_v3(robot->tool->Rp,0.0,0.0,0.0);
+  set_v3(robot->tool->Rp,sub_v3(robot->tool->cog,pos));
+
+  set_v3(robot->tool->eforce.t,
+    add_v3(robot->tool->eforce.t,
+    add_v3(torque,
+    cross_v3(matTXvec_m3(robot->tool->origin,force),robot->tool->Rp))));
+    
+  set_v3(robot->tool->eforce.f,
+    add_v3(robot->tool->eforce.f,matTXvec_m3(robot->tool->origin,force)));
 }
 
 void init_4dof_wam_bot(btrobot* robot)

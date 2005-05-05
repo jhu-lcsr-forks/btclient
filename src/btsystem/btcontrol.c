@@ -168,6 +168,11 @@ void init_btPID(btPID *pid)
       "Could not initialize mutex for btPID.");
 
 }
+
+void init_err_btPID(btPID *pid)
+{
+  pid->external_error_calc = 1;
+}
 /** Reset the state parameters of the PID regulator
 
   Sets the accumulated error to zero, the reference value to the present value, and notifies

@@ -117,7 +117,7 @@ void fk_btwam(btrobot* robot);  //forward kinematics optimized for the wam
 void fj_bot(btrobot* robot);
 void eval_fd_bot(btrobot* robot); //forward dynamics
 void apply_force_bot(btrobot* robot,int link, vect_3* pos, vect_3 *force, vect_3* torque);
-void tool_force_bot(btrobot* robot,int link, vect_3* pos, vect_3 *force, vect_3* torque);
+void apply_tool_force_bot(btrobot* robot, vect_3* pos, vect_3 *force, vect_3* torque);
 void eval_bd_bot(btrobot* robot); //backward kinematics
 void get_t_bot(btrobot* robot,vect_n* t);
 

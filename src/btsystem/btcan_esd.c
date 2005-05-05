@@ -45,8 +45,8 @@
  *==============================*/
 #define TX_QUEUE_SIZE       (32)
 #define RX_QUEUE_SIZE       (32)
-#define TX_TIMEOUT          (5)
-#define RX_TIMEOUT          (5)
+#define TX_TIMEOUT          (50)
+#define RX_TIMEOUT          (50)
 
 #define mbxID               (0)
 #define BASE_ID             (0)

@@ -141,7 +141,7 @@ typedef struct btwam_struct{
   
   //CartesianSpace Position control
   btPID pid[4]; //  x,y,z,quat
-  quat *qref,*qact; //reference and actual orientations for quaternion control
+  quat *qref,*qact,*qaxis; //reference and actual orientations for quaternion control
   vect_n *Ttrq;
   vect_3 *Cpos,*Cforce,*Ctrq,*Cref;
   vect_3 *Ckp,*Ckd,*Cki,*Cpoint;

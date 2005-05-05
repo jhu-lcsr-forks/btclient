@@ -1343,7 +1343,7 @@ quat* log_q(quat* a)
 */
 quat* R_to_q(quat* dest, matr_3* src)
 {
-  dest->q[0] = 0.5*sqrt(src->q[0] + src->q[4] + src->q[8] + 1);
+  dest->q[0] = 0.5*sqrt(fabs(src->q[0] + src->q[5] + src->q[10] + 1));
   dest->q[1] = (src->q[9] - src->q[6])*0.25/dest->q[0];
   dest->q[2] = (src->q[2] - src->q[8])*0.25/dest->q[0];
   dest->q[3] = (src->q[4] - src->q[1])*0.25/dest->q[0];
@@ -1385,7 +1385,7 @@ btreal GCdist_q(quat* start, quat* end)
 /** Great circle distance between two quaternions
 Returns the great circle distance between two unit quaternions.
 */
-btreal GCaxis_q(vect_3* dest, quat* start, quat* end) 
+vect_3* GCaxis_q(vect_3* dest, quat* start, quat* end) 
 {
   btreal q[4];
   return axis_q(dest,mul_q(end,conj_q(start))); // inv_q = conj_q for quaternions of unit length

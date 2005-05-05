@@ -74,7 +74,7 @@ typedef struct
 }btPID;
 //Create-Destroy
 void init_btPID(btPID *pid);
-
+void init_err_btPID(btPID *pid); //setup for use with eval_err_btPID
 //Data Access
 void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki);
 void setsaturation_btPID(btPID *pid, btreal saturation);

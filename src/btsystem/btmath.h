@@ -238,7 +238,7 @@ quat* unit_q(quat* a); //unit vector
 btreal GCdist_q(quat* start, quat* end); //!< Great circle distance between two quaternions
 btreal angle_q(quat* src); //!< Returns the angle represented by the quaternion
 vect_3* axis_q(vect_3* dest, quat* src); //!< Returns the unit vector representing the rotation
-
+vect_3* GCaxis_q(vect_3* dest, quat* start, quat* end); //!< Great circle axis between two quaternions
 
 quat* slerp_q(quat* q0,quat* q1,btreal t);
 
@@ -303,7 +303,7 @@ matr_3* q_to_R(matr_3* dest, quat* src);
 //vect_3* EUL_m3(matr_3* src); //return Euler angles
 //vect_3* RPY_m3(matr_3* src); //return Roll pitch yaw
 /*=======================================================================*/
-/** homogeneous 4x4 matrix optimized for robots. 4th row is not computed or stored.
+/** general matrix.
 */
 typedef struct barrett_matr_mn{
   struct barrett_matr_mn *ret;

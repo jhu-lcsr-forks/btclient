@@ -393,9 +393,10 @@ void RenderScreen() //{{{
 {
   //int val;
   int cnt, idx,cnt2 ,Mid;
-  int line;
-  double gimb[4];
-  char vect_buf1[30],vect_buf2[30];
+  int line,line2;
+  double gimb[4],*dptr;
+  char vect_buf1[80],vect_buf2[80];
+  matr_h *mptr;
 
 
 
@@ -454,7 +455,7 @@ void RenderScreen() //{{{
   ++line;
   mvprintw(line , 0, "[s,S] Start Trj    [ ] Joint/Puck   [   ]                   ");
   ++line;
-
+  line2 = line;
   /***** Display the data *****/
   getWAMjoints(Mpos, Mtrq, Jpos, Jtrq);
 
@@ -523,16 +524,29 @@ void RenderScreen() //{{{
     ++line;
 
     mvprintw(line, column_offset + column_width*cnt, "%+8.4f ", commands[cnt]);
-    ++line;
-    ++line;
+
 
   }
 
-
-    mvprintw(line, column_offset , "qref:%s qact:%s ", sprint_vn(vect_buf1,(vect_n*)wam->qref), sprint_vn(vect_buf2,(vect_n*)wam->qref));
+    line = line2;
+    mvprintw(line, column_offset , "qref:%s", sprint_vn(vect_buf1,(vect_n*)wam->qref));
+    ++line;
+    mvprintw(line, column_offset , "qact:%s", sprint_vn(vect_buf2,(vect_n*)wam->qact));
+    ++line;
+    mvprintw(line, column_offset , "qaxis:%s", sprint_vn(vect_buf2,(vect_n*)wam->qaxis));
+    ++line;
     mvprintw(line, column_offset , "Ctrq:%s qerr:%+8.4f ", sprint_vn(vect_buf1,(vect_n*)wam->Ctrq),wam->qerr);
     ++line;
-  refresh();
+    mvprintw(line, column_offset , "Cpos:%s ", sprint_vn(vect_buf1,(vect_n*)wam->Cpos));
+    ++line;
+    
+    mptr = T_to_W_trans_bot(&(wam->robot));
+    //dptr = &(wam->robot0.0000.tool->origin->q[0]);
+    dptr = mptr->q;
+    mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[0],dptr[1],dptr[2],dptr[3]);++line;
+      mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[4],dptr[5],dptr[6],dptr[7]);++line;
+       mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[8],dptr[9],dptr[10],dptr[11]);++line;
+         refresh();
 } //}}}
 
 void clearScreen(void)
@@ -600,14 +614,30 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       }
       break;
     case 'H': // Set ALL joint controllers to Torque mode
-      fer(cnt, 4) {
-        start_btPID(&(WAM.pid[cnt]));
+      set_v3(wam->Cref,wam->Cpos);
+      
+      fer(cnt, 3) {
+        start_btPID(&(wam->pid[cnt]));
       }
       break;
     case 'h': // Set ALL joint controllers to Torque mode
-      fer(cnt, 4) {
-        start_btPID(&(WAM.pid[cnt]));
+      
+      fer(cnt, 3) {
+        stop_btPID(&(wam->pid[cnt]));
       }
+      break;
+    case 'N': // Set ALL joint controllers to Torque mode
+      
+      set_q(wam->qref,wam->qact);
+      
+        start_btPID(&(wam->pid[3]));
+      
+      break;
+    case 'n': // Set ALL joint controllers to Torque mode
+      
+      
+        stop_btPID(&(wam->pid[3]));
+      
       break;
     case 'p': // Set present joint controller to PID mode
       SCsetmode(&(wam->sc[cMid]), SCMODE_PID);

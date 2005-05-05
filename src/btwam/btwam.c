@@ -113,30 +113,19 @@ int InitWAM(char *wamfile)
   WAM.use_new = 0;
   WAM.qref = new_q();
   WAM.qact = new_q();
-  
-  new_bot(&WAM.robot,4);
-  
-  link_geom_bot(&WAM.robot,0,0.0,0.0,0.0,-pi/2.0);
-  link_geom_bot(&WAM.robot,1,0.0,0.0,0.0,pi/2.0);
-  link_geom_bot(&WAM.robot,2,0.0,0.550,0.045,-pi/2.0);
-  link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
-  link_geom_bot(&WAM.robot,4,0.0,0.3574,0.0,0.0);
-  
-  link_mass_bot(&WAM.robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
-  link_mass_bot(&WAM.robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
-  link_mass_bot(&WAM.robot,2,C_v3(-0.0443,0.2549,0.0),2.08);
-  link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
-  link_mass_bot(&WAM.robot,4,C_v3(0.0,0.0,0.03),2.000);
-  //init_wam_btrobot(&(WAM.robot));
-  fill_vn(WAM.robot.dq,0.0);
-  fill_vn(WAM.robot.ddq,0.0);
+  WAM.qaxis = new_q();
+  WAM.qerr = 0;
+
   
   init_pwl(&WAM.pth,3,2); //Cartesian move path
-  init_btPID(&(WAM.pid[0]));
-  init_btPID(&(WAM.pid[1]));
-  init_btPID(&(WAM.pid[2]));
-  init_btPID(&(WAM.pid[3]));
-  
+
+  for (cnt = 0; cnt < 4; cnt ++){
+    init_btPID(&(WAM.pid[cnt]));
+    setgains_btPID(&(WAM.pid[cnt]),4000.0,20.0,0.0);
+  }
+  setgains_btPID(&(WAM.pid[3]),50.0,1.5,0.0);
+  init_err_btPID(&(WAM.pid[3]));
+
   WAM.F = 0.0;
   WAM.isZeroed = FALSE;
   WAM.cteach.Log_Data = 0; ///cteach
@@ -152,6 +141,48 @@ int InitWAM(char *wamfile)
 
   //------------------------
   WAM.act = GetActuators(&(WAM.num_actuators));
+
+  new_bot(&WAM.robot,WAM.num_actuators);
+  
+  
+  link_geom_bot(&WAM.robot,0,0.0,0.0,0.0,-pi/2.0);
+  link_geom_bot(&WAM.robot,1,0.0,0.0,0.0,pi/2.0);
+  link_geom_bot(&WAM.robot,2,0.0,0.550,0.045,-pi/2.0);
+  link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
+  
+  
+  link_mass_bot(&WAM.robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
+  link_mass_bot(&WAM.robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
+  link_mass_bot(&WAM.robot,2,C_v3(-0.0443,0.2549,0.0),2.08);
+  
+  
+  //init_wam_btrobot(&(WAM.robot));
+   if (WAM.num_actuators == 4){
+     link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
+     tool_geom_bot(&WAM.robot,0.0,0.3574,0.0,0.0);
+     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.000);
+   }
+  else if (WAM.num_actuators == 7){
+    link_geom_bot(&WAM.robot,4,0.0,0.3,0.0,-pi/2.0);
+    link_geom_bot(&WAM.robot,5,0.0,0.0,0.0,pi/2.0);
+    link_geom_bot(&WAM.robot,6,0.0,0.06091,0.0,0.0);
+    
+    link_mass_bot(&WAM.robot,3,C_v3(0.0,0.0,0.126),2.35);
+    link_mass_bot(&WAM.robot,4,C_v3(0.0,0.0,0.0),0.001);
+    link_mass_bot(&WAM.robot,5,C_v3(0.0,0.0,0.0),0.001);
+    link_mass_bot(&WAM.robot,6,C_v3(0.0,0.0,0.0),0.001);
+    
+    tool_geom_bot(&WAM.robot,0.0,0.0,0.0,0.0);
+    //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.001);
+    tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.000);
+  }
+  else {
+    syslog(LOG_ERR,"Unknown robot type");
+    return -1;
+  }
+  
+  fill_vn(WAM.robot.dq,0.0);
+  fill_vn(WAM.robot.ddq,0.0);
 
   if(test_and_log(
     LoadWAM(wamfile),"Failed to load wam config file")) {return -1;}
@@ -362,20 +393,21 @@ void WAMControlThread(void *data)
     eval_fk_bot(&WAM.robot);
     eval_fd_bot(&WAM.robot);
     
-    set_v3(WAM.Cpos,Ln_to_W_bot(&WAM.robot,4,WAM.Cpoint));
+    set_v3(WAM.Cpos,T_to_W_bot(&WAM.robot,WAM.Cpoint));
     R_to_q(WAM.qact,T_to_W_trans_bot(&WAM.robot));
     
     if (WAM.trj.state){
       WAM.F = evaluate_traptrj(&WAM.trj,dt);
       set_vn((vect_n*)WAM.Cref,getval_pwl(&WAM.pth, WAM.F));
     }
+    
     for (cnt = 0; cnt < 3; cnt ++){
       setval_v3(WAM.Cforce,cnt,eval_btPID(&(WAM.pid[cnt]),getval_v3(WAM.Cpos,cnt), getval_v3(WAM.Cref,cnt), dt));
     }
-    WAM.qerr = GCdist_q(WAM.qact,WAM,qref);
-    set_v3(WAM.Ctrq,scale_v3(eval_err_btPID(&(WAM.pid[3]),WAM.qerr,dt),GCaxis_q(WAM.Ctrq,WAM.qact,WAM,qref));
+    WAM.qerr = GCdist_q(WAM.qref,WAM.qact);
+    set_v3(WAM.Ctrq,scale_v3(eval_err_btPID(&(WAM.pid[3]),WAM.qerr,dt),GCaxis_q(WAM.Ctrq,WAM.qref,WAM.qact)));
     
-    apply_force_bot(&WAM.robot,4, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
+    apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
     
     (*WAM.force_callback)(&WAM);
     
