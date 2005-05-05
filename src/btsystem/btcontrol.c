@@ -76,7 +76,7 @@ void start_traptrj(bttraptrj *traj, btreal dist) //assumes that velocity and acc
     traj->t2 = (dist-(2*ax)) / traj->vel + traj->t1; //Find the time to start the "ramp-down"
     traj->t = 0;
     traj->state = BTTRAJ_RUN;
-    if (dist == 0.0) traj->state = BTTRAJ_DONE;
+    if (dist == 0.0) traj->state = BTTRAJ_STOPPED;
 }
 
 
@@ -112,14 +112,14 @@ btreal evaluate_traptrj(bttraptrj *traj, btreal dt)
             if (dt > remaining_time)
             {
                 traj->cmd = traj->end;
-                traj->state = BTTRAJ_DONE;
+                traj->state = BTTRAJ_STOPPED;
             }
 
             newtime = (remaining_time-dt);
             if(newtime <= 0)
             {
                 traj->cmd = traj->end;
-                traj->state = BTTRAJ_DONE;
+                traj->state = BTTRAJ_STOPPED;
             }
             traj->cmd =  traj->end - 0.5 * traj->acc * newtime * newtime;
         }
@@ -131,7 +131,7 @@ btreal evaluate_traptrj(bttraptrj *traj, btreal dt)
     {
         syslog(LOG_ERR, "nan in eval_traj");
         traj->cmd = traj->end;
-        traj->state = BTTRAJ_DONE;
+        traj->state = BTTRAJ_STOPPED;
         return traj->end;
     }
     return result;
@@ -472,7 +472,7 @@ double eval_via_trj(via_trj *trj,double dt)
         { //done with acc, set up vel
             if (trj->idx >= trj->n-1)
             {
-                trj->state = BTTRAJ_DONE;
+                trj->state = BTTRAJ_STOPPED;
             }
             else
             {

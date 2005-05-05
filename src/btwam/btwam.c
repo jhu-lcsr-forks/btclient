@@ -111,6 +111,8 @@ int InitWAM(char *wamfile)
   WAM.Ckd = new_v3();
   WAM.Cki = new_v3();
   WAM.use_new = 0;
+  WAM.qref = new_q();
+  WAM.qact = new_q();
   
   new_bot(&WAM.robot,4);
   
@@ -133,6 +135,8 @@ int InitWAM(char *wamfile)
   init_btPID(&(WAM.pid[0]));
   init_btPID(&(WAM.pid[1]));
   init_btPID(&(WAM.pid[2]));
+  init_btPID(&(WAM.pid[3]));
+  
   WAM.F = 0.0;
   WAM.isZeroed = FALSE;
   WAM.cteach.Log_Data = 0; ///cteach
@@ -357,7 +361,10 @@ void WAMControlThread(void *data)
 
     eval_fk_bot(&WAM.robot);
     eval_fd_bot(&WAM.robot);
+    
     set_v3(WAM.Cpos,Ln_to_W_bot(&WAM.robot,4,WAM.Cpoint));
+    R_to_q(WAM.qact,T_to_W_trans_bot(&WAM.robot));
+    
     if (WAM.trj.state){
       WAM.F = evaluate_traptrj(&WAM.trj,dt);
       set_vn((vect_n*)WAM.Cref,getval_pwl(&WAM.pth, WAM.F));
@@ -365,9 +372,10 @@ void WAMControlThread(void *data)
     for (cnt = 0; cnt < 3; cnt ++){
       setval_v3(WAM.Cforce,cnt,eval_btPID(&(WAM.pid[cnt]),getval_v3(WAM.Cpos,cnt), getval_v3(WAM.Cref,cnt), dt));
     }
+    WAM.qerr = GCdist_q(WAM.qact,WAM,qref);
+    set_v3(WAM.Ctrq,scale_v3(eval_err_btPID(&(WAM.pid[3]),WAM.qerr,dt),GCaxis_q(WAM.Ctrq,WAM.qact,WAM,qref));
     
-    
-    apply_force_bot(&WAM.robot,4, WAM.Cpoint, WAM.Cforce, C_v3(0.0,0.0,0.0));
+    apply_force_bot(&WAM.robot,4, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
     
     (*WAM.force_callback)(&WAM);
     
@@ -553,7 +561,7 @@ void MoveWAM(vect_n *pos)
     ctr = 0;
     for (cnt = 0;cnt < WAM.num_actuators;cnt++)
     {
-      if (WAM.sc[Mid].trj.state != BTTRAJ_DONE)
+      if (WAM.sc[Mid].trj.state != BTTRAJ_STOPPED)
         ctr++;
     }
     if (ctr == 0)
@@ -591,7 +599,7 @@ void CartesianMoveWAM(vect_n *pos, btreal vel, btreal acc)
   
   while (!done)
   {
-    if (WAM.trj.state == BTTRAJ_DONE)
+    if (WAM.trj.state == BTTRAJ_STOPPED)
       done = 1;
     usleep(50000);
     //if ((count % 1000) == 0)  syslog(LOG_ERR,"waited 1 second to reach position");
@@ -613,7 +621,7 @@ void ToolCartesianMoveWAM(vect_n *pos, btreal vel, btreal acc)
   
   while (!done)
   {
-    if (WAM.trj.state == BTTRAJ_DONE)
+    if (WAM.trj.state == BTTRAJ_STOPPED)
       done = 1;
     usleep(50000);
     //if ((count % 1000) == 0)  syslog(LOG_ERR,"waited 1 second to reach position");

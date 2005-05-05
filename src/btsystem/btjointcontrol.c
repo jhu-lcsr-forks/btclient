@@ -55,7 +55,7 @@ int SCinit(SimpleCtl *sc)
     sc->kill_torque = 500000;
     sc->last_dt = 1;
     sc->command_torque = 0;
-    sc->trj.state = BTTRAJ_DONE;
+    sc->trj.state = BTTRAJ_STOPPED;
     sc->trj.acc = .00000001;
     sc->trj.vel = .00000001;
     PIDinit(&(sc->pid),0, 0, 0, 0.002);
@@ -145,7 +145,7 @@ int SCsetmode(SimpleCtl *sc, int mode)
     {
         syslog(LOG_ERR, "SCsetmode lock mutex failed: %d", err);
     }
-    if (sc->trj.state != BTTRAJ_DONE) sc->trj.state = BTTRAJ_DONE;
+    if (sc->trj.state != BTTRAJ_STOPPED) sc->trj.state = BTTRAJ_STOPPED;
     sc->pid.y = sc->position;
     PIDreset(&(sc->pid));
     tmp = PIDcalc(&(sc->pid));
@@ -213,7 +213,7 @@ int SCsetcmd(SimpleCtl *sc,double cmd) //sets pid command position. if in traj m
 {
     int err;
 
-    if (sc->trj.state != BTTRAJ_DONE)
+    if (sc->trj.state != BTTRAJ_STOPPED)
         return -1;
 
     err = pthread_mutex_lock( &(sc->mutex) );
@@ -258,7 +258,7 @@ int SCstarttrj(SimpleCtl *sc,double end)
     int err;
     double here;
 
-    if (sc->trj.state != BTTRAJ_DONE)
+    if (sc->trj.state != BTTRAJ_STOPPED)
         return -1;
 
     err = pthread_mutex_lock( &(sc->mutex) );
@@ -313,7 +313,7 @@ void init_trajectory(trajectory *traj, double start, double end) //assumes that 
     traj->t2 = (dist-(2*ax)) / traj->vel + traj->t1; //Find the time to start the "ramp-down"
     traj->t = 0;
     traj->state = BTTRAJ_RUN;
-    if (dist == 0.0) traj->state = BTTRAJ_DONE;
+    if (dist == 0.0) traj->state = BTTRAJ_STOPPED;
 }
 
 double calc_traj_time(trajectory *traj, double start, double end, double vel, double acc)
@@ -417,14 +417,14 @@ double evaluate_trajectory(trajectory *traj,double dt)
             if (dt > remaining_time)
             {
                 traj->cmd = traj->end;
-                traj->state = BTTRAJ_DONE;
+                traj->state = BTTRAJ_STOPPED;
             }
 
             newtime = (remaining_time-dt);
             if(newtime <= 0)
             {
                 traj->cmd = traj->end;
-                traj->state = BTTRAJ_DONE;
+                traj->state = BTTRAJ_STOPPED;
             }
             traj->cmd =  traj->end - 0.5 * traj->acc * newtime * newtime;
         }
@@ -436,7 +436,7 @@ double evaluate_trajectory(trajectory *traj,double dt)
     {
         syslog(LOG_ERR, "nan in eval_traj");
         traj->cmd = traj->end;
-        traj->state = BTTRAJ_DONE;
+        traj->state = BTTRAJ_STOPPED;
         return traj->end_point;
     }
     return (traj->start_point + traj->sign*traj->cmd);

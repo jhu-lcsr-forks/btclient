@@ -395,6 +395,7 @@ void RenderScreen() //{{{
   int cnt, idx,cnt2 ,Mid;
   int line;
   double gimb[4];
+  char vect_buf1[30],vect_buf2[30];
 
 
 
@@ -426,6 +427,8 @@ void RenderScreen() //{{{
     ++line;
   }
   mvprintw(line , 0, "    PID Cmd: ");
+  ++line;
+  mvprintw(line , 0, "Cart PIDCmd: ");
   ++line;
   mvprintw(line , 0, " Trj Target: ");
   ++line;
@@ -526,6 +529,9 @@ void RenderScreen() //{{{
   }
 
 
+    mvprintw(line, column_offset , "qref:%s qact:%s ", sprint_vn(vect_buf1,(vect_n*)wam->qref), sprint_vn(vect_buf2,(vect_n*)wam->qref));
+    mvprintw(line, column_offset , "Ctrq:%s qerr:%+8.4f ", sprint_vn(vect_buf1,(vect_n*)wam->Ctrq),wam->qerr);
+    ++line;
   refresh();
 } //}}}
 
@@ -591,6 +597,16 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       fer(cnt, npucks) {
         Mid = MotorID_From_ActIdx(cnt);
         SCsetmode(&(wam->sc[Mid]), SCMODE_TORQUE);
+      }
+      break;
+    case 'H': // Set ALL joint controllers to Torque mode
+      fer(cnt, 4) {
+        start_btPID(&(WAM.pid[cnt]));
+      }
+      break;
+    case 'h': // Set ALL joint controllers to Torque mode
+      fer(cnt, 4) {
+        start_btPID(&(WAM.pid[cnt]));
       }
       break;
     case 'p': // Set present joint controller to PID mode

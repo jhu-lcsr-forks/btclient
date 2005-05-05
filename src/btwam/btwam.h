@@ -145,6 +145,7 @@ typedef struct btwam_struct{
   vect_n *Ttrq;
   vect_3 *Cpos,*Cforce,*Ctrq,*Cref;
   vect_3 *Ckp,*Ckd,*Cki,*Cpoint;
+  btreal qerr;
   
   //CartesianSpace Moves
   bttraptrj trj;

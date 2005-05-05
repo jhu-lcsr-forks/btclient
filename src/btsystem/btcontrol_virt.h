@@ -34,7 +34,33 @@ extern "C"
 #define PI 3.141596
 #endif /*PI*/
 
-enum trjstate {BTTRAJ_OFF,BTTRAJ_DONE = 0,BTTRAJ_RUN,BTTRAJ_FILE,BTTRAJ_READY,BTTRAJ_ESTOP,BTTRAJ_PAUSING,BTTRAJ_UNPAUSING,BTTRAJ_PAUSED};
+enum trjstate {BTTRAJ_OFF,BTTRAJ_STOPPED = 0,BTTRAJ_INPREP,BTTRAJ_READY,BTTRAJ_RUN,BTTRAJ_DONE,BTTRAJ_PAUSING,BTTRAJ_UNPAUSING,BTTRAJ_PAUSED};
+/**
+Trajectory States
+ - -1 = Off
+ - 0 = Stopped
+ - 1 = InPrep
+ - 2 = Ready
+ - 3 = Running
+ - 4 = Done
+ - 5 = Pausing
+ - 6 = Paused
+ - 7 = Unpausing
+
+
+Trajectory Actions and state changes
+ - Engage: [-1,5,4,0]->0 : yref = y; Start the constraint block at the present position
+ - DisEngage: [0,4]->-1 : Turn off the constraint block; [2-8]->0 : Nothing
+ - EStop: [2-8]->0: Stop trajectory, reset
+ - PrepTrj: 0->3: Set up move from present location to trajectory start position
+ - 3->4: Done moving to start position. Wait for StartTrj or autostart
+ - StartTrj: 4->5: Start running trajectory
+ - Pause(t): 5->6->7: Ramp dt down to 0 over t seconds
+ - Unpause(t): 7->8->5: Ramp dt up from 0 over t seconds
+ - LoadTrj: 1->1,2->2,9->2: Set up trajectory for operation
+
+*/
+
 
 /*================================================Position object================================*/
 /** A virtual interface for position control
@@ -44,7 +70,7 @@ typedef struct
   void *pos_reg;
   
   vect_n* (*init)(void *dat, vect_n* q, vect_n* qref);
-  vect_n* (*eval)(void *dat, vect_n* q, vect_n* qref, btreal ds);
+  vect_n* (*eval)(void *dat, vect_n* q, vect_n* qref, btreal dt);
 
   btreal time;  //elapsed time
   vect_n *q,*dq; //state
@@ -62,7 +88,9 @@ void setqref_btpos(btposition *trj,vect_n* qref);
 
 vect_n* eval_btpos(btposition *trj,vect_n* q,btreal dt);
 int start_btpos(btposition *trj); //calling this while running will reset the position controller
-int getstate_btpos(btposition *trj);/*================================================Trajectory object================================*/
+int getstate_btpos(btposition *trj);
+
+/*================================================Trajectory object================================*/
 /** bttrajectory sets up virtual functions for running an arbitrary trajectory along
 an arbitrary curve. Curve and trajectory initialization are done outside.
 

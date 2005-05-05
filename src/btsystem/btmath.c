@@ -1382,6 +1382,14 @@ btreal GCdist_q(quat* start, quat* end)
 //  return acos(q[0])*2.0;                                                          //optimized but untested
   return angle_q(mul_q(end,conj_q(start))); // inv_q = conj_q for quaternions of unit length
 }
+/** Great circle distance between two quaternions
+Returns the great circle distance between two unit quaternions.
+*/
+btreal GCaxis_q(vect_3* dest, quat* start, quat* end) 
+{
+  btreal q[4];
+  return axis_q(dest,mul_q(end,conj_q(start))); // inv_q = conj_q for quaternions of unit length
+}
 /** Return the angle of rotation represented by a unit quaternion.
 \param src A unit quaternion
 */

@@ -102,9 +102,11 @@ void make_transform_btlink(btlink* link,double q); //set the transform matrix
 void set_gravity_bot(btrobot* robot, double Gscale); //set percent effect of gravity
 //void set_jacobian_scheme_bot(btrobot* robot,int scheme); //how to handle extra dof
 
+
 void set_q_bot(btrobot* robot, vect_n* q, vect_n* dq, vect_n* ddq); //set generalized joit parameters
 void eval_fk_bot(btrobot* robot); //forward kinematics
-//depreciated th050409 void get_fkpos_bot(btrobot* robot,int link, vect_3 *outpos, vect_3 *inpos);
+void eval_fj_bot(btrobot* robot); //forward jacobian
+
 
 vect_3* Ln_to_W_bot(btrobot* robot,int link, vect_3 *position); //find world position of position specified in frame[link] 
 vect_3* T_to_W_bot(btrobot* robot, vect_3 *position); //find world position of location defined in tool frame

@@ -221,7 +221,13 @@ void eval_fk_bot(btrobot* robot) //forward kinematics
     getcol_mh(robot->tool->z,robot->tool->origin,2);
     getcol_mh(robot->tool->o,robot->tool->origin,3);
 }
+void eval_fk_bot(btrobot* robot) //forward jacobian
+{
+  // J = [J1J2J3J4J5...]
+  // Ji = z(i-1)X(On - O(i-1)]
+  //    = z(i-1)
 
+}
 /** Transform a point in Link[n] frame to the World frame.
 
 \param robot pointer to the robot object

@@ -123,7 +123,7 @@ int setmode_bts(btstatecontrol *sc, int mode)
     test_and_log(
       pthread_mutex_lock(&(sc->mutex)),"SCsetmode lock mutex failed");
       
-    if (getstate_bttrj(sc->trj) != BTTRAJ_DONE) stop_bttrj(sc->trj);
+    if (getstate_bttrj(sc->trj) != BTTRAJ_STOPPED) stop_bttrj(sc->trj);
     setqref_btpos(sc->pos,sc->q);
     eval_btpos(sc->pos,sc->q,sc->last_dt);
     sc->mode = mode;
