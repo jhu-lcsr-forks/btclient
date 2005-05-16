@@ -178,17 +178,6 @@ int main(int argc, char **argv)
       pthread_mutex_init(&(disp_mutex),NULL),
       "Could not initialize mutex for displays.");
   
-  /* Check and handle any command line arguments */
-  if(argc > 1)
-  {
-    if(!strcmp(argv[1],"-g")) // If gimbals are being used
-    {
-      initGimbals();
-      useGimbals = 1;
-      syslog(LOG_ERR, "Gimbals expected.");
-    }
-  }
-
 
   /* Initialize rtlinux subsystem */
   mysched.sched_priority = sched_get_priority_max(SCHED_FIFO) - 1;
@@ -199,8 +188,21 @@ int main(int argc, char **argv)
 
   mainTask = rt_task_init(nam2num("main01"), 0, 0, 0); /* defaults */
 
+  if(test_and_log(   
+    InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),"Fail
+ed to initialize system"))
+    {return -1;}
 
-
+  /* Check and handle any command line arguments */
+  if(argc > 1)
+  {
+    if(!strcmp(argv[1],"-g")) // If gimbals are being used
+    {
+      initGimbals();
+      useGimbals = 1;
+      syslog(LOG_ERR, "Gimbals expected.");
+    }
+  }
 
   /* Set up the WAM data structure, init kinematics, dynamics, haptics */
   err =  InitWAM("wam.dat");
@@ -213,6 +215,8 @@ int main(int argc, char **argv)
 
     }
     
+
+
   /* Obtain a pointer to the wam state object */
   wam = GetWAM();
 
