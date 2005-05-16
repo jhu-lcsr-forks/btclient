@@ -66,6 +66,8 @@ int initGimbals(void)
         
         //Wait 100ms for the pucks to come online
         usleep(100000);
+        setProperty(0,5,DIG0,FALSE,1);
+        setProperty(0,5,DIG1,FALSE,1);
 #if 0          
         /* Read the gain/offset information from the gimbals.dat file */
         if((inFile = fopen("gimbals.dat", "r")) == NULL)

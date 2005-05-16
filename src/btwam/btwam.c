@@ -67,7 +67,6 @@ to make it easier to find and maintaind later
 extern int shutdown_threads,sample_period2;
 extern double Sample_Period;
 wam_struct WAM;
-
 extern int gimbalsInit;
 
 #define LOW_TRQ_COEFFICIENT (0.75)
@@ -131,9 +130,6 @@ int InitWAM(char *wamfile)
   WAM.cteach.Log_Data = 0; ///cteach
   WAM.force_callback = BlankWAMcallback;
   
-  if(test_and_log(
-    InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),"Failed to initialize system"))
-    {return -1;}
     
   SetEngrUnits(1);
   if(test_and_log(
@@ -257,7 +253,6 @@ int LoadWAM(char *wamfile)
     return -1;
   }
 
-  
   fscanf(in,"%d, %d, %d, %d, %d, %d, %d",&(WAM.motor_position[0]),&(WAM.motor_position[1]),&(WAM.motor_position[2]),&(WAM.motor_position[3]),&(WAM.motor_position[4]),&(WAM.motor_position[5]),&(WAM.motor_position[6]));
   read_wam_vector(in,(WAM.zero_offsets));
   read_wam_vector(in,(WAM.stop_torque));
