@@ -144,7 +144,7 @@ int InitWAM(char *wamfile)
   link_geom_bot(&WAM.robot,0,0.0,0.0,0.0,-pi/2.0);
   link_geom_bot(&WAM.robot,1,0.0,0.0,0.0,pi/2.0);
   link_geom_bot(&WAM.robot,2,0.0,0.550,0.045,-pi/2.0);
-  link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
+  link_geom_bot(&WAM.robot,3,-pi/2.0,0.0,0.4,-pi/2.0);
   
   
   link_mass_bot(&WAM.robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
@@ -159,18 +159,18 @@ int InitWAM(char *wamfile)
      tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.000);
    }
   else if (WAM.num_actuators == 7){
-    link_geom_bot(&WAM.robot,4,0.0,0.3,0.0,-pi/2.0);
-    link_geom_bot(&WAM.robot,5,0.0,0.0,0.0,pi/2.0);
-    link_geom_bot(&WAM.robot,6,0.0,0.06091,0.0,0.0);
+    link_geom_bot(&WAM.robot,4,-pi/2.0,0.1547,0.0,pi/2.0);
+    link_geom_bot(&WAM.robot,5,0.0,0.0,0.0,-pi/2.0);
+    link_geom_bot(&WAM.robot,6,0.0,0.0,0.0,0.0);
     
-    link_mass_bot(&WAM.robot,3,C_v3(0.0,0.0,0.126),2.35);
-    link_mass_bot(&WAM.robot,4,C_v3(0.0,0.0,0.0),0.001);
-    link_mass_bot(&WAM.robot,5,C_v3(0.0,0.0,0.0),0.001);
-    link_mass_bot(&WAM.robot,6,C_v3(0.0,0.0,0.0),0.001);
+    link_mass_bot(&WAM.robot,3,C_v3(-0.2346,0.0,0.029),1.34);
+    link_mass_bot(&WAM.robot,4,C_v3(0.0,-0.1196,0.0405),0.98);
+    link_mass_bot(&WAM.robot,5,C_v3(0.0,-0.0776,-0.0657),0.384);
+    link_mass_bot(&WAM.robot,6,C_v3(0.0,-0.0022,-0.0747),0.378);
     
     tool_geom_bot(&WAM.robot,0.0,0.0,0.0,0.0);
     //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.001);
-    tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.000);
+    tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.000);
   }
   else {
     syslog(LOG_ERR,"Unknown robot type");
@@ -184,6 +184,8 @@ int InitWAM(char *wamfile)
     LoadWAM(wamfile),"Failed to load wam config file")) {return -1;}
 
   WAM.Gcomp = 0;
+  set_gravity_bot(&WAM.robot, 0.0);
+
 
   for(cnt = 0; cnt < 7; cnt++)
   {
