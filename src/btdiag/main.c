@@ -673,8 +673,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       break;
     case 'z': /* Send zero-position to WAM */
       // set_wam_vector(&wv, 0, 0, 0, 0, 0, 0, 0);
-      //const_vn(wv, 0.0, -2.017, -0.011, 0.88, 0.0, 0.0, 0.0); //gimbals
-      const_vn(wv, 0.0, -2.017, 0.0, 3.14, 0.0, 0.0, 0.0); //blanklink
+      const_vn(wv, 0.0, -2.017, 0.0, +2.46, 0.0, 0.0, 0.0); //gimbals
+      //const_vn(wv, 0.0, -2.017, 0.0, 3.14, 0.0, 0.0, 0.0); //blanklink
       SetWAMpos(wv);
       break;
     case '[': /* Select previous puck */
