@@ -1,0 +1,9 @@
+Quickstart:
+
+#cd src/btdiag
+#chmod 755 makeall run
+#./makeall
+
+Power up wam
+Idle wam
+#./run
