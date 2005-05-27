@@ -118,11 +118,11 @@ int InitWAM(char *wamfile)
   
   init_pwl(&WAM.pth,3,2); //Cartesian move path
 
-  for (cnt = 0; cnt < 4; cnt ++){
+  for (cnt = 0; cnt < 3; cnt ++){
     init_btPID(&(WAM.pid[cnt]));
     setgains_btPID(&(WAM.pid[cnt]),4000.0,20.0,0.0);
   }
-  setgains_btPID(&(WAM.pid[3]),50.0,1.5,0.0);
+  setgains_btPID(&(WAM.pid[3]),5.50,0.15,0.0);
   init_err_btPID(&(WAM.pid[3]));
 
   WAM.F = 0.0;
@@ -144,8 +144,6 @@ int InitWAM(char *wamfile)
   link_geom_bot(&WAM.robot,0,0.0,0.0,0.0,-pi/2.0);
   link_geom_bot(&WAM.robot,1,0.0,0.0,0.0,pi/2.0);
   link_geom_bot(&WAM.robot,2,0.0,0.550,0.045,-pi/2.0);
-  link_geom_bot(&WAM.robot,3,-pi/2.0,0.0,0.4,-pi/2.0);
-  
   
   link_mass_bot(&WAM.robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
   link_mass_bot(&WAM.robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
@@ -154,10 +152,32 @@ int InitWAM(char *wamfile)
   
   //init_wam_btrobot(&(WAM.robot));
    if (WAM.num_actuators == 4){
+     link_geom_bot(&WAM.robot,3,0.0,0.0,0.045,pi/2.0);
+     link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
+     tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
+     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),0.0);
+     /*
+      link_geom_bot(&WAM.robot,3,-pi/2.0,0.0,0.4,-pi/2.0);
      link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
      tool_geom_bot(&WAM.robot,0.0,0.3574,0.0,0.0);
-     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.000);
+     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.000);*/
    }
+  else if (WAM.num_actuators == 7){
+	  
+    link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
+    link_geom_bot(&WAM.robot,4,0.0,0.3,0.0,-pi/2.0);
+    link_geom_bot(&WAM.robot,5,0.0,0.0,0.0,pi/2.0);
+    link_geom_bot(&WAM.robot,6,0.0,0.06091,0.0,0.0);
+    
+    link_mass_bot(&WAM.robot,3,C_v3(0.0,0.0,0.17),2.765);
+    link_mass_bot(&WAM.robot,4,C_v3(0.0,0.0,0.0),0.0);
+    link_mass_bot(&WAM.robot,5,C_v3(0.0,0.0,0.0),0.0);
+    link_mass_bot(&WAM.robot,6,C_v3(0.0,0.0,0.0),0.0);
+    
+    tool_geom_bot(&WAM.robot,0.0,0.0,0.0,0.0);
+    //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.001);
+    tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.000);
+  }/* Gimbals
   else if (WAM.num_actuators == 7){
     link_geom_bot(&WAM.robot,4,-pi/2.0,0.1547,0.0,pi/2.0);
     link_geom_bot(&WAM.robot,5,0.0,0.0,0.0,-pi/2.0);
@@ -171,7 +191,8 @@ int InitWAM(char *wamfile)
     tool_geom_bot(&WAM.robot,0.0,0.0,0.0,0.0);
     //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.001);
     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.000);
-  }
+  }*/
+
   else {
     syslog(LOG_ERR,"Unknown robot type");
     return -1;
@@ -401,8 +422,11 @@ void WAMControlThread(void *data)
     for (cnt = 0; cnt < 3; cnt ++){
       setval_v3(WAM.Cforce,cnt,eval_btPID(&(WAM.pid[cnt]),getval_v3(WAM.Cpos,cnt), getval_v3(WAM.Cref,cnt), dt));
     }
-    WAM.qerr = GCdist_q(WAM.qref,WAM.qact);
-    set_v3(WAM.Ctrq,scale_v3(eval_err_btPID(&(WAM.pid[3]),WAM.qerr,dt),GCaxis_q(WAM.Ctrq,WAM.qref,WAM.qact)));
+    
+    set_q(WAM.qaxis,mul_q(WAM.qact,conj_q(WAM.qref)));
+    
+    WAM.qerr =GCdist_q(WAM.qact,WAM.qref); //acos(1.1);//
+    set_v3(WAM.Ctrq,scale_v3(eval_err_btPID(&(WAM.pid[3]),WAM.qerr,dt),GCaxis_q(WAM.Ctrq,WAM.qact,WAM.qref)));
     
     apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
     
@@ -853,16 +877,18 @@ void StopContinuousTeach()
   DLoff(&(WAM.cteach));
   CloseDL(&(WAM.cteach));
 }
+
 void ServiceContinuousTeach()
 {
   evalDL(&(WAM.cteach));
 }
+
 void registerWAMcallback(void *func)
 {
   if (func != NULL)
     WAM.force_callback = func;
-
 }
+
 int BlankWAMcallback(struct btwam_struct *wam)
 {
   return 0;

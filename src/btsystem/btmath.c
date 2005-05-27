@@ -13,13 +13,22 @@
  *======================================================================*/
 
 /** \file btmath.c
-    A common set of mathematical operations. Vector, Matrix, Quaternion
+    A common set of mathematical operations. 
+    
+    This code provides objects and methods for:
+    - N Element Vectors
+      - Optimization for 3 Element Vectors
+    - NxM Element Matrices
+      - Optimization for SO(3) (3x3 rotation matrices)
+      - Optimization for SE(3) (4x4 rotation & translation matrices)
+    - Quaternions
+    - Digital Filters
 
     The core functionality for vectors, matrices and quaternions are supported 
-    by the _vn, _mn, _q functions. Use these functions as a starting point in any
+    by the *_vn, *_mn, and *_q functions. Use these functions as a starting point in any
     algorithm you are developing. This is a performance library and so optimized 
-    fuctions are provided for specific cases. _v3 (3 element vector) _m3 (3x3 rotation
-    matrix) _qu (unit length rotation quaternion).  You may call any general functions 
+    fuctions are provided for specific cases. *_v3 (3 element vector) *_m3 (3x3 rotation
+    matrix) *_qu (unit length rotation quaternion).  You may call any general functions 
     on the optimized data types by normal C typecasting. For example, the following is
     valid code.
     \code 
@@ -40,6 +49,7 @@ a vector or matrix variable. Only declare pointers. The new_xx function expects 
 address of your pointer, and will allocate memory and redirect your pointer for you.
     
 \todo Add code and compiler switches for counting the number of operations.
+
 */
 
 #include <math.h>
@@ -52,14 +62,16 @@ address of your pointer, and will allocate memory and redirect your pointer for 
 
 #define MAX_LINE_LENGTH     255
 #define MAX_BTPTRS 1000
-#ifndef PI
-#define PI 3.141596
-#endif /*PI*/
 
 //#DEFINE VECT_N_DEBUG
 //#DEFINE VECT_N_BOUNDS  //perform bounds checking
 //#DEFINE MATR_N_DEBUG 
 
+/** @name Internal pointer list
+  These functions are used internally for keeping track of the memory allocated
+  for vector and matrix variables.
+*/
+//@{
 int num_btptrs = 0;
 void *btptrs[MAX_BTPTRS];
 
@@ -79,6 +91,13 @@ void freebtptr()
   for(cnt = 0;cnt < num_btptrs; cnt++)
     free(btptrs[cnt]);
 }
+//@}
+/** @name vect_n Initialization and Data Access Functions
+    N element vector functions.
+ */
+//@{
+/** Sets each element of a vector to the specified value
+*/
 BTINLINE void fill_vn(vect_n* dest, btreal val)
 {
   int cnt;
@@ -92,13 +111,19 @@ BTINLINE void fill_vn(vect_n* dest, btreal val)
   for (cnt=0;cnt < dest->n;cnt++)
     dest->q[cnt] = val;
 }
-/**
-  depending on how data is allocated, this library will behave differently. I am 
+/** Allocate memory for a vect_n object
+
+  \bug depending on how data is allocated, this library will behave differently. I am 
   starting with lots of data allocation, however, *r of each vector can probably 
   point to the same data structure. *u is not necessarily needed 
-  \param size Valid values >= 1
+  
   \todo Add file/string buffer read and write functions
   
+  new_vn() must be called for each vect_n object you wish to use. It allocates 
+  memory and sets each element of the vector to 0.0.
+  
+  \param size Valid values >= 1
+  \return A pointer to the newly created vect_n object
 */
 
 vect_n * new_vn(int size) //allocate an n-vector
@@ -136,16 +161,27 @@ vect_n * new_vn(int size) //allocate an n-vector
   fill_vn(n->ret,0.0);
   return n;
 }
+/** Free the memory of a vect_n object
+  This function frees the memory previously allocated. Instead of calling free_vn()
+  it is easier to call freebtptr() at the end of your program to free all the btmath
+  objects.
+*/
 void free_vn(vect_n *p)
 {
   free(p);
 }
-
+/** Returns the number of elements in src
+*/
 int len_vn(vect_n *src) //number of elements in the vector
 {
   return src->n;
 }
-int sizeof_vn(vect_n *src); //return sizeof info for whole vector
+/** Returns the memory footprint of vect_n src
+*/
+int sizeof_vn(vect_n *src) //return sizeof info for whole vector
+{
+  return 2*size*sizeof(btreal)+2*sizeof(vect_n);
+}
 
 /** Allocate a group of pointers
 \bug This should just allocate one chunk of memory instead of calling new_vn 
@@ -166,7 +202,8 @@ int new_vn_group(int num, int size, ...) //allocate a group of n-vectors
     va_end(ap);
 
 }
-
+/** Copy src vect_n to dest vect_n
+*/
 BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
 {
   int cnt,max;
@@ -204,22 +241,20 @@ BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
     dest->q[cnt] = src->q[cnt];
   
 }
-/** 
-\bug this function was created before I was checking for the size of both vectors
-in set_vn. It is obsolete now but a similar function might be useful. 
-setrange_vn(vect_n* dest, vect_n* src, int dest_start, int src_start, int num)
+/** Copy a block of elements from src vect_n to dest vect_n
 */
-void setrange_vn(vect_n* dest, vect_n* src, int start, int end) //assignment, copy
+void setrange_vn(vect_n* dest, vect_n* src, int dest_start, int src_start, int num)
 {
   int cnt,max;
   
   //th Add vector size checking code here
-  
-  for (cnt=start;cnt < end;cnt++)
-    dest->q[cnt] = src->q[cnt];
-  
-}
+  for (cnt=0;cnt < num;cnt++)
+    dest->q[dest_start + cnt] = src->q[src_start + cnt];
 
+}
+/** Copy elements of vect_n src to a btreal array
+
+*/
 BTINLINE void extract_vn(btreal* dest, vect_n* src) //copy vector to a btreal array
 {
   int cnt;
@@ -228,12 +263,15 @@ BTINLINE void extract_vn(btreal* dest, vect_n* src) //copy vector to a btreal ar
     dest[cnt] = src->q[cnt];
   
 }
-
+/** Return a pointer to the btreal array used by this vect_n object
+*/
 BTINLINE btreal* valptr_vn(vect_n* src)
 {
   return src->q;
 }
+/** Copy elements of a btreal array to vect_n src
 
+*/
 BTINLINE void inject_vn(vect_n* dest, btreal* src) //copy btreal array to vector
 {
   int cnt;
@@ -241,7 +279,11 @@ BTINLINE void inject_vn(vect_n* dest, btreal* src) //copy btreal array to vector
   for (cnt=0;cnt < dest->n;cnt++)
     dest->q[cnt] = src[cnt];
 }
+/** Set the value of a single element in vect_n dest
 
+\param dest Target vect_n object
+\param idx Index of desired element of dest. The first element is idx=0.
+*/
 BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
 {
    #ifdef VECT_N_BOUNDS
@@ -260,7 +302,11 @@ BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
   //th Add vector size checking code here
   dest->q[idx] = val;
 }
+/** Returns the value of a single element in vect_n dest
 
+\param dest Target vect_n object
+\param idx Index of desired element of dest. The first element is idx=0.
+*/
 BTINLINE btreal getval_vn(vect_n* dest, int idx)
 {
    #ifdef VECT_N_BOUNDS
@@ -278,7 +324,7 @@ BTINLINE btreal getval_vn(vect_n* dest, int idx)
   
   return dest->q[idx];
 }
-/**
+/** Set the values of a vect_n object
 \bug If the function arguments are constant integers (instead of constant btreals)
 you will get bogus results and segfaults. ex: const_vn(&t1,2.0,3.0,3.0) is OK, const_vn(&t1,2,3,3) is NOT
 */
@@ -296,7 +342,7 @@ vect_n* const_vn(vect_n* a, ...) //set vector to a constant array of btreals
     va_end(ap);
   return a;
 }
-/**
+/** Initialize a single element of dest to 1.0
 \bug No bounds checking for i
 */
 BTINLINE void einit_vn(vect_n* dest,int i) // einit_vn(&a,3) = <0,0,0,1,0>
@@ -305,8 +351,15 @@ BTINLINE void einit_vn(vect_n* dest,int i) // einit_vn(&a,3) = <0,0,0,1,0>
   dest->q[i] = 1.0;
   //setval_vn(dest,1.0);
 }
+//@}
+/** @name vect_n Operator Functions
+    N element vector operation functions.
+ */
+//@{
+/** Vector Negate
 
-
+a[i] = -1.0 * a[i]
+*/
 BTINLINE vect_n* neg_vn(vect_n* a) //negate a vector
 {
   int cnt;
@@ -315,7 +368,10 @@ BTINLINE vect_n* neg_vn(vect_n* a) //negate a vector
     a->ret->q[cnt] = -1.0*a->q[cnt];
   return a->ret;
 }
+/** Vector Scalar Multiply
 
+a[i] = x * a[i]
+*/
 BTINLINE vect_n* scale_vn(btreal x, vect_n* a)
 {
   int cnt;
@@ -324,7 +380,10 @@ BTINLINE vect_n* scale_vn(btreal x, vect_n* a)
     a->ret->q[cnt] = x*a->q[cnt];
   return a->ret;
 }
+/** Vector Addition
 
+ret[i] = a[i] + b[i]
+*/
 BTINLINE vect_n* add_vn(vect_n* a, vect_n* b)
 {
   int cnt;
@@ -333,7 +392,10 @@ BTINLINE vect_n* add_vn(vect_n* a, vect_n* b)
     a->ret->q[cnt] = a->q[cnt] + b->q[cnt];
   return a->ret;
 }
+/** Vector Subtraction
 
+ret[i] = a[i] - b[i]
+*/
 BTINLINE vect_n* sub_vn(vect_n* a, vect_n* b)
 {
   int cnt;
@@ -344,6 +406,10 @@ BTINLINE vect_n* sub_vn(vect_n* a, vect_n* b)
 }
 BTINLINE vect_n* wedge_vn(vect_n* a, vect_n*b) // need to figure this out
 {}
+/** Vector Dot Product
+
+ret = a[0] * b[0] + ... + a[i] * b[i]
+*/
 BTINLINE btreal  dot_vn(vect_n* a, vect_n* b)
 {
   int cnt;
@@ -353,6 +419,10 @@ BTINLINE btreal  dot_vn(vect_n* a, vect_n* b)
     res += a->q[cnt] * b->q[cnt];
   return res;
 }
+/** Vector Norm
+
+ret = sqrt(dot_vn(a,b));
+*/
 BTINLINE btreal  norm_vn(vect_n* a) //euclidian norm
 {
   btreal res = 0.0;
@@ -362,29 +432,121 @@ BTINLINE btreal  norm_vn(vect_n* a) //euclidian norm
     res += a->q[cnt] * a->q[cnt];
   return sqrt(res);
 }
+/** Unit Vector
 
+ret = a/norm_vn(a);
+*/
 BTINLINE vect_n* unit_vn(vect_n* a) //unit vector
 {
   btreal div;
     int cnt;
   //th Add vector size checking code here
   div = norm_vn(a);
-  if (div != 0.0){
+  if (div > PRACTICALLY_ZERO){
     for (cnt=0;cnt < a->n;cnt++)
       a->ret->q[cnt] = a->q[cnt]/div;
   }
   else{
     for (cnt=0;cnt < a->n;cnt++)
-      a->ret->q[cnt] = 0;
+      a->ret->q[cnt] = 0.0;
   }
   return a->ret;
 }
 
+/** Interpolate between two vectors
+
+Returns a point that is distance s along the line from a to b. The direction
+towards b is considered positive
+
+\param s Distance along line from a to b
+\param a Starting point
+\param b End point
+\return add_vn(a,scale_vn(s,unit_vn(sub_vn(b,a))));
+*/
 vect_n* interp_vn(vect_n* a, vect_n* b,btreal s)
 {
   return add_vn(a,scale_vn(s,unit_vn(sub_vn(b,a))));
 }
+/** Force a vect_n to be in the range min value to max value (inclusive)
 
+  If the value of any element in the vector is out of range, it is set to the 
+  closest boundary value.
+
+*/
+BTINLINE vect_n* bound_vn(vect_n* a, btreal min, btreal max)
+{
+  int cnt;
+  //th Add vector size checking code here
+  for (cnt=0;cnt < a->n;cnt++){
+    if (a->q[cnt] > max) a->ret->q[cnt] = max;
+    else if (a->q[cnt] < min) a->ret->q[cnt] = min;
+  }
+  return a->ret;
+  
+}
+//@}
+/** @name vect_n per element operator Functions
+    Vector math functions that treat vectors as arrays of btreals
+ */
+//@{
+/** Per Element Multiply
+
+ret[i] = a[i] * b[i]
+*/
+BTINLINE vect_n* e_mul_vn(vect_n* a, vect_n* b) // Per Element multiply
+{
+  int cnt;
+  //th Add vector size checking code here
+  for (cnt=0;cnt < a->n;cnt++)
+    a->ret->q[cnt] = a->q[cnt] * b->q[cnt];
+  return a->ret;
+}
+/** Per element power
+
+
+ret[i] = a[i]^b
+*/
+BTINLINE vect_n* e_pow_vn(vect_n* a, btreal b)
+{
+  int cnt;
+  //th Add vector size checking code here
+  for (cnt=0;cnt < a->n;cnt++)
+    a->ret->q[cnt] = pow(a->q[cnt], b);
+  return a->ret;
+}
+/** Per element square root
+
+ret[i] = sqrt(a[i])
+*/
+BTINLINE vect_n* e_sqrt_vn(vect_n* a)
+{
+  int cnt;
+  //th Add vector size checking code here
+  for (cnt=0;cnt < a->n;cnt++)
+    a->ret->q[cnt] = sqrt(a->q[cnt]);
+  return a->ret;
+}
+/** Per element square
+
+ret[i] = a[i]^2
+*/
+BTINLINE vect_n* e_sqr_vn(vect_n* a)
+{
+  int cnt;
+  //th Add vector size checking code here
+  for (cnt=0;cnt < a->n;cnt++)
+    a->ret->q[cnt] =  a->q[cnt] * a->q[cnt];
+  return a->ret;
+}
+//@}
+/** @name vect_n Input/Output Functions
+    Functions for vect_n screen and file IO
+ */
+//@{
+/** Use printf to print values of a vect_n
+
+This function prints three lines for each vector. Consider using sprint_vn instead.
+*/
 void print_vn(vect_n* src)
 {
   int i,j;
@@ -397,7 +559,9 @@ void print_vn(vect_n* src)
 }
 /** Print vect_n to a string buffer suitable for display or text file
 
-"< 1.2, 2.4, 5.3>"
+\code
+< 1.2, 2.4, 5.3>
+\endcode
 */
 char* sprint_vn(char *dest,vect_n* src)
 {
@@ -414,8 +578,9 @@ char* sprint_vn(char *dest,vect_n* src)
 /** Print vect_n to a string buffer suitable for insertion into a comma delimited
 file.
 
-" 1.2, 2.4, 5.3"
-
+\code
+ 1.2, 2.4, 5.3
+\endcode
 */
 char* sprint_cvs_vn(char *dest,vect_n* src)
 {
@@ -427,55 +592,8 @@ char* sprint_cvs_vn(char *dest,vect_n* src)
     dest[strlen(dest)-1] = 0;
   }
 }
-BTINLINE vect_n* bound_vn(vect_n* a, btreal min, btreal max)
-{
-  int cnt;
-  //th Add vector size checking code here
-  for (cnt=0;cnt < a->n;cnt++){
-    if (a->q[cnt] > max) a->ret->q[cnt] = max;
-    else if (a->q[cnt] < min) a->ret->q[cnt] = min;
-  }
-  return a->ret;
-  
-}
-BTINLINE vect_n* e_mul_vn(vect_n* a, vect_n* b) // Per Element multiply
-{
-  int cnt;
-  //th Add vector size checking code here
-  for (cnt=0;cnt < a->n;cnt++)
-    a->ret->q[cnt] = a->q[cnt] * b->q[cnt];
-  return a->ret;
-}
-/** Per element power
-*/
-BTINLINE vect_n* e_pow_vn(vect_n* a, btreal b)
-{
-  int cnt;
-  //th Add vector size checking code here
-  for (cnt=0;cnt < a->n;cnt++)
-    a->ret->q[cnt] = pow(a->q[cnt], b);
-  return a->ret;
-}
-/** Per element square root
-*/
-BTINLINE vect_n* e_sqrt_vn(vect_n* a)
-{
-  int cnt;
-  //th Add vector size checking code here
-  for (cnt=0;cnt < a->n;cnt++)
-    a->ret->q[cnt] = sqrt(a->q[cnt]);
-  return a->ret;
-}
-/** Per element square
-*/
-BTINLINE vect_n* e_sqr_vn(vect_n* a)
-{
-  int cnt;
-  //th Add vector size checking code here
-  for (cnt=0;cnt < a->n;cnt++)
-    a->ret->q[cnt] =  a->q[cnt] * a->q[cnt];
-  return a->ret;
-}
+
+
 /** Counts number of double values in string to be parsed.
 The string must be in comma delimited format. It ends with the
 end-vector delimiter provided. ' ' for the start delimiter is considered to be
@@ -572,8 +690,10 @@ vect_n * strto_vn(vect_n *dest,char *src,char *delimiters)
 
   return dest;
 }
-/** Convert a string to a vect_n
+/** Create a new vect_n and convert a string to a vect_n
+
   A new vect_n of the appropriate size is allocated during the course of this function
+  
 \param src "< -1, 3.4e3, ,+.9>" - Empty values interpreted as 0.0
 
 */
@@ -692,7 +812,11 @@ int test_vn(btreal error)
   
   
 }
-
+//@}
+/** @name Vector Array Functions
+    These functions are for manipulating arrays of vectors.
+ */
+//@{
 
 /**************************************** End vect_n functions ****************/
 
@@ -732,51 +856,82 @@ void destroy_vr(vectray *vr)
   free(vr->rayvect);
   free(vr);
 }
-/**
-  sets the internal vector structure to point to the indexed data and returns the
-  pointer. CAUTION! You cannot use this in _vn math functions
+/** Set internal vect_n proxy to the specified index.
+ 
+You probably want to use getvn_vr instead!
+
+sets the internal vector structure to point to the indexed data and returns the
+  pointer. CAUTION! You cannot use this in _vn math functions. only use this with 
+  set_vn()
+  
+  
 */
 BTINLINE vect_n * idx_vr(vectray *ray,int idx)
 {
   ray->rayvect->q = ray->data + ray->n * idx;
   return ray->rayvect;
 }
+/** Reroute a vect_n data pointer to a block of data in a vector array
+
+This is a dangerous function to use. Read the code for more info.
+*/
+/* Use this when you need to do multi vector operations on elements of a
+vectray but you don't want to copy the data each time. You are essentially using
+an externally allocated vect_n for scratch space. Do a search of the code for 
+examples of use.
+*/
 BTINLINE vect_n * mapdat_vr(vect_n *dest, vectray *ray, int idx)
 {
   dest->q = ray->data + ray->n * idx;
   return dest;
 }
+/** Copy vect_n elements of a vectray element to another vect_n
+
+
+*/
 BTINLINE vect_n * getvn_vr(vect_n *dest,vectray *ray, int idx)
 {
   ray->rayvect->q = ray->data + ray->n * idx;
   set_vn(dest,ray->rayvect);
   return dest;
 }
+
+/** Add a vect_n to the array of vect_n's
+
+*/
 BTINLINE void append_vr(vectray *ray, vect_n* v)
 {
+  //<! \bug Check to see if we are exceeding the bounds
   set_vn(idx_vr(ray,ray->lastrow),v);
   ray->lastrow++;
 }
+/** Returns the index of the last element in ray */
 BTINLINE int endof_vr(vectray *ray)
 {
   return ray->lastrow - 1;
 }
+/** 
+\bug This needs to be changed to another name. the sizeof_ function should return the memory footprint. th050526
+*/
+/** Returns the present number of elements in ray */
 BTINLINE int sizeof_vr(vectray *ray)
 {
   return (ray->lastrow );
 }
+/** Returns the maximum number of elements in ray */
 BTINLINE int size_vr(vectray *ray)
 {
   return (ray->rows );
 }
+/** Erases all the elements in ray */
 BTINLINE void clear_vr(vectray *ray)
 {
   ray->lastrow = 0;
 }
 
-/** Conversion of init_traj_file to us vectorarrays
+/** Read a csv file and create a new vectray for the values.
 */
-int read_cvs_file_vr(char *fileName, vectray **vr)
+int read_csv_file_vr(char *fileName, vectray **vr)
 {
     char        line[MAX_LINE_LENGTH];
     int         charCt, i, row, columnCt;
@@ -866,19 +1021,20 @@ int test_vr(btreal error)
     print_vn(idx_vr(vr,cnt));
   }
   
-  read_cvs_file_vr("test.csv",&vr2);
+  read_csv_file_vr("test.csv",&vr2);
   for (cnt = 0; cnt < size_vr(vr2); cnt++){
     print_vn(idx_vr(vr2,cnt));
   }
 }
+//@}
 /**************************************** End vectray functions ****************/
-/**************************************** End vect_n functions ****************/
-/**************************************** End vect_n functions ****************/
 /********************** vect_3 functions **************************************/
-/**
-  depending on how data is allocated, this library will behave differently. I am 
-  starting with lots of data allocation, however, *r of each vector can probably 
-  point to the same data structure. *u is not necessarily needed 
+
+/** @name 3 Element Vector Optimized Functions
+    These functions are optimized for 3 element vectors.
+ */
+//@{
+/** Optimized for 3 element vectors.  See fill_vn()
 */
 BTINLINE void fill_v3(vect_3* dest, btreal val)
 {
@@ -886,7 +1042,8 @@ BTINLINE void fill_v3(vect_3* dest, btreal val)
   dest->q[1] = val;
   dest->q[2] = val;
 }
-
+/** Optimized for 3 element vectors.  See new_vn()
+*/
 vect_3 * new_v3() //allocate an n-vector
 {
   void* vmem;
@@ -910,7 +1067,8 @@ vect_3 * new_v3() //allocate an n-vector
   return n;
 
 }
-
+/** See set_vn()
+*/
 BTINLINE vect_3* set_v3(vect_3* dest, vect_3* src)
 {
   dest->q[0] = src->q[0];
@@ -918,6 +1076,8 @@ BTINLINE vect_3* set_v3(vect_3* dest, vect_3* src)
   dest->q[2] = src->q[2];
   return dest;
 }
+/** Optimized for 3 element vectors. See const_vn()
+*/
 BTINLINE vect_3* const_v3(vect_3* dest, btreal v1, btreal v2, btreal v3)
 {
   dest->q[0] = v1;
@@ -942,15 +1102,18 @@ BTINLINE vect_3* C_v3(btreal v1, btreal v2, btreal v3)
   scratch.q[2] = v3;
   return &scratch;
 }
-
+/** Optimized for 3 element vectors. See setval_vn()
+*/
 BTINLINE void setval_v3(vect_3* dest, int idx, btreal val)
 { dest->q[idx] = val; }
-
+/** Optimized for 3 element vectors. See getval_vn()
+*/
 BTINLINE btreal getval_v3(vect_3* dest, int idx)
 { return dest->q[idx];}
 
 
-
+/** Optimized for 3 element vectors. See neg_vn()
+*/
 BTINLINE vect_3* neg_v3(vect_3* a)
 {
   a->ret->q[0] = -1.0 * a->q[0];
@@ -958,7 +1121,8 @@ BTINLINE vect_3* neg_v3(vect_3* a)
   a->ret->q[2] = -1.0 * a->q[2];
   return a->ret;
 }
-
+/** Optimized for 3 element vectors. See scale_vn()
+*/
 BTINLINE vect_3* scale_v3(btreal x, vect_3* a)
 {
   a->ret->q[0] = x * a->q[0];
@@ -966,7 +1130,8 @@ BTINLINE vect_3* scale_v3(btreal x, vect_3* a)
   a->ret->q[2] = x * a->q[2];
   return a->ret;
 }
-
+/** Optimized for 3 element vectors. See add_vn()
+*/
 BTINLINE vect_3* add_v3(vect_3* a, vect_3* b)
 {
   a->ret->q[0] = a->q[0] + b->q[0];
@@ -974,7 +1139,8 @@ BTINLINE vect_3* add_v3(vect_3* a, vect_3* b)
   a->ret->q[2] = a->q[2] + b->q[2];
   return a->ret;
 }
-
+/** Optimized for 3 element vectors. See sub_vn()
+*/
 BTINLINE vect_3* sub_v3(vect_3* a, vect_3* b)
 {
   a->ret->q[0] = a->q[0] - b->q[0];
@@ -982,7 +1148,8 @@ BTINLINE vect_3* sub_v3(vect_3* a, vect_3* b)
   a->ret->q[2] = a->q[2] - b->q[2];
   return a->ret;
 }
-
+/** Optimized for 3 element vectors. See cross_vn()
+*/
 BTINLINE vect_3* cross_v3(vect_3* a, vect_3*b)
 {
   btreal q[3];
@@ -994,17 +1161,20 @@ BTINLINE vect_3* cross_v3(vect_3* a, vect_3*b)
   a->ret->q[2] = q[2];
   return a->ret;
 }
-
+/** Optimized for 3 element vectors. See dot_vn()
+*/
 BTINLINE btreal  dot_v3(vect_3* a, vect_3* b)
 {
   return (a->q[0]*b->q[0] + a->q[1]*b->q[1] + a->q[2]*b->q[2]);
 }
-
+/** Optimized for 3 element vectors. See norm_vn()
+*/
 BTINLINE btreal  norm_v3(vect_3* a)
 {
   return sqrt(a->q[0]*a->q[0] + a->q[1]*a->q[1] + a->q[2]*a->q[2]);
 }
-
+/** Optimized for 3 element vectors. See unit_vn()
+*/
 BTINLINE vect_3* unit_v3(vect_3* a)
 {
   btreal div;
@@ -1021,7 +1191,8 @@ BTINLINE vect_3* unit_v3(vect_3* a)
   }
   return a->ret;
 }
-
+/** Optimized for 3 element vectors. See print_vn()
+*/
 void print_v3(vect_3* src)
 {
   int i,j;
@@ -1032,6 +1203,8 @@ void print_v3(vect_3* src)
     printf(">");
 
 }
+/** Optimized for 3 element vectors. See sprint_vn()
+*/
 char* sprint_v3(char *dest,vect_3* src)
 {
   int i,j;
@@ -1094,10 +1267,13 @@ int test_v3(btreal error)
   print_v3(cross_v3(c1,c2));
   
 }
-
+//@}
 /**************************************** End vect_3 functions ****************/
 /********************** quat functions **************************************/
-
+/** @name Quaternion Functions
+    These functions operate on 4 element vectors (quaternions).
+ */
+//@{
 BTINLINE void fill_q(quat* dest, btreal val)
 {
   dest->q[0] = val;
@@ -1392,10 +1568,13 @@ vect_3* GCaxis_q(vect_3* dest, quat* start, quat* end)
 }
 /** Return the angle of rotation represented by a unit quaternion.
 \param src A unit quaternion
+\bug We constrian q[0] to be positive
 */
 btreal angle_q(quat* src)
 {
-  return acos(src->q[0])*2.0;
+  if (src->q[0] > 1.0) src->q[0] = 1.0;
+  if (src->q[0] < -1.0) src->q[0] = -1.0;
+  return acos(fabs(src->q[0]))*2.0;
 }
 /** Set vector dest to the axis of rotation defined by quaternion src
 \param src A quaternion
@@ -1403,18 +1582,32 @@ Givin a unit quaternion q (used to rotate vector v) it can be decomposed
 into subcomponents (a, b*u) where a and b are scalars and u is a unit vector.
 u is the axis of the rotation given by q and theta is the angle of rotation.
 a = cos(theta/2) ; b = sin(theta/2) 
+
+\bug We insure that the axis is given relative to a positive angle 0 - pi
 */
 vect_3* axis_q(vect_3* dest, quat* src) 
 {
-  dest->q[0] = src->q[1];
-  dest->q[1] = src->q[2];
-  dest->q[2] = src->q[3];
+	btreal flip = 1.0;
+  if (src->q[0] < 0.0) flip = -1.0;
+  
+  dest->q[0] = flip * src->q[1];
+  dest->q[1] = flip * src->q[2];
+  dest->q[2] = flip * src->q[3];
+  
   set_v3(dest,unit_v3(dest));
   return dest;
 }
+//@}
 /********************** quat functions **************************************/
 
 /********************** matr_h functions **************************************/
+
+/** @name matr_h - SE(3) Optimized Matrix Functions
+    These functions are optimized to operate on the subset of SE(3) that applies 
+    to physical systems. In particular, Rotation and Translation are supported, 
+    skewing and reflecting are not.
+ */
+//@{
 /** Allocates memory and calculation swap space for a new homogeneous matrix.
 
   All matrices need to be initialized with new. It is preferable to declare 
@@ -1691,8 +1884,14 @@ int bench_mh()
   
   
 }
+//@}
 /**************************************** End matr_h functions ****************/
 /********************** matr_3 functions **************************************/
+/** @name matr_3 - SO(3) Optimized Matrix Functions
+    These functions are optimized to operate on SO(3).
+ */
+//@{
+  /** Allocate and initialize a new matr_3 object. See new_mh() */
 matr_3 * new_m3() //allocates memory and sets to identity
 {
   return(new_mh());
@@ -1940,6 +2139,12 @@ BTINLINE matr_3* XYZftoR_m3(matr_3* R, vect_3* XYZ) //Return R
   setrow_m3(R,2,-sb,cb*sg,cb*cg);
   return R;
 }
+//@}
+/******************************************************************************/
+/** @name btfilter - Digital Filter Functions
+    These functions are for digital filtering.
+ */
+//@{
 
 /** Allocates memory for and initializes a btfilter object.
 
@@ -2028,7 +2233,8 @@ void  init_btfilter_diff(btfilter *filt, int order, btreal sample_time, btreal c
     btreal woT;
     btreal temp;
     int i;
-
+    const btreal pi = 3.14159265359;
+    
     filt->index = 0;
     filt->order = order;
     for(i=0; i<=4; i++)
@@ -2039,25 +2245,25 @@ void  init_btfilter_diff(btfilter *filt, int order, btreal sample_time, btreal c
 
     if(order == 1)
     {
-        woT = sample_time*cutoffHz*2.0*PI;
+        woT = sample_time*cutoffHz*2.0*pi;
         temp = 1.0/(2+woT);
 
         filt->d[1] = 0.0;
         filt->d[0] = -(2-woT)*temp;
 
-        filt->n[1] = 2.0*cutoffHz*PI*2.0*temp;
+        filt->n[1] = 2.0*cutoffHz*pi*2.0*temp;
         filt->n[0] = -(filt->n[1]);
     }
     else if(order == 2)
     {
-        woT = sample_time*cutoffHz*2.0*PI;
+        woT = sample_time*cutoffHz*2.0*pi;
         temp = 1.0/ ( 4.0*(1.0+woT) + woT*woT  );
 
         filt->d[2] = 0.0;
         filt->d[1] = -(8.0 - 2.0*woT*woT) * temp;
         filt->d[0] = ( 4.0*(1.0-woT) + woT*woT  ) * temp;
 
-        filt->n[2] = 2.0*cutoffHz*PI*2.0*woT * temp;
+        filt->n[2] = 2.0*cutoffHz*pi*2.0*woT * temp;
         filt->n[1] = 0.0;
         filt->n[0] = -(filt->n[2]);
     }
@@ -2113,6 +2319,7 @@ void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz)
   double woT;
   double uu, uu2;
   int i;
+  const btreal pi = 3.14159265359;
   
   filt->index = 0;
   filt->order = 2;
@@ -2124,7 +2331,7 @@ void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz)
   }
   
 
-    woT = sample_time*cutoffHz*2.0*PI;
+    woT = sample_time*cutoffHz*2.0*pi;
     uu  = 2.0/woT;
     uu2 = uu*uu;
     
@@ -2138,11 +2345,11 @@ void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz)
     
     filt->d[2] = 0.0;
 }
-
+//@)
 
 BTINLINE btreal atan2_bt(btreal arg1, btreal arg2)
 {
-  /* returns angle from -PI to PI */
+  /* returns angle from -pi to pi */
   const btreal pi = 3.14159265359;
 
   
@@ -2162,7 +2369,7 @@ BTINLINE btreal atan2_bt(btreal arg1, btreal arg2)
   {
     if(arg1 >= 0.0)
     {
-      return(PI - atan(arg1 / arg2));
+      return(pi - atan(arg1 / arg2));
     }
     else
     {
@@ -2186,6 +2393,7 @@ btreal interp_bt(btreal x1, btreal y1, btreal x2, btreal y2, btreal x)
     else
         return (y2+y1)/2;
 }
+
 /*
 btfilter_vn * new_btfilter_vn(int size,int vsize)
 {

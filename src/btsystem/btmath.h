@@ -15,11 +15,6 @@
 #ifndef _BTMATH_H
 #define _BTMATH_H
 
-
-#ifndef PI
-#define PI 3.141596
-#endif /*PI*/
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -35,9 +30,19 @@ extern "C"
 //#define BTINLINE  
 #define BTINLINE inline
 #define MAX_VECTN_SIZE 100 //size of temporary doubles used for sscan_vn
+
 typedef double btreal;
-/** Btmemlist maintains a list of all pointers allocated by
-  the btmath code and provides a function to free them all at once */
+
+/** The list of all pointers allocated by btmath
+
+  Btmemlist maintains a list of all pointers allocated by
+  the btmath code and provides a function to free them all at once.
+  This functionality is used internally. See addbtptr() for more 
+  details. freebtptr() should be called at the end of every program
+  that uses the btsystem library.
+  
+  
+*/
 typedef struct {
   int n,max;      //size of vector
   void **plist;  //pointer to data
@@ -45,12 +50,46 @@ typedef struct {
 
 void addbtptr(void *ptr);
 void freebtptr();
-/** 
+
+/** An N element vector object.
+
+vect_n is a linear algebra vector object. The elements are of type btreal. Function
+definitions are in btmath.c. This 
+object is optimized for speed and prefix notation. It occupies twice the memory
+you would expect to accomplish this. In addition to standard vector math operations
+there are some functions that will map an operation to the vector as an array of btreals 
+similar to what matlab can do.
+
+The vect_n object operator functions can be nested in prefix function form. set_vn() 
+is the assignment function.
+
+See new_vn(), and set_vn() for more information. A typical block of code using vect_n looks like:
+
+\code 
+      vect_n *a,*b; 
+      
+        //create a new object (required)
+      a = new_vn(4);
+      b = new_vn(4);
+      
+      const_vn(a,4.4,5.5,6.5,7.7);
+      
+      //b = a + 4 * a + a * a + a
+      set_vn(b,add_vn(a,
+               add_vn(scale_vn(4.0,a),
+               add_vn(mul_vn(a,a),a))));
+\endcode
+
+
 \bug We should add a compiler define switched set of code to each function to
 add in bounds checking and verbose error reporting
 
   Rules: The output of any function can be used as the input of another. The leftmost
   argument will hold the results;
+  
+  WARNING! There is no bounds checking in the code. All vect_n objects must be created 
+  with new_vn() and if you are mixing vectors of different sizes be careful to read the
+  btmath.c code so that you understand the dangers of doing so. 
 */
 
 typedef struct barrett_vect_n{
@@ -67,7 +106,7 @@ int sizeof_vn(vect_n *src); //return sizeof info for whole vector
 int new_vn_group(int num, int size, ...); //allocate a group of n-vectors
 
 void set_vn(vect_n* dest, vect_n* src); //assignment, copy
-void setrange_vn(vect_n* dest, vect_n* src, int start, int end); //assignment, copy
+void setrange_vn(vect_n* dest, vect_n* src, int dest_start, int src_start, int num);
 void extract_vn(btreal* dest, vect_n* src); //copy vector to a btreal array
 void inject_vn(vect_n* dest, btreal* src); //copy btreal array to vector
 btreal* valptr_vn(vect_n* src); //return a pointer to the btreal array holding the data
@@ -108,9 +147,33 @@ vect_n * cvsto_vn(vect_n* dest, char *src); //Convert a string into a vect_n
 int test_vn(btreal error); //test & verification suite
 
 /*===================== Vector Arrays=============================*/
-/** this deals with arrays of vectors of the same size. A block of data 
-is allocated all at once in the beginning. The vect_n data type is used to 
-access it.
+/** A vector array object, each vector has the same number of elements.
+
+vectray is an object for holding arrays of vectors of the same size. Function
+definitions are in btmath.c.
+A block of data is allocated all at once in the beginning. The vect_n data type 
+is used to access it. All vectray objects must be created with new_vr().
+
+\code
+int test_vr(void)
+{
+  vectray *vr,*vr2;
+  int cnt,idx;
+  
+  vr = new_vr(3,10);
+  for (cnt = 0; cnt < 10; cnt++){
+    fill_vn(idx_vr(vr,cnt),cnt);
+    set_vn(idx_vr(vr,cnt),scale_vn(2.0,idx_vr(vr,cnt)));
+    print_vn(idx_vr(vr,cnt));
+  }
+  
+  read_csv_file_vr("test.csv",&vr2);
+  for (cnt = 0; cnt < size_vr(vr2); cnt++){
+    print_vn(idx_vr(vr2,cnt));
+  }
+}
+\endcode
+
 */
 typedef struct barrett_vectarray_n{
   btreal *data;
@@ -137,13 +200,15 @@ void remove_vr(vectray *ray, int idx);
 void clear_vr(vectray *ray); //erase everything and set it to zero
 
 //File I/O
-int read_cvs_file_vr(char *fileName, vectray **vr);
+int read_csv_file_vr(char *fileName, vectray **vr);
 
 int test_vr(btreal error);
 /*===================== Vector List=============================*/
 /** this deals with arrays of vectors of the same size. A block of data 
 is allocated dynamically. The vect_n data type is used to 
 access it.
+
+\bug This code is not yet implemented (and not yet necessary)
 */
 typedef struct barrett_vectlist_n{
   vect_n *head,*tail;
@@ -161,7 +226,25 @@ void append_vl(vectlist *vl, vect_n* v);
 
 
 /*=======================================================================*/
+/** A vect_n object optimized for 3 elements
 
+vect_3 is structurally compatible with vect_n. As such, they can be typecast
+as each other and used in each others functions. set_v3() 
+is the assignment function. See new_v3(), and set_v3() for more. Function
+definitions are in btmath.c.
+
+\code
+vect_n *a;
+vect_3 *b;
+
+a = new_vn(5);
+b = new_v3();
+
+fill_v3((vect_3*)a,1.0); //= <1.0, 1.0, 1.0, 0.0, 0.0>
+set_v3(b,(vect_3*)a); //b= <1.0, 1.0, 1.0>
+set_v3(b,neg_vn((vect_n*)b)); //b= <-1.0, -1.0, -1.0>
+\endcode
+*/
 typedef struct barrett_vect_3{
   struct barrett_vect_3* ret;  
   int n;      //size of vector
@@ -200,7 +283,20 @@ void print_v3(vect_3* src);
 /*=======================================================================*/
 
 /*=======================Quaternion===========================================*/
+/** Quaternion object
 
+The quat object is a quaternion; a 4 element imaginary number.
+q = a + b*i + c*j + d*k 
+
+The quaternion is stored in vector form as <a,b,c,d>. The quaternion objects use 
+the same prefix function form as the vect_n object (and quat can be typecast as a
+vect_n).
+
+See new_q(), and set_q() for more. Function
+definitions are in btmath.c.
+
+
+*/
 typedef struct barrett_quat{
   struct barrett_quat* ret;  
   int n;      //size of vector
@@ -274,6 +370,8 @@ void print_mh(matr_h* src);
 int test_mh(btreal error);
 /*=======================================================================*/
 /** 3x3 rotation matrix
+
+Function definitions are in btmath.c.
 */
 typedef struct barrett_matr_h matr_3;
 
@@ -304,6 +402,8 @@ matr_3* q_to_R(matr_3* dest, quat* src);
 //vect_3* RPY_m3(matr_3* src); //return Roll pitch yaw
 /*=======================================================================*/
 /** general matrix.
+
+Function definitions are in btmath.c.
 */
 typedef struct barrett_matr_mn{
   struct barrett_matr_mn *ret;
@@ -326,7 +426,13 @@ void print_mn(matr_mn* src);
 int test_mn(btreal error);
 
 /*=======================================================================*/
-/* Define the Filter structure */
+/** A digital filter object
+
+btfilter is a digital filter object. new_btfilter() allocates memory for a new object.
+init_btfilter_*() will create simple generic filters. eval_btfilter() is used for the
+actual filter calculation. See new_btfilter() for more. Function definitions are in btmath.c.
+
+*/
 typedef struct
 {
   int   order;             // FIRST_ORDER, SECOND_ORDER, OR FOURTH_ORDER

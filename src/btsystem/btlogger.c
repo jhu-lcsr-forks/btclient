@@ -1,6 +1,6 @@
 /*======================================================================*
  *  Module .............libbtsystem
- *  File ...............doubblebuffer.c
+ *  File ...............btlogger.c
  *  Author .............Traveler Hauptman   
  *  Creation Date ......April 3, 2003
  *                                                                      *
@@ -15,7 +15,10 @@
  *======================================================================*/
 
 /** \file btlogger.c
-\bug the code demo does not work yet
+    Realtime data logging functionality
+
+Typical usage is shown in the following pseudo code
+
 \code
 btlogger log;
 double a,b,c[3];
@@ -44,6 +47,9 @@ void loop()
     TriggerDL(&log);
   }
 }
+\endcode
+
+\bug the code demo does not work yet
 */
 #include <syslog.h>
 #include "btlogger.h"

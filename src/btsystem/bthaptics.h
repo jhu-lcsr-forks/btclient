@@ -49,7 +49,6 @@ typedef struct {
   double radius;
 }bthaptic_sphere;
 
-
 int new_bthaptic_scene(bthaptic_scene *bth, int size);
 vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *wamTipLoc, vect_n *tipforce);
 int addobject_bth(bthaptic_scene *bth,bthaptic_object *object);
@@ -61,7 +60,6 @@ int eval_haptic_plane_bth(bthaptic_object *obj, vect_n *wamTipLoc, vect_n *resul
 typedef struct {
   vect_3 *center,*outside,*inside; //Center and size of box
   matr_3 *orient; //orientation of box
-  
 }bthaptic_box;
 
 typedef struct { //sugical box
@@ -73,8 +71,7 @@ typedef struct { //sugical box
   btreal Bout;
   btreal B;
   btreal F;
-
-}bthaptic_sbox; 
+}bthaptic_sbox;
 
 #ifdef __cplusplus
 }

@@ -55,6 +55,7 @@
 #include "btmath.h"
 #include "btrobot.h"
 #include "btlogger.h"
+#include "bthaptics.h"
 
 /*==============================*
  * PRIVATE DEFINED constants    *
@@ -93,7 +94,7 @@ int active = 0;
 int npucks;
 int cpuck = 0;
 int entryLine;
-
+bthaptic_scene bth;
 
 long saved_bus_error = 0;
 int modes[15] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -139,6 +140,7 @@ void clearScreen(void);
 void finish_entry(void);
 void start_entry(void);
 void init_ncurses(void);
+int WAMcallback(struct btwam_struct *wam);
 
 /*==============================*
  * Functions                    *
@@ -233,7 +235,8 @@ ed to initialize system"))
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
 
   npucks = wam->num_actuators; // Get the number of initialized actuators
-
+  new_bthaptic_scene(&bth,10);
+  registerWAMcallback(WAMcallback);
   start_control_threads(10, 0.002, WAMControlThread, (void *)0);
 
   signal(SIGINT, sigint_handler); //register the interrupt handler
@@ -260,6 +263,12 @@ ed to initialize system"))
   CloseDL(&(wam->log));
   DecodeDL("datafile.dat","dat.csv",1);
   freebtptr();
+}
+
+int WAMcallback(struct btwam_struct *wam)
+{
+  eval_bthaptics(&bth,(vect_n*)wam->Cpos,(vect_n*)wam->Cforce);
+  return 0;
 }
 
 /* Initialize the ncurses screen library */
@@ -617,27 +626,26 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         SCsetmode(&(wam->sc[Mid]), SCMODE_TORQUE);
       }
       break;
-    case 'H': // Set ALL joint controllers to Torque mode
+    case 'H': // Cartesian controller on
       set_v3(wam->Cref,wam->Cpos);
-      
       fer(cnt, 3) {
         start_btPID(&(wam->pid[cnt]));
       }
       break;
-    case 'h': // Set ALL joint controllers to Torque mode
+    case 'h': // Cartesian controller off
       
       fer(cnt, 3) {
         stop_btPID(&(wam->pid[cnt]));
       }
       break;
-    case 'N': // Set ALL joint controllers to Torque mode
+    case 'N': // Angular controller on
       
       set_q(wam->qref,wam->qact);
       
         start_btPID(&(wam->pid[3]));
       
       break;
-    case 'n': // Set ALL joint controllers to Torque mode
+    case 'n': // angular controller off
       
       
         stop_btPID(&(wam->pid[3]));
@@ -673,7 +681,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       break;
     case 'z': /* Send zero-position to WAM */
       // set_wam_vector(&wv, 0, 0, 0, 0, 0, 0, 0);
-      const_vn(wv, 0.0, -2.017, 0.0, +2.46, 0.0, 0.0, 0.0); //gimbals
+      const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
       //const_vn(wv, 0.0, -2.017, 0.0, 3.14, 0.0, 0.0, 0.0); //blanklink
       SetWAMpos(wv);
       break;

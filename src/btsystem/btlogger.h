@@ -42,7 +42,7 @@ typedef struct
   void *data; //!< pointer to the data start
   char name[50]; //!< null terminated string describing the data. No ','s allowed
 }btdata_info;
-/** btlogger object
+/** Data logging object
 
 btlogger is used for buffering data in a high speed thread and writing the data
 to disk in a low speed thread. btlogger uses two buffers. It records data to one 
@@ -55,7 +55,7 @@ Terminology:
  - Field: One piece of data. Per field info is stored in a btdata_info structure
  - Record: One set of Fields. This represents all the data that needs to be recorded.
  
- 
+Function definitions are in btlogger.c.
 */
 typedef struct
 {

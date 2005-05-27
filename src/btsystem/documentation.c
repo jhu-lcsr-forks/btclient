@@ -2,10 +2,18 @@
 
 \mainpage Barrett Technology WAM control code library
 
+\section qs Programming Quickstart
+
+To learn to write software for the WAM Barrett recommends the following course.
+
+- Follow the quickstart sheet shipped with the WAM to get the WAM set up and runnig.
+- Compile and run each of the example programs
+- Read the code of the example programs
+- Scan through the list of Barrett code library functions
+- Read the code for btdiag 
+
  \section intro Introduction
 
-NOTE: this document has not been updated since 2003
- 
  The Barrett Technology software library provides the following functionality.
 
 -# Communication with the safety module and motor controllers on the CAN bus using Barrett’s proprietary communications protocol.
@@ -21,24 +29,29 @@ To best utilize the WAM system the programmer will want to develop some familiar
 
 The following is an overview of the library functionality and what code files provide the functionality. 
 
-The pucks in the WAM are controlled through a serial CAN bus. btcan.c provides a minimal set of functions for communicating with the WAM pucks using the PCI CAN communications card that shipped with your WAM. For most WAM programming, communications to the WAM pucks is handled by functions defined in btsystem.c and btwam.c but the programmer should still develop a basic knowledge of btcan.c.
+  \section fctly Borrett Module Functionality
 
- btsystem.c provides functions for keeping track of and working with a set of actuators. An actuator is the combination of a motor and its motor controller. The actuator data structures maintain information on calibration values for a specific motor/controller pair and handles conversion to and from engineering units. btsystem.c does not assume any kinematic structure or physical organization. btsystem.c maintains a database of actuators that is stored in configuration files. It simplifies communication with actuators to insulate the programmer from the btcan.c functions which are more complex.
+Essential:
+- btwam.c: This is the primary file used for controlling the WAM.
 
- The pucks apply torques commanded by the PC and reads the angle of the motor. The  control loop of the WAM must be closed by the QNX computer attached to the WAM. This requires consistent and deterministic timing. QNX  is a real-time operating system well suited to this type of task. There are many approaches to closing the time-critical control  loop. Barrett Technology has provided one solution to help jump-start the programmer. These timing functions are contained in control_loop.c. Any program you write for the WAM must have a function to implement the control thread. Typically you will start by copying the function we provide and modifying it as necessary. The name of this function is passed to the start_control_threads() function which will take care of registering your function with the timing functions so that your control thread is called regularly.
+Useful funtionality:
+- btmath.c: vector and matrix library
+- btrobot.c: robot kinematics & dynamics
+- btlogger.c: realtime data logging
+- btpath.c: space curves for use as trajectories or haptic objects
+- btcontrol.c: Control objects. PID, etc.
+- btcontrol_virt.c: virtualize objects for btcontrol
+- bthaptics.c: simple haptics library
+- btjointcontrol.c: jointspace state controller
 
- In addition to the timing functions provided by control_loop.c, Barrett Technology has also provided a series of functions for providing simple motion control. SimpleControl.c defines the SimpleCtl structure, has functions for PID regulators, Trapezoidal trajectory profiles, and thread-safe ways to switch control states on the robot. These functions are generic, one-dimensional and meant to be used not just in our control functions but whenever the mathematics of these algorithms are needed in your own code.
+Mostly internal use:
+- btcan.c: CAN bus communication code
+- btos.c: OS abstractions for easier porting
+- btparser.c: Config file parser
+- btsystem.c: Bussed actuators communication & management code
+- control_loop.c: realtime thread initialization
+- playlist.c: point to point playlist funcionality for btjointcontrol
+- serial.c: serial comm library
 
- playlist.c provides functionality for recording and playing back multiple trajectories for multiple SimpleCtl controllers. doublebuffer.c  provides some helper functions for highspeed data logging but will require some modification on the part of the programmer for your specific application.
-
- btwam.c brings together all of the above libraries into a set of high-level commands. btwam.c does not duplicate any functionality provided by the underlying layers. Instead it is meant to save time for simple projects. btwam.c provides functions for homing the robot and moving the joints to specific positions.  btwam.c also provides the wam_vector data structure and mathematical functions for converting positions and torques between motor space and joint space. See Appendix B in the WAM system manual for details on these calculations.
-
- The Barrett Software library maintains a set of configuration files. They must be located in the directory of the executable. Appendix A gives the details of each file format. They are as follows:
-  -# buses.dat : Database of communications busses used.
-  -# motors.dat : Database of motor serial numbers and calibration values
-  -# pucks.dat : Database of puck serial numbers and calibration values
-  -# actuators.dat : Specifies the number of actuators in your system and which motors are paired with which pucks and which bus that puck is on.
-  -# wam.dat : Specifies wam specific information including home positions, PID gains, and which actuators are connected to which robot joint. 
-  -# motor##.tr : One file for each motor where ## is replaced  by the motor serial number. These files contain the torque ripple cancellation data.
 
 */
