@@ -180,7 +180,7 @@ int len_vn(vect_n *src) //number of elements in the vector
 */
 int sizeof_vn(vect_n *src) //return sizeof info for whole vector
 {
-  return 2*size*sizeof(btreal)+2*sizeof(vect_n);
+  return 2*src->n*sizeof(btreal)+2*sizeof(vect_n);
 }
 
 /** Allocate a group of pointers
