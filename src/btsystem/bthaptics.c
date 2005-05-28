@@ -32,7 +32,7 @@ int new_bthaptic_scene(bthaptic_scene *bth, int size)
 /**
  each object adds it's effect to the tipforce
 */
-vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *wamTipLoc, vect_n *tipforce)
+vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force)
 {
   static int i;
 
@@ -40,7 +40,7 @@ vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *wamTipLoc, vect_n *tipforce)
   {
     if(bth->list[i] != NULL)
     {
-      (*(bth->list[i]->interact))(bth->list[i],wamTipLoc,tipforce);
+      (*(bth->list[i]->interact))(bth->list[i],pos,vel,acc,force);
     }
 
   }
@@ -68,6 +68,9 @@ void removeobject_bth(bthaptic_scene *bth,int index)
 {
   bth->list[index] = NULL;
 }
+
+
+
 
 int initplane_btg( bthaptic_plane *inputPlane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3)
 {
@@ -118,4 +121,41 @@ int eval_haptic_plane_bth(bthaptic_object *obj, vect_n *wamTipLoc, vect_n *resul
                      scale_v3(obj->K*Dist + obj->B*Vel,thisPlane->normal)));
 
     }
+}
+
+int eval_wicked_plane_bth(bthaptic_object *obj, vect_n *wamTipLoc, vect_n *resultForce)
+{
+
+  double Dist;
+  btreal Vel,WallStiff,WallDamp;
+  bthaptic_plane *thisPlane;
+  int state;
+  
+  thisPlane = (bthaptic_plane *) (obj->data);
+  
+  Dist = dot_v3(thisPlane->normal,(vect_3*)wamTipLoc) - thisPlane->distance;
+  Vel = eval_btfilter(obj->filt,Dist);
+  
+  
+  if (state = 0){//outside
+    if (Dist < 0.0) state = 1;
+  }
+  if (state == 1){
+    if (Dist < thisPlane->thk) state = 2;
+    else if (Dist > 0.0) state = 0;
+    else {
+      WallStiff = -1.0*obj->K*Dist;
+    }
+  }
+  if (state == 2){
+    if (Dist > 0.0) state = 0;
+  }
+  
+  if (Dist + obj->Boff < 0.0){
+    if(Vel < 0.0) WallDamp = -1.0 * obj->Bin*Vel;
+    else if (Vel > 0.0) WallDamp = obj->Bout*Vel;
+  }
+  set_v3((vect_3*)resultForce,
+             add_v3((vect_3*)resultForce,
+                     scale_v3(WallStiff + WallDamp,thisPlane->normal)));
 }

@@ -21,68 +21,41 @@ extern "C"
 #endif/* __cplusplus */
 #include "btmath.h"
 
-typedef struct bthaptic_object_struct{
-  int type;
-  int (*interact)(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force);
-  void *geom,*effect;
-  int idx;
-  //spatial info
-  
-}bthaptic_object;
+//Geometry
+typedef struct {
+  vect_3 *pos,*vel,*acc; //Normal of plane
+  btfilter_vn velfilt,accfilt;
+}btgeom_state;
+
+init_state_btg(btgeom_state *bts,btreal samplerate,btreal cutoffHz);
+eval_state_btg(btgeom_state *bts,vect_3* pos);
 
 typedef struct {
-  bthaptic_object **list;
-  int num_objects;
-  int max_objects;
-}bthaptic_scene;
-//Geometry
-
-typedef struct { 
-  btreal K,B;
-}bteffect_wall;
- 
-typedef struct { 
-  btreal Boffset; //Relative start of damping
-  btreal K2; //second stage spring constant
-  btreal K2offset; //Distance into wall second spring constant starts
-  btreal K1; //first stage spring constant
-  btreal Bin; //damping as you move into the wall
-  btreal Bout; //damping as you move out of the wall
-}bteffect_bulletproofwall;
-
-typedef struct { 
-  int state; //outside, inside, brokethru
-  btreal Boffset; //Relative start of damping
-  btreal Breakoffset; //Distance into wall second spring constant starts
-  btreal K1; //first stage spring constant
-  btreal Bin; //damping as you move into the wall
-  btreal Bout; //damping as you move out of the wall
-}bteffect_wickedwall;
-
-int new_bthaptic_scene(bthaptic_scene *bth, int size);
-vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force)
-int addobject_bth(bthaptic_scene *bth,bthaptic_object *object);
-void removeobject_bth(bthaptic_scene *bth,int index);
+  vect_3 *start,*end; //Normal of plane
+}btgeom_lineseg;
 
 
-int initplaneobj_bth(bthaptic_object *inputObj, bthaptic_plane *inputPlane, btreal K, btreal B);
-int eval_haptic_plane_bth(bthaptic_object *obj, vect_n *wamTipLoc, vect_n *resultForce);
+typedef struct {
+  vect_3 *normal; //Normal of plane
+  btreal distance; //Distance from origin to plane in direction of normal
+}btgeom_plane;
+
+int initplane_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3);
+btreal D_Pt2Pl(btgeom_plane *plane, vect_3 *point);
+//vect_3* I_Li2Pl(
+
+typedef struct {
+  vect_3 center;
+  double radius;
+}btgeom_sphere;
+
+int initsphere_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2);
+btreal D_Pt2Sp(btgeom_sphere *sp, vect_3 *pt);
 
 typedef struct {
   vect_3 *center,*outside,*inside; //Center and size of box
   matr_3 *orient; //orientation of box
-}bthaptic_box;
-
-typedef struct { //sugical box
-  vect_3 *center,*inner,*outer; //Center and size of box
-  matr_3 *orient; //orientation of box
-  btreal Kouter; //Spring constant of inner wall
-  btreal Kinner;
-  btreal Bin;
-  btreal Bout;
-  btreal B;
-  btreal F;
-}bthaptic_sbox;
+}btgeom_box;
 
 #ifdef __cplusplus
 }

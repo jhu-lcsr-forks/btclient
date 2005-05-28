@@ -2183,10 +2183,10 @@ btfilter * new_btfilter(int size)
   addbtptr(vmem);
   ptr = (btfilter*)vmem;
   ptr->d = (btreal*)(vmem + sizeof(btfilter));
-  ptr->n = (btreal*)(vmem + sizeof(btfilter) + size*sizeof(btreal));
-  ptr->x = (btreal*)(vmem + sizeof(btfilter) + 2*size*sizeof(btreal));
-  ptr->y = (btreal*)(vmem + sizeof(btfilter) + 3*size*sizeof(btreal));
-  ptr->size = size;
+  ptr->n = (btreal*)(vmem + sizeof(btfilter) + size_*sizeof(btreal));
+  ptr->x = (btreal*)(vmem + sizeof(btfilter) + 2*size_*sizeof(btreal));
+  ptr->y = (btreal*)(vmem + sizeof(btfilter) + 3*size_*sizeof(btreal));
+  ptr->size = size_;
   return ptr;
 }
 
@@ -2394,13 +2394,16 @@ btreal interp_bt(btreal x1, btreal y1, btreal x2, btreal y2, btreal x)
         return (y2+y1)/2;
 }
 
-/*
+
 btfilter_vn * new_btfilter_vn(int size,int vsize)
 {
   void *vmem;
   btfilter *ptr;
+  int size_;
   
-  if ((vmem = malloc(sizeof(btfilter))) == NULL) 
+  size_ = size;
+  if (size_ < 5) size_ = 5;
+  if ((vmem = malloc(sizeof(btfilter_vn))) == NULL) 
   {
     syslog(LOG_ERR,"btmath: filter memory allocation failed");
     return NULL;
@@ -2408,13 +2411,64 @@ btfilter_vn * new_btfilter_vn(int size,int vsize)
   addbtptr(vmem);
   ptr = (btfilter*)vmem;
   
-  ptr->d = (btreal*)(vmem + sizeof(btfilter));
-  ptr->n = (btreal*)(vmem + sizeof(btfilter) + size*sizeof(btreal));
-  ptr->x = (btreal*)(vmem + sizeof(btfilter) + 2*size*sizeof(btreal));
-  ptr->y = (btreal*)(vmem + sizeof(btfilter) + 3*size*sizeof(btreal));
+  ptr->d = new_vr(vsize,size_);
+  ptr->n = new_vr(vsize,size_);
+  ptr->x = new_vr(vsize,size_);
+  ptr->y = new_vr(vsize,size_);
+  
   return ptr;
 }
-*/
+
+vect_n * eval_btfilter_vn(btfilter_vn *filt, vect_n *xnew);
+{
+    int       i,idx;
+    btreal      ynew;
+
+
+    idx = filt->index;
+
+    set_vn(idx_vr(filt->x,idx),xnew);
+    fill_vn(idx_vr(filt->y,idx),0.0);
+    
+    for (i=0; i<=filt->order; i++)
+      set_vn(idx_vr(filt->y,idx),
+             add_vn(e_mul_vn(idx_vr(filt->n,i),idx_vr(filt->x,(idx+i+1)%(filt->order+1))),
+             add_vn(scale_vn(-1.0,e_mul_vn(idx_vr(filt->d,i),idx_vr(filt->y,(idx+i+1)%(filt->order+1)))),
+                    idx_vr(filt->y,idx))));
+             
+    filt->index = (++idx) % (filt->order+1);
+
+    return(idx_vr(filt->y,idx));
+}
+void  init_btfilter_vn_butterworth_diff(btfilter_vn *filt, int order, btreal sample_time, btreal cutoffHz)
+{
+  
+  double woT,wo;
+  double norm;
+  int i;
+  
+  filt->index = 0;
+  filt->order = 2;
+  
+  for(i=0; i<=4; i++)
+    {
+        fill_vn(idx_vr(filt->x,i),0.0);
+        fill_vn(idx_vr(filt->y,i),0.0);
+    }
+  wo = cutoffHz;
+  woT = wo*sample_time;
+  
+  norm = 1+sqrt(2.0)*woT+woT*woT;
+  
+  fill_vn(idx_vr(filt->n,0),0.0);
+  fill_vn(idx_vr(filt->n,1),-woT*wo/norm);
+  fill_vn(idx_vr(filt->n,2),wo*wo/norm);
+  
+  fill_vn(idx_vr(filt->d,0),1/norm);
+  fill_vn(idx_vr(filt->d,1),-(2+sqrt(2.0)*woT)/norm);
+  fill_vn(idx_vr(filt->d,2),0.0);
+  
+}
 
 /*======================================================================*
  *                                                                      *

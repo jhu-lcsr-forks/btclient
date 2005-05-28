@@ -55,6 +55,7 @@ to make it easier to find and maintaind later
 #include "btcan.h"
 #include "btsystem.h"
 #include "control_loop.h"
+#include "btwam_internal.h"
 #include "btwam.h"
 #include "btrobot.h"
 

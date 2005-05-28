@@ -471,7 +471,7 @@ typedef struct
 } btfilter_vn;
 btfilter_vn * new_btfilter_vn(int size,int vsize);
 vect_n * eval_btfilter_vn(btfilter_vn *filt, vect_n *xnew);
-void  init_btfilter_vn_diff(btfilter_vn *filt, int order, btreal sample_time, btreal cutoffHz);
+void  init_btfilter_vn_butterworth_diff(btfilter_vn *filt, int order, btreal sample_time, btreal cutoffHz);
 
 
 

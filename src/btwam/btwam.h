@@ -168,43 +168,25 @@ typedef struct btwam_struct{
 
 
 
-
-int ActAngle2Mpos(vect_n *Mpos); //Extracts actuators 0 thru 6 into vect_n positions
-int Mtrq2ActTrq(vect_n *Mtrq);  //Packs vect_n of torques into actuator array
-void Mpos2Jpos(vect_n * Mpos, vect_n * Jpos); //convert motor angle to joint angle
-void Jpos2Mpos(vect_n * Jpos, vect_n * Mpos);
-void Jtrq2Mtrq(vect_n * Jtrq, vect_n * Mtrq); //conbert joint torque to motor torque
-
-void GetJointPositions();
-void SetJointTorques();
-
-int read_vect_n(FILE *in,vect_n *wv);
-int write_vect_n(FILE *out,vect_n *wv);
-int dump_vect_n(vect_n *wv);
-
-void getWAMjoints(vect_n *Mpos,vect_n *Mtrq,vect_n *Jpos,vect_n *Jtrq);
 int MotorID_From_ActIdx(int idx);
 
 wam_struct * GetWAM(void);
 
 int InitWAM(char *wamfile);
 void CloseWAM();
-SimpleCtl * GetWAMsc();
-int LoadWAM(char *wamfile);
-void SaveWAM(char *wamfile);
-void DumpWAM2Syslog();
+void SetWAMpos(vect_n *wv);
 void WAMControlThread(void *data);
+
 int getGcomp();
 void setGcomp( int onoff);
 void toggleGcomp();
 
 void getLagrangian4(double *A, double *B, double *C, double *D);
 
-void SetWAMpos(vect_n *wv);
+
 void MoveWAM(vect_n *pos);
 void MovePropsWAM(vect_n *vel, vect_n *acc);
 void CartesianMoveWAM(vect_n *pos, btreal vel, btreal acc); 
-void ParkWAM();
 
 // Continuous Teach & Play Recording
 void StartContinuousTeach(int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
