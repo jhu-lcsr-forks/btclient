@@ -71,76 +71,71 @@ void removeobject_bth(bthaptic_scene *bth,int index)
 
 
 
-
-int initplane_btg( bthaptic_plane *inputPlane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3)
-{
-  vect_3 * rel2;
-  vect_3 * rel3;
-
-  rel2 = new_v3();
-  rel3 = new_v3();
-  
-  set_v3(rel2,sub_v3(pt2,pt1));
-  set_v3(rel3,sub_v3(pt3,pt2));
-  set_v3(inputPlane->normal,unit_v3(cross_v3(rel2,rel3)));
-  inputPlane->distance = dot_v3(inputPlane->normal, pt1);
-  
-}
 /**
 \bug this uses a digital filter which assumes constant sample period and the sample rate and
 cutoff freq are hard coded
 */
-int initplaneobj_bth(bthaptic_object *inputObj, bthaptic_plane *inputPlane, btreal K, btreal B)
+int init_normal_plane_bth(bthaptic_object *obj, btgeom_plane *plane, void*nfobj,void*nffunc)
 {
-  
-  inputObj->interact = eval_haptic_plane_bth;
-  inputObj->data = (void *) inputPlane;
-  inputObj->filt = new_btfilter(5);
-  init_btfilter_butterworth_diff(inputObj->filt,.002,20);
-  inputObj->K = K;
-  inputObj->B = B;
+  init_state_btg(&(obj->Istate),0.002,30);
+  obj->interact = eval_geom_normal_interact_bth;
+  obj->collide = D_Pt2Pl;
+  obj->geom = (void *) plane;
+  obj->normalforce = nffunc;
+  obj->norm_eff = nfobj;
 }
 
-int eval_haptic_plane_bth(bthaptic_object *obj, vect_n *wamTipLoc, vect_n *resultForce)
+int eval_geom_normal_interact_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force)
 {
+  (*(obj->collide))(obj,pos,obj->Istate.pos);
+  //eval_state_btg(&(obj->Istate),obj->Istate.pos);
+  (*(obj->normalforce))(obj,obj->Istate.pos,vel,acc,force);
+}
 
-  double Dist;
-  btreal Vel;
-  bthaptic_plane *thisPlane;
+void init_wall(bteffect_wall *wall,btreal K, btreal B)
+{
+  wall->K = K;
+  wall->B = B;
+}
+
+int wall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force)
+{
+  btreal Dist,K,B;
+  bteffect_wall *norm_eff;
+  staticv3 udistmem;
+  vect_3* udist;
   
-  thisPlane = (bthaptic_plane *) (obj->data);
+  udist = init_staticv3(&udistmem);
   
-  Dist = dot_v3(thisPlane->normal,(vect_3*)wamTipLoc) - thisPlane->distance;
-  Vel = eval_btfilter(obj->filt,Dist);
+  Dist = norm_v3((vect_3*)dist);
+  set_v3(udist,unit_v3((vect_3*)dist));
   
+  norm_eff = (bteffect_wall*)obj->norm_eff;
   if(Dist < 0.0) //we are on the "negative" side of the plane
     {
-      /* push towards base, opposite normal (is this right?) */
-      set_v3((vect_3*)resultForce,
-             add_v3((vect_3*)resultForce,
-                     scale_v3(obj->K*Dist + obj->B*Vel,thisPlane->normal)));
+      set_v3((vect_3*)force,
+             add_v3((vect_3*)force,
+                     scale_v3(norm_eff->K*Dist + norm_eff->B*dot_v3(udist,(vect_3*)vel),udist)));
 
     }
 }
 
-int eval_wicked_plane_bth(bthaptic_object *obj, vect_n *wamTipLoc, vect_n *resultForce)
+int wickedwall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force)
 {
+  btreal Dist,K,B;
+  bteffect_wickedwall *norm_eff;
+  staticv3 udistmem;
+  vect_3* udist;
+  
+  udist = init_staticv3(&udistmem);
+  Dist = norm_v3((vect_3*)dist);
+  set_v3(udist,unit_v3((vect_3*)dist));
+  norm_eff = (bteffect_wickedwall*)obj->norm_eff;
 
-  double Dist;
-  btreal Vel,WallStiff,WallDamp;
-  bthaptic_plane *thisPlane;
-  int state;
-  
-  thisPlane = (bthaptic_plane *) (obj->data);
-  
-  Dist = dot_v3(thisPlane->normal,(vect_3*)wamTipLoc) - thisPlane->distance;
-  Vel = eval_btfilter(obj->filt,Dist);
-  
-  
-  if (state = 0){//outside
-    if (Dist < 0.0) state = 1;
+  if (norm_eff->state = 0){//outside
+    if (Dist < 0.0) norm_eff->state = 1;
   }
-  if (state == 1){
+  if (norm_eff->state == 1){
     if (Dist < thisPlane->thk) state = 2;
     else if (Dist > 0.0) state = 0;
     else {

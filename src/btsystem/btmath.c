@@ -1067,6 +1067,24 @@ vect_3 * new_v3() //allocate an n-vector
   return n;
 
 }
+
+vect_3 * init_staticv3(staticv3 *sv3)
+{
+  vect_3 *n;
+  
+  n = &sv3->main;
+  n->n = 3;
+  n->ret = &sv3->scratch;
+  n->q = n->data;
+  n->ret->n = 3;
+  n->ret->q = n->ret->data;
+  n->ret->ret = n->ret;
+  fill_v3(n,0.0);
+
+  return n;
+}
+
+
 /** See set_vn()
 */
 BTINLINE vect_3* set_v3(vect_3* dest, vect_3* src)

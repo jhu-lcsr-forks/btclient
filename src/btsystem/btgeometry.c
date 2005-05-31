@@ -35,7 +35,7 @@ eval_state_btg(btgeom_state *bts,vect_3* pos)
   set_v3(bts->acc,(vect_3*)eval_btfilter_vn(bts->accfilt, bts->vel));
 }
 
-int initplane_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3)
+int init_pl_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3)
 {
   vect_3 * rel2;
   vect_3 * rel3;
@@ -50,8 +50,10 @@ int initplane_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3)
   
 }
 
-btreal D_Pt2Pl(btgeom_plane *plane, vect_3 *point)
+btreal D_Pt2Pl(vect_3 *dist,btgeom_plane *plane, vect_3 *point)
 {
-   Dist = dot_v3(thisPlane->normal,(vect_3*)wamTipLoc) - thisPlane->distance;
-
+  btreal Dist;
+  Dist = dot_v3(plane->normal,point) - plane->distance;
+  set_v3(dist,scale_v3(Dist,plane->normal));
+  return Dist;
 }

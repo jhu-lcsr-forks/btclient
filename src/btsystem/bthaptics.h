@@ -24,10 +24,11 @@ extern "C"
 typedef struct bthaptic_object_struct{
   int type;
   int (*interact)(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force);
-  void *geom,*effect;
+  int (*collide)(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *dist);
+  int (*nomalforce)((struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
+  void *geom,*norm_eff,*tang_eff;
+  btgeom_state Istate;
   int idx;
-  //spatial info
-  
 }bthaptic_object;
 
 typedef struct {
@@ -36,10 +37,19 @@ typedef struct {
   int max_objects;
 }bthaptic_scene;
 //Geometry
+int new_bthaptic_scene(bthaptic_scene *bth, int size);
+vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force)
+int addobject_bth(bthaptic_scene *bth,bthaptic_object *object);
+void removeobject_bth(bthaptic_scene *bth,int index);
+
+
+int init_normal_plane_bth(bthaptic_object *obj, btgeom_plane *plane, void*nfobj,void*nffunc)
 
 typedef struct { 
   btreal K,B;
 }bteffect_wall;
+void init_wall(bteffect_wall *wall,btreal K, btreal B);
+int wall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
  
 typedef struct { 
   btreal Boffset; //Relative start of damping
@@ -49,6 +59,8 @@ typedef struct {
   btreal Bin; //damping as you move into the wall
   btreal Bout; //damping as you move out of the wall
 }bteffect_bulletproofwall;
+void init_bulletproofwall(bteffect_wall *wall,btreal K, btreal B);
+int bulletproofwall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
 
 typedef struct { 
   int state; //outside, inside, brokethru
@@ -58,31 +70,11 @@ typedef struct {
   btreal Bin; //damping as you move into the wall
   btreal Bout; //damping as you move out of the wall
 }bteffect_wickedwall;
-
-int new_bthaptic_scene(bthaptic_scene *bth, int size);
-vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force)
-int addobject_bth(bthaptic_scene *bth,bthaptic_object *object);
-void removeobject_bth(bthaptic_scene *bth,int index);
+void init_wickedwall(bteffect_wall *wall,btreal K, btreal B);
+int wickedwall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
 
 
-int initplaneobj_bth(bthaptic_object *inputObj, bthaptic_plane *inputPlane, btreal K, btreal B);
-int eval_haptic_plane_bth(bthaptic_object *obj, vect_n *wamTipLoc, vect_n *resultForce);
 
-typedef struct {
-  vect_3 *center,*outside,*inside; //Center and size of box
-  matr_3 *orient; //orientation of box
-}bthaptic_box;
-
-typedef struct { //sugical box
-  vect_3 *center,*inner,*outer; //Center and size of box
-  matr_3 *orient; //orientation of box
-  btreal Kouter; //Spring constant of inner wall
-  btreal Kinner;
-  btreal Bin;
-  btreal Bout;
-  btreal B;
-  btreal F;
-}bthaptic_sbox;
 
 #ifdef __cplusplus
 }

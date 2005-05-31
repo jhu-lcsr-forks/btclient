@@ -252,7 +252,12 @@ typedef struct barrett_vect_3{
   btreal data[3];
 }vect_3;
 
+typedef struct {
+  vect_3 main,scratch;
+}staticv3;
+
 vect_3 * new_v3(); //allocate an n-vector
+vect_3 * init_staticv3(staticv3 *sv3);
 vect_3* set_v3(vect_3* dest, vect_3* src); //assignment, copy
 void extract_v3(btreal* dest, vect_3* src); //copy vector to a btreal array
 void inject_v3(vect_3* dest, btreal* src); //copy btreal array to vector

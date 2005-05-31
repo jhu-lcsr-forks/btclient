@@ -30,6 +30,7 @@ typedef struct {
 init_state_btg(btgeom_state *bts,btreal samplerate,btreal cutoffHz);
 eval_state_btg(btgeom_state *bts,vect_3* pos);
 
+
 typedef struct {
   vect_3 *start,*end; //Normal of plane
 }btgeom_lineseg;
@@ -40,8 +41,8 @@ typedef struct {
   btreal distance; //Distance from origin to plane in direction of normal
 }btgeom_plane;
 
-int initplane_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3);
-btreal D_Pt2Pl(btgeom_plane *plane, vect_3 *point);
+int init_pl_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3);
+btreal D_Pt2Pl(vect_3 *dist,btgeom_plane *plane, vect_3 *point);
 //vect_3* I_Li2Pl(
 
 typedef struct {
@@ -49,8 +50,8 @@ typedef struct {
   double radius;
 }btgeom_sphere;
 
-int initsphere_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2);
-btreal D_Pt2Sp(btgeom_sphere *sp, vect_3 *pt);
+int init_sp_btg(btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2);
+btreal D_Pt2Sp(vect_3 *dist,btgeom_sphere *sp, vect_3 *pt);
 
 typedef struct {
   vect_3 *center,*outside,*inside; //Center and size of box
