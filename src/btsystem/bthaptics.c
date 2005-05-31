@@ -98,7 +98,7 @@ void init_wall(bteffect_wall *wall,btreal K, btreal B)
   wall->B = B;
 }
 
-int wall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force)
+int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force)
 {
   btreal Dist,K,B;
   bteffect_wall *norm_eff;
@@ -107,50 +107,48 @@ int wall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_
   
   udist = init_staticv3(&udistmem);
   
-  Dist = norm_v3((vect_3*)dist);
   set_v3(udist,unit_v3((vect_3*)dist));
   
   norm_eff = (bteffect_wall*)obj->norm_eff;
-  if(Dist < 0.0) //we are on the "negative" side of the plane
+  if(depth < 0.0) //we are on the "negative" side of the plane
     {
       set_v3((vect_3*)force,
              add_v3((vect_3*)force,
-                     scale_v3(norm_eff->K*Dist + norm_eff->B*dot_v3(udist,(vect_3*)vel),udist)));
+                     scale_v3(-1.0*(norm_eff->K*depth + norm_eff->B*dot_v3(udist,(vect_3*)vel)),udist)));
 
     }
 }
 
-int wickedwall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force)
+int wickedwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force)
 {
-  btreal Dist,K,B;
+  btreal WallStiff,WallDamp,Vel;
   bteffect_wickedwall *norm_eff;
   staticv3 udistmem;
   vect_3* udist;
   
   udist = init_staticv3(&udistmem);
-  Dist = norm_v3((vect_3*)dist);
   set_v3(udist,unit_v3((vect_3*)dist));
   norm_eff = (bteffect_wickedwall*)obj->norm_eff;
-
+  Vel = dot_v3(dist,vel);
   if (norm_eff->state = 0){//outside
-    if (Dist < 0.0) norm_eff->state = 1;
+    if (depth < 0.0) norm_eff->state = 1;
   }
   if (norm_eff->state == 1){
-    if (Dist < thisPlane->thk) state = 2;
-    else if (Dist > 0.0) state = 0;
+    if (depth < norm_eff->Thk) norm_eff->state = 2;
+    else if (depth > 0.0) norm_eff->state = 0;
     else {
-      WallStiff = -1.0*obj->K*Dist;
+      WallStiff = -1.0*norm_eff->K1*depth;
     }
   }
   if (state == 2){
-    if (Dist > 0.0) state = 0;
+    if (depth > 0.0) state = 0;
   }
   
-  if (Dist + obj->Boff < 0.0){
-    if(Vel < 0.0) WallDamp = -1.0 * obj->Bin*Vel;
-    else if (Vel > 0.0) WallDamp = obj->Bout*Vel;
+  if (depth + norm_eff->Boff < 0.0){
+    if(Vel < 0.0) WallDamp = -1.0 * norm_eff->Bin*Vel;
+    else if (Vel > 0.0) WallDamp = norm_eff->Bout*Vel;
   }
-  set_v3((vect_3*)resultForce,
-             add_v3((vect_3*)resultForce,
-                     scale_v3(WallStiff + WallDamp,thisPlane->normal)));
+  set_v3((vect_3*)force,
+             add_v3((vect_3*)force,
+                     scale_v3(WallStiff + WallDamp,udist)));
 }

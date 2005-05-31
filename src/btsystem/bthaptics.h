@@ -25,7 +25,7 @@ typedef struct bthaptic_object_struct{
   int type;
   int (*interact)(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force);
   int (*collide)(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *dist);
-  int (*nomalforce)((struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
+  int (*nomalforce)((struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
   void *geom,*norm_eff,*tang_eff;
   btgeom_state Istate;
   int idx;
@@ -49,7 +49,7 @@ typedef struct {
   btreal K,B;
 }bteffect_wall;
 void init_wall(bteffect_wall *wall,btreal K, btreal B);
-int wall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
+int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
  
 typedef struct { 
   btreal Boffset; //Relative start of damping
@@ -60,15 +60,15 @@ typedef struct {
   btreal Bout; //damping as you move out of the wall
 }bteffect_bulletproofwall;
 void init_bulletproofwall(bteffect_wall *wall,btreal K, btreal B);
-int bulletproofwall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
+int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
 
 typedef struct { 
   int state; //outside, inside, brokethru
   btreal Boffset; //Relative start of damping
-  btreal Breakoffset; //Distance into wall second spring constant starts
   btreal K1; //first stage spring constant
   btreal Bin; //damping as you move into the wall
   btreal Bout; //damping as you move out of the wall
+  btreal Thk;
 }bteffect_wickedwall;
 void init_wickedwall(bteffect_wall *wall,btreal K, btreal B);
 int wickedwall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
