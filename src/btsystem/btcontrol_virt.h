@@ -34,7 +34,6 @@ extern "C"
 #define PI 3.141596
 #endif /*PI*/
 
-enum trjstate {BTTRAJ_OFF,BTTRAJ_STOPPED = 0,BTTRAJ_INPREP,BTTRAJ_READY,BTTRAJ_RUN,BTTRAJ_DONE,BTTRAJ_PAUSING,BTTRAJ_UNPAUSING,BTTRAJ_PAUSED};
 /**
 Trajectory States
  - -1 = Off
@@ -60,6 +59,7 @@ Trajectory Actions and state changes
  - LoadTrj: 1->1,2->2,9->2: Set up trajectory for operation
 
 */
+enum trjstate {BTTRAJ_OFF,BTTRAJ_STOPPED = 0,BTTRAJ_INPREP,BTTRAJ_READY,BTTRAJ_RUN,BTTRAJ_DONE,BTTRAJ_PAUSING,BTTRAJ_UNPAUSING,BTTRAJ_PAUSED};
 
 
 /*================================================Position object================================*/

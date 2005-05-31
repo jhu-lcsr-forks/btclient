@@ -40,13 +40,33 @@ extern "C"
 
 btPID maintains configuration and state information for a generic PID controller.
 
-Usage:
-  -# declare a PIDregulator variable (ex: PIDregulator pid;)
-  -# Use PIDreset() to set accumulated error to zero and yref to y
-  -# In your control loop:
-  - Set pid.y to the present value of y;
-  - Use PIDcalc() to calculate the result
+init_btPID() or init_err_btPID() initialize the data structure. init_err_btPID is
+used when you will be feeding btPID the error (when a non-euclidian metric is used for 
+instance).
+
+btPID maintains it's internal state. Thus you may feed it all information each 
+cycle (measured value 'y', reference value 'yref', time step 'dt') or if these 
+are typically unchanging you can send them only when they change and call step_btPID().
+
+\code
+{
+  btPID pid;
+  btreal dt,targ_pos,meas_pos,torque;
   
+  init_btPID(&pid);
+  setgains_btPID(&pid,1000.0,20.0,1.0);
+  
+  start_btPID(&pid);
+  
+  dt = .001;
+  targ_pos = 10.0;
+  while(1){
+    meas_pos = Some_get_pos_func();
+    torque = eval_btPID(&pid,meas_pos,targ_pos,dt);
+    Some_set_torque_func(torque);
+  }
+
+\endcode
 */
 typedef struct  
 {
@@ -187,19 +207,35 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
 
 /*================================================Ramp object================================*/
 
-enum btramp_state {btramp_max, btramp_min, btramp_up, btramp_down, btramp_pause};
+enum btramp_state {BTRAMP_MAX = 0, BTRAMP_MIN, BTRAMP_UP, BTRAMP_DOWN, BTRAMP_PAUSE};
+/** Constant acceleration function.
+
+btramp is used to smoothly transition a variable from one value to another over 
+a period of time. It is thread safe. See init_btramp().
+
+Use set_btramp() to change the state and control the 
+btramp object. btramp states are as follows. 
+
+- BTRAMP_MAX = scaler is set to the minimum value  
+- BTRAMP_MIN = scaler is set to the min value each evaluation
+- BTRAMP_UP = Scaler is increased by rate*dt each evaluation. When scaler >= BTRAMP_MAX, 
+the state changes to BTRAMP_MAX
+- BTRAMP_DOWN = Scaler is decreased by rate*dt each evaluation. When scaler >= BTRAMP_MIN, 
+the state changes to BTRAMP_MIN
+- BTRAMP_PAUSE, Default = Scaler is not touched.
+*/
+
 typedef struct 
 {
   btreal *scaler;
   btreal min,max;
   btreal rate; // dscaler/dt units per second
-  int state; //0 = min 1 = up 2 = down 3 = max
+  int state; 
   pthread_mutex_t mutex;
 }btramp;
 
 void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate);
 void set_btramp(btramp *r,enum btramp_state state);
-
 
 btreal get_btramp(btramp *r);
 btreal eval_btramp(btramp *r,btreal dt);

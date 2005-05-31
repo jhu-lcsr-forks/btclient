@@ -17,30 +17,24 @@
  *
  *======================================================================*/
 
-/*! \file SimpleControl.c
-    \brief A simple Torque, PID & Trapezoidal velocity trajectory controller
+/*! \file btcontrol.c
+    \brief Systems controls algorithms and objects. 
 
-    SimpleControl provides a set of basic control algorithms that are often useful
-    when controlling robots.
-    The use of these functions is straighforward
-    -# Create a sturcture of type SimpleCtl
-    -# SCinit to get everything in a reasonable state.
-    -# SCevaluate inside your read-position set-torque loop.
-    -# SCsetmode to switch to the mode you want
 
-    - SCstarttrj to move the PID setpoint along a trapezoidal trajectory
+-# PID object
+-# Via Trajectory object
 
 */
 #include <math.h>
-
-//th041216#include <sys/neutrino.h>
-
 #include <pthread.h>
 #include <errno.h>
 #include <syslog.h>
 #include "btcontrol.h"
 #include "btos.h"
 #include "btcontrol_virt.h"
+
+#define BTDUMMYPROOF 
+
 
 #define sign(x) (x>=0?1:-1)
 #define Sgn(x) (x>=0.0?1.0:-1.0)
@@ -52,7 +46,7 @@ void setprofile_traptrj(bttraptrj *traj, btreal vel, btreal acc)
   traj->acc = fabs(acc);
 }
 
-/*! Calculates all the variables necessary to set up a trapezoidal trajectory.
+/** Calculates all the variables necessary to set up a trapezoidal trajectory.
 
 \param dist the length of the trajectory
 
@@ -139,7 +133,7 @@ btreal evaluate_traptrj(bttraptrj *traj, btreal dt)
 
 /**************************************************************************/
 
-/*! Initializes the PIDregulator data structure
+/*! Initializes the btPID object
 
 The function sets the main parameters of a PID regulator. You
 will only have to use this function a single time when you create the variable. Before
@@ -168,7 +162,9 @@ void init_btPID(btPID *pid)
       "Could not initialize mutex for btPID.");
 
 }
+/** Initialize a btPID object for use with an external error.
 
+*/
 void init_err_btPID(btPID *pid)
 {
   pid->external_error_calc = 1;
@@ -269,7 +265,7 @@ btreal step_btPID(btPID *pid)
       pthread_mutex_unlock(&(pid->mutex)),"step_btPID unlock mutex failed");
   return(pid->lastresult); //bz
 }
-
+/** Set measured value 'y'. See btPID object of more info.*/
 void sety_btPID(btPID *pid, btreal y)
 {
     test_and_log(
@@ -280,7 +276,7 @@ void sety_btPID(btPID *pid, btreal y)
     test_and_log(
       pthread_mutex_unlock(&(pid->mutex)),"sety_btPID unlock mutex failed");
 }
-
+/** Set reference value 'yref'. See btPID object of more info.*/
 void setyref_btPID(btPID *pid, btreal yref)
 {
     test_and_log(
@@ -291,7 +287,7 @@ void setyref_btPID(btPID *pid, btreal yref)
     test_and_log(
       pthread_mutex_unlock(&(pid->mutex)),"setyref_btPID unlock mutex failed");
 }
-
+/** Set time step value 'dt'. See btPID object of more info.*/
 void setdt_btPID(btPID *pid, btreal dt)
 {
     test_and_log(
@@ -302,7 +298,7 @@ void setdt_btPID(btPID *pid, btreal dt)
     test_and_log(
       pthread_mutex_unlock(&(pid->mutex)),"setdt_btPID unlock mutex failed");
 }
-
+/** Get the last calculated effort value. See btPID object of more info.*/
 btreal lastresult_btPID(btPID *pid)
 {
   btreal ret;
@@ -316,7 +312,7 @@ btreal lastresult_btPID(btPID *pid)
       
     return ret;
 }
-
+/** Evaluate the btPID object. See btPID object of more info.*/
 btreal eval_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
 {
     test_and_log(
@@ -345,7 +341,7 @@ btreal eval_err_btPID(btPID *pid, btreal error, btreal dt)
       
     return step_btPID(pid);
 }
-
+/** Set all the input values. See btPID object of more info.*/
 void setinputs_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
 {
     test_and_log(
@@ -358,6 +354,10 @@ void setinputs_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
     test_and_log(
       pthread_mutex_unlock(&(pid->mutex)),"setinputs_btPID unlock mutex failed");
 }
+/** Set the gains. 
+
+If the library is compiled with BTDUMMYPROOF, we will verify that you only
+change the gains when tho regulator is in the off state. See btPID object of more info.*/
 void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
 {
     test_and_log(
@@ -381,6 +381,10 @@ void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
     test_and_log(
       pthread_mutex_unlock(&(pid->mutex)),"setgains_btPID unlock mutex failed");
 }
+/** Set saturation of the regulator. If set anti-windup will kick in above this value. See btPID object of more info.
+
+\bug verif anti-windup functionality
+*/
 void setsaturation_btPID(btPID *pid, btreal saturation)
 {
     test_and_log(
@@ -391,6 +395,7 @@ void setsaturation_btPID(btPID *pid, btreal saturation)
     test_and_log(
       pthread_mutex_unlock(&(pid->mutex)),"setsaturation_btPID unlock mutex failed");
 }
+/** Get the present gain values. */
 void getgains_btPID(btPID *pid, btreal *Kp, btreal *Kd, btreal *Ki)
 {
     test_and_log(
@@ -403,6 +408,7 @@ void getgains_btPID(btPID *pid, btreal *Kp, btreal *Kd, btreal *Ki)
     test_and_log(
       pthread_mutex_unlock(&(pid->mutex)),"getgains_btPID unlock mutex failed");
 }
+/** Get the present input values */
 void getinputs_btPID(btPID *pid, btreal *y, btreal *yref, btreal *dt)
 {
     test_and_log(
@@ -415,6 +421,7 @@ void getinputs_btPID(btPID *pid, btreal *y, btreal *yref, btreal *dt)
     test_and_log(
       pthread_mutex_unlock(&(pid->mutex)),"getinputs_btPID unlock mutex failed");
 }
+/** Get the present saturation values */
 void getsaturation_btPID(btPID *pid, btreal *saturation)
 {
     test_and_log(
@@ -607,6 +614,10 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
 
 
 /**************************** btramp functions **********************************/
+/** Initialize the data for a btramp object.
+
+This should be called only once as it allocates memory for a mutex object.
+*/
 void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate)
 {
   test_and_log(
@@ -617,6 +628,10 @@ void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate)
   r->max = max;
   r->rate = rate;
 }
+/** Set the state of a btramp object.
+
+See btramp for valid values of state.
+*/
 void set_btramp(btramp *r,enum btramp_state state)
 {
  test_and_log(
@@ -625,29 +640,41 @@ void set_btramp(btramp *r,enum btramp_state state)
   test_and_log(
       pthread_mutex_unlock(&(r->mutex)),"btramp_up unlock mutex failed");
 }
+/** Return the present value of a btramp scaler.
 
+*/
 btreal get_btramp(btramp *r)
 {
   return *(r->scaler);
-  
 }
+/** Evaluate a btramp object for time slice dt
+
+See btramp documentation for object states. Note that BTRAMP_UP and BTRAMP_DOWN 
+will degenerate into BTRAMP_MAX and BTRAMP_MIN respectively. 
+*/
 btreal eval_btramp(btramp *r,btreal dt)
 {
    test_and_log(
       pthread_mutex_lock(&(r->mutex)),"eval_btramp lock mutex failed");
-  if (r->state == btramp_max){
+  if (r->state == BTRAMP_MAX){
     *(r->scaler) = r->max;
   }
-  else if (r->state == btramp_min){
+  else if (r->state == BTRAMP_MIN){
     *(r->scaler) = r->min;
   }
-  else if (r->state == btramp_up){
+  else if (r->state == BTRAMP_UP){
     *(r->scaler) += dt*r->rate;
-    if (*(r->scaler) > r->max) *(r->scaler) = r->max;
+    if (*(r->scaler) > r->max){
+      *(r->scaler) = r->max;
+      r->state = BTRAMP_MAX;
+    }
   }
-  else if (r->state == btramp_down){
+  else if (r->state == BTRAMP_DOWN){
     *(r->scaler) -= dt*r->rate;
-    if (*(r->scaler) < r->min) *(r->scaler) = r->min;
+    if (*(r->scaler) < r->min) {
+      *(r->scaler) = r->min;
+      r->state = BTRAMP_MIN;
+    }
   }
   //default case is to do nothing
   test_and_log(

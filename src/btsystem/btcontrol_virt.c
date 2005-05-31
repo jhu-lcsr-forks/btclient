@@ -15,7 +15,9 @@
  *                                                                      
  *======================================================================*/
 
-/*! \file 
+/*! \file btcontrol_virt.c
+\brief Virtualized functions for control so that various algorithms may be 
+plugged in.
 
 */
 #include <math.h>
