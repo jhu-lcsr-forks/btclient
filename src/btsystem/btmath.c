@@ -2416,7 +2416,7 @@ btreal interp_bt(btreal x1, btreal y1, btreal x2, btreal y2, btreal x)
 btfilter_vn * new_btfilter_vn(int size,int vsize)
 {
   void *vmem;
-  btfilter *ptr;
+  btfilter_vn *ptr;
   int size_;
   
   size_ = size;
@@ -2427,7 +2427,7 @@ btfilter_vn * new_btfilter_vn(int size,int vsize)
     return NULL;
   }
   addbtptr(vmem);
-  ptr = (btfilter*)vmem;
+  ptr = (btfilter_vn*)vmem;
   
   ptr->d = new_vr(vsize,size_);
   ptr->n = new_vr(vsize,size_);
@@ -2437,7 +2437,7 @@ btfilter_vn * new_btfilter_vn(int size,int vsize)
   return ptr;
 }
 
-vect_n * eval_btfilter_vn(btfilter_vn *filt, vect_n *xnew);
+vect_n * eval_btfilter_vn(btfilter_vn *filt, vect_n *xnew)
 {
     int       i,idx;
     btreal      ynew;

@@ -56,6 +56,7 @@
 #include "btrobot.h"
 #include "btlogger.h"
 #include "bthaptics.h"
+#include "btgeometry.h"
 
 /*==============================*
  * PRIVATE DEFINED constants    *
@@ -117,9 +118,14 @@ wam_struct *wam;
 //extern wam_struct WAM;  // this is a hack that will be resolved - sc
 extern int isZeroed;
 static RT_TASK *mainTask;
-vect_3 *p,*o;
+vect_3 *p,*o,*zero_v3;
 vect_n *t,*targ,*negtarg;
 vect_n *Mpos, *Mtrq, *Jpos, *Jtrq, *wv;
+
+btgeom_plane myplane;
+bteffect_wall mywall;
+bthaptic_object myobject;
+vect_3 *p1,*p2,*p3;
 
 btlogger log;
 
@@ -158,7 +164,11 @@ int main(int argc, char **argv)
   int i;
 
   struct sched_param mysched;
-
+  zero_v3 = new_v3();
+  p = new_v3();
+  p1 = new_v3();
+  p2 = new_v3();
+  p3 = new_v3();
   Mpos = new_vn(10);
   Mtrq = new_vn(10);
   Jpos = new_vn(10);
@@ -235,7 +245,13 @@ ed to initialize system"))
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
 
   npucks = wam->num_actuators; // Get the number of initialized actuators
+  //*****************Haptics scene
   new_bthaptic_scene(&bth,10);
+  init_pl_btg(&myplane,const_v3(p1,0.2,0.0,1.0),const_v3(p2,0.2,1.0,0.0),const_v3(p3,0.2,0.0,0.0));
+  init_wall(&mywall,1000.0,0.0);
+  init_normal_plane_bth(&myobject,&myplane,(void*)&mywall,wall_nf);
+  addobject_bth(&bth,&myobject);
+  
   registerWAMcallback(WAMcallback);
   start_control_threads(10, 0.002, WAMControlThread, (void *)0);
 
@@ -267,7 +283,8 @@ ed to initialize system"))
 
 int WAMcallback(struct btwam_struct *wam)
 {
-  eval_bthaptics(&bth,(vect_n*)wam->Cpos,(vect_n*)wam->Cforce);
+  eval_bthaptics(&bth,(vect_n*)wam->Cpos,(vect_n*)zero_v3,(vect_n*)zero_v3,(vect_n*)wam->Cforce);
+  apply_tool_force_bot(&(wam->robot), wam->Cpoint, wam->Cforce, wam->Ctrq);
   return 0;
 }
 
@@ -552,13 +569,20 @@ void RenderScreen() //{{{
     ++line;
     mvprintw(line, column_offset , "Cpos:%s ", sprint_vn(vect_buf1,(vect_n*)wam->Cpos));
     ++line;
-    
+    mvprintw(line, column_offset , "Cforce:%s ", sprint_vn(vect_buf1,(vect_n*)wam->Cforce));
+    ++line;
+    mvprintw(line, column_offset , "dist:%s ", sprint_vn(vect_buf1,(vect_n*)myobject.Istate.pos));
+    ++line;   
+    mvprintw(line, column_offset , "plane:%s ", sprint_vn(vect_buf1,(vect_n*)myplane.normal));
+    ++line;  
     mptr = T_to_W_trans_bot(&(wam->robot));
     //dptr = &(wam->robot0.0000.tool->origin->q[0]);
     dptr = mptr->q;
     mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[0],dptr[1],dptr[2],dptr[3]);++line;
       mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[4],dptr[5],dptr[6],dptr[7]);++line;
        mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[8],dptr[9],dptr[10],dptr[11]);++line;
+       mvprintw(line, column_offset , "num:%d res:%+8.4f",bth.num_objects,D_Pt2Pl(p,(btgeom_plane *)myobject.geom,wam->Cpos));++line;
+
          refresh();
 } //}}}
 

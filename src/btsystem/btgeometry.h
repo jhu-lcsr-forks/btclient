@@ -12,8 +12,8 @@
  *                                                                      *
  *======================================================================*/
 
-#ifndef _BTHAPTICS_H
-#define _BTHAPTICS_H
+#ifndef _BTGEOMETRY_H
+#define _BTGEOMETRY_H
 
 #ifdef __cplusplus
 extern "C"
@@ -24,11 +24,11 @@ extern "C"
 //Geometry
 typedef struct {
   vect_3 *pos,*vel,*acc; //Normal of plane
-  btfilter_vn velfilt,accfilt;
+  btfilter_vn *velfilt,*accfilt;
 }btgeom_state;
 
-init_state_btg(btgeom_state *bts,btreal samplerate,btreal cutoffHz);
-eval_state_btg(btgeom_state *bts,vect_3* pos);
+void init_state_btg(btgeom_state *bts,btreal samplerate,btreal cutoffHz);
+void eval_state_btg(btgeom_state *bts,vect_3* pos);
 
 
 typedef struct {

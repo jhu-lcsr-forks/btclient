@@ -20,12 +20,13 @@ extern "C"
 {
 #endif/* __cplusplus */
 #include "btmath.h"
+#include "btgeometry.h"
 
 typedef struct bthaptic_object_struct{
   int type;
   int (*interact)(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force);
-  int (*collide)(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *dist);
-  int (*nomalforce)((struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
+  btreal (*collide)(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *dist);
+  int (*normalforce)(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
   void *geom,*norm_eff,*tang_eff;
   btgeom_state Istate;
   int idx;
@@ -38,16 +39,19 @@ typedef struct {
 }bthaptic_scene;
 //Geometry
 int new_bthaptic_scene(bthaptic_scene *bth, int size);
-vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force)
+vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force);
 int addobject_bth(bthaptic_scene *bth,bthaptic_object *object);
 void removeobject_bth(bthaptic_scene *bth,int index);
 
+int eval_geom_normal_interact_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force);
 
-int init_normal_plane_bth(bthaptic_object *obj, btgeom_plane *plane, void*nfobj,void*nffunc)
+int init_normal_plane_bth(bthaptic_object *obj, btgeom_plane *plane, void *nfobj,void *nffunc);
+btreal plane_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *dist);
 
 typedef struct { 
   btreal K,B;
 }bteffect_wall;
+
 void init_wall(bteffect_wall *wall,btreal K, btreal B);
 int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
  
@@ -71,7 +75,7 @@ typedef struct {
   btreal Thk;
 }bteffect_wickedwall;
 void init_wickedwall(bteffect_wall *wall,btreal K, btreal B);
-int wickedwall_nf(struct bthaptic_object_struct *obj, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
+int wickedwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
 
 
 

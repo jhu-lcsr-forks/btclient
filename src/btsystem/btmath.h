@@ -468,10 +468,10 @@ typedef struct
   btreal  zeta;        // damping factor (between 0 and 1)
   
   int   index;         // index of current value in input and output arrays
-  vect_n  *d;  // coefficients of denominator
-  vect_n  *n;  // coefficients of numerator
-  vect_n  *x;  // old input values
-  vect_n  *y;  // old output values
+  vectray  *d;  // coefficients of denominator
+  vectray  *n;  // coefficients of numerator
+  vectray  *x;  // old input values
+  vectray  *y;  // old output values
     
 } btfilter_vn;
 btfilter_vn * new_btfilter_vn(int size,int vsize);
