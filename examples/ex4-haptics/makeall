@@ -1,0 +1,12 @@
+cd ../btsystem
+make clean
+make lib
+make install
+cd ../btwam
+make clean
+make lib
+make install
+cd ../btdiag
+make clean
+make
+
