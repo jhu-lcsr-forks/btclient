@@ -153,7 +153,7 @@ int InitWAM(char *wamfile)
   
   //init_wam_btrobot(&(WAM.robot));
    if (WAM.num_actuators == 4){
-     link_geom_bot(&WAM.robot,3,0.0,0.0,0.045,pi/2.0);
+     link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
      link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
      tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
      tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),0.0);

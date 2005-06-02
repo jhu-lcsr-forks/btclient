@@ -53,6 +53,8 @@ void freebtptr();
 
 /** An N element vector object.
 
+
+
 vect_n is a linear algebra vector object. The elements are of type btreal. Function
 definitions are in btmath.c. This 
 object is optimized for speed and prefix notation. It occupies twice the memory
@@ -90,6 +92,20 @@ add in bounds checking and verbose error reporting
   WARNING! There is no bounds checking in the code. All vect_n objects must be created 
   with new_vn() and if you are mixing vectors of different sizes be careful to read the
   btmath.c code so that you understand the dangers of doing so. 
+  
+  WARNING! This code uses preallocated memory associated with the left parameter to pass return values. 
+  \code
+    /******* Example of bad code *******
+    set_vn(b,add_vn(mul_vn(a,b),scale_vn(2.0,mul_vn(a,b))));
+    /******* Recursion breakdown ******
+    scale_vn(2.0,mul_vn(a,b)); //Return value in a.ret
+    mul_vn(a,b); //A different return value is now overwriting a.ret
+    add_vn(a.ret,a.ret); //
+    /******* Example of good code ******
+    set_vn(b,add_vn(mul_vn(b,a),scale_vn(2.0,mul_vn(a,b)))); 
+  \endcode
+   
+  
 */
 
 typedef struct barrett_vect_n{
@@ -177,7 +193,7 @@ int test_vr(void)
 */
 typedef struct barrett_vectarray_n{
   btreal *data;
-  vect_n *rayvect;
+  vect_n *rayvect,*lval,*rval;
   int n;      //size of vector
   int rows,lastrow; //number of rows and present index
 }vectray;
@@ -457,7 +473,7 @@ btreal  eval_btfilter(btfilter *filt, btreal xnew);
 void  init_btfilter_diff(btfilter *filt, int order, btreal sample_time, btreal cutoffHz);
 void  init_btfilter_butterworth_diff(btfilter *filt, btreal sample_time, btreal cutoffHz);
 void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz);
-
+void test_btfilter();
 
 /* Define the Filter structure */
 typedef struct
@@ -472,12 +488,15 @@ typedef struct
   vectray  *n;  // coefficients of numerator
   vectray  *x;  // old input values
   vectray  *y;  // old output values
+  vect_n *scratch1,*scratch2,*scratch3;
     
 } btfilter_vn;
 btfilter_vn * new_btfilter_vn(int size,int vsize);
 vect_n * eval_btfilter_vn(btfilter_vn *filt, vect_n *xnew);
-void  init_btfilter_vn_butterworth_diff(btfilter_vn *filt, int order, btreal sample_time, btreal cutoffHz);
+//void  init_btfilter_vn_butterworth_diff(btfilter_vn *filt, int order, btreal sample_time, btreal cutoffHz);
+void  init_btfilter_vn_diff(btfilter_vn *filt, int order, btreal sample_time, btreal cutoffHz);
 
+void test_filter_vn();
 
 
 

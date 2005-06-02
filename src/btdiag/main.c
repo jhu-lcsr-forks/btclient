@@ -95,7 +95,7 @@ int active = 0;
 int npucks;
 int cpuck = 0;
 int entryLine;
-bthaptic_scene bth;
+
 
 long saved_bus_error = 0;
 int modes[15] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -122,11 +122,16 @@ vect_3 *p,*o,*zero_v3;
 vect_n *t,*targ,*negtarg;
 vect_n *Mpos, *Mtrq, *Jpos, *Jtrq, *wv;
 
-btgeom_plane myplane;
+btgeom_plane myplane,plane2;
 bteffect_wall mywall;
-bthaptic_object myobject;
+bteffect_wickedwall mywickedwall,mywickedwall2,wickedwalls[10];
+bthaptic_object myobject,myobject2,objects[10];
+btgeom_sphere mysphere,mysphere2,spheres[10];
+bteffect_bulletproofwall mybpwall;
+bteffect_global myglobal;
 vect_3 *p1,*p2,*p3;
-
+bthaptic_scene bth;
+btgeom_state pstate;
 btlogger log;
 
 
@@ -247,12 +252,37 @@ ed to initialize system"))
   npucks = wam->num_actuators; // Get the number of initialized actuators
   //*****************Haptics scene
   new_bthaptic_scene(&bth,10);
-  init_pl_btg(&myplane,const_v3(p1,0.2,0.0,1.0),const_v3(p2,0.2,1.0,0.0),const_v3(p3,0.2,0.0,0.0));
-  init_wall(&mywall,1000.0,0.0);
-  init_normal_plane_bth(&myobject,&myplane,(void*)&mywall,wall_nf);
+  init_state_btg(&pstate,0.002,30.0);
+  init_pl_btg(&myplane,const_v3(p1,0.0,1.0,-0.2),const_v3(p2,0.0,0.0,-0.2),const_v3(p3,1.0,0.0,-0.2));
+  init_pl_btg(&plane2,const_v3(p1,0.22,1.0,0.0),const_v3(p2,0.22,0.0,1.0),const_v3(p3,0.22,0.0,0.0));
+  init_sp_btg( &mysphere,const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.4,0.0,0.0),0);
+  init_sp_btg( &mysphere2,const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.42,0.0,0.0),1);
+  init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.3,0.0,0.0),0);
+  init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.32,0.0,0.0),1);
+  //init_wall(&mywall,0.0,10.0);
+  init_wickedwall(&mywickedwall,3000, 40.0,5.0,0.020,0.02);
+  init_wickedwall(&mywickedwall2,3000, 40.0,5.0,0.020,0.02);
+  init_wickedwall(&wickedwalls[0],3000, 40.0,5.0,0.020,0.02);
+  init_wickedwall(&wickedwalls[1],3000, 40.0,5.0,0.020,0.02);
+  init_bulletproofwall(&mybpwall,0.02,5000,0.005,5000,40.0,5.0);
+  
+  init_normal_plane_bth(&objects[0],&myplane,(void*)&mybpwall,bulletproofwall_nf);
+  
+  init_normal_sphere_bth(&myobject,&mysphere,(void*)&mywickedwall,wickedwall_nf);
+  init_normal_sphere_bth(&myobject2,&mysphere2,(void*)&mywickedwall2,wickedwall_nf);
+  init_normal_sphere_bth(&objects[1],&spheres[0],(void*)&wickedwalls[0],wickedwall_nf);
+  init_normal_sphere_bth(&objects[2],&spheres[1],(void*)&wickedwalls[1],wickedwall_nf);
+  //init_global_bth(&myobject2, &myglobal,20.0,C_v3(-4.0,0.0,0.0));
+  //init_normal_plane_bth(&myobject2,&plane2,(void*)&mywickedwall2,wickedwall_nf);
+  
+  addobject_bth(&bth,&objects[0]);
+  addobject_bth(&bth,&objects[1]);
+  addobject_bth(&bth,&objects[2]);
   addobject_bth(&bth,&myobject);
+  addobject_bth(&bth,&myobject2);
   
   registerWAMcallback(WAMcallback);
+  
   start_control_threads(10, 0.002, WAMControlThread, (void *)0);
 
   signal(SIGINT, sigint_handler); //register the interrupt handler
@@ -283,7 +313,8 @@ ed to initialize system"))
 
 int WAMcallback(struct btwam_struct *wam)
 {
-  eval_bthaptics(&bth,(vect_n*)wam->Cpos,(vect_n*)zero_v3,(vect_n*)zero_v3,(vect_n*)wam->Cforce);
+  eval_state_btg(&(pstate),wam->Cpos);
+  eval_bthaptics(&bth,(vect_n*)wam->Cpos,(vect_n*)pstate.vel,(vect_n*)zero_v3,(vect_n*)wam->Cforce);
   apply_tool_force_bot(&(wam->robot), wam->Cpoint, wam->Cforce, wam->Ctrq);
   return 0;
 }
@@ -573,7 +604,7 @@ void RenderScreen() //{{{
     ++line;
     mvprintw(line, column_offset , "dist:%s ", sprint_vn(vect_buf1,(vect_n*)myobject.Istate.pos));
     ++line;   
-    mvprintw(line, column_offset , "plane:%s ", sprint_vn(vect_buf1,(vect_n*)myplane.normal));
+    mvprintw(line, column_offset , "vel:%s ", sprint_vn(vect_buf1,(vect_n*)pstate.vel));
     ++line;  
     mptr = T_to_W_trans_bot(&(wam->robot));
     //dptr = &(wam->robot0.0000.tool->origin->q[0]);
@@ -581,7 +612,7 @@ void RenderScreen() //{{{
     mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[0],dptr[1],dptr[2],dptr[3]);++line;
       mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[4],dptr[5],dptr[6],dptr[7]);++line;
        mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[8],dptr[9],dptr[10],dptr[11]);++line;
-       mvprintw(line, column_offset , "num:%d res:%+8.4f",bth.num_objects,D_Pt2Pl(p,(btgeom_plane *)myobject.geom,wam->Cpos));++line;
+       mvprintw(line, column_offset , "num:%d res:%+8.4f",bth.num_objects,D_Pt2Sp(p,(btgeom_sphere *)myobject.geom,wam->Cpos));++line;
 
          refresh();
 } //}}}
@@ -624,7 +655,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       break;
     case 'l':
       DLoff(&(wam->log));
-      break;      
+      break; 
+    case 'D':
+      bth.state = 1;
+      break;
+    case 'd':
+      bth.state = 0;
+      break;    
     case 'F': // Force zero
       wam->isZeroed = TRUE;
       break;

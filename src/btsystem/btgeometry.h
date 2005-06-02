@@ -46,11 +46,12 @@ btreal D_Pt2Pl(vect_3 *dist,btgeom_plane *plane, vect_3 *point);
 //vect_3* I_Li2Pl(
 
 typedef struct {
-  vect_3 center;
+  vect_3 *center;
   double radius;
+  int inside;
 }btgeom_sphere;
 
-int init_sp_btg(btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2);
+int init_sp_btg( btgeom_sphere *sphere, vect_3 *pt1, vect_3 *pt2,int inside);
 btreal D_Pt2Sp(vect_3 *dist,btgeom_sphere *sp, vect_3 *pt);
 
 typedef struct {

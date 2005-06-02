@@ -16,7 +16,8 @@ int main( int argc, char **argv )
   btfilter *visFilt[4],*test;
    
   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
-  test_btrobot();
+  test_btfilter();
+  test_filter_vn();
    /*
   test = new_btfilter(4);
   for (cnt = 0; cnt < 3; cnt ++){

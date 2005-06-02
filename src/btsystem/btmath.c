@@ -23,7 +23,7 @@
       - Optimization for SE(3) (4x4 rotation & translation matrices)
     - Quaternions
     - Digital Filters
-
+ 
     The core functionality for vectors, matrices and quaternions are supported 
     by the *_vn, *_mn, and *_q functions. Use these functions as a starting point in any
     algorithm you are developing. This is a performance library and so optimized 
@@ -43,13 +43,13 @@
     The vector and matrix functions are written to provide a consistent syntax.
 Prefix notation is used for all operations. See the test_*() functions for
 example of use.
-
+ 
 The only potentially tricky thing about this api is that you should never declare
 a vector or matrix variable. Only declare pointers. The new_xx function expects the
 address of your pointer, and will allocate memory and redirect your pointer for you.
     
 \todo Add code and compiler switches for counting the number of operations.
-
+ 
 */
 
 #include <math.h>
@@ -65,7 +65,7 @@ address of your pointer, and will allocate memory and redirect your pointer for 
 
 //#DEFINE VECT_N_DEBUG
 //#DEFINE VECT_N_BOUNDS  //perform bounds checking
-//#DEFINE MATR_N_DEBUG 
+//#DEFINE MATR_N_DEBUG
 
 /** @name Internal pointer list
   These functions are used internally for keeping track of the memory allocated
@@ -77,11 +77,13 @@ void *btptrs[MAX_BTPTRS];
 
 void addbtptr(void *ptr)
 {
-  if (num_btptrs < MAX_BTPTRS) {
+  if (num_btptrs < MAX_BTPTRS)
+  {
     num_btptrs++;
     btptrs[num_btptrs] = ptr;
   }
-  else syslog(LOG_ERR,"btptr: cannot free this ptr %p",ptr);
+  else
+    syslog(LOG_ERR,"btptr: cannot free this ptr %p",ptr);
 }
 
 void freebtptr()
@@ -101,18 +103,20 @@ void freebtptr()
 BTINLINE void fill_vn(vect_n* dest, btreal val)
 {
   int cnt;
-  
-  #ifdef VECT_N_DEBUG
-    if (dest == NULL) syslog(LOG_ERR,"btmath: fill_vn: dest is NULL");
-    //syslog(LOG_ERR,"btmath: fill_vn: size %d, Val %f",dest->n,val);
-  #endif
-  
+
+#ifdef VECT_N_DEBUG
+
+  if (dest == NULL)
+    syslog(LOG_ERR,"btmath: fill_vn: dest is NULL");
+  //syslog(LOG_ERR,"btmath: fill_vn: size %d, Val %f",dest->n,val);
+#endif
+
   //th Add vector size checking code here
   for (cnt=0;cnt < dest->n;cnt++)
     dest->q[cnt] = val;
 }
 /** Allocate memory for a vect_n object
-
+ 
   \bug depending on how data is allocated, this library will behave differently. I am 
   starting with lots of data allocation, however, *r of each vector can probably 
   point to the same data structure. *u is not necessarily needed 
@@ -124,6 +128,34 @@ BTINLINE void fill_vn(vect_n* dest, btreal val)
   
   \param size Valid values >= 1
   \return A pointer to the newly created vect_n object
+  
+  \code
+  Diagram of memory allocated by new_vn(4);
+         
+           +-----+
+           | ret |--+
+           |-----|  |
+           |  n  |  |
+           |-----|  |
+   +-------|  q  |  |
+   |       |-----|  |
+   | +-> +-| ret |<-+
+   | +---+ |-----|
+   |       |  n  |
+   |       |-----|
+   |       |  q  |--+
+   |       |-----|  |
+   +------>| val |  |
+           | val |  |
+           | val |  |
+           | val |  |
+           |-----|  |
+           | val |<-+
+           | val |
+           | val |
+           | val |
+           +-----+
+  \endcode
 */
 
 vect_n * new_vn(int size) //allocate an n-vector
@@ -131,14 +163,14 @@ vect_n * new_vn(int size) //allocate an n-vector
   void* vmem;
   vect_n *n;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = malloc(2*size*sizeof(btreal)+2*sizeof(vect_n))) == NULL) 
+  if ((vmem = malloc(2*size*sizeof(btreal)+2*sizeof(vect_n))) == NULL)
   {
     syslog(LOG_ERR,"btmath: vect_n memory allocation failed, size %d",size);
     return NULL;
   }
-  
+
   addbtptr(vmem);
-  
+
   n = (vect_n*)vmem;
   n->n = size;
 
@@ -148,16 +180,22 @@ vect_n * new_vn(int size) //allocate an n-vector
 
   n->ret->q = (btreal*)(vmem + 2*sizeof(vect_n) + size*sizeof(btreal));
   n->ret->ret = n->ret;
-  
-  #ifdef VECT_N_DEBUG
-    if (n == NULL) syslog(LOG_ERR,"btmath: new_vn: n is NULL");
-    //syslog(LOG_ERR,"btmath: fill_vn: size %d, Val %f",dest->n,val);
-  #endif
+
+#ifdef VECT_N_DEBUG
+
+  if (n == NULL)
+    syslog(LOG_ERR,"btmath: new_vn: n is NULL");
+  //syslog(LOG_ERR,"btmath: fill_vn: size %d, Val %f",dest->n,val);
+#endif
+
   fill_vn(n,0.0);
-  #ifdef VECT_N_DEBUG
-    if (n == NULL) syslog(LOG_ERR,"btmath: new_vn: n->ret is NULL");
-    //syslog(LOG_ERR,"btmath: fill_vn: size %d, Val %f",dest->n,val);
-  #endif
+#ifdef VECT_N_DEBUG
+
+  if (n == NULL)
+    syslog(LOG_ERR,"btmath: new_vn: n->ret is NULL");
+  //syslog(LOG_ERR,"btmath: fill_vn: size %d, Val %f",dest->n,val);
+#endif
+
   fill_vn(n->ret,0.0);
   return n;
 }
@@ -199,7 +237,7 @@ int new_vn_group(int num, int size, ...) //allocate a group of n-vectors
     vp = va_arg(ap, vect_n**);
     *vp = new_vn(size);
   }
-    va_end(ap);
+  va_end(ap);
 
 }
 /** Copy src vect_n to dest vect_n
@@ -207,53 +245,56 @@ int new_vn_group(int num, int size, ...) //allocate a group of n-vectors
 BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
 {
   int cnt,max;
-  
-  #ifdef VECT_N_DEBUG
 
-    if (dest == NULL || src == NULL) 
-    {
-      syslog(LOG_ERR,"btmath:set_vn: function called with NULL ptr. Dest %lx Src %lx",dest,src);
-      return;
-    }
-    if (dest->n > VECT_N_MAXSIZE || src->n > VECT_N_MAXSIZE)
-    {
-      syslog(LOG_ERR,"btmath:set_vn: too many elements. Dest %lx Src %lx",dest->n,src->n);
-      return;
-    }
-  #endif
-  
-  if (dest->n > src->n)  max = src->n; //added so that unequal vectors are copied sanely
-  else max = dest->n;
-  
-  #ifdef VECT_N_BOUNDS
-    if (dest->n > src->n)
-    {
-      syslog(LOG_ERR,"btmath:set_vn:fatal: dest->n > src->n");
-    }
-    if (dest->n < src->n)
-    {
-      syslog(LOG_ERR,"btmath:set_vn:warn: dest->n < src->n");
-    }
-  #endif
+#ifdef VECT_N_DEBUG
+
+  if (dest == NULL || src == NULL)
+  {
+    syslog(LOG_ERR,"btmath:set_vn: function called with NULL ptr. Dest %lx Src %lx",dest,src);
+    return;
+  }
+  if (dest->n > VECT_N_MAXSIZE || src->n > VECT_N_MAXSIZE)
+  {
+    syslog(LOG_ERR,"btmath:set_vn: too many elements. Dest %lx Src %lx",dest->n,src->n);
+    return;
+  }
+#endif
+
+  if (dest->n > src->n)
+    max = src->n; //added so that unequal vectors are copied sanely
+  else
+    max = dest->n;
+
+#ifdef VECT_N_BOUNDS
+
+  if (dest->n > src->n)
+  {
+    syslog(LOG_ERR,"btmath:set_vn:fatal: dest->n > src->n");
+  }
+  if (dest->n < src->n)
+  {
+    syslog(LOG_ERR,"btmath:set_vn:warn: dest->n < src->n");
+  }
+#endif
   //th Add vector size checking code here
-  
+
   for (cnt=0;cnt < max;cnt++)
     dest->q[cnt] = src->q[cnt];
-  
+
 }
 /** Copy a block of elements from src vect_n to dest vect_n
 */
 void setrange_vn(vect_n* dest, vect_n* src, int dest_start, int src_start, int num)
 {
   int cnt,max;
-  
+
   //th Add vector size checking code here
   for (cnt=0;cnt < num;cnt++)
     dest->q[dest_start + cnt] = src->q[src_start + cnt];
 
 }
 /** Copy elements of vect_n src to a btreal array
-
+ 
 */
 BTINLINE void extract_vn(btreal* dest, vect_n* src) //copy vector to a btreal array
 {
@@ -261,7 +302,7 @@ BTINLINE void extract_vn(btreal* dest, vect_n* src) //copy vector to a btreal ar
   //th Add vector size checking code here
   for (cnt=0;cnt < src->n;cnt++)
     dest[cnt] = src->q[cnt];
-  
+
 }
 /** Return a pointer to the btreal array used by this vect_n object
 */
@@ -270,7 +311,7 @@ BTINLINE btreal* valptr_vn(vect_n* src)
   return src->q;
 }
 /** Copy elements of a btreal array to vect_n src
-
+ 
 */
 BTINLINE void inject_vn(vect_n* dest, btreal* src) //copy btreal array to vector
 {
@@ -280,48 +321,48 @@ BTINLINE void inject_vn(vect_n* dest, btreal* src) //copy btreal array to vector
     dest->q[cnt] = src[cnt];
 }
 /** Set the value of a single element in vect_n dest
-
+ 
 \param dest Target vect_n object
 \param idx Index of desired element of dest. The first element is idx=0.
 */
 BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
 {
-   #ifdef VECT_N_BOUNDS
-    if (idx > dest->n)
-    {
-      syslog(LOG_ERR,"btmath:setval_vn:fatal: idx (%d) > dest->n (%d)",idx,dest->n);
-      return;
-    }
-    if (idx < 0)
-    {
-      syslog(LOG_ERR,"btmath:setval_vn:fatal: idx (%d) < 0",idx);
-      return;
-    }
-  #endif
+#ifdef VECT_N_BOUNDS
+  if (idx > dest->n)
+  {
+    syslog(LOG_ERR,"btmath:setval_vn:fatal: idx (%d) > dest->n (%d)",idx,dest->n);
+    return;
+  }
+  if (idx < 0)
+  {
+    syslog(LOG_ERR,"btmath:setval_vn:fatal: idx (%d) < 0",idx);
+    return;
+  }
+#endif
 
   //th Add vector size checking code here
   dest->q[idx] = val;
 }
 /** Returns the value of a single element in vect_n dest
-
+ 
 \param dest Target vect_n object
 \param idx Index of desired element of dest. The first element is idx=0.
 */
 BTINLINE btreal getval_vn(vect_n* dest, int idx)
 {
-   #ifdef VECT_N_BOUNDS
-    if (idx > dest->n)
-    {
-      syslog(LOG_ERR,"btmath:getval_vn:fatal: idx (%d) > dest->n (%d)",idx,dest->n);
-      return;
-    }
-    if (idx < 0)
-    {
-      syslog(LOG_ERR,"btmath:getval_vn:fatal: idx (%d) < 0",idx);
-      return;
-    }
-  #endif
-  
+#ifdef VECT_N_BOUNDS
+  if (idx > dest->n)
+  {
+    syslog(LOG_ERR,"btmath:getval_vn:fatal: idx (%d) > dest->n (%d)",idx,dest->n);
+    return;
+  }
+  if (idx < 0)
+  {
+    syslog(LOG_ERR,"btmath:getval_vn:fatal: idx (%d) < 0",idx);
+    return;
+  }
+#endif
+
   return dest->q[idx];
 }
 /** Set the values of a vect_n object
@@ -339,7 +380,7 @@ vect_n* const_vn(vect_n* a, ...) //set vector to a constant array of btreals
   {
     a->q[cnt] = va_arg(ap, btreal);
   }
-    va_end(ap);
+  va_end(ap);
   return a;
 }
 /** Initialize a single element of dest to 1.0
@@ -357,7 +398,7 @@ BTINLINE void einit_vn(vect_n* dest,int i) // einit_vn(&a,3) = <0,0,0,1,0>
  */
 //@{
 /** Vector Negate
-
+ 
 a[i] = -1.0 * a[i]
 */
 BTINLINE vect_n* neg_vn(vect_n* a) //negate a vector
@@ -369,7 +410,7 @@ BTINLINE vect_n* neg_vn(vect_n* a) //negate a vector
   return a->ret;
 }
 /** Vector Scalar Multiply
-
+ 
 a[i] = x * a[i]
 */
 BTINLINE vect_n* scale_vn(btreal x, vect_n* a)
@@ -381,7 +422,7 @@ BTINLINE vect_n* scale_vn(btreal x, vect_n* a)
   return a->ret;
 }
 /** Vector Addition
-
+ 
 ret[i] = a[i] + b[i]
 */
 BTINLINE vect_n* add_vn(vect_n* a, vect_n* b)
@@ -393,7 +434,7 @@ BTINLINE vect_n* add_vn(vect_n* a, vect_n* b)
   return a->ret;
 }
 /** Vector Subtraction
-
+ 
 ret[i] = a[i] - b[i]
 */
 BTINLINE vect_n* sub_vn(vect_n* a, vect_n* b)
@@ -405,9 +446,10 @@ BTINLINE vect_n* sub_vn(vect_n* a, vect_n* b)
   return a->ret;
 }
 BTINLINE vect_n* wedge_vn(vect_n* a, vect_n*b) // need to figure this out
-{}
+{
+}
 /** Vector Dot Product
-
+ 
 ret = a[0] * b[0] + ... + a[i] * b[i]
 */
 BTINLINE btreal  dot_vn(vect_n* a, vect_n* b)
@@ -420,7 +462,7 @@ BTINLINE btreal  dot_vn(vect_n* a, vect_n* b)
   return res;
 }
 /** Vector Norm
-
+ 
 ret = sqrt(dot_vn(a,b));
 */
 BTINLINE btreal  norm_vn(vect_n* a) //euclidian norm
@@ -433,20 +475,22 @@ BTINLINE btreal  norm_vn(vect_n* a) //euclidian norm
   return sqrt(res);
 }
 /** Unit Vector
-
+ 
 ret = a/norm_vn(a);
 */
 BTINLINE vect_n* unit_vn(vect_n* a) //unit vector
 {
   btreal div;
-    int cnt;
+  int cnt;
   //th Add vector size checking code here
   div = norm_vn(a);
-  if (div > PRACTICALLY_ZERO){
+  if (div > PRACTICALLY_ZERO)
+  {
     for (cnt=0;cnt < a->n;cnt++)
       a->ret->q[cnt] = a->q[cnt]/div;
   }
-  else{
+  else
+  {
     for (cnt=0;cnt < a->n;cnt++)
       a->ret->q[cnt] = 0.0;
   }
@@ -454,10 +498,10 @@ BTINLINE vect_n* unit_vn(vect_n* a) //unit vector
 }
 
 /** Interpolate between two vectors
-
+ 
 Returns a point that is distance s along the line from a to b. The direction
 towards b is considered positive
-
+ 
 \param s Distance along line from a to b
 \param a Starting point
 \param b End point
@@ -468,21 +512,24 @@ vect_n* interp_vn(vect_n* a, vect_n* b,btreal s)
   return add_vn(a,scale_vn(s,unit_vn(sub_vn(b,a))));
 }
 /** Force a vect_n to be in the range min value to max value (inclusive)
-
+ 
   If the value of any element in the vector is out of range, it is set to the 
   closest boundary value.
-
+ 
 */
 BTINLINE vect_n* bound_vn(vect_n* a, btreal min, btreal max)
 {
   int cnt;
   //th Add vector size checking code here
-  for (cnt=0;cnt < a->n;cnt++){
-    if (a->q[cnt] > max) a->ret->q[cnt] = max;
-    else if (a->q[cnt] < min) a->ret->q[cnt] = min;
+  for (cnt=0;cnt < a->n;cnt++)
+  {
+    if (a->q[cnt] > max)
+      a->ret->q[cnt] = max;
+    else if (a->q[cnt] < min)
+      a->ret->q[cnt] = min;
   }
   return a->ret;
-  
+
 }
 //@}
 /** @name vect_n per element operator Functions
@@ -490,7 +537,7 @@ BTINLINE vect_n* bound_vn(vect_n* a, btreal min, btreal max)
  */
 //@{
 /** Per Element Multiply
-
+ 
 ret[i] = a[i] * b[i]
 */
 BTINLINE vect_n* e_mul_vn(vect_n* a, vect_n* b) // Per Element multiply
@@ -502,8 +549,8 @@ BTINLINE vect_n* e_mul_vn(vect_n* a, vect_n* b) // Per Element multiply
   return a->ret;
 }
 /** Per element power
-
-
+ 
+ 
 ret[i] = a[i]^b
 */
 BTINLINE vect_n* e_pow_vn(vect_n* a, btreal b)
@@ -515,7 +562,7 @@ BTINLINE vect_n* e_pow_vn(vect_n* a, btreal b)
   return a->ret;
 }
 /** Per element square root
-
+ 
 ret[i] = sqrt(a[i])
 */
 BTINLINE vect_n* e_sqrt_vn(vect_n* a)
@@ -527,7 +574,7 @@ BTINLINE vect_n* e_sqrt_vn(vect_n* a)
   return a->ret;
 }
 /** Per element square
-
+ 
 ret[i] = a[i]^2
 */
 BTINLINE vect_n* e_sqr_vn(vect_n* a)
@@ -544,13 +591,14 @@ BTINLINE vect_n* e_sqr_vn(vect_n* a)
  */
 //@{
 /** Use printf to print values of a vect_n
-
+ 
 This function prints three lines for each vector. Consider using sprint_vn instead.
 */
 void print_vn(vect_n* src)
 {
   int i,j;
-  if (src != NULL){
+  if (src != NULL)
+  {
     printf("\n<");
     for(j = 0;j<src->n;j++)
       printf("%g,",src->q[j]);
@@ -558,7 +606,7 @@ void print_vn(vect_n* src)
   }
 }
 /** Print vect_n to a string buffer suitable for display or text file
-
+ 
 \code
 < 1.2, 2.4, 5.3>
 \endcode
@@ -566,7 +614,8 @@ void print_vn(vect_n* src)
 char* sprint_vn(char *dest,vect_n* src)
 {
   int i,j;
-  if (src != NULL){
+  if (src != NULL)
+  {
     dest[0] = '<';
     dest[1] = 0;
     for(j = 0;j<src->n;j++)
@@ -577,7 +626,7 @@ char* sprint_vn(char *dest,vect_n* src)
 }
 /** Print vect_n to a string buffer suitable for insertion into a comma delimited
 file.
-
+ 
 \code
  1.2, 2.4, 5.3
 \endcode
@@ -585,7 +634,8 @@ file.
 char* sprint_cvs_vn(char *dest,vect_n* src)
 {
   int i,j;
-  if (src != NULL){
+  if (src != NULL)
+  {
     dest[0] = 0;
     for(j = 0;j<src->n;j++)
       sprintf(dest+strlen(dest)," %8.4f,",src->q[j]);
@@ -600,7 +650,7 @@ end-vector delimiter provided. ' ' for the start delimiter is considered to be
 NO delimiter. 
 Use this for text vectors: strcount_vn(&string, "<>") for "< 1.2, 2.3>"
 Use this for CSV vectors: strcount_vn(&string, " \n\r") for "1.3, 54.3\r"
-
+ 
 \param src Pointer to a pointer to the string. It is updated to point to the first 
 delimiter character
 \param delimiter Constant string with 3 characters. 1 Vector opening character and 2 vector closing characters.
@@ -624,45 +674,67 @@ int strcount_vn(char **src_string,char *delimiter)
   valid[18] = delimiter[0]; //opening character
   valid[19] = delimiter[1]; //closing character
   valid[20] = delimiter[2]; //alternate closing character
-  
+
   src = *src_string;
-  if( strcspn(src,valid)) return -4;
+  if( strcspn(src,valid))
+    return -4;
   start1 = src;
   //find first '<'
-  if (delimiter[0] != 0 && delimiter[0] != ' '){
+  if (delimiter[0] != 0 && delimiter[0] != ' ')
+  {
     start1 = strchr(src,delimiter[0]);
-    if (start1 == NULL) {syslog(LOG_ERR,"sscan_vn: No starting <");return -1;} //couldn't find start1ing '<'
+    if (start1 == NULL)
+    {
+      syslog(LOG_ERR,"sscan_vn: No starting <");
+      return -1;
+    } //couldn't find start1ing '<'
     //look for another '<', abort if it's there
     start1 += 1; //point to character after delimiter
     second = strchr(start1,delimiter[0]);
-    if (second != NULL) {syslog(LOG_ERR,"sscan_vn: Too many <");return -2;} //found a second '<', this is probably a matrix
+    if (second != NULL)
+    {
+      syslog(LOG_ERR,"sscan_vn: Too many <");
+      return -2;
+    } //found a second '<', this is probably a matrix
   }
 
   //count number of values
 
   scan = start1;
-  while(!done){
-    tmp = strtod(scan,&second); 
-    
+  while(!done)
+  {
+    tmp = strtod(scan,&second);
+
     //printf("\n%s :: %s :: %d :: %d",scan,second,num,*second);
-    while (*second == ' ' || *second == '\t') second++; //skip to the end of any whitespace
-    if (*second == ','){
+    while (*second == ' ' || *second == '\t')
+      second++; //skip to the end of any whitespace
+    if (*second == ',')
+    {
       num++;
       scan = second + 1;
     }
-    else if (*second == delimiter[1] || *second == delimiter[2]){
+    else if (*second == delimiter[1] || *second == delimiter[2])
+    {
       num++;
       done = 1;
     }
-    else {done = 1;}
+    else
+    {
+      done = 1;
+    }
   }
-  if (num == 0) {syslog(LOG_ERR,"sscan_vn: No values");return 0;} //there were apparently no values
+  if (num == 0)
+  {
+    syslog(LOG_ERR,"sscan_vn: No values");
+    return 0;
+  } //there were apparently no values
   //create vector with size num_values
-  if ((*second != delimiter[1]) && (*second != delimiter[2])) {
+  if ((*second != delimiter[1]) && (*second != delimiter[2]))
+  {
     syslog(LOG_ERR,"sscan_vn: No ending >, %c, %d, %d, %d",*second,*second,delimiter[1],delimiter[2]);
     return -3;
   } //expected a terminating '>' but did not find one
-  
+
   *src_string = start1; //return the address of the first delimiter
   return num;
 }
@@ -670,7 +742,7 @@ int strcount_vn(char **src_string,char *delimiter)
 /** Convert a string to a vect_n
   
 \param src "< -1, 3.4e3, ,+.9>" - Empty values interpreted as 0.0
-
+ 
 */
 vect_n * strto_vn(vect_n *dest,char *src,char *delimiters)
 {
@@ -679,23 +751,24 @@ vect_n * strto_vn(vect_n *dest,char *src,char *delimiters)
 
   start1 = src;
   num = strcount_vn(&start1,delimiters); // validate string and count the number of values
-  
+
   scan = start1;
 
   //while !done, vect.q[cnt] = strtod()
-  for (cnt = 0; cnt < num; cnt++){
+  for (cnt = 0; cnt < num; cnt++)
+  {
     setval_vn(dest,cnt,strtod(scan,&second));
-     scan = second + 1; //skip over the comma
+    scan = second + 1; //skip over the comma
   }
 
   return dest;
 }
 /** Create a new vect_n and convert a string to a vect_n
-
+ 
   A new vect_n of the appropriate size is allocated during the course of this function
   
 \param src "< -1, 3.4e3, ,+.9>" - Empty values interpreted as 0.0
-
+ 
 */
 vect_n * sscan_vn(char *src)
 {
@@ -705,30 +778,33 @@ vect_n * sscan_vn(char *src)
 
   start1 = src;
   num = strcount_vn(&start1,"<>"); // validate string and count the number of values
-  if (num <= 0){
+  if (num <= 0)
+  {
     return NULL;
   }
-  else {
+  else
+  {
     dest = new_vn(num);
-  
+
     scan = start1;
 
     //while !done, vect.q[cnt] = strtod()
-    for (cnt = 0; cnt < num; cnt++){
+    for (cnt = 0; cnt < num; cnt++)
+    {
       setval_vn(dest,cnt,strtod(scan,&second));
-       scan = second + 1; //skip over the comma
+      scan = second + 1; //skip over the comma
     }
 
     return dest;
   }
 }
-  
+
 /** Convert a CSV string to a vect_n
   
 \param src " -1, 3.4e3, ,+.9" - Empty values interpreted as 0.0
 \param dest vect_n
-
-
+ 
+ 
 */
 vect_n * cvsto_vn(vect_n* dest, char *src)
 {
@@ -737,11 +813,12 @@ vect_n * cvsto_vn(vect_n* dest, char *src)
 
   start1 = src;
   num = strcount_vn(&start1," \n\r"); // validate string and count the number of values
-  
+
   scan = start1;
 
   //while !done, vect.q[cnt] = strtod()
-  for (cnt = 0; cnt < num; cnt++){
+  for (cnt = 0; cnt < num; cnt++)
+  {
     setval_vn(dest,cnt,strtod(scan,&second));
     scan = second + 1; //skip over the comma
   }
@@ -756,20 +833,20 @@ int test_vn(btreal error)
   vect_n *c1,*c2,*c3,*c4;
   vect_n *b1,*b2;
   btreal a1,a2,a3;
-  
+
   c1 = new_vn(4);
   c2 = new_vn(4);
   c3 = new_vn(4);
-  
-  
+
+
   printf("\nThe following should be <5,4,3,2>");
   const_vn(c1,5.0,4.0,3.0,2.0);
   printf("\n<%g,%g,%g,%g>\n\n",getval_vn(c1,0),getval_vn(c1,1),getval_vn(c1,2),getval_vn(c1,3));
-  
+
   printf("\nSet: <5,4,3,2>");
   set_vn(c2,c1);
   print_vn(c2);
-  
+
   printf("\nSub,Add: <5,4,3,2>");
   set_vn(c3,add_vn(c1,sub_vn(c1,c2)));
   print_vn(c3);
@@ -777,40 +854,45 @@ int test_vn(btreal error)
   printf("\nNeg,Scale: <-15,-12,-9,-6>");
   set_vn(c3,scale_vn(3,neg_vn(c1)));
   print_vn(c3);
-  
+
   printf("\nUnit: <0,0,0,0>");
   set_vn(c3,unit_vn(c1));
-  print_vn(c3);  
-  
+  print_vn(c3);
+
   printf("\nDot: %g | %g",5.0*5.0+4.0*4.0+3.0*3.0+2.0*2.0,dot_vn(c1,c2));
   printf("\nNorm: %g | %g",sqrt(5*5+4*4+3*3+2*2),norm_vn(c1));
-  
+
   printf("\nSum abuse: 5*<5,4,3,2>");
   set_vn(c3,add_vn(c1,add_vn(c1,add_vn(c1,add_vn(c1,c1)))));
   print_vn(c3);
-  
+
   printf("\nsscan1");
   c4 = sscan_vn(" < 4.3, 5 , 89, 98, 100 >");
-  if (c4 != NULL) print_vn(c4);
-  
+  if (c4 != NULL)
+    print_vn(c4);
+
   printf("\nsscan2");
   c4 = sscan_vn(" < 4.3 5, 89, 98, 100 > ");
-  if (c4 != NULL) print_vn(c4);
-  
+  if (c4 != NULL)
+    print_vn(c4);
+
   printf("\nsscan3");
   c4 = sscan_vn(" < 4.3,u 5, 89, 98, 100 >");
-  if (c4 != NULL) print_vn(c4);
-  
+  if (c4 != NULL)
+    print_vn(c4);
+
   printf("\nsscan4");
   c4 = sscan_vn(" < 4.3,, 89, 98, 100 >");
-  if (c4 != NULL) print_vn(c4);
-  
-   printf("\nsscan4");
+  if (c4 != NULL)
+    print_vn(c4);
+
+  printf("\nsscan4");
   c4 = sscan_vn(" < <4.3,, 89, 98, 100 >");
-  if (c4 != NULL) print_vn(c4);
-  
-  
-  
+  if (c4 != NULL)
+    print_vn(c4);
+
+
+
 }
 //@}
 /** @name Vector Array Functions
@@ -822,7 +904,7 @@ int test_vn(btreal error)
 
 /**************************************** vectray functions ****************/
 /** Allocate an array of vect_n data in one block
-
+ 
   vect_ray has buffer overrun data so that idx_vr(ray,-1) and idx_vr(ray,rows + 1) are valid
 */
 vectray * new_vr(int vect_size,int rows)
@@ -831,20 +913,20 @@ vectray * new_vr(int vect_size,int rows)
   vectray *n;
   int cnt;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = malloc(vect_size*(rows + 2)*sizeof(btreal)+sizeof(vectray))) == NULL) 
+  if ((vmem = malloc(vect_size*(rows + 2)*sizeof(btreal)+sizeof(vectray))) == NULL)
   {
     syslog(LOG_ERR,"btmath: vectray memory allocation failed, size %d",vect_size);
     return NULL;
   }
-  
+
   addbtptr(vmem);
-  
+
   n = (vectray*)vmem;
   n->n = vect_size;
   n->rows = rows;
   n->lastrow = 0; //the number of rows that are filled in the array
   n->rayvect = new_vn(vect_size);
-  
+
   n->data = (btreal*)(vmem + sizeof(vectray)+ sizeof(btreal)*vect_size);
 
   for (cnt = 0; cnt < rows; cnt ++)
@@ -859,7 +941,7 @@ void destroy_vr(vectray *vr)
 /** Set internal vect_n proxy to the specified index.
  
 You probably want to use getvn_vr instead!
-
+ 
 sets the internal vector structure to point to the indexed data and returns the
   pointer. CAUTION! You cannot use this in _vn math functions. only use this with 
   set_vn()
@@ -868,11 +950,11 @@ sets the internal vector structure to point to the indexed data and returns the
 */
 BTINLINE vect_n * idx_vr(vectray *ray,int idx)
 {
-  ray->rayvect->q = ray->data + ray->n * idx;
+  ray->rayvect->q = &(ray->data[ray->n * idx]);
   return ray->rayvect;
 }
 /** Reroute a vect_n data pointer to a block of data in a vector array
-
+ 
 This is a dangerous function to use. Read the code for more info.
 */
 /* Use this when you need to do multi vector operations on elements of a
@@ -882,12 +964,12 @@ examples of use.
 */
 BTINLINE vect_n * mapdat_vr(vect_n *dest, vectray *ray, int idx)
 {
-  dest->q = ray->data + ray->n * idx;
+  dest->q = &(ray->data[ray->n * idx]);
   return dest;
 }
 /** Copy vect_n elements of a vectray element to another vect_n
-
-
+ 
+ 
 */
 BTINLINE vect_n * getvn_vr(vect_n *dest,vectray *ray, int idx)
 {
@@ -897,7 +979,7 @@ BTINLINE vect_n * getvn_vr(vect_n *dest,vectray *ray, int idx)
 }
 
 /** Add a vect_n to the array of vect_n's
-
+ 
 */
 BTINLINE void append_vr(vectray *ray, vect_n* v)
 {
@@ -910,7 +992,7 @@ BTINLINE int endof_vr(vectray *ray)
 {
   return ray->lastrow - 1;
 }
-/** 
+/**
 \bug This needs to be changed to another name. the sizeof_ function should return the memory footprint. th050526
 */
 /** Returns the present number of elements in ray */
@@ -933,79 +1015,82 @@ BTINLINE void clear_vr(vectray *ray)
 */
 int read_csv_file_vr(char *fileName, vectray **vr)
 {
-    char        line[MAX_LINE_LENGTH];
-    int         charCt, i, row, columnCt;
-    double      a[8];
-    FILE        *inFile;
-    int rows,columns;
-    int mincols = 50000,maxcols = 0;
-    char *linedummy;
-    vect_n* tmp_v;
-    
-    //Open the file
-    if((inFile = fopen(fileName, "r")) == NULL)
+  char        line[MAX_LINE_LENGTH];
+  int         charCt, i, row, columnCt;
+  double      a[8];
+  FILE        *inFile;
+  int rows,columns;
+  int mincols = 50000,maxcols = 0;
+  char *linedummy;
+  vect_n* tmp_v;
+
+  //Open the file
+  if((inFile = fopen(fileName, "r")) == NULL)
+  {
+    syslog(LOG_ERR, "Trajectory file '%s' not found!", fileName);
+    return(1);
+  }
+  syslog(LOG_ERR, "Opened the trajectory file");
+
+  //Scan the file
+  rows = 0;
+  while(1)
+  {
+    if(fgets(line, MAX_LINE_LENGTH, inFile) == NULL)
+      break; //Reached EOF
+    if(line[0] == '#')
     {
-        syslog(LOG_ERR, "Trajectory file '%s' not found!", fileName);
-        return(1);
+      syslog(LOG_ERR, "Found a comment: [%s]", line);
+      continue; //Skip comments
     }
-    syslog(LOG_ERR, "Opened the trajectory file");
-    
-    //Scan the file
-    rows = 0;
-    while(1)
+    linedummy = line;
+    columns = strcount_vn(&linedummy," \n\r");
+
+    if(columns > 1)
     {
-        if(fgets(line, MAX_LINE_LENGTH, inFile) == NULL)        
-            break; //Reached EOF
-        if(line[0] == '#')
-        {
-            syslog(LOG_ERR, "Found a comment: [%s]", line);
-            continue; //Skip comments
-        }
-        linedummy = line;
-        columns = strcount_vn(&linedummy," \n\r");
-        
-        if(columns > 1)
-        {
-            syslog(LOG_ERR, "Read row %d with %d columns", rows, columns);
-            if (mincols > columns) mincols = columns;
-            if (maxcols < columns) maxcols = columns;
-            columnCt = columns;
-            ++rows;
-        }
+      syslog(LOG_ERR, "Read row %d with %d columns", rows, columns);
+      if (mincols > columns)
+        mincols = columns;
+      if (maxcols < columns)
+        maxcols = columns;
+      columnCt = columns;
+      ++rows;
     }
-    if (mincols != maxcols) {
-      syslog(LOG_ERR, "Different rows have different columns. Min: %d Max: %d", mincols,maxcols);
-      return(2);
-    }
-    //Allocate memory for the file
-    *vr = new_vr(maxcols,rows);
-    tmp_v = new_vn(maxcols);
-    //Load the file into memory
-    rewind(inFile);
-    row = 0;
-    while(1)
+  }
+  if (mincols != maxcols)
+  {
+    syslog(LOG_ERR, "Different rows have different columns. Min: %d Max: %d", mincols,maxcols);
+    return(2);
+  }
+  //Allocate memory for the file
+  *vr = new_vr(maxcols,rows);
+  tmp_v = new_vn(maxcols);
+  //Load the file into memory
+  rewind(inFile);
+  row = 0;
+  while(1)
+  {
+    if(fgets(line, MAX_LINE_LENGTH, inFile) == NULL)
+      break; //Reached EOF
+    if(line[0] == '#')
     {
-        if(fgets(line, MAX_LINE_LENGTH, inFile) == NULL)
-            break; //Reached EOF
-        if(line[0] == '#')
-        {
-            syslog(LOG_ERR, "Found a comment: [%s]", line);
-            continue; //Skip comments
-        }
-        
-        fill_vn(tmp_v,0.0);
-        cvsto_vn(tmp_v,line);
-        set_vn(idx_vr(*vr,row),tmp_v);
-        ++row;
-        
+      syslog(LOG_ERR, "Found a comment: [%s]", line);
+      continue; //Skip comments
     }
-    syslog(LOG_ERR, "Loaded the data into the arrays");
-    //Close the file
-    fclose(inFile);
-    
-    columns = columnCt;
-    
-    return(0);
+
+    fill_vn(tmp_v,0.0);
+    cvsto_vn(tmp_v,line);
+    set_vn(idx_vr(*vr,row),tmp_v);
+    ++row;
+
+  }
+  syslog(LOG_ERR, "Loaded the data into the arrays");
+  //Close the file
+  fclose(inFile);
+
+  columns = columnCt;
+
+  return(0);
 }
 
 
@@ -1013,16 +1098,18 @@ int test_vr(btreal error)
 {
   vectray *vr,*vr2;
   int cnt,idx;
-  
+
   vr = new_vr(3,10);
-  for (cnt = 0; cnt < 10; cnt++){
+  for (cnt = 0; cnt < 10; cnt++)
+  {
     fill_vn(idx_vr(vr,cnt),cnt);
     set_vn(idx_vr(vr,cnt),scale_vn(2.0,idx_vr(vr,cnt)));
     print_vn(idx_vr(vr,cnt));
   }
-  
+
   read_csv_file_vr("test.csv",&vr2);
-  for (cnt = 0; cnt < size_vr(vr2); cnt++){
+  for (cnt = 0; cnt < size_vr(vr2); cnt++)
+  {
     print_vn(idx_vr(vr2,cnt));
   }
 }
@@ -1049,7 +1136,7 @@ vect_3 * new_v3() //allocate an n-vector
   void* vmem;
   vect_3 *n;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = malloc(2*sizeof(vect_3))) == NULL) 
+  if ((vmem = malloc(2*sizeof(vect_3))) == NULL)
   {
     syslog(LOG_ERR,"btmath: vect_3 memory allocation failed, size %d",3);
     return NULL;
@@ -1071,7 +1158,7 @@ vect_3 * new_v3() //allocate an n-vector
 vect_3 * init_staticv3(staticv3 *sv3)
 {
   vect_3 *n;
-  
+
   n = &sv3->main;
   n->n = 3;
   n->ret = &sv3->scratch;
@@ -1123,11 +1210,15 @@ BTINLINE vect_3* C_v3(btreal v1, btreal v2, btreal v3)
 /** Optimized for 3 element vectors. See setval_vn()
 */
 BTINLINE void setval_v3(vect_3* dest, int idx, btreal val)
-{ dest->q[idx] = val; }
+{
+  dest->q[idx] = val;
+}
 /** Optimized for 3 element vectors. See getval_vn()
 */
 BTINLINE btreal getval_v3(vect_3* dest, int idx)
-{ return dest->q[idx];}
+{
+  return dest->q[idx];
+}
 
 
 /** Optimized for 3 element vectors. See neg_vn()
@@ -1197,15 +1288,17 @@ BTINLINE vect_3* unit_v3(vect_3* a)
 {
   btreal div;
   div = sqrt(a->q[0]*a->q[0] + a->q[1]*a->q[1] + a->q[2]*a->q[2]);
-  if (div > PRACTICALLY_ZERO){
+  if (div > PRACTICALLY_ZERO)
+  {
     a->ret->q[0] = a->q[0]/div;
     a->ret->q[1] = a->q[1]/div;
     a->ret->q[2] = a->q[2]/div;
   }
-  else{
+  else
+  {
     a->ret->q[0] = 0.0;
     a->ret->q[1] = 0.0;
-    a->ret->q[2] = 0.0;    
+    a->ret->q[2] = 0.0;
   }
   return a->ret;
 }
@@ -1214,11 +1307,11 @@ BTINLINE vect_3* unit_v3(vect_3* a)
 void print_v3(vect_3* src)
 {
   int i,j;
-  
-    printf("<");
-    for(j = 0;j<src->n;j++)
-      printf("%g,",src->q[j]);
-    printf(">");
+
+  printf("<");
+  for(j = 0;j<src->n;j++)
+    printf("%g,",src->q[j]);
+  printf(">");
 
 }
 /** Optimized for 3 element vectors. See sprint_vn()
@@ -1226,7 +1319,8 @@ void print_v3(vect_3* src)
 char* sprint_v3(char *dest,vect_3* src)
 {
   int i,j;
-  if (src != NULL){
+  if (src != NULL)
+  {
     dest[0] = '<';
     dest[1] = 0;
     for(j = 0;j<src->n;j++)
@@ -1242,20 +1336,20 @@ int test_v3(btreal error)
   vect_3 *c1,*c2,*c3;
   vect_3 *b1,*b2;
   btreal a1,a2,a3;
-  
+
   c1 = new_v3();
   c2 = new_v3();
   c3 = new_v3();
-  
-  
+
+
   printf("\nThe following should be <5,4,3,2>");
   const_v3(c1,5.0,4.0,3.0);
   printf("\n<%g,%g,%g,%g>\n\n",getval_v3(c1,0),getval_v3(c1,1),getval_v3(c1,2));
-  
+
   printf("\nSet: <5,4,3,2>");
   set_v3(c2,c1);
   print_v3(c2);
-  
+
   printf("\nSub,Add: <5,4,3,2>");
   set_v3(c3,add_v3(c1,sub_v3(c1,c2)));
   print_v3(c3);
@@ -1263,27 +1357,27 @@ int test_v3(btreal error)
   printf("\nNeg,Scale: <-15,-12,-9,-6>");
   set_v3(c3,scale_v3(3,neg_v3(c1)));
   print_v3(c3);
-  
+
   printf("\nUnit: <0,0,0,0>");
   set_v3(c3,unit_v3(c1));
-  print_v3(c3);  
-  
+  print_v3(c3);
+
   printf("\nDot: %g | %g",5.0*5.0+4.0*4.0+3.0*3.0+2.0*2.0,dot_v3(c1,c2));
   printf("\nNorm: %g | %g",sqrt(5*5+4*4+3*3+2*2),norm_v3(c1));
-  
+
   printf("\nSum abuse: 5*<5,4,3,2>");
   set_v3(c3,add_v3(c1,add_v3(c1,add_v3(c1,add_v3(c1,c1)))));
   print_v3(c3);
-  
+
   printf("\nCross abuse: 5*<5,4,3,2>");
   set_v3(c3,cross_v3(c1,scale_v3(getval_v3(c2,2),c2)));
   print_v3(c3);
-  
-    const_v3(c1,0.1,-0.4,5.0);
+
+  const_v3(c1,0.1,-0.4,5.0);
   const_v3(c2,0.8,3.2,-1.4);
   printf("\nCross <0.1,-0.4,5.0> X <0.8,3.2,-1.4> = <-15.44,4.14,.64>:");
   print_v3(cross_v3(c1,c2));
-  
+
 }
 //@}
 /**************************************** End vect_3 functions ****************/
@@ -1305,7 +1399,7 @@ quat * new_q() //allocate an n-vector
   void* vmem;
   quat *n;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = malloc(2*sizeof(quat))) == NULL) 
+  if ((vmem = malloc(2*sizeof(quat))) == NULL)
   {
     syslog(LOG_ERR,"btmath: quat memory allocation failed, size %d",3);
     return NULL;
@@ -1359,10 +1453,14 @@ BTINLINE quat* C_q(btreal v1, btreal v2, btreal v3, btreal v4)
 }
 
 BTINLINE void setval_q(quat* dest, int idx, btreal val)
-{ dest->q[idx] = val; }
+{
+  dest->q[idx] = val;
+}
 
 BTINLINE btreal getval_q(quat* dest, int idx)
-{ return dest->q[idx];}
+{
+  return dest->q[idx];
+}
 
 BTINLINE void extract_q(btreal* dest, quat* src) //copy vector to a btreal array
 {
@@ -1370,7 +1468,7 @@ BTINLINE void extract_q(btreal* dest, quat* src) //copy vector to a btreal array
   //th Add vector size checking code here
   for (cnt=0;cnt < src->n;cnt++)
     dest[cnt] = src->q[cnt];
-  
+
 }
 BTINLINE void inject_q(quat* dest, btreal* src) //copy btreal array to vector
 {
@@ -1430,17 +1528,19 @@ BTINLINE quat* unit_q(quat* a)
 {
   btreal div;
   div = norm_q(a);
-  if (div > PRACTICALLY_ZERO){
+  if (div > PRACTICALLY_ZERO)
+  {
     a->ret->q[0] = a->q[0]/div;
     a->ret->q[1] = a->q[1]/div;
     a->ret->q[2] = a->q[2]/div;
     a->ret->q[3] = a->q[3]/div;
   }
-  else{
+  else
+  {
     a->ret->q[0] = 0.0;
     a->ret->q[1] = 0.0;
-    a->ret->q[2] = 0.0;   
-    a->ret->q[3] = 0.0;  
+    a->ret->q[2] = 0.0;
+    a->ret->q[3] = 0.0;
   }
   return a->ret;
 }
@@ -1449,35 +1549,37 @@ quat* inv_q(quat* a)
 {
   btreal div;
   div = norm_q(a);
-  if (div > PRACTICALLY_ZERO){
+  if (div > PRACTICALLY_ZERO)
+  {
     a->ret->q[0] = a->q[0]/div;
     a->ret->q[1] = -1.0*a->q[1]/div;
     a->ret->q[2] = -1.0*-a->q[2]/div;
     a->ret->q[3] = -1.0*-a->q[3]/div;
   }
-  else{
+  else
+  {
     a->ret->q[0] = 0.0;
     a->ret->q[1] = 0.0;
-    a->ret->q[2] = 0.0;   
-    a->ret->q[3] = 0.0;  
+    a->ret->q[2] = 0.0;
+    a->ret->q[3] = 0.0;
   }
   return a->ret;
-  
+
 }
 quat* pow_q(quat* a, btreal b)
 {
   return exp_q(scale_q(b,log_q(a)));
-  
+
 }
 BTINLINE quat* mul_q(quat* a, quat*b)
 {
   btreal q[4];
-  
+
   q[0] = a->q[0] * b->q[0] - (a->q[1]*b->q[1] + a->q[2]*b->q[2]+ a->q[3]*b->q[3]);
   q[1] = a->q[0] * b->q[1] + b->q[0] * a->q[1] + a->q[2] * b->q[3] - a->q[3] * b->q[2];
   q[2] = a->q[0] * b->q[2] + b->q[0] * a->q[2] + a->q[3] * b->q[1] - a->q[1] * b->q[3];
   q[3] = a->q[0] * b->q[3] + b->q[0] * a->q[3] + a->q[1] * b->q[2] - a->q[2] * b->q[1];
-  
+
   a->ret->q[0] = q[0];
   a->ret->q[1] = q[1];
   a->ret->q[2] = q[2];
@@ -1488,52 +1590,56 @@ BTINLINE quat* mul_q(quat* a, quat*b)
 quat* exp_q(quat* a)
 {
   btreal theta,st;
-  
+
   theta = sqrt(a->q[1]*a->q[1] + a->q[2]*a->q[2]+ a->q[3]*a->q[3]);
   st = sin(theta);
-  
+
   a->ret->q[0] = cos(theta);
-  
-  if (fabs(st) > PRACTICALLY_ZERO){
+
+  if (fabs(st) > PRACTICALLY_ZERO)
+  {
     a->ret->q[1] = a->q[1]*st/theta;
     a->ret->q[2] = a->q[2]*st/theta;
     a->ret->q[3] = a->q[3]*st/theta;
   }
-  else{
+  else
+  {
     a->ret->q[1] = a->q[1];
     a->ret->q[2] = a->q[2];
     a->ret->q[3] = a->q[3];
 
   }
-  
+
   return a->ret;
 }
 
 quat* log_q(quat* a)
 {
   btreal theta,st;
-  
+
   theta = acos(a->q[0]);
   st = sin(theta);
-  
+
   a->ret->q[0] = 0.0;
-  
-  if (fabs(st) > PRACTICALLY_ZERO){
+
+  if (fabs(st) > PRACTICALLY_ZERO)
+  {
     a->ret->q[1] = a->q[1]/st*theta;
     a->ret->q[2] = a->q[2]/st*theta;
     a->ret->q[3] = a->q[3]/st*theta;
   }
-  else{
+  else
+  {
     a->ret->q[1] = a->q[1];
     a->ret->q[2] = a->q[2];
     a->ret->q[3] = a->q[3];
 
   }
-  
+
   return a->ret;
 }
 /** Convert Rotation matrix to a quaternion
-
+ 
 */
 quat* R_to_q(quat* dest, matr_3* src)
 {
@@ -1550,36 +1656,36 @@ quat* R_to_q(quat* dest, matr_3* src)
 matr_3* q_to_R(matr_3* dest, quat* src)
 {
   setrow_m3(dest,0,
-    src->q[0]*src->q[0] + src->q[1]*src->q[1] - src->q[2]*src->q[2] - src->q[3]*src->q[3],
-    2.0*(src->q[1]*src->q[2] - src->q[0]*src->q[3]),
-    2.0*(src->q[1]*src->q[3] - src->q[0]*src->q[2]));
-  
+            src->q[0]*src->q[0] + src->q[1]*src->q[1] - src->q[2]*src->q[2] - src->q[3]*src->q[3],
+            2.0*(src->q[1]*src->q[2] - src->q[0]*src->q[3]),
+            2.0*(src->q[1]*src->q[3] - src->q[0]*src->q[2]));
+
   setrow_m3(dest,1,
-    2.0*(src->q[1]*src->q[2] + src->q[0]*src->q[3]),
-    src->q[0]*src->q[0] - src->q[1]*src->q[1] + src->q[2]*src->q[2] - src->q[3]*src->q[3],
-    2.0*(src->q[2]*src->q[3] - src->q[0]*src->q[1]));
-   
+            2.0*(src->q[1]*src->q[2] + src->q[0]*src->q[3]),
+            src->q[0]*src->q[0] - src->q[1]*src->q[1] + src->q[2]*src->q[2] - src->q[3]*src->q[3],
+            2.0*(src->q[2]*src->q[3] - src->q[0]*src->q[1]));
+
   setrow_m3(dest,2,
-    2.0*(src->q[1]*src->q[3] - src->q[0]*src->q[2]),
-    2.0*(src->q[2]*src->q[3] + src->q[0]*src->q[1]),
-    src->q[0]*src->q[0] - src->q[1]*src->q[1] - src->q[2]*src->q[2] + src->q[3]*src->q[3]);
+            2.0*(src->q[1]*src->q[3] - src->q[0]*src->q[2]),
+            2.0*(src->q[2]*src->q[3] + src->q[0]*src->q[1]),
+            src->q[0]*src->q[0] - src->q[1]*src->q[1] - src->q[2]*src->q[2] + src->q[3]*src->q[3]);
   return dest;
 }
 
 /** Great circle distance between two quaternions
 Returns the great circle distance between two unit quaternions.
 */
-btreal GCdist_q(quat* start, quat* end) 
+btreal GCdist_q(quat* start, quat* end)
 {
   btreal q[4];
-//  q[0] = a->q[0] * b->q[0] + a->q[1]*b->q[1] + a->q[2]*b->q[2] + a->q[3]*b->q[3]; //optimized but untested
-//  return acos(q[0])*2.0;                                                          //optimized but untested
+  //  q[0] = a->q[0] * b->q[0] + a->q[1]*b->q[1] + a->q[2]*b->q[2] + a->q[3]*b->q[3]; //optimized but untested
+  //  return acos(q[0])*2.0;                                                          //optimized but untested
   return angle_q(mul_q(end,conj_q(start))); // inv_q = conj_q for quaternions of unit length
 }
 /** Great circle distance between two quaternions
 Returns the great circle distance between two unit quaternions.
 */
-vect_3* GCaxis_q(vect_3* dest, quat* start, quat* end) 
+vect_3* GCaxis_q(vect_3* dest, quat* start, quat* end)
 {
   btreal q[4];
   return axis_q(dest,mul_q(end,conj_q(start))); // inv_q = conj_q for quaternions of unit length
@@ -1590,8 +1696,10 @@ vect_3* GCaxis_q(vect_3* dest, quat* start, quat* end)
 */
 btreal angle_q(quat* src)
 {
-  if (src->q[0] > 1.0) src->q[0] = 1.0;
-  if (src->q[0] < -1.0) src->q[0] = -1.0;
+  if (src->q[0] > 1.0)
+    src->q[0] = 1.0;
+  if (src->q[0] < -1.0)
+    src->q[0] = -1.0;
   return acos(fabs(src->q[0]))*2.0;
 }
 /** Set vector dest to the axis of rotation defined by quaternion src
@@ -1600,18 +1708,19 @@ Givin a unit quaternion q (used to rotate vector v) it can be decomposed
 into subcomponents (a, b*u) where a and b are scalars and u is a unit vector.
 u is the axis of the rotation given by q and theta is the angle of rotation.
 a = cos(theta/2) ; b = sin(theta/2) 
-
+ 
 \bug We insure that the axis is given relative to a positive angle 0 - pi
 */
-vect_3* axis_q(vect_3* dest, quat* src) 
+vect_3* axis_q(vect_3* dest, quat* src)
 {
-	btreal flip = 1.0;
-  if (src->q[0] < 0.0) flip = -1.0;
-  
+  btreal flip = 1.0;
+  if (src->q[0] < 0.0)
+    flip = -1.0;
+
   dest->q[0] = flip * src->q[1];
   dest->q[1] = flip * src->q[2];
   dest->q[2] = flip * src->q[3];
-  
+
   set_v3(dest,unit_v3(dest));
   return dest;
 }
@@ -1627,7 +1736,7 @@ vect_3* axis_q(vect_3* dest, quat* src)
  */
 //@{
 /** Allocates memory and calculation swap space for a new homogeneous matrix.
-
+ 
   All matrices need to be initialized with new. It is preferable to declare 
   matrices as pointers. If you declare a non-pointer matrix then the memory set 
   aside for it will be ignored and new memory will be allocated.
@@ -1654,14 +1763,14 @@ vect_3* axis_q(vect_3* dest, quat* src)
 return calculation results without dirtying up the original matrix. This could
 probably be a single piece of memory somewhere but I am worried about thread 
 safety. th050222
-
+ 
 */
 matr_h * new_mh() //allocate an n-vector
 {
   void *ptr;
   matr_h *n;
   //allocate mem for return structure
-  if ((ptr = malloc(2*sizeof(matr_h))) == NULL) 
+  if ((ptr = malloc(2*sizeof(matr_h))) == NULL)
   {
     syslog(LOG_ERR,"btmath: matr_h memory allocation failed");
     return NULL;
@@ -1675,7 +1784,7 @@ matr_h * new_mh() //allocate an n-vector
   ident_mh(n);
   n->m = 4;
   n->n = 4;
-  
+
   return n;
 }
 /** Copy src matrix to dest matrix
@@ -1746,7 +1855,7 @@ BTINLINE matr_h* mul_mh(matr_h* a,matr_h* b)
   ret[0] = a->q[0]*b->q[0] + a->q[1]*b->q[4] + a->q[2]*b->q[8];
   ret[4] = a->q[4]*b->q[0] + a->q[5]*b->q[4] + a->q[6]*b->q[8];
   ret[8] = a->q[8]*b->q[0] + a->q[9]*b->q[4] + a->q[10]*b->q[8];
-  
+
   //col 2
   ret[1] = a->q[0]*b->q[1] + a->q[1]*b->q[5] + a->q[2]*b->q[9];
   ret[5] = a->q[4]*b->q[1] + a->q[5]*b->q[5] + a->q[6]*b->q[9];
@@ -1761,7 +1870,7 @@ BTINLINE matr_h* mul_mh(matr_h* a,matr_h* b)
   ret[3] = a->q[0]*b->q[3] + a->q[1]*b->q[7] + a->q[2]*b->q[11] + a->q[3];
   ret[7] = a->q[4]*b->q[3] + a->q[5]*b->q[7] + a->q[6]*b->q[11] + a->q[7];
   ret[11] = a->q[8]*b->q[3] + a->q[9]*b->q[7] + a->q[10]*b->q[11] + a->q[11];
-  
+
   a->ret->q[0] = ret[0];
   a->ret->q[1] = ret[1];
   a->ret->q[2] = ret[2];
@@ -1784,7 +1893,7 @@ BTINLINE void setmul_mh(matr_h* a,matr_h* b)
   ret[0] = a->q[0]*b->q[0] + a->q[1]*b->q[4] + a->q[2]*b->q[8];
   ret[4] = a->q[4]*b->q[0] + a->q[5]*b->q[4] + a->q[6]*b->q[8];
   ret[8] = a->q[8]*b->q[0] + a->q[9]*b->q[4] + a->q[10]*b->q[8];
-  
+
   //col 2
   ret[1] = a->q[0]*b->q[1] + a->q[1]*b->q[5] + a->q[2]*b->q[9];
   ret[5] = a->q[4]*b->q[1] + a->q[5]*b->q[5] + a->q[6]*b->q[9];
@@ -1799,7 +1908,7 @@ BTINLINE void setmul_mh(matr_h* a,matr_h* b)
   ret[3] = a->q[0]*b->q[3] + a->q[1]*b->q[7] + a->q[2]*b->q[11] + a->q[3];
   ret[7] = a->q[4]*b->q[3] + a->q[5]*b->q[7] + a->q[6]*b->q[11] + a->q[7];
   ret[11] = a->q[8]*b->q[3] + a->q[9]*b->q[7] + a->q[10]*b->q[11] + a->q[11];
-  
+
   a->q[0] = ret[0];
   a->q[1] = ret[1];
   a->q[2] = ret[2];
@@ -1821,11 +1930,11 @@ BTINLINE vect_3* matXvec_mh(matr_h* a, vect_3* b)
   ret[0] = a->q[0]*b->q[0] + a->q[1]*b->q[1] + a->q[2]*b->q[2] + a->q[3];
   ret[1] = a->q[4]*b->q[0] + a->q[5]*b->q[1] + a->q[6]*b->q[2] + a->q[7];
   ret[2] = a->q[8]*b->q[0] + a->q[9]*b->q[1] + a->q[10]*b->q[2] + a->q[11];
-  
+
   b->ret->q[0] = ret[0];
   b->ret->q[1] = ret[1];
   b->ret->q[2] = ret[2];
-  
+
   return b->ret;
 }
 
@@ -1839,8 +1948,9 @@ btreal getval_mh(matr_h* src, int row, int col)
 void print_mh(matr_h* src)
 {
   int i,j;
-  
-  for(i = 0;i<3;i++){
+
+  for(i = 0;i<3;i++)
+  {
     printf("\n| ");
     for(j = 0;j<4;j++)
       printf("% 6.3f ",src->q[4*i + j]);
@@ -1853,54 +1963,54 @@ int test_mh(btreal error)
 {
   int cnt;
   matr_h* t1,*t2,*t3;
-  
+
   printf("\nNew t1,t2:");
 
   t1 = new_mh();
   t2 = new_mh();
   t3 = new_mh();
   print_mh(t1);
-  
+
   printf("\nSet Col t1:");
   setrow_mh(t1,1,1.0,2.0,3.0,4.0);
-  print_mh(t1);  
-  
+  print_mh(t1);
+
   printf("\nSet Col t2:");
   setrow_mh(t2,2,2.0,2.0,2.0,2.0);
-  print_mh(t2);  
+  print_mh(t2);
 
- printf("\nMul t2 = t2*t1:");
+  printf("\nMul t2 = t2*t1:");
   set_mh(t3,mul_mh(t1,t2));
-  print_mh(t3);  
+  print_mh(t3);
 
   printf("\nMul t2 = t2*t1:");
   set_mh(t2,mul_mh(t1,t2));
-  print_mh(t2);  
+  print_mh(t2);
 
 }
 int bench_mh()
 {
   int cnt;
   matr_h* t1,*t2,*t3;
-  
+
   printf("\nNew t1,t2:");
   t1 = new_mh();
   t2 = new_mh();
   t3 = new_mh();
   print_mh(t1);
-  
-  
+
+
   for (cnt = 0;cnt < 10000;cnt++)
   {
-    
-    
-    
+
+
+
   }
-  
-  
-  
-  
-  
+
+
+
+
+
 }
 //@}
 /**************************************** End matr_h functions ****************/
@@ -1909,7 +2019,7 @@ int bench_mh()
     These functions are optimized to operate on SO(3).
  */
 //@{
-  /** Allocate and initialize a new matr_3 object. See new_mh() */
+/** Allocate and initialize a new matr_3 object. See new_mh() */
 matr_3 * new_m3() //allocates memory and sets to identity
 {
   return(new_mh());
@@ -1987,7 +2097,7 @@ BTINLINE matr_h* mul_m3(matr_3* a,matr_3* b)
   ret[0] = a->q[0]*b->q[0] + a->q[1]*b->q[4] + a->q[2]*b->q[8];
   ret[4] = a->q[4]*b->q[0] + a->q[5]*b->q[4] + a->q[6]*b->q[8];
   ret[8] = a->q[8]*b->q[0] + a->q[9]*b->q[4] + a->q[10]*b->q[8];
-  
+
   //col 2
   ret[1] = a->q[0]*b->q[1] + a->q[1]*b->q[5] + a->q[2]*b->q[9];
   ret[5] = a->q[4]*b->q[1] + a->q[5]*b->q[5] + a->q[6]*b->q[9];
@@ -2002,7 +2112,7 @@ BTINLINE matr_h* mul_m3(matr_3* a,matr_3* b)
   ret[3] = 0.0;
   ret[7] = 0.0;
   ret[11] = 0.0;
-  
+
   a->ret->q[0] = ret[0];
   a->ret->q[1] = ret[1];
   a->ret->q[2] = ret[2];
@@ -2025,7 +2135,7 @@ BTINLINE void setmul_m3(matr_3* a,matr_3* b)
   ret[0] = a->q[0]*b->q[0] + a->q[1]*b->q[4] + a->q[2]*b->q[8];
   ret[4] = a->q[4]*b->q[0] + a->q[5]*b->q[4] + a->q[6]*b->q[8];
   ret[8] = a->q[8]*b->q[0] + a->q[9]*b->q[4] + a->q[10]*b->q[8];
-  
+
   //col 2
   ret[1] = a->q[0]*b->q[1] + a->q[1]*b->q[5] + a->q[2]*b->q[9];
   ret[5] = a->q[4]*b->q[1] + a->q[5]*b->q[5] + a->q[6]*b->q[9];
@@ -2040,7 +2150,7 @@ BTINLINE void setmul_m3(matr_3* a,matr_3* b)
   ret[3] = 0.0;
   ret[7] = 0.0;
   ret[11] = 0.0;
-  
+
   a->q[0] = ret[0];
   a->q[1] = ret[1];
   a->q[2] = ret[2];
@@ -2059,7 +2169,7 @@ BTINLINE void setmul_m3(matr_3* a,matr_3* b)
 BTINLINE matr_3* T_m3(matr_3* a)
 {
   btreal ret[7];
-  
+
   //swap variables
   ret[1] = a->ret->q[1];
   ret[2] = a->ret->q[2];
@@ -2068,7 +2178,7 @@ BTINLINE matr_3* T_m3(matr_3* a)
   a->ret->q[1] = a->q[4];
   a->ret->q[2] = a->q[8];
   a->ret->q[6] = a->q[9];
-  
+
   a->ret->q[4] = ret[1];
   a->ret->q[8] = ret[2];
   a->ret->q[9] = ret[6];
@@ -2077,64 +2187,68 @@ BTINLINE matr_3* T_m3(matr_3* a)
 BTINLINE vect_3* matXvec_m3(matr_3* a, vect_3* b)
 {
   btreal ret[3];
-  
+
   ret[0] = a->q[0]*b->q[0] + a->q[1]*b->q[1] + a->q[2]*b->q[2];
   ret[1] = a->q[4]*b->q[0] + a->q[5]*b->q[1] + a->q[6]*b->q[2];
   ret[2] = a->q[8]*b->q[0] + a->q[9]*b->q[1] + a->q[10]*b->q[2];
-  
+
   b->ret->q[0] = ret[0];
   b->ret->q[1] = ret[1];
   b->ret->q[2] = ret[2];
-  
+
   return b->ret;
 }
 
 BTINLINE vect_3* matTXvec_m3(matr_3* a, vect_3* b) //matXvec_m3(T_m3(a),b);
 {
   btreal ret[3];
-  
+
   ret[0] = a->q[0]*b->q[0] + a->q[4]*b->q[1] + a->q[8]*b->q[2];
   ret[1] = a->q[1]*b->q[0] + a->q[5]*b->q[1] + a->q[9]*b->q[2];
   ret[2] = a->q[2]*b->q[0] + a->q[6]*b->q[1] + a->q[10]*b->q[2];
-  
+
   b->ret->q[0] = ret[0];
   b->ret->q[1] = ret[1];
   b->ret->q[2] = ret[2];
-  
+
   return b->ret;
 }
 BTINLINE vect_3* eqaxis_m3(matr_3* R, vect_3* a)
 {
   btreal theta,st;
-  
+
   theta = acos((R->q[0] + R->q[5] + R->q[10] - 1.0)/2);
   st = 0.5/sin(theta);
   a->q[0] = theta*st*(R->q[9] - R->q[6]);
   a->q[1] = theta*st*(R->q[2] - R->q[8]);
   a->q[2] = theta*st*(R->q[4] - R->q[1]);
-  
+
   return a;
 }
 BTINLINE vect_3* RtoXYZf_m3(matr_3* R, vect_3* XYZ) //return ZYZ
-{ 
+{
   btreal a,b,g,cb;
   const btreal pi = 3.14159265359;
-  
+
   b = atan2_bt(-1.0*R->q[8],sqrt(R->q[0]*R->q[0] + R->q[4]*R->q[4]));
   cb = cos(b);
-  if (cb == 0.0){
-    if (b > 0.0){
+  if (cb == 0.0)
+  {
+    if (b > 0.0)
+    {
       b = pi/2.0;
       a = 0.0;
       g = atan2(R->q[1],R->q[5]);
     }
-    else{
+    else
+    {
       b = -pi/2.0;
       a = 0.0;
       g = -1.0*atan2(R->q[1],R->q[5]);
     }
   }
-  else{
+  else
+  {
     a = atan2(R->q[4]/cb,R->q[0]/cb);
     g = atan2(R->q[9]/cb,R->q[10]/cb);
   }
@@ -2144,14 +2258,14 @@ BTINLINE vect_3* RtoXYZf_m3(matr_3* R, vect_3* XYZ) //return ZYZ
 BTINLINE matr_3* XYZftoR_m3(matr_3* R, vect_3* XYZ) //Return R
 {
   btreal ca,sa,cb,sb,cg,sg;
-  
+
   ca = cos(getval_v3(XYZ,0));
   sa = sin(getval_v3(XYZ,0));
   cb = cos(getval_v3(XYZ,1));
-  sb = sin(getval_v3(XYZ,1));  
+  sb = sin(getval_v3(XYZ,1));
   cg = cos(getval_v3(XYZ,2));
-  sg = sin(getval_v3(XYZ,2));  
-  
+  sg = sin(getval_v3(XYZ,2));
+
   setrow_m3(R,0,ca*cb,ca*sb*sg - sa * cg, ca*sb*cg+sa*sg);
   setrow_m3(R,1,sa*cb,sa*sb*sg + ca * cg, sa*sb*cg - ca*sg);
   setrow_m3(R,2,-sb,cb*sg,cb*cg);
@@ -2165,7 +2279,7 @@ BTINLINE matr_3* XYZftoR_m3(matr_3* R, vect_3* XYZ) //Return R
 //@{
 
 /** Allocates memory for and initializes a btfilter object.
-
+ 
 \code
 #include "btmath.h"
 int main()
@@ -2180,19 +2294,20 @@ int main()
   }
   
 }
-
+ 
 \endcode
-
+ 
 */
 btfilter * new_btfilter(int size)
 {
   void *vmem;
   int size_;
   btfilter *ptr;
-  
+
   size_ = size;
-  if (size_ < 5) size_ = 5;
-  if ((vmem = (void*)malloc(sizeof(btfilter)+size_*4*sizeof(btreal))) == NULL) 
+  if (size_ < 5)
+    size_ = 5;
+  if ((vmem = (void*)malloc(sizeof(btfilter)+size_*4*sizeof(btreal))) == NULL)
   {
     syslog(LOG_ERR,"btmath: filter memory allocation failed");
     return NULL;
@@ -2210,159 +2325,164 @@ btfilter * new_btfilter(int size)
 
 
 /** Evaluates a btfilter object.
-
+ 
 After a btfilter object is allocated with new_btfilter() and 
 initialized with init_btfilter_xx(), use eval_btfilter() to add the present 
 incoming value and get the resulting filtered value.
-
+ 
 */
 btreal eval_btfilter(btfilter *filt, btreal xnew)
 {
-    int       i,idx;
-    btreal      ynew;
+  int       i,idx;
+  btreal      ynew;
 
-    idx = filt->index;
+  idx = filt->index;
 
-    filt->x[idx] = xnew;
-    filt->y[idx] = 0;
+  filt->x[idx] = xnew;
+  filt->y[idx] = 0;
 
-    for (i=0; i<=filt->order; i++)
-        filt->y[idx] += filt->n[i] * filt->x[ (idx+i+1)%(filt->order+1) ]
-    - filt->d[i] * filt->y[ (idx+i+1)%(filt->order+1) ];
+  for (i=0; i<=filt->order; i++){
+    filt->y[idx] += filt->n[i] * filt->x[ (idx+i+1)%(filt->order+1) ]
+                    - filt->d[i] * filt->y[ (idx+i+1)%(filt->order+1) ];
+  }
 
-    ynew  = filt->y[idx];
-    filt->index = (++idx) % (filt->order+1);
+  ynew  = filt->y[idx];
+  filt->index = (++idx) % (filt->order+1);
 
-    return(ynew);
+  return(ynew);
 }
 
 
 /**
   Initializes coefficients for differentiator plus first or
   second order lowpass filter.
-
+ 
     You must initialize the following arguments in main:
        diff.order, diff.cutoffHz, sample_time
 */
 void  init_btfilter_diff(btfilter *filt, int order, btreal sample_time, btreal cutoffHz)
 {
-    
 
-    btreal woT;
-    btreal temp;
-    int i;
-    const btreal pi = 3.14159265359;
-    
-    filt->index = 0;
-    filt->order = order;
-    for(i=0; i<=4; i++)
-    {
-        filt->x[i] = 0;
-        filt->y[i] = 0;
-    }
 
-    if(order == 1)
-    {
-        woT = sample_time*cutoffHz*2.0*pi;
-        temp = 1.0/(2+woT);
+  btreal woT;
+  btreal temp;
+  int i;
+  const btreal pi = 3.14159265359;
 
-        filt->d[1] = 0.0;
-        filt->d[0] = -(2-woT)*temp;
+  filt->index = 0;
+  filt->order = order;
+  for(i=0; i<=4; i++)
+  {
+    filt->x[i] = 0;
+    filt->y[i] = 0;
+  }
 
-        filt->n[1] = 2.0*cutoffHz*pi*2.0*temp;
-        filt->n[0] = -(filt->n[1]);
-    }
-    else if(order == 2)
-    {
-        woT = sample_time*cutoffHz*2.0*pi;
-        temp = 1.0/ ( 4.0*(1.0+woT) + woT*woT  );
+  if(order == 1)
+  {
+    woT = sample_time*cutoffHz*2.0*pi;
+    temp = 1.0/(2+woT);
 
-        filt->d[2] = 0.0;
-        filt->d[1] = -(8.0 - 2.0*woT*woT) * temp;
-        filt->d[0] = ( 4.0*(1.0-woT) + woT*woT  ) * temp;
+    filt->d[1] = 0.0;
+    filt->d[0] = -(2-woT)*temp;
 
-        filt->n[2] = 2.0*cutoffHz*pi*2.0*woT * temp;
-        filt->n[1] = 0.0;
-        filt->n[0] = -(filt->n[2]);
-    }
-    else
-    {
-        syslog(LOG_ERR,"btfilter: Filter order must be 1 or 2.\n");
+    filt->n[1] = 2.0*cutoffHz*pi*2.0*temp;
+    filt->n[0] = -(filt->n[1]);
+  }
+  else if(order == 2)
+  {
+    woT = sample_time*cutoffHz*2.0*pi;
+    temp = 1.0/ ( 4.0*(1.0+woT) + woT*woT  );
 
-    }
+    filt->d[2] = 0.0;
+    filt->d[1] = -(8.0 - 2.0*woT*woT) * temp;
+    filt->d[0] = ( 4.0*(1.0-woT) + woT*woT  ) * temp;
+
+    filt->n[2] = 2.0*cutoffHz*pi*2.0*woT * temp;
+    filt->n[1] = 0.0;
+    filt->n[0] = -(filt->n[2]);
+  }
+  else
+  {
+    syslog(LOG_ERR,"btfilter: Filter order must be 1 or 2.\n");
+
+  }
 
 }
+/**\bug something wrong with this.*/
 void  init_btfilter_butterworth_diff(btfilter *filt, btreal sample_time, btreal cutoffHz)
 {
   //  Initializes coefficients for differentiator plus first or
   //  second order lowpass filter.
-  
+
   // You must initialize the following arguments in main:
   //    diff.order, diff.cutoffHz, sample_time
-  
+
   double woT,wo;
   double norm;
+  const btreal pi = 3.14159265359;
   int i;
-  
+
   filt->index = 0;
   filt->order = 2;
   for(i=0; i<=4; i++)
-    {
-        filt->x[i] = 0;
-        filt->y[i] = 0;
-    }
+  {
+    filt->x[i] = 0.0;
+    filt->y[i] = 0.0;
+  }
   wo = cutoffHz;
-  woT = wo*sample_time;
-  
+  woT = wo*sample_time*2.0*pi;
+
   norm = 1+sqrt(2.0)*woT+woT*woT;
-  
+
   filt->n[0]=0;
   filt->n[1]=-woT*wo/norm;
   filt->n[2]=wo*wo/norm;
-  
+
   filt->d[0]=1/norm;
   filt->d[1]=-(2+sqrt(2.0)*woT)/norm;
   filt->d[2]=0;
-  
-  
+
+
 }
 void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz)
 {  //  Initializes coefficients for lowpass filter with 2 complex poles
   //  (or real poles if zeta=1).
   //  Zeta is the damping ratio, filtcutHz is the cutoff frequency.
-  
+
   // You must initialize the following arguments in main:
   //    lowpass.order, lowpass.cutoffHz, lowpass.zeta, sample_time
-  
+
   double woT;
   double uu, uu2;
   int i;
   const btreal pi = 3.14159265359;
-  
+
   filt->index = 0;
   filt->order = 2;
   filt->zeta = 0;
-  
-  for(i=0; i<=4; i++) {
+
+  for(i=0; i<=4; i++)
+  {
     filt->x[i] = 0;
     filt->y[i] = 0;
   }
-  
 
-    woT = sample_time*cutoffHz*2.0*pi;
-    uu  = 2.0/woT;
-    uu2 = uu*uu;
-    
-    filt->d[2] = (uu2 + 2.0*filt->zeta*uu + 1.0);
-    filt->d[1] = -(2.0*uu2-2.0)/filt->d[2];
-    filt->d[0] = ( uu2 - 2.0*filt-> zeta*uu + 1.0 )/filt->d[2];
-    
-    filt->n[2] = 1.0/filt->d[2];
-    filt->n[1] = 2.0/filt->d[2];
-    filt->n[0] = 1.0/filt->d[2];
-    
-    filt->d[2] = 0.0;
+
+  woT = sample_time*cutoffHz*2.0*pi;
+  uu  = 2.0/woT;
+  uu2 = uu*uu;
+
+  filt->d[2] = (uu2 + 2.0*filt->zeta*uu + 1.0);
+  filt->d[1] = -(2.0*uu2-2.0)/filt->d[2];
+  filt->d[0] = ( uu2 - 2.0*filt-> zeta*uu + 1.0 )/filt->d[2];
+
+  filt->n[2] = 1.0/filt->d[2];
+  filt->n[1] = 2.0/filt->d[2];
+  filt->n[0] = 1.0/filt->d[2];
+
+  filt->d[2] = 0.0;
 }
+
 //@)
 
 BTINLINE btreal atan2_bt(btreal arg1, btreal arg2)
@@ -2370,7 +2490,7 @@ BTINLINE btreal atan2_bt(btreal arg1, btreal arg2)
   /* returns angle from -pi to pi */
   const btreal pi = 3.14159265359;
 
-  
+
   if(arg2 > 0.0)
   {
     if(arg1 >= 0.0)
@@ -2395,21 +2515,22 @@ BTINLINE btreal atan2_bt(btreal arg1, btreal arg2)
     }
   }
 
-  else{
-  /* x = 0 */
-  if(arg1 > 0.0)
-    return(pi/2.0);
   else
-    return(-pi/2.0);
+  {
+    /* x = 0 */
+    if(arg1 > 0.0)
+      return(pi/2.0);
+    else
+      return(-pi/2.0);
   }
 }
 
 btreal interp_bt(btreal x1, btreal y1, btreal x2, btreal y2, btreal x)
 {
-    if ((x2-x1) != 0.0)
-        return (x*(y2-y1)/(x2-x1));
-    else
-        return (y2+y1)/2;
+  if ((x2-x1) != 0.0)
+    return (x*(y2-y1)/(x2-x1));
+  else
+    return (y2+y1)/2;
 }
 
 
@@ -2418,76 +2539,202 @@ btfilter_vn * new_btfilter_vn(int size,int vsize)
   void *vmem;
   btfilter_vn *ptr;
   int size_;
-  
+
   size_ = size;
-  if (size_ < 5) size_ = 5;
-  if ((vmem = malloc(sizeof(btfilter_vn))) == NULL) 
+  if (size_ < 5)
+    size_ = 5;
+  if ((vmem = malloc(sizeof(btfilter_vn))) == NULL)
   {
     syslog(LOG_ERR,"btmath: filter memory allocation failed");
     return NULL;
   }
   addbtptr(vmem);
   ptr = (btfilter_vn*)vmem;
-  
+
   ptr->d = new_vr(vsize,size_);
   ptr->n = new_vr(vsize,size_);
   ptr->x = new_vr(vsize,size_);
   ptr->y = new_vr(vsize,size_);
-  
+  ptr->scratch1 = new_vn(vsize);
+  ptr->scratch2 = new_vn(vsize);
+  ptr->scratch3 = new_vn(vsize);
+
   return ptr;
 }
 
 vect_n * eval_btfilter_vn(btfilter_vn *filt, vect_n *xnew)
 {
-    int       i,idx;
-    btreal      ynew;
+  int       i,idx,idx2;
+  btreal      ynew;
+  vect_n *ret;
 
 
-    idx = filt->index;
+  idx = filt->index;
 
-    set_vn(idx_vr(filt->x,idx),xnew);
-    fill_vn(idx_vr(filt->y,idx),0.0);
-    
-    for (i=0; i<=filt->order; i++)
-      set_vn(idx_vr(filt->y,idx),
-             add_vn(e_mul_vn(idx_vr(filt->n,i),idx_vr(filt->x,(idx+i+1)%(filt->order+1))),
-             add_vn(scale_vn(-1.0,e_mul_vn(idx_vr(filt->d,i),idx_vr(filt->y,(idx+i+1)%(filt->order+1)))),
-                    idx_vr(filt->y,idx))));
-             
-    filt->index = (++idx) % (filt->order+1);
+  set_vn(idx_vr(filt->x,idx),xnew);
+  fill_vn(idx_vr(filt->y,idx),0.0);
 
-    return(idx_vr(filt->y,idx));
+  for (i=0; i<=filt->order; i++){
+    idx2 = (idx+i+1)%(filt->order+1);
+    set_vn(idx_vr(filt->y,idx),add_vn(e_mul_vn( mapdat_vr(filt->scratch2,filt->n,i),mapdat_vr(filt->scratch1,filt->x,idx2)),
+                               add_vn(scale_vn(-1.0,e_mul_vn(mapdat_vr(filt->scratch1,filt->d,i),
+                                                             mapdat_vr(filt->scratch2,filt->y,idx2))),
+                                      mapdat_vr(filt->scratch3,filt->y,idx))));
+                 
+  }
+  ret = idx_vr(filt->y,idx);
+  filt->index = (++idx) % (filt->order+1);
+
+  return(ret);
 }
+/**\bug something wrong with this.*/
 void  init_btfilter_vn_butterworth_diff(btfilter_vn *filt, int order, btreal sample_time, btreal cutoffHz)
 {
-  
+
   double woT,wo;
   double norm;
   int i;
-  
+
   filt->index = 0;
   filt->order = 2;
-  
+
   for(i=0; i<=4; i++)
-    {
-        fill_vn(idx_vr(filt->x,i),0.0);
-        fill_vn(idx_vr(filt->y,i),0.0);
-    }
+  {
+    fill_vn(idx_vr(filt->x,i),0.0);
+    fill_vn(idx_vr(filt->y,i),0.0);
+  }
   wo = cutoffHz;
   woT = wo*sample_time;
-  
+
   norm = 1+sqrt(2.0)*woT+woT*woT;
-  
+
   fill_vn(idx_vr(filt->n,0),0.0);
   fill_vn(idx_vr(filt->n,1),-woT*wo/norm);
   fill_vn(idx_vr(filt->n,2),wo*wo/norm);
-  
+
   fill_vn(idx_vr(filt->d,0),1/norm);
   fill_vn(idx_vr(filt->d,1),-(2+sqrt(2.0)*woT)/norm);
   fill_vn(idx_vr(filt->d,2),0.0);
-  
-}
 
+}
+/**
+  Initializes coefficients for differentiator plus first or
+  second order lowpass filter.
+ 
+    You must initialize the following arguments in main:
+       diff.order, diff.cutoffHz, sample_time
+*/
+void  init_btfilter_vn_diff(btfilter_vn *filt, int order, btreal sample_time, btreal cutoffHz)
+{
+
+
+  btreal woT;
+  btreal temp;
+  int i;
+  const btreal pi = 3.14159265359;
+
+  filt->index = 0;
+  filt->order = order;
+  for(i=0; i<=4; i++)
+  {
+    fill_vn(idx_vr(filt->x,i),0.0);
+    fill_vn(idx_vr(filt->y,i),0.0);
+  }
+
+  if(order == 1)
+  {
+    woT = sample_time*cutoffHz*2.0*pi;
+    temp = 1.0/(2+woT);
+
+    fill_vn(idx_vr(filt->d,0),-(2-woT)*temp);
+    fill_vn(idx_vr(filt->d,1),0.0);
+
+    fill_vn(idx_vr(filt->n,0),-2.0*cutoffHz*pi*2.0*temp);
+    fill_vn(idx_vr(filt->n,1),2.0*cutoffHz*pi*2.0*temp);
+  }
+  else if(order == 2)
+  {
+    woT = sample_time*cutoffHz*2.0*pi;
+    temp = 1.0/ ( 4.0*(1.0+woT) + woT*woT  );
+
+    fill_vn(idx_vr(filt->d,0),( 4.0*(1.0-woT) + woT*woT  ) * temp);
+    fill_vn(idx_vr(filt->d,1),-(8.0 - 2.0*woT*woT) * temp);
+    fill_vn(idx_vr(filt->d,2),0.0);
+
+    fill_vn(idx_vr(filt->n,0),-2.0*cutoffHz*pi*2.0*woT * temp);
+    fill_vn(idx_vr(filt->n,1),0.0);
+    fill_vn(idx_vr(filt->n,2),2.0*cutoffHz*pi*2.0*woT * temp);
+  }
+  else
+  {
+    syslog(LOG_ERR,"btfilter: Filter order must be 1 or 2.\n");
+  }
+}
+void test_btfilter()
+{
+  btfilter *test;
+  double res,inp;
+  int cnt;
+
+  test = new_btfilter(5);
+  //init_btfilter_butterworth_diff(test,0.002,30);
+  init_btfilter_diff(test,2,0.002,30);
+  for (cnt = 0; cnt < 4; cnt++){
+    printf("%8.4f, %8.4f\n",test->n[cnt],test->d[cnt]);
+  }
+  res = 0.0;
+  inp = 1.0;
+
+  for (cnt = 0; cnt < 30; cnt++)
+  {
+    inp += 0.0;
+    res = eval_btfilter(test,inp);
+    if ((cnt % 1) == 0)
+      printf("%8.4f\n",res);
+  }
+
+}
+void test_filter_vn()
+{
+  btfilter_vn *test;
+  vect_3 *res,*inp;
+  int cnt,cnt2;
+  char buf1[100],buf2[100],buf3[100],buf4[100];
+
+
+  res = new_v3();
+  inp = new_v3();
+
+  test = new_btfilter_vn(5,3);
+  init_btfilter_vn_diff(test,2,0.002,30);
+  for (cnt2 = 0; cnt2 < 4; cnt2++)
+      {
+        sprint_vn(buf1,idx_vr(test->n,cnt2));
+        sprint_vn(buf2,idx_vr(test->d,cnt2));
+        printf("\n%s %s ",buf1,buf2);
+      }
+  const_v3(inp,1.0,1.0,1.1);
+  for (cnt = 0; cnt < 30; cnt++)
+  {
+    //set_v3(inp,add_v3(inp,C_v3(1.0,0.0,0.0)));
+    set_v3(res,(vect_3*)eval_btfilter_vn(test,(vect_n*)inp));
+    if ((cnt % 1) == 0)
+    {
+      //    printf("%d:\n",cnt);
+      print_vn((vect_n*)res);
+      /*
+      for (cnt2 = 0; cnt2 < 4; cnt2++)
+      {
+        sprint_vn(buf1,idx_vr(test->x,cnt2));
+        sprint_vn(buf2,idx_vr(test->y,cnt2));
+        //sprint_vn(buf3,idx_vr(test->n,cnt2));
+        //sprint_vn(buf4,idx_vr(test->d,cnt2));
+        printf("\n%s %s ",buf1,buf2);
+      }*/
+    }
+  }
+
+}
 /*======================================================================*
  *                                                                      *
  *          Copyright (c) 2005 Barrett Technology, Inc.                 *
