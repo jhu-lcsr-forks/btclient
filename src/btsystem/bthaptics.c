@@ -53,6 +53,7 @@ int addobject_bth(bthaptic_scene *bth,bthaptic_object *object)
   int i;
   if(bth->num_objects >= bth->max_objects) return -1;
   bth->list[bth->num_objects] = object;
+  object->idx = bth->num_objects;
   bth->num_objects++;
   return(bth->num_objects - 1);
 }
@@ -112,11 +113,10 @@ int init_normal_plane_bth(bthaptic_object *obj, btgeom_plane *plane, void*nfobj,
   obj->norm_eff = nfobj;
 }
 
-btreal plane_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *dist)
+btreal plane_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *norm)
 {
   btreal res;
-  res = D_Pt2Pl((vect_3*)dist,(btgeom_plane *)obj->geom,(vect_3*)pos);
-  
+  res = D_Pt2Pl((vect_3*)norm,(btgeom_plane *)obj->geom,(vect_3*)pos);
   return res;
 }
 
@@ -130,11 +130,11 @@ int init_normal_sphere_bth(bthaptic_object *obj, btgeom_sphere *sphere, void*nfo
   obj->norm_eff = nfobj;
 }
 
-btreal sphere_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *dist)
+btreal sphere_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *norm)
 {
   btreal res;
-  res = D_Pt2Sp((vect_3*)dist,(btgeom_sphere *)obj->geom,(vect_3*)pos);
-  set_v3(obj->Istate.pos,(vect_3*)dist);
+  res = D_Pt2Sp((vect_3*)norm,(btgeom_sphere *)obj->geom,(vect_3*)pos);
+  set_v3(obj->Istate.pos,scale_v3(res,(vect_3*)norm));
   return res;
 }
 
@@ -144,25 +144,29 @@ void init_wall(bteffect_wall *wall,btreal K, btreal B)
   wall->B = B;
 }
 
-int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force)
+int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force)
 {
   btreal Dist,K,B;
   bteffect_wall *norm_eff;
-  staticv3 udistmem;
-  vect_3* udist;
+  btreal WallStiff,WallDamp,Vel;
   
-  udist = init_staticv3(&udistmem);
-  
-  set_v3(udist,unit_v3((vect_3*)dist));
+  WallStiff = 0.0;
+  WallDamp = 0.0;
   
   norm_eff = (bteffect_wall*)obj->norm_eff;
-  if(depth < 0.0) //we are on the "negative" side of the plane
-    {
-      set_v3((vect_3*)force,
+  Vel = dot_v3((vect_3*)norm,(vect_3*)vel);
+  
+  if (depth < 0.0){
+     WallStiff = -1.0*norm_eff->K*depth;
+  }
+  
+  if (depth  < 0.0){
+    if(Vel < 0.0) 
+      WallDamp = -1.0*norm_eff->B*Vel;
+  }
+  set_v3((vect_3*)force,
              add_v3((vect_3*)force,
-                     scale_v3(-1.0*(norm_eff->K*depth - norm_eff->B*dot_v3(udist,(vect_3*)vel)),udist)));
-
-    }
+                     scale_v3(WallStiff + WallDamp,(vect_3*)norm)));
 }
 
 
@@ -176,20 +180,17 @@ void init_bulletproofwall(bteffect_bulletproofwall *wall,btreal Boffset,btreal K
   wall->Boffset = Boffset;
 }
 
-int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force)
+int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force)
 {
   btreal WallStiff,WallDamp,Vel;
   bteffect_bulletproofwall *norm_eff;
-  staticv3 udistmem;
-  vect_3* udist;
+
   
   WallStiff = 0.0;
   WallDamp = 0.0;
-  
-  udist = init_staticv3(&udistmem);
-  set_v3(udist,unit_v3((vect_3*)dist));
+
   norm_eff = (bteffect_bulletproofwall*)obj->norm_eff;
-  Vel = dot_v3((vect_3*)dist,(vect_3*)vel);
+  Vel = dot_v3((vect_3*)norm,(vect_3*)vel);
   
 
   if (depth < 0.0){
@@ -199,12 +200,12 @@ int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n 
   }
   
   if (depth - norm_eff->Boffset < 0.0){
-    if(Vel < 0.0) WallDamp = norm_eff->Bin*Vel;
-    else if (Vel > 0.0) WallDamp = norm_eff->Bout*Vel;
+    if(Vel < 0.0) WallDamp = -1.0*norm_eff->Bin*Vel;
+    else if (Vel > 0.0) WallDamp = -1.0*norm_eff->Bout*Vel;
   }
   set_v3((vect_3*)force,
              add_v3((vect_3*)force,
-                     scale_v3(WallStiff + WallDamp,udist)));
+                     scale_v3(WallStiff + WallDamp,(vect_3*)norm)));
 }
 
 void init_wickedwall(bteffect_wickedwall *wall,btreal K1, btreal Bin,btreal Bout,btreal Thk,btreal Boffset)
@@ -217,20 +218,18 @@ void init_wickedwall(bteffect_wickedwall *wall,btreal K1, btreal Bin,btreal Bout
   wall->Boffset = Boffset;
 }
 
-int wickedwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force)
+int wickedwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force)
 {
   btreal WallStiff,WallDamp,Vel;
   bteffect_wickedwall *norm_eff;
-  staticv3 udistmem;
-  vect_3* udist;
+
   
   WallStiff = 0.0;
   WallDamp = 0.0;
-  
-  udist = init_staticv3(&udistmem);
-  set_v3(udist,unit_v3((vect_3*)dist));
+ 
   norm_eff = (bteffect_wickedwall*)obj->norm_eff;
-  Vel = dot_v3((vect_3*)dist,(vect_3*)vel);
+  Vel = dot_v3((vect_3*)norm,(vect_3*)vel);
+  
   if (norm_eff->state == 0){//outside
     if (depth < 0.0) norm_eff->state = 1;
   }
@@ -246,10 +245,10 @@ int wickedwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist
   }
   
   if ((depth - norm_eff->Boffset < 0.0) && (norm_eff->state != 2)){
-    if(Vel < 0.0) WallDamp = norm_eff->Bin*Vel;
-    else if (Vel > 0.0) WallDamp = norm_eff->Bout*Vel;
+    if(Vel < 0.0) WallDamp = -1.0*norm_eff->Bin*Vel;
+    else if (Vel > 0.0) WallDamp = -1.0*norm_eff->Bout*Vel;
   }
   set_v3((vect_3*)force,
              add_v3((vect_3*)force,
-                     scale_v3(WallStiff + WallDamp,udist)));
+                     scale_v3(WallStiff + WallDamp,(vect_3*)norm)));
 }

@@ -47,10 +47,10 @@ void removeobject_bth(bthaptic_scene *bth,int index);
 int eval_geom_normal_interact_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force);
 
 int init_normal_plane_bth(bthaptic_object *obj, btgeom_plane *plane, void *nfobj,void *nffunc);
-btreal plane_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *dist);
+btreal plane_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *norm);
 
 int init_normal_sphere_bth(bthaptic_object *obj, btgeom_sphere *sphere, void*nfobj,void*nffunc);
-btreal sphere_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *dist);
+btreal sphere_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *norm);
 
 
 typedef struct { 
@@ -58,7 +58,7 @@ typedef struct {
 }bteffect_wall;
 
 void init_wall(bteffect_wall *wall,btreal K, btreal B);
-int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
+int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force);
  
 typedef struct { 
   btreal Boffset; //Relative start of damping
@@ -69,7 +69,7 @@ typedef struct {
   btreal Bout; //damping as you move out of the wall
 }bteffect_bulletproofwall;
 void init_bulletproofwall(bteffect_bulletproofwall *wall,btreal Boffset,btreal K2, btreal K2offset, btreal K1, btreal Bin, btreal Bout);
-int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
+int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force);
 
 typedef struct { 
   int state; //outside, inside, brokethru
@@ -80,7 +80,7 @@ typedef struct {
   btreal Thk;
 }bteffect_wickedwall;
 void init_wickedwall(bteffect_wickedwall *wall,btreal K1, btreal Bin,btreal Bout,btreal Thk,btreal Boffset);
-int wickedwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
+int wickedwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force);
 
 typedef struct { 
   btreal B;

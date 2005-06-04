@@ -123,11 +123,12 @@ vect_n *t,*targ,*negtarg;
 vect_n *Mpos, *Mtrq, *Jpos, *Jtrq, *wv;
 
 btgeom_plane myplane,plane2;
-bteffect_wall mywall;
+bteffect_wall mywall,wall[10];
 bteffect_wickedwall mywickedwall,mywickedwall2,wickedwalls[10];
 bthaptic_object myobject,myobject2,objects[10];
 btgeom_sphere mysphere,mysphere2,spheres[10];
-bteffect_bulletproofwall mybpwall;
+bteffect_bulletproofwall mybpwall,bpwall[10];
+btgeom_box mybox;
 bteffect_global myglobal;
 vect_3 *p1,*p2,*p3;
 bthaptic_scene bth;
@@ -265,21 +266,34 @@ ed to initialize system"))
   init_wickedwall(&wickedwalls[0],3000, 40.0,5.0,0.020,0.02);
   init_wickedwall(&wickedwalls[1],3000, 40.0,5.0,0.020,0.02);
   init_bulletproofwall(&mybpwall,0.02,5000,0.005,5000,40.0,5.0);
-  
+ 
+  init_bx_btg(&mybox,const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.5,0.01,0.0),const_v3(p3,0.5,0.0,0.01),0.2,0.2,0.2,1);
+ 
+  for(cnt = 0;cnt < 6;cnt++){
+    init_bulletproofwall(&bpwall[cnt],0.002,3000.0,0.002,3000.0,50.0,20.0);
+    //init_wall(&wall[cnt],6000.0,50.0);
+    init_normal_plane_bth(&objects[cnt],&mybox.side[cnt],(void*)&bpwall[cnt],bulletproofwall_nf);
+    addobject_bth(&bth,&objects[cnt]);
+  }
+/*
   init_normal_plane_bth(&objects[0],&myplane,(void*)&mybpwall,bulletproofwall_nf);
   
   init_normal_sphere_bth(&myobject,&mysphere,(void*)&mywickedwall,wickedwall_nf);
   init_normal_sphere_bth(&myobject2,&mysphere2,(void*)&mywickedwall2,wickedwall_nf);
   init_normal_sphere_bth(&objects[1],&spheres[0],(void*)&wickedwalls[0],wickedwall_nf);
   init_normal_sphere_bth(&objects[2],&spheres[1],(void*)&wickedwalls[1],wickedwall_nf);
-  //init_global_bth(&myobject2, &myglobal,20.0,C_v3(-4.0,0.0,0.0));
+*/
+  init_global_bth(&myobject2, &myglobal,60.0,C_v3(-0.0,0.0,0.0));
   //init_normal_plane_bth(&myobject2,&plane2,(void*)&mywickedwall2,wickedwall_nf);
-  
+  /*
   addobject_bth(&bth,&objects[0]);
   addobject_bth(&bth,&objects[1]);
   addobject_bth(&bth,&objects[2]);
-  addobject_bth(&bth,&myobject);
-  addobject_bth(&bth,&myobject2);
+  addobject_bth(&bth,&myobject);  */
+  //addobject_bth(&bth,&myobject2);
+
+  const_v3(wam->Cpoint,0.00375,-0.0545,0.040);
+  
   
   registerWAMcallback(WAMcallback);
   
@@ -602,8 +616,8 @@ void RenderScreen() //{{{
     ++line;
     mvprintw(line, column_offset , "Cforce:%s ", sprint_vn(vect_buf1,(vect_n*)wam->Cforce));
     ++line;
-    mvprintw(line, column_offset , "dist:%s ", sprint_vn(vect_buf1,(vect_n*)myobject.Istate.pos));
-    ++line;   
+   // mvprintw(line, column_offset , "dist:%s ", sprint_vn(vect_buf1,(vect_n*)myobject.Istate.pos));
+   // ++line;   
     mvprintw(line, column_offset , "vel:%s ", sprint_vn(vect_buf1,(vect_n*)pstate.vel));
     ++line;  
     mptr = T_to_W_trans_bot(&(wam->robot));
@@ -612,7 +626,7 @@ void RenderScreen() //{{{
     mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[0],dptr[1],dptr[2],dptr[3]);++line;
       mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[4],dptr[5],dptr[6],dptr[7]);++line;
        mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[8],dptr[9],dptr[10],dptr[11]);++line;
-       mvprintw(line, column_offset , "num:%d res:%+8.4f",bth.num_objects,D_Pt2Sp(p,(btgeom_sphere *)myobject.geom,wam->Cpos));++line;
+   //    mvprintw(line, column_offset , "num:%d res:%+8.4f",bth.num_objects,D_Pt2Sp(p,(btgeom_sphere *)myobject.geom,wam->Cpos));++line;
 
          refresh();
 } //}}}
@@ -644,6 +658,30 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
   cMid = MotorID_From_ActIdx(cpuck);
   switch (c)
   {
+    case '1':
+      bth.state = 0;
+      init_bx_btg(&mybox,const_v3(p1,0.57,0.0,-0.35),const_v3(p2,0.6,0.0,-0.35),const_v3(p3,0.57,0.0,-0.3),0.01,0.06,0.1,1);
+      for(cnt = 0;cnt < 6;cnt++){
+        init_normal_plane_bth(&objects[cnt],&mybox.side[cnt],(void*)&bpwall[cnt],bulletproofwall_nf);
+      }
+      bth.state = 1;
+      break;
+    case '2':
+      bth.state = 0;
+      init_bx_btg(&mybox,const_v3(p1,0.573,-0.02,-0.35),const_v3(p2,0.573,0.0,-0.35),const_v3(p3,0.573,-0.02,-0.3),0.033,0.06,0.1,1);
+      for(cnt = 0;cnt < 6;cnt++){
+        init_normal_plane_bth(&objects[cnt],&mybox.side[cnt],(void*)&bpwall[cnt],bulletproofwall_nf);
+      }
+      bth.state = 1;
+      break;   
+    case '3':
+      bth.state = 0;
+      init_bx_btg(&mybox,const_v3(p1,0.58,-0.03937,-0.35),const_v3(p2,0.54,-0.03937,-0.35),const_v3(p3,0.58,-0.03937,-0.3),0.01,0.08,0.1,1);
+      for(cnt = 0;cnt < 6;cnt++){
+        init_normal_plane_bth(&objects[cnt],&mybox.side[cnt],(void*)&bpwall[cnt],bulletproofwall_nf);
+      }
+      bth.state = 1;
+      break;      
     case 'u':
       getLagrangian4(&A, &B, &C, &D);
       outFile = fopen("gcomp.dat", "w");

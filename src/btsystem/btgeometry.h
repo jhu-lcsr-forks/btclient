@@ -42,7 +42,7 @@ typedef struct {
 }btgeom_plane;
 
 int init_pl_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3);
-btreal D_Pt2Pl(vect_3 *dist,btgeom_plane *plane, vect_3 *point);
+btreal D_Pt2Pl(vect_3 *norm,btgeom_plane *plane, vect_3 *point);
 //vect_3* I_Li2Pl(
 
 typedef struct {
@@ -52,12 +52,22 @@ typedef struct {
 }btgeom_sphere;
 
 int init_sp_btg( btgeom_sphere *sphere, vect_3 *pt1, vect_3 *pt2,int inside);
-btreal D_Pt2Sp(vect_3 *dist,btgeom_sphere *sp, vect_3 *pt);
+btreal D_Pt2Sp(vect_3 *norm,btgeom_sphere *sp, vect_3 *pt);
 
 typedef struct {
-  vect_3 *center,*outside,*inside; //Center and size of box
-  matr_3 *orient; //orientation of box
+  btgeom_plane side[6];
+  int inside;
+  vect_3 *center; //Center and size of box
+  matr_3 *normals; //orientation of box
 }btgeom_box;
+/**
+Define plane with 3 points
+thk = dim of box in dir of plane normal
+dir1 = dim of box in dir of pt1 to pt2
+dir2 = dim of box in dir of pt3 normal to pt1,pt2 line
+*/
+int init_bx_btg( btgeom_box *box,vect_3 *pt1, vect_3 *pt2, vect_3 *pt3,btreal thk,btreal dir1,btreal dir2,int inside);
+btreal D_Pt2Bx(vect_3 *dist,btgeom_box *bx, vect_3 *pt);
 
 #ifdef __cplusplus
 }
