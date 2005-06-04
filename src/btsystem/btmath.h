@@ -49,8 +49,12 @@ typedef struct {
 }btmemlist;
 
 void addbtptr(void *ptr);
+
 void freebtptr();
 
+
+int btmath_ptr_ok(void *ptr,char *str);
+int vect_size_ok(int idx,int max,char *str);
 /** An N element vector object.
 
 
@@ -115,7 +119,7 @@ typedef struct barrett_vect_n{
 }vect_n;
 
 vect_n *new_vn(int size); //allocate an n-vector
-void free_vn(vect_n *p);
+//void free_vn(vect_n *p);
 int len_vn(vect_n *src); //number of elements in the vector
 int sizeof_vn(vect_n *src); //return sizeof info for whole vector
 

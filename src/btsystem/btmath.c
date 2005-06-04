@@ -66,6 +66,10 @@ address of your pointer, and will allocate memory and redirect your pointer for 
 //#DEFINE VECT_N_DEBUG
 //#DEFINE VECT_N_BOUNDS  //perform bounds checking
 //#DEFINE MATR_N_DEBUG
+#define NULL_PTR_GUARD
+#define VECT_SIZE_CHK
+
+
 
 /** @name Internal pointer list
   These functions are used internally for keeping track of the memory allocated
@@ -93,6 +97,26 @@ void freebtptr()
   for(cnt = 0;cnt < num_btptrs; cnt++)
     free(btptrs[cnt]);
 }
+/** Null pointer access flag */
+int btmath_ptr_ok(void *ptr,char *str)
+{
+  if (ptr == NULL){
+    syslog(LOG_ERR,"btmath ERROR: you tried to access a null pointer in %s",str);
+    return -1;
+  }
+  return 0;
+}
+#define MAX_VECTOR_SIZE 1000
+
+int vect_size_ok(int idx,int max,char *str)
+{
+  if ((idx < 0) || (idx > max)){
+    syslog(LOG_ERR,"btmath ERROR: Your vector index is %d in function %s",idx,str);
+    return -1;
+  }
+  return 0;
+}
+
 //@}
 /** @name vect_n Initialization and Data Access Functions
     N element vector functions.
@@ -104,14 +128,11 @@ BTINLINE void fill_vn(vect_n* dest, btreal val)
 {
   int cnt;
 
-#ifdef VECT_N_DEBUG
-
-  if (dest == NULL)
-    syslog(LOG_ERR,"btmath: fill_vn: dest is NULL");
-  //syslog(LOG_ERR,"btmath: fill_vn: size %d, Val %f",dest->n,val);
+#ifdef NULL_PTR_GUARD
+   btmath_ptr_ok(dest,"fill_vn");
 #endif
 
-  //th Add vector size checking code here
+
   for (cnt=0;cnt < dest->n;cnt++)
     dest->q[cnt] = val;
 }
@@ -180,22 +201,10 @@ vect_n * new_vn(int size) //allocate an n-vector
 
   n->ret->q = (btreal*)(vmem + 2*sizeof(vect_n) + size*sizeof(btreal));
   n->ret->ret = n->ret;
-
-#ifdef VECT_N_DEBUG
-
-  if (n == NULL)
-    syslog(LOG_ERR,"btmath: new_vn: n is NULL");
-  //syslog(LOG_ERR,"btmath: fill_vn: size %d, Val %f",dest->n,val);
+#ifdef VECT_SIZE_CHK
+   vect_size_ok(size,MAX_VECTOR_SIZE,"new_vn");
 #endif
-
   fill_vn(n,0.0);
-#ifdef VECT_N_DEBUG
-
-  if (n == NULL)
-    syslog(LOG_ERR,"btmath: new_vn: n->ret is NULL");
-  //syslog(LOG_ERR,"btmath: fill_vn: size %d, Val %f",dest->n,val);
-#endif
-
   fill_vn(n->ret,0.0);
   return n;
 }
@@ -203,6 +212,8 @@ vect_n * new_vn(int size) //allocate an n-vector
   This function frees the memory previously allocated. Instead of calling free_vn()
   it is easier to call freebtptr() at the end of your program to free all the btmath
   objects.
+  
+  \bug depreciated because freeing a pointer twice is bad and freebtptr supercedes
 */
 void free_vn(vect_n *p)
 {
@@ -241,47 +252,31 @@ int new_vn_group(int num, int size, ...) //allocate a group of n-vectors
 
 }
 /** Copy src vect_n to dest vect_n
+
+  src must have equal or fewer elements than dest. 
+  
 */
 BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
 {
-  int cnt,max;
+  int cnt;
 
-#ifdef VECT_N_DEBUG
-
-  if (dest == NULL || src == NULL)
-  {
-    syslog(LOG_ERR,"btmath:set_vn: function called with NULL ptr. Dest %lx Src %lx",dest,src);
-    return;
-  }
-  if (dest->n > VECT_N_MAXSIZE || src->n > VECT_N_MAXSIZE)
-  {
-    syslog(LOG_ERR,"btmath:set_vn: too many elements. Dest %lx Src %lx",dest->n,src->n);
-    return;
-  }
+#ifdef NULL_PTR_GUARD
+   btmath_ptr_ok(dest,"set_vn dest");
+   btmath_ptr_ok(src,"set_vn src");
 #endif
-
-  if (dest->n > src->n)
-    max = src->n; //added so that unequal vectors are copied sanely
-  else
-    max = dest->n;
-
-#ifdef VECT_N_BOUNDS
-
-  if (dest->n > src->n)
-  {
-    syslog(LOG_ERR,"btmath:set_vn:fatal: dest->n > src->n");
-  }
-  if (dest->n < src->n)
-  {
+#ifdef VECT_SIZE_CHK
+   vect_size_ok(dest->n,MAX_VECTOR_SIZE,"set_vn dest");
+   vect_size_ok(src->n,MAX_VECTOR_SIZE,"set_vn src");
+   if (dest->n < src->n)
     syslog(LOG_ERR,"btmath:set_vn:warn: dest->n < src->n");
-  }
 #endif
-  //th Add vector size checking code here
+#ifdef BTSLOW_AND_SAFE
 
-  for (cnt=0;cnt < max;cnt++)
+#endif
+  for (cnt=0;cnt < src->n;cnt++)
     dest->q[cnt] = src->q[cnt];
-
 }
+
 /** Copy a block of elements from src vect_n to dest vect_n
 */
 void setrange_vn(vect_n* dest, vect_n* src, int dest_start, int src_start, int num)
@@ -327,20 +322,14 @@ BTINLINE void inject_vn(vect_n* dest, btreal* src) //copy btreal array to vector
 */
 BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
 {
-#ifdef VECT_N_BOUNDS
-  if (idx > dest->n)
-  {
-    syslog(LOG_ERR,"btmath:setval_vn:fatal: idx (%d) > dest->n (%d)",idx,dest->n);
-    return;
-  }
-  if (idx < 0)
-  {
-    syslog(LOG_ERR,"btmath:setval_vn:fatal: idx (%d) < 0",idx);
-    return;
-  }
+#ifdef NULL_PTR_GUARD
+  btmath_ptr_ok(dest,"setval_vn");
 #endif
 
-  //th Add vector size checking code here
+#ifdef VECT_SIZE_CHK
+  vect_size_ok(idx,dest->n,"setval_vn");
+#endif
+
   dest->q[idx] = val;
 }
 /** Returns the value of a single element in vect_n dest
@@ -350,17 +339,12 @@ BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
 */
 BTINLINE btreal getval_vn(vect_n* dest, int idx)
 {
-#ifdef VECT_N_BOUNDS
-  if (idx > dest->n)
-  {
-    syslog(LOG_ERR,"btmath:getval_vn:fatal: idx (%d) > dest->n (%d)",idx,dest->n);
-    return;
-  }
-  if (idx < 0)
-  {
-    syslog(LOG_ERR,"btmath:getval_vn:fatal: idx (%d) < 0",idx);
-    return;
-  }
+#ifdef NULL_PTR_GUARD
+  btmath_ptr_ok(dest,"setval_vn");
+#endif
+
+#ifdef VECT_SIZE_CHK
+  vect_size_ok(idx,dest->n,"setval_vn");
 #endif
 
   return dest->q[idx];
@@ -614,7 +598,8 @@ void print_vn(vect_n* src)
 char* sprint_vn(char *dest,vect_n* src)
 {
   int i,j;
-  if (src != NULL)
+   
+  if (btmath_ptr_ok(src,"sprint_vn"))
   {
     dest[0] = '<';
     dest[1] = 0;
@@ -634,7 +619,7 @@ file.
 char* sprint_cvs_vn(char *dest,vect_n* src)
 {
   int i,j;
-  if (src != NULL)
+  if (btmath_ptr_ok(src,"sprint_cvs_vn"))
   {
     dest[0] = 0;
     for(j = 0;j<src->n;j++)
@@ -935,7 +920,7 @@ vectray * new_vr(int vect_size,int rows)
 }
 void destroy_vr(vectray *vr)
 {
-  free(vr->rayvect);
+  //free(vr->rayvect);
   free(vr);
 }
 /** Set internal vect_n proxy to the specified index.
