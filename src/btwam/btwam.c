@@ -55,7 +55,6 @@ to make it easier to find and maintaind later
 #include "btcan.h"
 #include "btsystem.h"
 #include "control_loop.h"
-#include "btwam_internal.h"
 #include "btwam.h"
 #include "btrobot.h"
 
@@ -71,6 +70,28 @@ wam_struct WAM;
 extern int gimbalsInit;
 
 #define LOW_TRQ_COEFFICIENT (0.75)
+/*==============================*
+ * Internal use Functions       *
+ *==============================*/
+ 
+int ActAngle2Mpos(vect_n *Mpos); //Extracts actuators 0 thru 6 into vect_n positions
+int Mtrq2ActTrq(vect_n *Mtrq);  //Packs vect_n of torques into actuator array
+void Mpos2Jpos(vect_n * Mpos, vect_n * Jpos); //convert motor angle to joint angle
+void Jpos2Mpos(vect_n * Jpos, vect_n * Mpos);
+void Jtrq2Mtrq(vect_n * Jtrq, vect_n * Mtrq); //conbert joint torque to motor torque
+
+void GetJointPositions();
+void SetJointTorques();
+
+int read_wam_vector(FILE *in,vect_n *wv);
+int write_wam_vector(FILE *out,vect_n *wv);
+int dump_wam_vector(vect_n *wv);
+
+SimpleCtl * GetWAMsc();
+
+int LoadWAM(char *wamfile);
+void SaveWAM(char *wamfile);
+void DumpWAM2Syslog();
 
 /*==============================*
  * Functions                    *
