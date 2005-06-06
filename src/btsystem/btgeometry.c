@@ -196,8 +196,29 @@ btreal D_Pt2Bx(vect_3 *dist,btgeom_box *bx, vect_3 *pt)
     
 }
 
+void new_Seg_btg(btgeom_lineseg *seg,int size)
+{
+  seg->start = new_vn(size);
+  seg->end = new_vn(size);
+}
+void set_Seg_btg(btgeom_lineseg *seg,vect_n *p1,vect_n *p2)
+{
+  if (p1 != NULL) set_vn(seg->start,p1);
+  if (p2 != NULL) set_vn(seg->end,p2);
+  set_vn(seg->unit,unit_vn(sub_vn(seg->end,seg->start)));
+}
 
+/** Distance between a point and line
 
+  
+*/
+btreal D_Ln2Pt(btgeom_lineseg *seg,vect_n *pt)
+{
+  vect_n ul,np;
+  
+  np = sub_vn(pt,seg->start);
+  return norm_vn(sub_vn(np,scale_vn(dot_vn(np,seg->unit),seg->unit)));
+}
 
 
 

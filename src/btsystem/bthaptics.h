@@ -55,10 +55,12 @@ btreal sphere_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_
 
 typedef struct { 
   btreal K,B;
+  
 }bteffect_wall;
 
 void init_wall(bteffect_wall *wall,btreal K, btreal B);
 int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force);
+int sheetwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force);
  
 typedef struct { 
   btreal Boffset; //Relative start of damping

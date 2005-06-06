@@ -447,7 +447,7 @@ void WAMControlThread(void *data)
     
     set_q(WAM.qaxis,mul_q(WAM.qact,conj_q(WAM.qref)));
     
-    WAM.qerr =GCdist_q(WAM.qact,WAM.qref); //acos(1.1);//
+    WAM.qerr =GCdist_q(WAM.qact,WAM.qref); 
     set_v3(WAM.Ctrq,scale_v3(eval_err_btPID(&(WAM.pid[3]),WAM.qerr,dt),GCaxis_q(WAM.Ctrq,WAM.qact,WAM.qref)));
     
     apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);

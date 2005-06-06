@@ -169,6 +169,27 @@ int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect
                      scale_v3(WallStiff + WallDamp,(vect_3*)norm)));
 }
 
+int sheetwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force)
+{
+  btreal Dist,K,B;
+  bteffect_wall *norm_eff;
+  btreal WallStiff,WallDamp,Vel;
+  
+  WallStiff = 0.0;
+  WallDamp = 0.0;
+  
+  norm_eff = (bteffect_wall*)obj->norm_eff;
+  Vel = dot_v3((vect_3*)norm,(vect_3*)vel);
+  
+  WallStiff = -1.0*norm_eff->K*depth;
+  
+  WallDamp = -1.0*norm_eff->B*Vel;
+
+  set_v3((vect_3*)force,
+             add_v3((vect_3*)force,
+                     scale_v3(WallStiff + WallDamp,(vect_3*)norm)));
+}
+
 
 void init_bulletproofwall(bteffect_bulletproofwall *wall,btreal Boffset,btreal K2, btreal K2offset, btreal K1, btreal Bin, btreal Bout)
 {

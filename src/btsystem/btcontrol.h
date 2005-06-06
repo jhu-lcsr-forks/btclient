@@ -15,11 +15,6 @@
  *                                                                      
  *======================================================================*/
 
- /* \file SimpleControl.h  
-    \brief A simple Torque, PID & Trapezoidal velocity trajectory controller
-    
-    
-*/ 
 #ifndef _BTCONTROL_H
 #define _BTCONTROL_H
 #ifdef __cplusplus

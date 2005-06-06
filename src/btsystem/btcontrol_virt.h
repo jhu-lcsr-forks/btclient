@@ -15,8 +15,13 @@
  *                                                                      
  *======================================================================*/
 
- /* \file btcontrol_virt.h  
+/** \file btcontrol_virt.h  
     \brief Virtual interfaces for control functions
+    
+    Position control is a subset of constraint imposition. With position control 
+    of a single joint we attempt to constrain the actual position to match some 
+    target position. With virtual joint stops we seek to constrian a joint position
+    to remain inside a certain range.
     
     
 */ 
@@ -38,8 +43,8 @@ extern "C"
 Trajectory States
  - -1 = Off
  - 0 = Stopped
- - 1 = InPrep
- - 2 = Ready
+ - 1 = InPrep: Moving from constraint on position to trajectory start position
+ - 2 = Ready: Constraint parameter is at the start value
  - 3 = Running
  - 4 = Done
  - 5 = Pausing
@@ -59,7 +64,8 @@ Trajectory Actions and state changes
  - LoadTrj: 1->1,2->2,9->2: Set up trajectory for operation
 
 */
-enum trjstate {BTTRAJ_OFF,BTTRAJ_STOPPED = 0,BTTRAJ_INPREP,BTTRAJ_READY,BTTRAJ_RUN,BTTRAJ_DONE,BTTRAJ_PAUSING,BTTRAJ_UNPAUSING,BTTRAJ_PAUSED};
+enum trjstate {BTTRAJ_OFF = -1,BTTRAJ_STOPPED = 0,BTTRAJ_INPREP,BTTRAJ_READY,
+               BTTRAJ_RUN,BTTRAJ_DONE,BTTRAJ_PAUSING,BTTRAJ_UNPAUSING,BTTRAJ_PAUSED};
 
 
 /*================================================Position object================================*/
@@ -97,16 +103,7 @@ an arbitrary curve. Curve and trajectory initialization are done outside.
 we assume that the curve (and trajectory) are capable of maintaining their state
 variables
 
-
-State: 
- - 0 = uninitialized
- - 1 = initialized
- - 2 = position control is on and it's setpoint is at the trajectory start
- - 3 = running
- - 4 = pausing. we are decellerating to a stop (this should be done by warping time rather than distance.
- - 5 = paused. we are in the middle of a curve
- - 6 = unpausing. we are accellerating to match the desired trajectory
- - 7 = done
+see trjstate for more state info
 */
 typedef struct 
 {

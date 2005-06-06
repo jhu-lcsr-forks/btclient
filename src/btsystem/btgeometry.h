@@ -32,17 +32,32 @@ void eval_state_btg(btgeom_state *bts,vect_3* pos);
 
 
 typedef struct {
-  vect_3 *start,*end; //Normal of plane
+  vect_n *start,*end; //Normal of plane
+  vect_n *unit;
 }btgeom_lineseg;
 
+void new_Seg_btg(btgeom_lineseg *seg,int size);
+void set_Seg_btg(btgeom_lineseg *seg,vect_n *p1,vect_n *p2);
+btreal D_Ln2Pt(btgeom_lineseg *seg,vect_n *pt); 
+btreal I_Ln2Ln(btgeom_lineseg *seg,vect_n *pt); 
+btreal D_Seg2Pt(btgeom_lineseg *seg,vect_n *pt); //Distance
+btreal Pt_Seg2Pt(vect_n *loc,btgeom_lineseg *seg,vect_n *pt); //Distance, return point on line
+btreal D_Seg2Seg(btgeom_lineseg *seg1,btgeom_lineseg *seg2); //Distance
+/**
 
+
+*/
 typedef struct {
   vect_3 *normal; //Normal of plane
   btreal distance; //Distance from origin to plane in direction of normal
 }btgeom_plane;
 
+btgeom_plane* new_pl_btg();
 int init_pl_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3);
+int init_3point_plane_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3);
+int init_pointnormal_plane_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2);
 btreal D_Pt2Pl(vect_3 *norm,btgeom_plane *plane, vect_3 *point);
+
 //vect_3* I_Li2Pl(
 
 typedef struct {

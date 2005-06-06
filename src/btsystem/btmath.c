@@ -49,6 +49,15 @@ a vector or matrix variable. Only declare pointers. The new_xx function expects 
 address of your pointer, and will allocate memory and redirect your pointer for you.
     
 \todo Add code and compiler switches for counting the number of operations.
+
+Segfaults are a problem with realtime code because we don't necessarily exit on the 
+instruction that is accessing the wrong memory.
+
+Particularly frustrating is when gdb says that we segfaulted on a sleep function.
+The following is a list of instances of when this has happened to give you some ideas
+where to look first.
+
+1. calling sprint_vn() on an uninitialized vect_n *
  
 */
 
@@ -1658,14 +1667,18 @@ matr_3* q_to_R(matr_3* dest, quat* src)
 }
 
 /** Great circle distance between two quaternions
-Returns the great circle distance between two unit quaternions.
+Returns the great circle distance between two unit quaternions. If the
+distance is greater than pi it will return the dual dist/vector that is
+less than pi
+
+
 */
 btreal GCdist_q(quat* start, quat* end)
 {
   btreal q[4];
   //  q[0] = a->q[0] * b->q[0] + a->q[1]*b->q[1] + a->q[2]*b->q[2] + a->q[3]*b->q[3]; //optimized but untested
   //  return acos(q[0])*2.0;                                                          //optimized but untested
-  return angle_q(mul_q(end,conj_q(start))); // inv_q = conj_q for quaternions of unit length
+  return angle_q(force_closest_q(mul_q(end,conj_q(start)))); // inv_q = conj_q for quaternions of unit length
 }
 /** Great circle distance between two quaternions
 Returns the great circle distance between two unit quaternions.
@@ -1673,8 +1686,26 @@ Returns the great circle distance between two unit quaternions.
 vect_3* GCaxis_q(vect_3* dest, quat* start, quat* end)
 {
   btreal q[4];
-  return axis_q(dest,mul_q(end,conj_q(start))); // inv_q = conj_q for quaternions of unit length
+  // inv_q = conj_q for quaternions of unit length
+  return axis_q(dest,force_closest_q(mul_q(end,conj_q(start)))); 
 }
+
+quat * force_closest_q(quat* src)
+{
+  const btreal pi = 3.14159265359;
+  btreal flip = 1.0;
+  
+  if (src->q[0] < 0.0)
+    flip = -1.0;
+
+  src->ret->q[0] = cos(pi - acos(src->q[0]));
+  src->ret->q[1] = flip * src->q[1];
+  src->ret->q[2] = flip * src->q[2];
+  src->ret->q[3] = flip * src->q[3];
+  
+  return src->ret;
+}
+
 /** Return the angle of rotation represented by a unit quaternion.
 \param src A unit quaternion
 \bug We constrian q[0] to be positive
@@ -1685,7 +1716,7 @@ btreal angle_q(quat* src)
     src->q[0] = 1.0;
   if (src->q[0] < -1.0)
     src->q[0] = -1.0;
-  return acos(fabs(src->q[0]))*2.0;
+  return acos(src->q[0])*2.0;
 }
 /** Set vector dest to the axis of rotation defined by quaternion src
 \param src A quaternion
@@ -1698,13 +1729,9 @@ a = cos(theta/2) ; b = sin(theta/2)
 */
 vect_3* axis_q(vect_3* dest, quat* src)
 {
-  btreal flip = 1.0;
-  if (src->q[0] < 0.0)
-    flip = -1.0;
-
-  dest->q[0] = flip * src->q[1];
-  dest->q[1] = flip * src->q[2];
-  dest->q[2] = flip * src->q[3];
+  dest->q[0] = src->q[1];
+  dest->q[1] = src->q[2];
+  dest->q[2] = src->q[3];
 
   set_v3(dest,unit_v3(dest));
   return dest;
