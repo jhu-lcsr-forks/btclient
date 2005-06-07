@@ -214,7 +214,7 @@ void set_Seg_btg(btgeom_lineseg *seg,vect_n *p1,vect_n *p2)
 */
 btreal D_Ln2Pt(btgeom_lineseg *seg,vect_n *pt)
 {
-  vect_n ul,np;
+  vect_n *ul,*np;
   
   np = sub_vn(pt,seg->start);
   return norm_vn(sub_vn(np,scale_vn(dot_vn(np,seg->unit),seg->unit)));

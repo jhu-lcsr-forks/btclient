@@ -111,19 +111,19 @@ int btmath_ptr_ok(void *ptr,char *str)
 {
   if (ptr == NULL){
     syslog(LOG_ERR,"btmath ERROR: you tried to access a null pointer in %s",str);
-    return -1;
+    return 0;
   }
-  return 0;
+  return 1;
 }
 #define MAX_VECTOR_SIZE 1000
-
+/** Prints an error if array index is out of range */
 int vect_size_ok(int idx,int max,char *str)
 {
   if ((idx < 0) || (idx > max)){
-    syslog(LOG_ERR,"btmath ERROR: Your vector index is %d in function %s",idx,str);
-    return -1;
+    syslog(LOG_ERR,"btmath ERROR: Your index is %d with limit %d in function %s",idx,max,str);
+    return 0;
   }
-  return 0;
+  return 1;
 }
 
 //@}
@@ -267,7 +267,7 @@ int new_vn_group(int num, int size, ...) //allocate a group of n-vectors
 */
 BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
 {
-  int cnt;
+  int cnt,max;
 
 #ifdef NULL_PTR_GUARD
    btmath_ptr_ok(dest,"set_vn dest");
@@ -276,13 +276,15 @@ BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
 #ifdef VECT_SIZE_CHK
    vect_size_ok(dest->n,MAX_VECTOR_SIZE,"set_vn dest");
    vect_size_ok(src->n,MAX_VECTOR_SIZE,"set_vn src");
-   if (dest->n < src->n)
-    syslog(LOG_ERR,"btmath:set_vn:warn: dest->n < src->n");
+   /*if (dest->n < src->n)
+    syslog(LOG_ERR,"btmath:set_vn:warn: dest->n < src->n");*/
 #endif
 #ifdef BTSLOW_AND_SAFE
 
 #endif
-  for (cnt=0;cnt < src->n;cnt++)
+  if (dest->n < src->n) max = dest->n;
+  else max = src->n;
+  for (cnt=0;cnt < max;cnt++)
     dest->q[cnt] = src->q[cnt];
 }
 
@@ -336,7 +338,8 @@ BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
 #endif
 
 #ifdef VECT_SIZE_CHK
-  vect_size_ok(idx,dest->n,"setval_vn");
+  if(!vect_size_ok(idx,dest->n,"setval_vn"))
+    syslog(LOG_ERR,"btmath ERROR:pointer is %p",dest);
 #endif
 
   dest->q[idx] = val;
@@ -349,11 +352,12 @@ BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
 BTINLINE btreal getval_vn(vect_n* dest, int idx)
 {
 #ifdef NULL_PTR_GUARD
-  btmath_ptr_ok(dest,"setval_vn");
+  btmath_ptr_ok(dest,"getval_vn");
 #endif
 
 #ifdef VECT_SIZE_CHK
-  vect_size_ok(idx,dest->n,"setval_vn");
+  if(!vect_size_ok(idx,dest->n,"getval_vn"))
+    syslog(LOG_ERR,"btmath ERROR:pointer is %p",dest);
 #endif
 
   return dest->q[idx];
@@ -1695,14 +1699,17 @@ quat * force_closest_q(quat* src)
   const btreal pi = 3.14159265359;
   btreal flip = 1.0;
   
-  if (src->q[0] < 0.0)
+  src->ret->q[0] = src->q[0];
+  
+  if (src->q[0] < 0.0){
     flip = -1.0;
+    src->ret->q[0] = cos(pi - acos(src->q[0]));
+  }
 
-  src->ret->q[0] = cos(pi - acos(src->q[0]));
   src->ret->q[1] = flip * src->q[1];
   src->ret->q[2] = flip * src->q[2];
   src->ret->q[3] = flip * src->q[3];
-  
+
   return src->ret;
 }
 

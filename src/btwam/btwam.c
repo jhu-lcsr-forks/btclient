@@ -70,6 +70,8 @@ wam_struct WAM;
 extern int gimbalsInit;
 
 #define LOW_TRQ_COEFFICIENT (0.75)
+#define BTREALTIME
+
 /*==============================*
  * Internal use Functions       *
  *==============================*/
@@ -135,6 +137,7 @@ int InitWAM(char *wamfile)
   WAM.qref = new_q();
   WAM.qact = new_q();
   WAM.qaxis = new_q();
+  WAM.forced = new_q();
   WAM.qerr = 0;
 
   
@@ -142,9 +145,9 @@ int InitWAM(char *wamfile)
 
   for (cnt = 0; cnt < 3; cnt ++){
     init_btPID(&(WAM.pid[cnt]));
-    setgains_btPID(&(WAM.pid[cnt]),4000.0,20.0,0.0);
+    setgains_btPID(&(WAM.pid[cnt]),2000.0,5.0,0.0);
   }
-  setgains_btPID(&(WAM.pid[3]),5.50,0.15,0.0);
+  setgains_btPID(&(WAM.pid[3]),20.0,0.10,0.0);
   init_err_btPID(&(WAM.pid[3]));
 
   WAM.F = 0.0;
@@ -197,8 +200,10 @@ int InitWAM(char *wamfile)
     link_mass_bot(&WAM.robot,6,C_v3(0.0,0.0,0.0),0.0);
     
     tool_geom_bot(&WAM.robot,0.0,0.0,0.0,0.0);
-    //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.001);
-    tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.000);
+    tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.025),2.150);
+    
+    //tool_geom_bot(&WAM.robot,0.0,0.0,0.0,0.0);
+    //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.000);
   }/* Gimbals
   else if (WAM.num_actuators == 7){
     link_geom_bot(&WAM.robot,4,-pi/2.0,0.1547,0.0,pi/2.0);
@@ -379,8 +384,9 @@ void WAMControlThread(void *data)
   RT_TASK *WAMControlThreadTask;
 
   WAMControlThreadTask = rt_task_init(nam2num("WAMCon"), 0, 0, 0);
-  
+#ifdef BTREALTIME
   rt_make_hard_real_time();
+#endif
   syslog(LOG_ERR,"WAMControl initial hard");
   rt_task_make_periodic_relative_ns(WAMControlThreadTask, sample_period2, sample_period2);
   dt_targ = Sample_Period;
@@ -406,17 +412,18 @@ void WAMControlThread(void *data)
     test_and_log(
       pthread_mutex_lock(&(WAM.loop_mutex)),"WAMControlThread lock mutex failed");
     
-    
+#ifdef BTREALTIME
     rt_make_soft_real_time();
-    
+#endif
     pos1_time = rt_get_cpu_time_ns(); ///prof
     
     GetPositions();
     
     pos2_time = rt_get_cpu_time_ns(); ///prof
     WAM.readpos_time = pos2_time - pos1_time; ///prof
-    
+#ifdef BTREALTIME    
     rt_make_hard_real_time();
+#endif
     ActAngle2Mpos((WAM.Mpos)); //Move motor angles into a wam_vector variable
     Mpos2Jpos((WAM.Mpos), (WAM.Jpos)); //Convert from motor angles to joint angles
     // Joint space stuff
@@ -435,21 +442,22 @@ void WAMControlThread(void *data)
     
     set_v3(WAM.Cpos,T_to_W_bot(&WAM.robot,WAM.Cpoint));
     R_to_q(WAM.qact,T_to_W_trans_bot(&WAM.robot));
-    
+    //Cartesian trajectory generator
     if (WAM.trj.state){
       WAM.F = evaluate_traptrj(&WAM.trj,dt);
       set_vn((vect_n*)WAM.Cref,getval_pwl(&WAM.pth, WAM.F));
     }
-    
+    //Cartesian position constraint
     for (cnt = 0; cnt < 3; cnt ++){
       setval_v3(WAM.Cforce,cnt,eval_btPID(&(WAM.pid[cnt]),getval_v3(WAM.Cpos,cnt), getval_v3(WAM.Cref,cnt), dt));
     }
-    
+    //Cartesian angular constraint
     set_q(WAM.qaxis,mul_q(WAM.qact,conj_q(WAM.qref)));
+    set_q(WAM.forced,force_closest_q(WAM.qaxis));
     
-    WAM.qerr =GCdist_q(WAM.qact,WAM.qref); 
-    set_v3(WAM.Ctrq,scale_v3(eval_err_btPID(&(WAM.pid[3]),WAM.qerr,dt),GCaxis_q(WAM.Ctrq,WAM.qact,WAM.qref)));
-    
+    WAM.qerr =GCdist_q(WAM.qref,WAM.qact); 
+    set_v3(WAM.Ctrq,scale_v3(eval_err_btPID(&(WAM.pid[3]),WAM.qerr,dt),GCaxis_q(WAM.Ctrq,WAM.qref,WAM.qact)));
+    //Force application
     apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
     
     (*WAM.force_callback)(&WAM);
@@ -464,18 +472,18 @@ void WAMControlThread(void *data)
     
     Jtrq2Mtrq((WAM.Jtrq), (WAM.Mtrq));  //Convert from joint torques to motor torques
     Mtrq2ActTrq(WAM.Mtrq); //Move motor torques from wam_vector variable into actuator database
-    
+#ifdef BTREALTIME
     rt_make_soft_real_time();
-    
+#endif
     trq1_time = rt_get_cpu_time_ns(); ///prof
     
     SetTorques();
     
     trq2_time = rt_get_cpu_time_ns(); ///prof
     WAM.writetrq_time = trq2_time - trq1_time; ///prof
-    
+#ifdef BTREALTIME
     rt_make_hard_real_time();
-    
+#endif
     loop_end = rt_get_cpu_time_ns(); ///prof
     WAM.loop_time = loop_end - loop_start; ///prof
     last_loop = loop_start; ///prof
@@ -659,14 +667,17 @@ void MovePropsWAM(vect_n *vel, vect_n *acc)
   }
   syslog(LOG_ERR,"MovePropsWAM:Trajectory initialized");
 }
+
+void CartesianMovePropsWAM(btreal vel, btreal acc)
+{
+    setprofile_traptrj(&WAM.trj,  vel, acc);
+}
 /** Perform a Cartesian move of the wam
 */
-void CartesianMoveWAM(vect_n *pos, btreal vel, btreal acc)
+void CartesianMoveWAM(vect_n *pos)
 {
   int cnt,ctr,idx,done = 0,count =0;
 
-  //
-  setprofile_traptrj(&WAM.trj,  vel, acc);
   clear_pwl(&WAM.pth);
   add_arclen_point_pwl(&WAM.pth,(vect_n*)WAM.Cref);
   add_arclen_point_pwl(&WAM.pth,pos);
@@ -680,6 +691,16 @@ void CartesianMoveWAM(vect_n *pos, btreal vel, btreal acc)
     //if ((count % 1000) == 0)  syslog(LOG_ERR,"waited 1 second to reach position");
   }
 }
+void CartesianPlayWAM(char* filename)
+{
+  //read csv file
+  //add point from here to start
+  //add play points
+  //move to start
+  //play
+
+}
+
 
 /** Perform a Cartesian move of the wam
 */

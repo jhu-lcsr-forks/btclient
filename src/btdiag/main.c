@@ -118,17 +118,17 @@ wam_struct *wam;
 //extern wam_struct WAM;  // this is a hack that will be resolved - sc
 extern int isZeroed;
 static RT_TASK *mainTask;
-vect_3 *p,*o,*zero_v3;
+vect_3 *p,*o,*zero_v3,*destination;
 vect_n *t,*targ,*negtarg;
 vect_n *Mpos, *Mtrq, *Jpos, *Jtrq, *wv;
 
-btgeom_plane myplane,plane2;
+btgeom_plane myplane,plane2,planes[10];
 bteffect_wall mywall,wall[10];
 bteffect_wickedwall mywickedwall,mywickedwall2,wickedwalls[10];
-bthaptic_object myobject,myobject2,objects[10];
+bthaptic_object myobject,myobject2,objects[20];
 btgeom_sphere mysphere,mysphere2,spheres[10];
 bteffect_bulletproofwall mybpwall,bpwall[10];
-btgeom_box mybox;
+btgeom_box boxs[10];
 bteffect_global myglobal;
 vect_3 *p1,*p2,*p3;
 bthaptic_scene bth;
@@ -152,6 +152,7 @@ void clearScreen(void);
 void finish_entry(void);
 void start_entry(void);
 void init_ncurses(void);
+void init_haptics(void);
 int WAMcallback(struct btwam_struct *wam);
 
 /*==============================*
@@ -175,6 +176,7 @@ int main(int argc, char **argv)
   p1 = new_v3();
   p2 = new_v3();
   p3 = new_v3();
+  destination = new_v3();
   Mpos = new_vn(10);
   Mtrq = new_vn(10);
   Jpos = new_vn(10);
@@ -233,8 +235,6 @@ ed to initialize system"))
 
     }
     
-
-
   /* Obtain a pointer to the wam state object */
   wam = GetWAM();
 
@@ -252,50 +252,7 @@ ed to initialize system"))
 
   npucks = wam->num_actuators; // Get the number of initialized actuators
   //*****************Haptics scene
-  new_bthaptic_scene(&bth,10);
-  init_state_btg(&pstate,0.002,30.0);
-  init_pl_btg(&myplane,const_v3(p1,0.0,1.0,-0.2),const_v3(p2,0.0,0.0,-0.2),const_v3(p3,1.0,0.0,-0.2));
-  init_pl_btg(&plane2,const_v3(p1,0.22,1.0,0.0),const_v3(p2,0.22,0.0,1.0),const_v3(p3,0.22,0.0,0.0));
-  init_sp_btg( &mysphere,const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.4,0.0,0.0),0);
-  init_sp_btg( &mysphere2,const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.42,0.0,0.0),1);
-  init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.3,0.0,0.0),0);
-  init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.32,0.0,0.0),1);
-  //init_wall(&mywall,0.0,10.0);
-  init_wickedwall(&mywickedwall,3000, 40.0,5.0,0.020,0.02);
-  init_wickedwall(&mywickedwall2,3000, 40.0,5.0,0.020,0.02);
-  init_wickedwall(&wickedwalls[0],3000, 40.0,5.0,0.020,0.02);
-  init_wickedwall(&wickedwalls[1],3000, 40.0,5.0,0.020,0.02);
-  init_bulletproofwall(&mybpwall,0.02,5000,0.005,5000,40.0,5.0);
- 
-  init_bx_btg(&mybox,const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.5,0.01,0.0),const_v3(p3,0.5,0.0,0.01),0.2,0.2,0.2,1);
- 
-  for(cnt = 0;cnt < 6;cnt++){
-    init_bulletproofwall(&bpwall[cnt],0.002,3000.0,0.002,3000.0,50.0,20.0);
-    //init_wall(&wall[cnt],6000.0,50.0);
-    init_normal_plane_bth(&objects[cnt],&mybox.side[cnt],(void*)&bpwall[cnt],bulletproofwall_nf);
-    addobject_bth(&bth,&objects[cnt]);
-  }
-/*
-  init_normal_plane_bth(&objects[0],&myplane,(void*)&mybpwall,bulletproofwall_nf);
-  
-  init_normal_sphere_bth(&myobject,&mysphere,(void*)&mywickedwall,wickedwall_nf);
-  init_normal_sphere_bth(&myobject2,&mysphere2,(void*)&mywickedwall2,wickedwall_nf);
-  init_normal_sphere_bth(&objects[1],&spheres[0],(void*)&wickedwalls[0],wickedwall_nf);
-  init_normal_sphere_bth(&objects[2],&spheres[1],(void*)&wickedwalls[1],wickedwall_nf);
-*/
-  init_global_bth(&myobject2, &myglobal,60.0,C_v3(-0.0,0.0,0.0));
-  //init_normal_plane_bth(&myobject2,&plane2,(void*)&mywickedwall2,wickedwall_nf);
-  /*
-  addobject_bth(&bth,&objects[0]);
-  addobject_bth(&bth,&objects[1]);
-  addobject_bth(&bth,&objects[2]);
-  addobject_bth(&bth,&myobject);  */
-  //addobject_bth(&bth,&myobject2);
-
-  const_v3(wam->Cpoint,0.00375,-0.0545,0.040);
-  
-  
-  registerWAMcallback(WAMcallback);
+  init_haptics();
   
   start_control_threads(10, 0.002, WAMControlThread, (void *)0);
 
@@ -341,6 +298,51 @@ void init_ncurses(void)
   noecho();
   timeout(0);
   clear();
+}
+void init_haptics(void)
+{
+  int cnt;
+  new_bthaptic_scene(&bth,10);
+  init_state_btg(&pstate,0.002,30.0);
+
+  init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.4,0.0,0.0),0);
+  init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.42,0.0,0.0),1);
+  init_sp_btg( &spheres[2],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.3,0.0,0.0),0);
+  init_sp_btg( &spheres[3],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.32,0.0,0.0),1);
+  //init_wall(&mywall,0.0,10.0);
+  init_wickedwall(&wickedwalls[0],3000, 40.0,5.0,0.020,0.02);
+  init_wickedwall(&wickedwalls[1],3000, 40.0,5.0,0.020,0.02);
+  init_wickedwall(&wickedwalls[2],3000, 40.0,5.0,0.020,0.02);
+  init_wickedwall(&wickedwalls[3],3000, 40.0,5.0,0.020,0.02);
+  init_bulletproofwall(&bpwall[0],0.002,3000.0,0.002,3000.0,50.0,20.0);
+  init_bx_btg(&boxs[0],const_v3(p1,0.8,0.0,0.0),const_v3(p2,0.8,0.01,0.0),const_v3(p3,0.8,0.0,0.01),0.6,0.6,0.6,1);
+
+  for(cnt = 0;cnt < 6;cnt++){
+    init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&bpwall[0],bulletproofwall_nf);
+    addobject_bth(&bth,&objects[cnt]);
+  }
+  
+  for(cnt = 0;cnt < 4;cnt++){
+    init_normal_sphere_bth(&objects[cnt+6],&spheres[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
+    addobject_bth(&bth,&objects[cnt+6]);
+  }
+  /*
+//for box demo
+  init_bx_btg(&boxs[1],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.5,0.01,0.0),const_v3(p3,0.5,0.0,0.01),0.2,0.2,0.2,1);
+ 
+  for(cnt = 0;cnt < 6;cnt++){
+    init_bulletproofwall(&bpwall[cnt],0.002,3000.0,0.002,3000.0,50.0,20.0);
+    //init_wall(&wall[cnt],6000.0,50.0);
+    init_normal_plane_bth(&objects[cnt+10],&boxs[1].side[cnt],(void*)&bpwall[cnt],bulletproofwall_nf);
+    addobject_bth(&bth,&objects[cnt+10]);
+  }
+  init_global_bth(&myobject2, &myglobal,60.0,C_v3(-0.0,0.0,0.0));
+  addobject_bth(&bth,&myobject2);
+ */
+  const_v3(wam->Cpoint,0.0,-0.0,0.0);
+
+  registerWAMcallback(WAMcallback);
+
 }
 
 /** Traps the Ctrl-C signal.
@@ -610,6 +612,8 @@ void RenderScreen() //{{{
     ++line;
     mvprintw(line, column_offset , "qaxis:%s", sprint_vn(vect_buf2,(vect_n*)wam->qaxis));
     ++line;
+    mvprintw(line, column_offset , "qforced:%s", sprint_vn(vect_buf2,(vect_n*)wam->forced));
+    ++line;
     mvprintw(line, column_offset , "Ctrq:%s qerr:%+8.4f ", sprint_vn(vect_buf1,(vect_n*)wam->Ctrq),wam->qerr);
     ++line;
     mvprintw(line, column_offset , "Cpos:%s ", sprint_vn(vect_buf1,(vect_n*)wam->Cpos));
@@ -658,6 +662,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
   cMid = MotorID_From_ActIdx(cpuck);
   switch (c)
   {
+    /*
     case '1':
       bth.state = 0;
       init_bx_btg(&mybox,const_v3(p1,0.57,0.0,-0.35),const_v3(p2,0.6,0.0,-0.35),const_v3(p3,0.57,0.0,-0.3),0.01,0.06,0.1,1);
@@ -682,22 +687,22 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       }
       bth.state = 1;
       break;      
-    case 'u':
+    case 'u': //Lagrangian parameter measure
       getLagrangian4(&A, &B, &C, &D);
       outFile = fopen("gcomp.dat", "w");
       fprintf(outFile, "%f\n%f\n%f\n%f\n", A, B, C, D);
       fclose(outFile);
       break;
-    case 'L':
+    case 'L': //Data logging on
       DLon(&(wam->log));
       break;
-    case 'l':
+    case 'l': //Data logging off
       DLoff(&(wam->log));
-      break; 
-    case 'D':
+      break; */
+    case 'D': //Haptics on
       bth.state = 1;
       break;
-    case 'd':
+    case 'd': //Haptics off
       bth.state = 0;
       break;    
     case 'F': // Force zero
@@ -732,23 +737,16 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       }
       break;
     case 'h': // Cartesian controller off
-      
       fer(cnt, 3) {
         stop_btPID(&(wam->pid[cnt]));
       }
       break;
     case 'N': // Angular controller on
-      
       set_q(wam->qref,wam->qact);
-      
-        start_btPID(&(wam->pid[3]));
-      
+      start_btPID(&(wam->pid[3]));
       break;
     case 'n': // angular controller off
-      
-      
         stop_btPID(&(wam->pid[3]));
-      
       break;
     case 'p': // Set present joint controller to PID mode
       SCsetmode(&(wam->sc[cMid]), SCMODE_PID);
@@ -774,12 +772,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     case 'Z': /* Zero WAM */
       const_vn(wv, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
       SetWAMpos(wv);
-      //ZeroWAM();
-      //useTRC = 1;
-      //SetTRC(useTRC);
       break;
     case 'z': /* Send zero-position to WAM */
-      // set_wam_vector(&wv, 0, 0, 0, 0, 0, 0, 0);
       const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
       //const_vn(wv, 0.0, -2.017, 0.0, 3.14, 0.0, 0.0, 0.0); //blanklink
       SetWAMpos(wv);
@@ -829,6 +823,18 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         SCsetpid(&(wam->sc[cMid]), newpid[0], newpid[1], newpid[2], newpid[3]);
         finish_entry();
       break;
+    case 'r': //cartesian move destination entry
+        start_entry();
+        addstr("Enter destination \"x y z\": ");
+        refresh();
+        ret = scanw("%lf %lf %lf", &(newpid[0]), &(newpid[1]), &(newpid[2]));
+        const_v3(destination,newpid[0],newpid[1],newpid[2]);
+        finish_entry();
+      break;
+    case 'm': //cartesian move start
+        CartesianMovePropsWAM(0.5,0.5);
+        CartesianMoveWAM((vect_n*)destination);
+        break;
     case 'K': /* Enter PID constants for all pucks \bug Check to see if we are in control mode 0 and able to change gains*/
         start_entry();
         addstr("Enter pid constants \"Kp Kd Ki\": ");
@@ -860,10 +866,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         }
         finish_entry();
     break;
-    case 'Y':
-        StartContinuousTeach(1,50,"teachpath");
+
+    case 'Y': //Start continuos teach
+        StartContinuousTeach(0,50,"teachpath");
     break;
-    case 'y':
+    case 'y': //Stop continuos teach
         StopContinuousTeach(); 
         DecodeDL("teachpath","teach.csv",0);
     break;

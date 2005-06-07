@@ -413,7 +413,7 @@ void apply_force_bot(btrobot* robot,int link, vect_3* pos, vect_3 *force, vect_3
 
   set_v3(robot->links[link].eforce.t,
     add_v3(robot->links[link].eforce.t,
-    add_v3(torque,
+    add_v3(matTXvec_m3(robot->links[link].origin,torque),
     cross_v3(matTXvec_m3(robot->links[link].origin,force),robot->links[link].Rp))));
     
   set_v3(robot->links[link].eforce.f,
@@ -428,7 +428,7 @@ void apply_tool_force_bot(btrobot* robot, vect_3* pos, vect_3 *force, vect_3* to
 
   set_v3(robot->tool->eforce.t,
     add_v3(robot->tool->eforce.t,
-    add_v3(torque,
+    add_v3(matTXvec_m3(robot->tool->origin,torque),
     cross_v3(matTXvec_m3(robot->tool->origin,force),robot->tool->Rp))));
     
   set_v3(robot->tool->eforce.f,

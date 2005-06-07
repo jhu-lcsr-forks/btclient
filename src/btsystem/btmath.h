@@ -360,7 +360,7 @@ btreal GCdist_q(quat* start, quat* end); //!< Great circle distance between two 
 btreal angle_q(quat* src); //!< Returns the angle represented by the quaternion
 vect_3* axis_q(vect_3* dest, quat* src); //!< Returns the unit vector representing the rotation
 vect_3* GCaxis_q(vect_3* dest, quat* start, quat* end); //!< Great circle axis between two quaternions
-
+quat * force_closest_q(quat* src);
 quat* slerp_q(quat* q0,quat* q1,btreal t);
 
 char* sprint_q(char *dest,quat* src);

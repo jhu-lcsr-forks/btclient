@@ -141,7 +141,7 @@ typedef struct btwam_struct{
   
   //CartesianSpace Position control
   btPID pid[4]; //  x,y,z,quat
-  quat *qref,*qact,*qaxis; //reference and actual orientations for quaternion control
+  quat *qref,*qact,*qaxis,*forced; //reference and actual orientations for quaternion control
   vect_n *Ttrq;
   vect_3 *Cpos,*Cforce,*Ctrq,*Cref;
   vect_3 *Ckp,*Ckd,*Cki,*Cpoint;
@@ -186,8 +186,8 @@ void getLagrangian4(double *A, double *B, double *C, double *D);
 
 void MoveWAM(vect_n *pos);
 void MovePropsWAM(vect_n *vel, vect_n *acc);
-void CartesianMoveWAM(vect_n *pos, btreal vel, btreal acc); 
-
+void CartesianMoveWAM(vect_n *pos); 
+void CartesianMovePropsWAM(btreal vel, btreal acc); 
 // Continuous Teach & Play Recording
 void StartContinuousTeach(int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
 void StopContinuousTeach(); 
