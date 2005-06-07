@@ -100,13 +100,17 @@ void handleMenu(char c){
         scanf("%d", &newID);
         setProperty(0,newID,STAT,0,STATUS_READY);
         setProperty(0,newID,MODE,0,MODE_TORQUE);
+        
+        getProperty(0,newID,MOFST,&dat);
+        printf("\n The old MOFST was:%d\n",dat);
+        
         setProperty(0,newID,ADDR,0,32971);
         setProperty(0,newID,VALUE,0,1);
         printf("\nPress enter: ");
         scanf("%d", &dummy);
         setProperty(0,newID,ADDR,0,32970);
         getProperty(0,newID,VALUE,&dat);
-        printf("\n The MOFST was:%d\n",dat);
+        printf("\n The MOFST new is:%d\n",dat);
         setProperty(0,newID,MOFST,0,dat);
         setProperty(0,newID,SAVE,0,MOFST);
         printf("\nDone: ");
