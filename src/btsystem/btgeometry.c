@@ -81,6 +81,7 @@ btreal D_Pt2Sp(vect_3 *norm,btgeom_sphere *sp, vect_3 *pt)
   
   if (sp->inside){
     Dist = -1.0 * Dist;
+    set_v3(norm,neg_v3(norm));
   }
   
   return Dist;
@@ -143,7 +144,7 @@ int init_bx_btg( btgeom_box *box,vect_3 *pt1, vect_3 *pt2, vect_3 *pt3,btreal th
   
   if (inside){ //if inside, flip normals and distances
     for (cnt = 0; cnt < 6; cnt ++){
-      set_v3(box->side[cnt].normal,scale_v3(-1.0,box->side[cnt].normal));
+      set_v3(box->side[cnt].normal,neg_v3(box->side[cnt].normal));
       box->side[cnt].distance *= -1.0;
     }
   }

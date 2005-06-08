@@ -310,15 +310,15 @@ void init_haptics(void)
   init_sp_btg( &spheres[2],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.3,0.0,0.0),0);
   init_sp_btg( &spheres[3],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.32,0.0,0.0),1);
   //init_wall(&mywall,0.0,10.0);
-  init_wickedwall(&wickedwalls[0],3000, 40.0,5.0,0.020,0.02);
-  init_wickedwall(&wickedwalls[1],3000, 40.0,5.0,0.020,0.02);
-  init_wickedwall(&wickedwalls[2],3000, 40.0,5.0,0.020,0.02);
-  init_wickedwall(&wickedwalls[3],3000, 40.0,5.0,0.020,0.02);
-  init_bulletproofwall(&bpwall[0],0.002,3000.0,0.002,3000.0,50.0,20.0);
-  init_bx_btg(&boxs[0],const_v3(p1,0.8,0.0,0.0),const_v3(p2,0.8,0.01,0.0),const_v3(p3,0.8,0.0,0.01),0.6,0.6,0.6,1);
+  for(cnt = 0;cnt < 6;cnt++){
+    init_wickedwall(&wickedwalls[cnt],3000.0, 30.0,10.0,0.020,0.01);
+  }
+  init_bulletproofwall(&bpwall[0],0.0,3000.0,0.005,3000.0,20.0,10.0);
+  init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,0.0),const_v3(p2,0.7,0.01,0.0),const_v3(p3,0.7,0.0,0.01),0.4,0.4,0.4,1);
 
   for(cnt = 0;cnt < 6;cnt++){
     init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&bpwall[0],bulletproofwall_nf);
+    //init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
     addobject_bth(&bth,&objects[cnt]);
   }
   
@@ -522,16 +522,16 @@ void RenderScreen() //{{{
   mvprintw(line, 0, "%s", divider);
   ++line;
 
-  mvprintw(line , 0, "[ ]                [ ]              [   ]                   ");
+  mvprintw(line , 0, "[i,I] Idle Mode         [D,d] Haptics On,off   ");
   ++line;
-  mvprintw(line , 0, "[i,I] Idle Mode    [x] Exit         [g] (%c) Gravity toggle ", wam->Gcomp ? '*' : ' ');
+  mvprintw(line , 0, "[p,P] PID Mode          [g  ] (%c) Gravity toggle ", wam->Gcomp ? '*' : ' ');
   ++line;
-  mvprintw(line , 0, "[   ]              [ ]              [ ]                     ");
+  mvprintw(line , 0, "[H,h] Cart Pos (on/off) [F  ] WAM is already zeroed ");
   ++line;
-  mvprintw(line , 0, "[p,P] PID Mode     [ ]              [z,Z] ZeroWAM (Man/Auto)");
+  mvprintw(line , 0, "[N,n] Cart Ang (on/off) [z,Z] ZeroWAM (Folded/Up)");
   ++line;
-  mvprintw(line , 0, "[s,S] Start Trj    [ ] Joint/Puck   [   ]                   ");
-  ++line;
+  mvprintw(line , 0, "[r,m] Cart Target, Move [x,X] Exit                ");
+  ++line;++line;
   line2 = line;
   /***** Display the data *****/
   getWAMjoints(Mpos, Mtrq, Jpos, Jtrq);
@@ -620,19 +620,19 @@ void RenderScreen() //{{{
     ++line;
     mvprintw(line, column_offset , "Cforce:%s ", sprint_vn(vect_buf1,(vect_n*)wam->Cforce));
     ++line;
-   // mvprintw(line, column_offset , "dist:%s ", sprint_vn(vect_buf1,(vect_n*)myobject.Istate.pos));
-   // ++line;   
+    mvprintw(line, column_offset , "dist:%s ", sprint_vn(vect_buf1,(vect_n*)objects[6].Istate.pos));
+    ++line;   
     mvprintw(line, column_offset , "vel:%s ", sprint_vn(vect_buf1,(vect_n*)pstate.vel));
     ++line;  
     mptr = T_to_W_trans_bot(&(wam->robot));
-    //dptr = &(wam->robot0.0000.tool->origin->q[0]);
+    
+    
     dptr = mptr->q;
     mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[0],dptr[1],dptr[2],dptr[3]);++line;
-      mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[4],dptr[5],dptr[6],dptr[7]);++line;
-       mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[8],dptr[9],dptr[10],dptr[11]);++line;
-   //    mvprintw(line, column_offset , "num:%d res:%+8.4f",bth.num_objects,D_Pt2Sp(p,(btgeom_sphere *)myobject.geom,wam->Cpos));++line;
+    mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[4],dptr[5],dptr[6],dptr[7]);++line;
+    mvprintw(line, column_offset , "Origin:%+8.4f %+8.4f %+8.4f %+8.4f", dptr[8],dptr[9],dptr[10],dptr[11]);++line;
 
-         refresh();
+    refresh();
 } //}}}
 
 void clearScreen(void)
@@ -834,6 +834,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     case 'm': //cartesian move start
         CartesianMovePropsWAM(0.5,0.5);
         CartesianMoveWAM((vect_n*)destination);
+        break;
+    case 'w': //cartesian move start
+        CartesianMovePropsWAM(0.5,0.5);
+        CartesianMoveWAM((vect_n*)const_v3(destination,0.5,0.5,0.0));
+        break;
+     case 'W': //cartesian move start
+        CartesianMovePropsWAM(0.5,0.5);
+        CartesianMoveWAM((vect_n*)const_v3(destination,0.5,-0.5,0.0));
         break;
     case 'K': /* Enter PID constants for all pucks \bug Check to see if we are in control mode 0 and able to change gains*/
         start_entry();

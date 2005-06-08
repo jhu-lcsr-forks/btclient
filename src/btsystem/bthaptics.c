@@ -134,7 +134,7 @@ btreal sphere_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_
 {
   btreal res;
   res = D_Pt2Sp((vect_3*)norm,(btgeom_sphere *)obj->geom,(vect_3*)pos);
-  set_v3(obj->Istate.pos,scale_v3(res,(vect_3*)norm));
+  //set_v3(obj->Istate.pos,scale_v3(res,(vect_3*)norm));
   return res;
 }
 
