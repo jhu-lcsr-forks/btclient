@@ -16,9 +16,14 @@
  *======================================================================*/
 
 /*! \file btcontrol_virt.c
-\brief Virtualized functions for control so that various algorithms may be 
-plugged in.
 
+    \brief Virtual interfaces for control functions
+    
+    Position control is a subset of constraint imposition. With position control 
+    of a single joint we attempt to constrain the actual position to match some 
+    target position. With virtual joint stops we seek to constrian a joint position
+    to remain inside a certain range.
+    
 */
 #include <math.h>
 

@@ -1,5 +1,7 @@
+/** \file btmathtest.c
+\brief btsystem internal testing template
 
-
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>

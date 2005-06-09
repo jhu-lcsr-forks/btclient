@@ -1,7 +1,44 @@
+/*======================================================================*
+ *  Module .............libbt
+ *  File ...............btmath.c
+ *  Author .............Traveler Hauptman
+ *  Creation Date ......18 Feb 2005
+ *                                                                      *
+ *  ******************************************************************  *
+ *                                                                      *
+ *  NOTES:
+ *
+ *  REVISION HISTORY:
+ *                                                                      *
+ *======================================================================*/
+/** \file btrobot.c
+\brief serial robot kinematics & dynamics
 
+example usage
+\code
+  btrobot robot;
+  new_bot(&robot,2);
 
+  link_geom_bot(&robot,0,0.0,0.0,0.0,-pi/2.0);
+  link_geom_bot(&robot,1,0.0,0.0,0.0,pi/2.0);
+  link_mass_bot(&robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
+  link_mass_bot(&robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
+  tool_geom_bot(&robot,0.0,0.356,0.0,0.0);
+  tool_mass_bot(&robot,C_v3(0.0,0.0,0.025),2.50);
+  
+  while (1){
+    set_q_bot(&robot,Jpos,Jvel,Jacc); 
+    eval_fk_bot(&robot);  //forward kinematics
+    eval_fd_bot(&robot);  //forward dynamics
+  
+    apply_tool_force_bot(&robot, Cpoint, Cforce, Ctrq);
 
+    eval_bd_bot(&robot);  //backward dynamics
 
+    get_t_bot(&robot,Jtrq);
+  }
+\endcode
+*/
 #include <math.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -9,7 +46,7 @@
 
 #include "btrobot.h"
 #include "btmath.h"
-/**
+/** Internal: Allocates and initializes a new robot link
 
 \param type 0=Revolute Joint, !0=Prismatic Joint
 */
@@ -50,7 +87,9 @@ int new_btlink(btlink* link,int type)
   if (type) {link->type = 1; link->R = 0.0; link->P = 1.0;}
   else { link->type = 0; link->R = 1.0; link->P = 0.0;}
 }
-
+/** Allocate and initialize a new robot object.
+\param nlinks Number of links the robot has not including the base link. (nlinks = number of joints)
+*/
 int new_bot(btrobot* robot, int nlinks)
 {
   void* ptr;
@@ -103,7 +142,7 @@ void link_geom_bot(btrobot* robot, int link, double theta, double d, double a, d
   getcol_mh(robot->links[link].Rl,robot->links[link].trans,3); 
   set_v3(robot->links[link].Rl,matTXvec_m3(robot->links[link].trans,robot->links[link].Rl));
 }
-/** Define the DH parameters of the specified link
+/** Define the DH parameters of the tool
   the value passed for the joint parameter (theta or d depending on revolute or prismatic joint)
   is an offset to allow specification of where the joint zero position is.
 */
@@ -123,7 +162,8 @@ void tool_geom_bot(btrobot* robot,double theta, double d, double a, double alpha
   getcol_mh(robot->tool->Rl,robot->tool->trans,3); 
   set_v3(robot->tool->Rl,matTXvec_m3(robot->tool->trans,robot->tool->Rl));
 }
-
+/** get the transform from the base to the tool
+*/
 void tool_trans_bot(btrobot* robot, matr_h* trans)
 {
   set_mh(robot->tool->trans,trans);
@@ -132,6 +172,9 @@ void tool_trans_bot(btrobot* robot, matr_h* trans)
   set_v3(robot->tool->Rl,matTXvec_m3(robot->tool->trans,robot->tool->Rl));
 }
 /** Set the mass parameters of the specified link
+
+WARNING: you must call link_geom_bot() for this link first!
+
 \param link The link index (Link 1 rotates around joint 1 (z axis of frame 0) and has index 0)
 \param cog Location of the link center of mass in the link frame
 \param m The mass of the link
@@ -143,7 +186,8 @@ void link_mass_bot(btrobot* robot, int link, vect_3 *cog,double m)
   set_v3(robot->links[link].Rm,add_v3(robot->links[link].Rl,robot->links[link].cog));
 }
 /** Set the mass parameters of the tool
-\bug Note: This must not be called after link_geom_bot
+
+WARNING: you must call tool_geom_bot() for this link first!
 
 \param cog Location of the tool center of mass in the tool frame
 \param m The mass of the link
@@ -179,6 +223,7 @@ void set_gravity_bot(btrobot* robot, double Gscale) //set value to scale effect 
 }
 
 //void set_jacobian_scheme_bot(btrobot* robot,int scheme); //how to handle extra dof
+
 /** Data access function to set the present joint angle state of the robot object.
 
 Units: Angle = Radians, Time = Seconds
@@ -190,6 +235,7 @@ void set_q_bot(btrobot* robot, vect_n* q, vect_n* dq, vect_n* ddq) //set general
   set_vn(robot->ddq,ddq);
   
 }
+
 /** Data access function to get the present joint torques of the robot object.
 */
 void get_t_bot(btrobot* robot,vect_n* t)
@@ -253,7 +299,7 @@ vect_3* T_to_W_bot(btrobot* robot, vect_3 *position) //find world position of lo
 
 /** Returns a pointer to the transform matrix between the world frame and the
 specified link frame
-\bug It is not safe to perform calculation on this data structure that write 
+\bug It is not safe to perform calculations on this data structure that write 
 any data to it. In most conditions it should be used in the form: 
   set_mh(mytrans,Ln_to_W_trans_bot(robot,2));
 However, it is ok to perform read operations on it
@@ -268,6 +314,10 @@ matr_h* T_to_W_trans_bot(btrobot* robot)
 }
 //void fk_btwam(btrobot* robot);  //forward kinematics optimized for the wam
 //void fj_bot(btrobot* robot);
+/** Calculate RNE forward dynamics for robot.
+
+*/
+
 void eval_fd_bot(btrobot* robot) //forward dynamics
 {
   int cnt;
@@ -335,7 +385,9 @@ void eval_fd_bot(btrobot* robot) //forward dynamics
   }  
 
 }
+/** Calculate RNE backward dynamics for robot.
 
+*/
 void eval_bd_bot(btrobot* robot) //backward kinematics
 {
   int cnt;
@@ -403,7 +455,9 @@ void eval_bd_bot(btrobot* robot) //backward kinematics
         
   
 }
+/** Apply a force to a link.
 
+*/
 void apply_force_bot(btrobot* robot,int link, vect_3* pos, vect_3 *force, vect_3* torque)
 {
   //pos + res = cog :=> cog - pos = res | res is vector from force point to cog.
@@ -419,6 +473,9 @@ void apply_force_bot(btrobot* robot,int link, vect_3* pos, vect_3 *force, vect_3
   set_v3(robot->links[link].eforce.f,
     add_v3(robot->links[link].eforce.f,matTXvec_m3(robot->links[link].origin,force)));
 }
+/** Apply a force to a tool.
+
+*/
 void apply_tool_force_bot(btrobot* robot, vect_3* pos, vect_3 *force, vect_3* torque)
 {
   //pos + res = cog :=> cog - pos = res | res is vector from force point to cog.

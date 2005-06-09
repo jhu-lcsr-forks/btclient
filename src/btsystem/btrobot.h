@@ -23,8 +23,9 @@ extern "C"
 {
 #endif/* __cplusplus */
  
+/** A force applied to a link. Used internally to btrobot.
 
-
+*/
 typedef struct {
   vect_3 *f;  //!< Force to apply (in the world frame)
   vect_3 *t;  //!< Torque to apply (in the world frame)
@@ -32,7 +33,10 @@ typedef struct {
 }btlinkforce;
 
 //matr_h is a homogeneous transform matrix
+/** Robot link definition and state maintenance object
 
+This object is used internally to btrobot. 
+*/
 typedef struct {
   //physical info
   double m,Gscale; //mass, percent of gravity to use
@@ -63,7 +67,10 @@ typedef struct {
   //link envelope info
   
 }btlink;
-/**
+/** Main robot description and interaction object
+
+
+
   Notes:
     We assume that for any configuration of joint angles we will have to evaluate 
     the math for all links. All intermediate results are cached for access and 
@@ -124,7 +131,9 @@ void get_t_bot(btrobot* robot,vect_n* t);
 int new_linkforce(btrobot* robot,btlinkforce *force); 
 int release_linkforce(btrobot* robot, btlinkforce *force);
 
-/** Create a frame from 3 points in space. 
+/** 
+\todo
+Create a frame from 3 points in space. 
 origin is first point
 line between first and second point is x axis
 perpindicular between x axis and third point is y axis

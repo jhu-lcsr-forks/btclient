@@ -24,7 +24,10 @@ extern "C"
  
 #include "btmath.h"
 /** Piecewize Linear Path
- The parameter s is assumed to be monotonically increasing. This code is undefined otherwise.
+
+btpath_pwl is for N dimensional piecewize linear curves
+
+ The parameter s is assumed to be monotonically increasing.
 
 
 
@@ -38,7 +41,7 @@ typedef struct {
   btreal proxy_s;
   int segment;
   int startnode,endnode;
-  int type; //!< 0 = cartesial, 1 = s2
+  int type; //!< 0 = cartesial, 1 = SE(3)
   int param; //0 = arclength, 1 = time
   
 }btpath_pwl;

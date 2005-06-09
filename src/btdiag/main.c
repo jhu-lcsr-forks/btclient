@@ -311,9 +311,9 @@ void init_haptics(void)
   init_sp_btg( &spheres[3],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.32,0.0,0.0),1);
   //init_wall(&mywall,0.0,10.0);
   for(cnt = 0;cnt < 6;cnt++){
-    init_wickedwall(&wickedwalls[cnt],3000.0, 30.0,10.0,0.020,0.01);
+    init_wickedwall(&wickedwalls[cnt],3000.0, 10.0,5.0,0.020,0.01);
   }
-  init_bulletproofwall(&bpwall[0],0.0,3000.0,0.005,3000.0,20.0,10.0);
+  init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
   init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,0.0),const_v3(p2,0.7,0.01,0.0),const_v3(p3,0.7,0.0,0.01),0.4,0.4,0.4,1);
 
   for(cnt = 0;cnt < 6;cnt++){

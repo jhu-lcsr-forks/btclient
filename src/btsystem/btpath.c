@@ -11,8 +11,11 @@
  *  REVISION HISTORY:
  *                                                                      *
  *======================================================================*/
+/** \file btpath.c
+\brief Piecewize space curve geometry
 
 
+*/
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,7 +36,7 @@ piecewize linear trajectory (s(t) - arc pos as a function of time)
 
 
 */
-
+/** Initialize a piecewize linear path */
 int init_pwl(btpath_pwl *pth, int vect_size,int rows)
 {
   void* vmem;
@@ -140,6 +143,7 @@ int add_point_pwl(btpath_pwl *pth, vect_n *p, btreal s)
   
   return idx;
 }
+/** Remove all the points on a path */
 int clear_pwl(btpath_pwl *pth)
 {
   int idx;
@@ -179,6 +183,7 @@ int get_segment_pwl(btpath_pwl *pth,btreal s)
    }
   return -1;
 }
+/** Return arclength at a node */
 btreal getnodes_pwl(btpath_pwl *pth,int idx)
 {
   return pth->s[idx];
@@ -245,12 +250,12 @@ vect_n* ds_pwl(btpath_pwl *pth, btreal ds)
   return pth->proxy;
 
 }
-
+/** Prep a path object for incremental access */
 vect_n* dsinit_pwl(btpath_pwl *pth, btreal s)
 {
   return getval_pwl(pth,s);
 }
-
+/** Get the total arclength of a path */
 btreal arclength_pwl(btpath_pwl *pth)
 { int idx;
   idx = endof_vr(pth->vr);
