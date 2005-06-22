@@ -21,6 +21,12 @@
 #include <stdio.h>
 #include <syslog.h>
 #include "btpath.h"
+
+//Internal prototypes
+vect_n * idxa_pwl(btpath_pwl *pth,int idx); //internal: 
+vect_n * idxb_pwl(btpath_pwl *pth,int idx); //internal: 
+int get_segment_pwl(btpath_pwl *pth,btreal s); //Given an arclength, find what segment we are. (binary search)
+
 /**
   Paths define geometry in space.
   Trajectories define a location and velocity as a function of time.
@@ -125,7 +131,7 @@ int add_arclen_point_pwl(btpath_pwl *pth, vect_n *p)
   
   return idx;
 }
-/** Adds a point to a path and computes the arclength
+/** Adds a point to a path 
 
 
 */
@@ -152,6 +158,16 @@ int clear_pwl(btpath_pwl *pth)
   set_vn(pth->proxy,idx_vr(pth->vr,0));
   pth->proxy_s = pth->s[0];
   pth->segment = 0;
+  
+}
+int add_vectray_pwl(btpath_pwl *pth, vectray *vr)//use the first column for the parameter
+{
+  vect_n *cpy;
+  destroy_vr(pth->vr);
+  pth->vr = new_vr(vr->n - 1,vr->rows);
+  cpy = new_vn(vr->n - 1);
+  
+  
   
 }
 /** Find the segment that contains arclength s
@@ -250,11 +266,13 @@ vect_n* ds_pwl(btpath_pwl *pth, btreal ds)
   return pth->proxy;
 
 }
+
 /** Prep a path object for incremental access */
 vect_n* dsinit_pwl(btpath_pwl *pth, btreal s)
 {
   return getval_pwl(pth,s);
 }
+
 /** Get the total arclength of a path */
 btreal arclength_pwl(btpath_pwl *pth)
 { int idx;

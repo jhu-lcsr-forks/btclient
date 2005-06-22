@@ -1,4 +1,4 @@
-/*======================================================================*
+a;/*======================================================================*
  *  Module .............libbtsystem
  *  File ...............btpath.h
  *  Author .............Traveler Hauptman
@@ -46,24 +46,26 @@ typedef struct {
   
 }btpath_pwl;
 
+// Init / Destroy
 int init_pwl(btpath_pwl *pth, int vect_size,int rows);
 void free_pwl(btpath_pwl *pth);
-vect_n * idxa_pwl(btpath_pwl *pth,int idx); //internal: 
-vect_n * idxb_pwl(btpath_pwl *pth,int idx); //internal: 
-int get_segment_pwl(btpath_pwl *pth,btreal s); //Given an arclength, find what segment we are. (binary search)
+void new_param_by_arclen_pwl(btpath_pwl *pth, btpath_pwl *crv2); //creates a second curve of arclength vs time
 
+// PWL Curve Data Manipulation
 int add_arclen_point_pwl(btpath_pwl *pth, vect_n *p); //Add a point to the arc, parameterized by arclength, returns index to the point
 int clear_pwl(btpath_pwl *pth); //Erase the present path
 int add_point_pwl(btpath_pwl *pth, vect_n *p, btreal s); //Add a point to the arc, parameterized by time, returns index to the point
 //void rem_point(btpath_pwl *pth, int idx); //Add a point to the arc
-btreal getnodes_pwl(btpath_pwl *pth,int idx); //return arclength at node[idx]
+int add_vectray_pwl(btpath_pwl *pth, vectray *vr);//use the first column for the parameter
+int add_arclen_vectray_pwl(btpath_pwl *pth, vectray *vr);
+
+// PWL Curve Usage
 vect_n * getval_pwl(btpath_pwl *pth, btreal s); //Given arclength , find location, set the proxy to it
-
-vect_n* ds_pwl(btpath_pwl *pth, btreal ds); //Shift our proxy by ds and return the position.
 vect_n* dsinit_pwl(btpath_pwl *pth, btreal s);
-btreal arclength_pwl(btpath_pwl *pth);
+vect_n* ds_pwl(btpath_pwl *pth, btreal ds); //Shift our proxy by ds and return the position.
 
-void new_param_by_arclen_pwl(btpath_pwl *pth, btpath_pwl *crv2); //creates a second curve of arclength vs time
+btreal getnodes_pwl(btpath_pwl *pth,int idx); //return arclength at node[idx]
+btreal arclength_pwl(btpath_pwl *pth);
 
 int read_cvs_pwl(btpath_pwl *pth,FILE *infile);
 int write_cvs_pwl(btpath_pwl *pth,FILE *outfile);

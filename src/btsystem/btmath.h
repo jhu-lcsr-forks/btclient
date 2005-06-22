@@ -198,8 +198,9 @@ int test_vr(void)
 typedef struct barrett_vectarray_n{
   btreal *data;
   vect_n *rayvect,*lval,*rval;
-  int n;      //size of vector
-  int rows,lastrow; //number of rows and present index
+  unsigned int n;    //!< Number of elements in the vectors in this array
+  unsigned int rows; //!< Number of rows allocated (MAX Rows)
+  int lastrow; //!< present index into the array
 }vectray;
 
 vectray * new_vr(int vect_size,int rows);

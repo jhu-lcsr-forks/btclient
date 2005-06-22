@@ -97,7 +97,7 @@ see trjstate for more state info
 */
 typedef struct 
 {
-  void *trj;
+  void *trj; //The definition of the trajectory as well as operation state
   void *crv;
   
   vect_n* (*init_S)(void *dat,btreal s);
@@ -116,6 +116,7 @@ typedef struct
   int direction; //1 = start at end and run backwards
 }bttrajectory;
 
+bttrajectory * new_bttrajectory();
 //setup
 void setpath_bttrj(bttrajectory *trj,void *crv_dat, void *initfunc, void *evalfunc);
 void settraj_bttrj(bttrajectory *trj,void *trj_dat, void *initfunc, void *evalfunc);

@@ -36,6 +36,54 @@
 #include "btcontrol_virt.h"
 #include "btjointcontrol.h"
 
+
+/**************************** trajectory functions ******************************/
+bttrajectory * new_bttrajectory()
+{
+  bttrajectory *bttrj;
+  if ((bttrj = malloc(sizeof(bttrajectory))) == NULL)
+  {
+    syslog(LOG_ERR,"new_bttrajectory: memory allocation failed");
+    return NULL;
+  }
+  return bttrj;
+}
+void setpath_bttrj(bttrajectory *trj,void *crv_dat, void *initfunc, void *evalfunc)
+{
+  trj->crv = crv_dat;
+  trj->init_T = initfunc;
+  trj->S_of_dt = evalfunc;
+}
+void settraj_bttrj(bttrajectory *trj,void *trj_dat, void *initfunc, void *evalfunc)
+{
+  trj->trj = trj_dat;
+  trj->init_S = initfunc;
+  trj->Q_of_ds = evalfunc;
+}
+
+int start_bttrj(bttrajectory *trj)
+{
+  double ret1;
+  vect_n *ret2;
+  
+  ret1 = (*(trj->init_T))(trj->trj,0.0);
+  ret2 = (*(trj->init_S))(trj->crv,ret1);
+  
+}
+
+vect_n* eval_bttrj(bttrajectory *trj,btreal dt)
+{
+  double ret1;
+  vect_n *ret2;
+  
+  ret1 = (*(trj->S_of_dt))(trj->trj,dt);
+  ret2 = (*(trj->Q_of_ds))(trj->crv,ret1);
+  
+  return ret2;
+}
+/**************************** trajectory functions ******************************/
+/**************************** state controller functions ************************/
+
 int set_bts(btstatecontrol *sc, btposition* pos, bttrajectory *trj)
 {
   if (sc->mode == SCMODE_TORQUE){
@@ -46,7 +94,6 @@ int set_bts(btstatecontrol *sc, btposition* pos, bttrajectory *trj)
   }
    
 }
-/**************************** state controller functions ************************/
 /*! Initialize the state controller structure */
 int init_bts(btstatecontrol *sc, int size)
 {

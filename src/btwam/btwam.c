@@ -717,9 +717,22 @@ void CartesianMoveWAM(vect_n *pos)
 }
 void CartesianPlayWAM(char* filename)
 {
+  vectray *vr,*oldpthvr;
+  int cnt,end;
   //read csv file
-  //add point from here to start
+  read_csv_file_vr(filename,&vr);
+  //move to start point
+  CartesianMoveWAM(idx_vr(vr,0));
   //add play points
+  clear_pwl(&WAM.pth);
+  if (sizeof_vr(vr) > sizeof_vr(WAM.pth.vr)){
+    syslog(LOG_ERR,"CartesianPlayWAM:playlist array is too big");
+    return;
+  }
+  end = sizeof_vr(vr);
+  for (cnt = 0; cnt < end; cnt ++){
+    add_point_pwl(&WAM.pth,idx_vr(vr,0));
+  }
   //move to start
   //play
 
