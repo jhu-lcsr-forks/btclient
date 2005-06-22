@@ -115,6 +115,7 @@ int disp_puck       = FALSE;
 int useTRC          = FALSE;
 
 wam_struct *wam;
+SC_move_list ml;
 //extern wam_struct WAM;  // this is a hack that will be resolved - sc
 extern int isZeroed;
 static RT_TASK *mainTask;
@@ -254,6 +255,8 @@ ed to initialize system"))
   //*****************Haptics scene
   init_haptics();
   
+  MLconstruct(&ml, wam.wamDriverData->sc, 7, 50); //Initialize the playlist
+
   start_control_threads(10, 0.002, WAMControlThread, (void *)0);
 
   signal(SIGINT, sigint_handler); //register the interrupt handler
@@ -264,7 +267,8 @@ ed to initialize system"))
   
   while (!done)
   {
-    
+    MLeval(&ml);  //Check to see whether the playlist needs attention
+
     if ((chr = getch()) != ERR) //Check buffer for keypress
       ProcessInput(chr);
     
@@ -367,6 +371,7 @@ void Shutdown()
   syslog(LOG_ERR, "stop_control_threads");
   stop_control_threads();
   syslog(LOG_ERR, "closelog");
+  MLdestroy(&ml);
   closelog();
   syslog(LOG_ERR, "endwin");
   endwin();
@@ -757,6 +762,12 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         SCsetmode(&(wam->sc[Mid]), SCMODE_PID);
       }
       break;
+        case 's': // Start Trajectory control on present puck
+            SCstarttrj(&(wam.wamDriverData->sc[motor_position[cpuck]]), commands[cpuck]);
+            break;
+        case 'S': // Start Trajectory control on all pucks
+            fer(cnt, npucks) SCstarttrj(&(wam.wamDriverData->sc[motor_position[cnt]]), commands[cnt]);
+            break;
     case 'x':
     case 'X': /* eXit */
       done = 1;
@@ -874,7 +885,46 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         }
         finish_entry();
     break;
-
+            case ';':   /* Play through playlist once */
+            MLplay(&ml);
+            break;
+        case ',': /* Execute present line in playlist */
+            MLone(&ml);
+            break;
+        case '>': /* Show next line in playlist */
+            MLnext(&ml);
+            break;
+        case '<': /* Show previous line in playlist */
+            MLprev(&ml);
+            break;
+        case '/':   /* Loop through playlist */
+            MLrepeatplay(&ml);
+            break;
+        case '.':   /* Stop playlist execution */
+            MLstop(&ml);
+            break;
+        case 'l':   /* Load playlist from file */
+            start_entry();
+            addstr("Enter filename for playlist read: ");
+            refresh();
+            scanw("%s", fn);
+            MLload(&ml, fn);
+            finish_entry();
+            break;
+        case 'w':   /* Write current playlist to file */
+            start_entry();
+            addstr("Enter filename for playlist save: ");
+            refresh();
+            scanw("%s", fn);
+            MLsave(&ml, fn);
+            finish_entry();
+            break;
+        case '+':   /* Add to playlist */
+            MLaddSC(&ml);
+            break;
+        case '-':   /* Delete from playlist */
+            MLdel(&ml);
+            break;
     case 'Y': //Start continuos teach
         StartContinuousTeach(0,50,"teachpath");
     break;
