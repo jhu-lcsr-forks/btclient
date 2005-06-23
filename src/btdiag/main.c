@@ -267,6 +267,8 @@ ed to initialize system"))
   
   while (!done)
   {
+    WACKYeval();  //check to see whether we want to update to another random trajectory
+  
     MLeval(&ml);  //Check to see whether the playlist needs attention
 
     if ((chr = getch()) != ERR) //Check buffer for keypress
@@ -932,6 +934,9 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         StopContinuousTeach(); 
         DecodeDL("teachpath","teach.csv",0);
     break;
+    case '~':
+            WACKYplay = !WACKYplay;
+            break;
     case 27: //Handle and discard extended keyboard characters (like arrows)
       if ((chr = getch()) != ERR)
       {
@@ -979,7 +984,60 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       break;
     }
 }
+void WACKYeval()
+{
+    int ret,cnt;
+    double pos,vel,acc,min,max;
 
+    if (WACKYplay)
+    {
+        ret = 0;
+        for (cnt = 0; cnt < npucks; cnt++)
+        {
+            if (wam->sc[cnt].trj.state == 0)
+            {
+                switch(cnt)
+                {
+                    case 0: // J1
+                        min = -2.45;
+                        max = +2.45;
+                        break;
+                    case 1: // J2
+                        min = -1.00;//-1.95;
+                        max = +1.00;//+1.95;
+                        break;
+                    case 2: // J3
+                        min = -2.78;
+                        max = +2.78;
+                        break;
+                    case 3: // J4
+                        min = -0.80;
+                        max = +2.00;
+                        break;
+                    case 4: // J5
+                        min = -4.50;
+                        max = +0.80;
+                        break;
+                    case 5: // J6
+                        min = -1.40;
+                        max = +1.40;
+                        break;
+                    case 6: // J7
+                        min = -2.50;
+                        max = +2.50;
+                        break;   
+                    default:
+                        min = -1.40;
+                        max = +1.40;
+                        break;
+                }
+                pos = drand48() * (max - min) + min;
+                //vel = (0.5-drand48()) * 1.4 * 2;
+                SCstarttrj(&(wam->sc[cnt]), pos);
+            }
+        }
+    }
+}
 
 /*======================================================================*
  *                                                                      *
