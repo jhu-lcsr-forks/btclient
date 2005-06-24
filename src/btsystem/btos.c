@@ -6,6 +6,7 @@
  *                                                                      *
  *  ******************************************************************  */
 #include <syslog.h>
+#include <stdlib.h>
 #include "btos.h"
 
 
@@ -27,7 +28,7 @@ BTINLINE void * xmalloc(size_t size)
   //allocate mem for vector,return vector, and return structure
   if ((vmem = malloc(size)) == NULL) 
   {
-    syslog(LOG_ERR,"xMalloc: memory allocation failed, size %d",rows);
+    syslog(LOG_ERR,"xMalloc: memory allocation failed, size %d",size);
   }
   return vmem;
 }

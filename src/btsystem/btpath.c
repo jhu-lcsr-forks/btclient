@@ -43,14 +43,14 @@ piecewize linear trajectory (s(t) - arc pos as a function of time)
 
 */
 
-btpath_pwl *pth new_pwl(int vect_size,int rows)
+btpath_pwl * new_pwl(int vect_size,int rows)
 {
   
   btpath_pwl * vmem;
 
   int cnt;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = (btpath_pwl *)malloc(btpath_pwl)) == NULL) 
+  if ((vmem = (btpath_pwl *)malloc(sizeof(btpath_pwl))) == NULL) 
   {
     syslog(LOG_ERR,"new_pwl: memory allocation failed");
     return NULL;
@@ -186,9 +186,9 @@ int add_vectray_pwl(btpath_pwl *pth, vectray *vr)//use the first column for the 
   pth->vr = new_vr(vect_size,vr->rows);
   cpy = new_vn(vect_size);
   for (cnt = 0;cnt < vr->rows;cnt++){
-    setrange_vn(cpy,idx_vn(vr,cnt),0,1,vect_size);
-    s = getval_vn(idx_vn(vr,cnt),0);
-    add_point_pwl(pth,cpy,s)
+    setrange_vn(cpy,idx_vr(vr,cnt),0,1,vect_size);
+    s = getval_vn(idx_vr(vr,cnt),0);
+    add_point_pwl(pth,cpy,s);
   }
 }
 /** Find the segment that contains arclength s
