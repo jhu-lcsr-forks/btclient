@@ -716,7 +716,7 @@ void CartesianMoveWAM(vect_n *pos)
   }
 }
 void CartesianPlayWAM(char* filename)
-{
+{/*
   vectray *vr,*oldpthvr;
   int cnt,end;
   //read csv file
@@ -735,7 +735,7 @@ void CartesianPlayWAM(char* filename)
   }
   //move to start
   //play
-
+*/
 }
 
 

@@ -56,6 +56,7 @@
 #include "btrobot.h"
 #include "btlogger.h"
 #include "bthaptics.h"
+#include "playlist.h"
 #include "btgeometry.h"
 
 /*==============================*
@@ -255,7 +256,7 @@ ed to initialize system"))
   //*****************Haptics scene
   init_haptics();
   
-  MLconstruct(&ml, wam.wamDriverData->sc, 7, 50); //Initialize the playlist
+  MLconstruct(&ml, wam->sc, 7, 50); //Initialize the playlist
 
   start_control_threads(10, 0.002, WAMControlThread, (void *)0);
 
@@ -728,6 +729,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         SCsetmode(&(wam->sc[Mid]), SCMODE_IDLE);
       }
       break;
+      
     case 't': // Set present joint controller to Torque mode
       SCsetmode(&(wam->sc[cMid]), SCMODE_TORQUE);
       break;
@@ -765,10 +767,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       }
       break;
         case 's': // Start Trajectory control on present puck
-            SCstarttrj(&(wam.wamDriverData->sc[motor_position[cpuck]]), commands[cpuck]);
+            SCstarttrj(&(wam->sc[cMid]), commands[cpuck]);
             break;
         case 'S': // Start Trajectory control on all pucks
-            fer(cnt, npucks) SCstarttrj(&(wam.wamDriverData->sc[motor_position[cnt]]), commands[cnt]);
+        fer(cnt, npucks) {
+          Mid = MotorID_From_ActIdx(cnt);
+          SCstarttrj(&(wam->sc[Mid]), commands[cnt]);
+        }
             break;
     case 'x':
     case 'X': /* eXit */
@@ -848,11 +853,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         CartesianMovePropsWAM(0.5,0.5);
         CartesianMoveWAM((vect_n*)destination);
         break;
-    case 'w': //cartesian move start
+    case 'j': //cartesian move start
         CartesianMovePropsWAM(0.5,0.5);
         CartesianMoveWAM((vect_n*)const_v3(destination,0.5,0.5,0.0));
         break;
-     case 'W': //cartesian move start
+     case 'J': //cartesian move start
         CartesianMovePropsWAM(0.5,0.5);
         CartesianMoveWAM((vect_n*)const_v3(destination,0.5,-0.5,0.0));
         break;
