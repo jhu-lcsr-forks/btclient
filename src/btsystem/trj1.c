@@ -61,22 +61,24 @@ bttrajectory* tpl_load_n_register(char *filename)
 {
   bttrajectory* trj;
   tpl_trj *crv_trj;
-  
+  btpath_pwl *crv;
+  vectray *tmpray;
   
   trj = new_bttrajectory();
   crv_trj = new_tpl_trj();
+  read_csv_file_vr(fileName, &tmpray);
+  crv = new_pwl(tmpray->n-1,5);
+  add_vectray_pwl(crv,tmpray);
   
   settraj_bttrj(trj,(void *)crv_trj, tpl_init_T, tpl_S_of_dt);
-  setpath_bttrj(trj,void *crv_dat, void *initfunc, void *evalfunc);
-  
-  
-  
-  
-  
-  
+  setpath_bttrj(trj,(void *)crv, dsinit_pwl,ds_pwl);
+  return trj;
 }
 
-
+bttrajectory* tpl_unload(bttrajectory *trj)
+{
+  free_pwl((btpath_pwl *)trj->crv);
+}
 
 
 

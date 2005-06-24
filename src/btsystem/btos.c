@@ -20,7 +20,17 @@ BTINLINE int test_and_log(int ret, const char *str)
     return 0;
 }
 
+BTINLINE void * xmalloc(size_t size)
+{
+ void* vmem;
 
+  //allocate mem for vector,return vector, and return structure
+  if ((vmem = malloc(size)) == NULL) 
+  {
+    syslog(LOG_ERR,"xMalloc: memory allocation failed, size %d",rows);
+  }
+  return vmem;
+}
 
 
 

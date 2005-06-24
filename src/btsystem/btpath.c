@@ -42,6 +42,22 @@ piecewize linear trajectory (s(t) - arc pos as a function of time)
 
 
 */
+
+btpath_pwl *pth new_pwl(int vect_size,int rows)
+{
+  
+  btpath_pwl * vmem;
+
+  int cnt;
+  //allocate mem for vector,return vector, and return structure
+  if ((vmem = (btpath_pwl *)malloc(btpath_pwl)) == NULL) 
+  {
+    syslog(LOG_ERR,"new_pwl: memory allocation failed");
+    return NULL;
+  }
+  
+  init_pwl(vmem,vect_size,rows);
+}
 /** Initialize a piecewize linear path */
 int init_pwl(btpath_pwl *pth, int vect_size,int rows)
 {
@@ -51,7 +67,7 @@ int init_pwl(btpath_pwl *pth, int vect_size,int rows)
   //allocate mem for vector,return vector, and return structure
   if ((vmem = malloc(rows*sizeof(btreal))) == NULL) 
   {
-    syslog(LOG_ERR,"btmath: init_pwl memory allocation failed, size %d",rows);
+    syslog(LOG_ERR,"btpath: init_pwl memory allocation failed, size %d",rows);
     return -1;
   }
   
@@ -71,9 +87,9 @@ int init_pwl(btpath_pwl *pth, int vect_size,int rows)
 void free_pwl(btpath_pwl *pth)
 {
   destroy_vr(pth->vr);
-  free_vn(pth->proxy);
-  free_vn(pth->tmp1);
-  free_vn(pth->tmp2);
+  //free_vn(pth->proxy);
+  //free_vn(pth->tmp1);
+  //free_vn(pth->tmp2);
   free(pth->s);
 }
 /** Break a curve paramaterized by t (usually time) into x(s) and s(t) | s = arclength. 
@@ -163,12 +179,17 @@ int clear_pwl(btpath_pwl *pth)
 int add_vectray_pwl(btpath_pwl *pth, vectray *vr)//use the first column for the parameter
 {
   vect_n *cpy;
+  int cnt,vect_size,array_size;
+  btreal s;
   destroy_vr(pth->vr);
-  pth->vr = new_vr(vr->n - 1,vr->rows);
-  cpy = new_vn(vr->n - 1);
-  
-  
-  
+  vect_size = vr->n - 1;
+  pth->vr = new_vr(vect_size,vr->rows);
+  cpy = new_vn(vect_size);
+  for (cnt = 0;cnt < vr->rows;cnt++){
+    setrange_vn(cpy,idx_vn(vr,cnt),0,1,vect_size);
+    s = getval_vn(idx_vn(vr,cnt),0);
+    add_point_pwl(pth,cpy,s)
+  }
 }
 /** Find the segment that contains arclength s
 \param s if s is negative we look for the segment that contains (smax - s)

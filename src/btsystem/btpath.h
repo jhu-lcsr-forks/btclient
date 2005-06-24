@@ -48,6 +48,7 @@ typedef struct {
 
 // Init / Destroy
 int init_pwl(btpath_pwl *pth, int vect_size,int rows);
+btpath_pwl *pth new_pwl(int vect_size,int rows);
 void free_pwl(btpath_pwl *pth);
 void new_param_by_arclen_pwl(btpath_pwl *pth, btpath_pwl *crv2); //creates a second curve of arclength vs time
 

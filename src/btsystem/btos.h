@@ -52,7 +52,7 @@ typedef pthread_mutex_t btmutex;
 
 
 BTINLINE int test_and_log(int ret,const char *str);
-
+BTINLINE void * xmalloc(size_t size);
 
 
 
