@@ -41,7 +41,7 @@
 bttrajectory * new_bttrajectory()
 {
   bttrajectory *bttrj;
-  if ((bttrj = malloc(sizeof(bttrajectory))) == NULL)
+  if ((bttrj = (bttrajectory *)malloc(sizeof(bttrajectory))) == NULL)
   {
     syslog(LOG_ERR,"new_bttrajectory: memory allocation failed");
     return NULL;
