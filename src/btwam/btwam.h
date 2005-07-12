@@ -159,7 +159,8 @@ typedef struct btwam_struct{
   
   //Data logging
   btlogger log;
-  
+  int logdivider;
+  btreal log_time;
   //Continuous path record
   btlogger cteach;
   int divider,counter;
