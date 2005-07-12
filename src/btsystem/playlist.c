@@ -309,7 +309,9 @@ void MLplay(SC_move_list *ml) //play through playlist once
 {
   if (ml->Nmoves <= 0)
     return;
-    
+  
+  ml->Cmove = 0;
+  MLloadnext(ml);
   ml->loop = 0;
   ml->play = 1;
 }
@@ -319,7 +321,9 @@ void MLrepeatplay(SC_move_list *ml) //loop through playlist
 {
   if (ml->Nmoves <= 0)
     return;
-    
+  
+  ml->Cmove = 0;
+  MLloadnext(ml);
   ml->loop = 1;
   ml->play = 1;
 }
