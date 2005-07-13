@@ -78,7 +78,7 @@ int PrepDL(btlogger *db, int fields)
 /** Adds a field to the list of data to log
 \bug Check to see if we have already initialized with InitDL()
  
-\param size Size of data = Array_length * sizeof(data)
+\param size Size of data = Array_length * sizeof(type)
 \return 0 = Success, -1 = no more fields available
 */
 int AddDataDL(btlogger *db,void *data, int size, int type,char *name)

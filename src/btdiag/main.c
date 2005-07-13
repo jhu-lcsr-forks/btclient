@@ -241,13 +241,11 @@ ed to initialize system"))
   wam = GetWAM();
 
   /* Initialize our data logging structure */
+  wam->logdivider = 50;
   PrepDL(&(wam->log),6);
-  AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*4,4,"Jpos");
+  AddDataDL(&(wam->log),&(wam->log_time),sizeof(double),2,"Time");
   AddDataDL(&(wam->log),valptr_vn(wam->Jtrq),sizeof(btreal)*4,4,"Jtrq");
-  AddDataDL(&(wam->log),&(wam->loop_time),sizeof(long long),3,"Loop Time");
-  AddDataDL(&(wam->log),&(wam->loop_period),sizeof(long long),3,"Loop Period");
-  AddDataDL(&(wam->log),&(wam->readpos_time),sizeof(long long),3,"Position Time");
-  AddDataDL(&(wam->log),&(wam->writetrq_time),sizeof(long long),3,"Torque Time");
+  AddDataDL(&(wam->log),valptr_vn((vect_n*)wam->Cpos),sizeof(btreal)*3,4,"Cpos");
   InitDL(&(wam->log),1000,"datafile.dat");
   
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
@@ -321,7 +319,7 @@ void init_haptics(void)
     init_wickedwall(&wickedwalls[cnt],3000.0, 10.0,5.0,0.020,0.01);
   }
   init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
-  init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,0.0),const_v3(p2,0.7,0.01,0.0),const_v3(p3,0.7,0.0,0.01),0.4,0.4,0.4,1);
+  init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,0.0),const_v3(p2,0.7,0.01,0.0),const_v3(p3,0.7,0.0,0.01),0.4,0.6,0.4,1);
 
   for(cnt = 0;cnt < 6;cnt++){
     init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&bpwall[0],bulletproofwall_nf);
@@ -632,6 +630,8 @@ void RenderScreen() //{{{
     ++line;   
     mvprintw(line, column_offset , "vel:%s ", sprint_vn(vect_buf1,(vect_n*)pstate.vel));
     ++line;  
+    mvprintw(line, column_offset , "time:%+8.4f ", wam->log_time);
+    ++line;  
     mptr = T_to_W_trans_bot(&(wam->robot));
     
     
@@ -893,6 +893,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         finish_entry();
     break;
             case ';':   /* Play through playlist once */
+            DLon(&(wam->log));
             MLplay(&ml);
             break;
         case ',': /* Execute present line in playlist */
@@ -908,6 +909,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             MLrepeatplay(&ml);
             break;
         case '.':   /* Stop playlist execution */
+            DLoff(&(wam->log));
             MLstop(&ml);
             break;
         case 'l':   /* Load playlist from file */

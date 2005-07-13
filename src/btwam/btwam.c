@@ -168,9 +168,11 @@ int InitWAM(char *wamfile)
 
   new_bot(&WAM.robot,WAM.num_actuators);
   /* WAM tipped forward hack */
+  /*
   setrow_m3(WAM.robot.world->origin,0,0.0,0.0,1.0);
   setrow_m3(WAM.robot.world->origin,1,0.0,1.0,0.0);
   setrow_m3(WAM.robot.world->origin,2,-1.0,0.0,0.0);
+  */
   /* end WAM tipped forward hack */
   
   link_geom_bot(&WAM.robot,0,0.0,0.0,0.0,-pi/2.0);
@@ -185,14 +187,14 @@ int InitWAM(char *wamfile)
   //init_wam_btrobot(&(WAM.robot));
    if (WAM.num_actuators == 4){
      link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
-     link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
+     //link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
      
      //2 links in series
-     //link_mass_bot(&WAM.robot,3,C_v3(0.027,0.0,0.283),1.891);
-     //tool_geom_bot(&WAM.robot,0.0,0.639,0.0,0.0);
+     link_mass_bot(&WAM.robot,3,C_v3(0.027,0.0,0.283),1.891);
+     tool_geom_bot(&WAM.robot,0.0,0.639,0.0,0.0);
      
-     tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
-     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),0.0);
+     //tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
+     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.45);
      
      //Blank link end mass
      //tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
@@ -201,7 +203,10 @@ int InitWAM(char *wamfile)
 //     tool_geom_bot(&WAM.robot,0.0,0.371,0.0,0.0);
 //     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),1.13);
      /*
-      link_geom_botool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
+      link_geom_bot(&WAM.robot,3,-pi/2.0,0.0,0.4,-pi/2.0);
+     link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
+     tool_geom_bot(&WAM.robot,0.0,0.3574,0.0,0.0);
+     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.000);*/
    }
   else if (WAM.num_actuators == 7){
 	  
@@ -427,6 +432,7 @@ void WAMControlThread(void *data)
   dt = dt_targ;
   syslog(LOG_ERR,"WAMControl periodic %d, %f", sample_period2,dt);
   
+  last_loop = rt_get_cpu_time_ns();
   while (!shutdown_threads)
   {
     rt_task_wait_period();
@@ -522,8 +528,9 @@ void WAMControlThread(void *data)
     last_loop = loop_start; ///prof
     
     pthread_mutex_unlock(&(WAM.loop_mutex));
+    
+    WAM.log_time += dt;
     if ((counter % WAM.logdivider) == 0){
-      WAM.log_time += dt;
       TriggerDL(&(WAM.log)); ///log
     }
     ///cteach {
