@@ -68,23 +68,27 @@ typedef struct
   vect_n* (*init)(void *dat, vect_n* q, vect_n* qref);
   vect_n* (*eval)(void *dat, vect_n* q, vect_n* qref, btreal dt);
 
-  btreal time;  //elapsed time
-  vect_n *q,*dq; //state
-  vect_n *t; //output
+  btreal time;  //elapsed time. starts from zero when reset
+  vect_n *q,*dq,*ddq; //Buffer for present state
+  vect_n *qref; //Buffer for desired state
+  vect_n *t; //Buffer for output torque
   
-  int state; //ready,running, paused, done
-  int direction; //1 = start at end and run backwards
+  int state; //uninitialized, off, on
+  pthread_mutex_t mutex;
 }btposition;
 
+btposition* new_btposition(int size);
 //setup
-void setreg_btpos(btposition *trj,void *pos_dat, void *initfunc, void *evalfunc);
+void setreg_btpos(btposition *btp,void *pos_dat, void *initfunc, void *evalfunc);
 
 //use
-void setqref_btpos(btposition *trj,vect_n* qref);
+void setqref_btpos(btposition *btp,vect_n* qref);
+vect_n* eval_btpos(btposition *btp,vect_n* q,btreal dt);
 
-vect_n* eval_btpos(btposition *trj,vect_n* q,btreal dt);
-int start_btpos(btposition *trj); //calling this while running will reset the position controller
-int getstate_btpos(btposition *trj);
+//Control
+int start_btpos(btposition *btp); //calling this while running will reset the position controller
+int stop_btpos(btposition *btp); 
+int getstate_btpos(btposition *btp);
 
 /*================================================Trajectory object================================*/
 /** bttrajectory sets up virtual functions for running an arbitrary trajectory along
@@ -131,7 +135,8 @@ void stop_bttrj(bttrajectory *trj);
 /*! \brief A state controller for switching between position control and torque control
 
 This structure stores state information along with pid and trajectory info for
-a simple state controller. 
+a simple state controller. The primary function of this object is to provide bumpless transfer between position 
+control, moving trajectory control, and no control (idle)
 
 If the position control is off, a zero torque is returned.
 
@@ -139,21 +144,45 @@ If the position control is off, a zero torque is returned.
 typedef struct
 {
   int mode; //!< 0:idle, 1:torque, 2:pos 3:pos + trj
-  vect_n* t;
-  vect_n* q,*qref;
+  vect_n* t; //!< Internal buffer for torques
+  vect_n* q,*qref; //!< Internal buffer for position and reference position
   
-  double last_dt;
+  double last_dt; //history: the last time step used.
   btposition* pos;
   bttrajectory *trj;
   int error; //nonzero if there are any errors
 
   pthread_mutex_t mutex;
 }btstatecontrol;
-
+btstatecontrol* new_btstatecontrol(int size);
 int init_bts(btstatecontrol *sc, int size);
 int set_bts(btstatecontrol *sc, btposition* pos, bttrajectory *trj);
 vect_n* eval_bts(btstatecontrol *sc, vect_n* position, double dt);
 int setmode_bts(btstatecontrol *sc, int mode);
+
+/********  Generic (simple) default implementation for virtual functions ******/
+/**
+
+pid_pos_ctl
+
+
+btstatecontrol* new_default_statecontrol()
+{
+	malloc(sizeof(btstatecontrol)
+	init_bts()
+	
+	
+	
+}
+
+
+
+
+
+
+*/
+
+
 
 #ifdef __cplusplus
 }
