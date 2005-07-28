@@ -122,7 +122,7 @@ typedef struct btwam_struct{
   vect_n * park_location;  
 
 //Motor <-> Joint State
-  vect_n *Mpos,*Mtrq,*Jpos,*Jtrq;
+  vect_n *Mpos,*Mtrq,*Jpos,*Jvel,*Jacc,*Jref,*Jtrq;
 
 //Kinematics & Dynamics
   double sample_rate;
@@ -133,14 +133,17 @@ typedef struct btwam_struct{
   
   //Jointspace state controller
   SimpleCtl sc[7];
-  
+  btstatecontrol Jsc;
+  btposition_interface Jbtp;
+  btPID d_jpos_ctl[7];
+  btPID_array d_jpos_array;
   //JointSpace Position control
   vect_n *Kp,*Kd,*Ki,*saturation;
   //JointSpace Moves
   vect_n *vel,*acc;
   
   //CartesianSpace Position control
-  btPID pid[4]; //  x,y,z,quat
+  btPID pid[6]; //  x,y,z,quat
   quat *qref,*qact,*qaxis,*forced; //reference and actual orientations for quaternion control
   vect_n *Ttrq;
   vect_3 *Cpos,*Cforce,*Ctrq,*Cref;
@@ -150,6 +153,15 @@ typedef struct btwam_struct{
   //CartesianSpace Moves
   bttraptrj trj;
   btpath_pwl pth;
+  
+  //Cartesian Controllers
+  vect_n *R6pos,*R6vel,*R6acc,*R6ref,*R6trq;
+  double dt;
+  btstatecontrol Csc;
+  btposition_interface Cbtp;
+  bttrajectory Ctrj;
+  btPID d_pos_ctl[6];
+  btPID_array d_pos_array;
   
   btreal F;
   

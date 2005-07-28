@@ -25,6 +25,7 @@ extern "C"
 #include <pthread.h>
 #include "btmath.h"
 #include "btos.h"
+#include "btcontrol_virt.h"
 #ifndef PI
 #define PI 3.141596
 #endif /*PI*/
@@ -87,6 +88,11 @@ typedef struct
  
   btmutex mutex;
 }btPID;
+typedef struct
+{
+  btPID* pid;
+  int elements;
+}btPID_array;
 //Create-Destroy
 void init_btPID(btPID *pid);
 void init_err_btPID(btPID *pid); //setup for use with eval_err_btPID
@@ -115,6 +121,11 @@ void setdt_btPID(btPID *pid, btreal dt);
 btreal step_btPID(btPID *pid);
 btreal lastresult_btPID(btPID *pid);
 
+//btposition_interface stuff
+void btposition_interface_pause_btPID(struct btposition_interface_struct* btp);
+void btposition_interface_reset_btPID(struct btposition_interface_struct* btp);
+vect_n* btposition_interface_eval_btPID(struct btposition_interface_struct* btp);
+void btposition_interface_mapf_btPID(btposition_interface* btp, btPID_array *pid);
 /*================================================Trajectory stuff================================*/
 /**
 State: 

@@ -28,7 +28,6 @@ extern "C"
 #ifndef PI
 #define PI 3.141596
 #endif /*PI*/
-
 /**
 Trajectory States
  - -1 = Off
@@ -61,34 +60,28 @@ enum trjstate {BTTRAJ_OFF = -1,BTTRAJ_STOPPED = 0,BTTRAJ_INPREP,BTTRAJ_READY,
 /*================================================Position object================================*/
 /** A virtual interface for position control
 */
-typedef struct 
+typedef struct btposition_interface_struct
 {
   void *pos_reg;
   
-  vect_n* (*init)(void *dat, vect_n* q, vect_n* qref);
-  vect_n* (*eval)(void *dat, vect_n* q, vect_n* qref, btreal dt);
-
-  btreal time;  //elapsed time. starts from zero when reset
+  //vect_n* (*init)(void *dat, vect_n* q, vect_n* qref);
+  vect_n* (*eval)(struct btposition_interface_struct* btp);
+  void (*reset)(struct btposition_interface_struct* btp);
+  void (*pause)(struct btposition_interface_struct* btp);
+  //void (*set_ref)(void *dat, vect_n* ref);
+ 
   vect_n *q,*dq,*ddq; //Buffer for present state
   vect_n *qref; //Buffer for desired state
-  vect_n *t; //Buffer for output torque
+  double *dt;
   
-  int state; //uninitialized, off, on
+  vect_n *t; //Buffer for output torque
+
   pthread_mutex_t mutex;
-}btposition;
+}btposition_interface;
 
-btposition* new_btposition(int size);
 //setup
-void setreg_btpos(btposition *btp,void *pos_dat, void *initfunc, void *evalfunc);
-
-//use
-void setqref_btpos(btposition *btp,vect_n* qref);
-vect_n* eval_btpos(btposition *btp,vect_n* q,btreal dt);
-
-//Control
-int start_btpos(btposition *btp); //calling this while running will reset the position controller
-int stop_btpos(btposition *btp); 
-int getstate_btpos(btposition *btp);
+void mapdata_btpos(btposition_interface *btp,vect_n* q, vect_n* dq, vect_n* ddq, 
+                   vect_n* qref, vect_n* t, double *dt);
 
 /*================================================Trajectory object================================*/
 /** bttrajectory sets up virtual functions for running an arbitrary trajectory along
@@ -145,20 +138,22 @@ typedef struct
 {
   int mode; //!< 0:idle, 1:torque, 2:pos 3:pos + trj
   vect_n* t; //!< Internal buffer for torques
-  vect_n* q,*qref; //!< Internal buffer for position and reference position
-  
+  vect_n* q,*dq,*ddq,*qref; //!< Internal buffer for position and reference position
+  double *dt;
   double last_dt; //history: the last time step used.
-  btposition* pos;
+  btposition_interface* btp;
   bttrajectory *trj;
   int error; //nonzero if there are any errors
 
   pthread_mutex_t mutex;
 }btstatecontrol;
-btstatecontrol* new_btstatecontrol(int size);
-int init_bts(btstatecontrol *sc, int size);
-int set_bts(btstatecontrol *sc, btposition* pos, bttrajectory *trj);
-vect_n* eval_bts(btstatecontrol *sc, vect_n* position, double dt);
+void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq, 
+                   vect_n* qref, vect_n* t, double *dt);
+int init_bts(btstatecontrol *sc);
+int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory *trj);
+vect_n* eval_bts(btstatecontrol *sc);
 int setmode_bts(btstatecontrol *sc, int mode);
+
 
 /********  Generic (simple) default implementation for virtual functions ******/
 /**

@@ -117,6 +117,9 @@ int InitWAM(char *wamfile)
   WAM.Mpos = new_vn(10);
   WAM.Mtrq  = new_vn(10);
   WAM.Jpos = new_vn(10);
+  WAM.Jvel = new_vn(10);
+  WAM.Jacc = new_vn(10);
+  WAM.Jref = new_vn(10);
   WAM.Jtrq = new_vn(10);
   WAM.Ttrq = new_vn(10);
   WAM.Kp = new_vn(10);
@@ -139,7 +142,34 @@ int InitWAM(char *wamfile)
   WAM.qaxis = new_q();
   WAM.forced = new_q();
   WAM.qerr = 0;
-
+  WAM.R6pos = new_vn(6);
+  WAM.R6ref = new_vn(6);
+  WAM.R6vel = new_vn(6);
+  WAM.R6acc = new_vn(6);
+  WAM.R6trq = new_vn(6);
+  
+  /* Joint Control plugin initialization */
+  for (cnt = 0; cnt < 7; cnt ++){
+    init_btPID(&(WAM.d_jpos_ctl[cnt]));
+  }
+  WAM.d_jpos_array.pid = WAM.d_jpos_ctl;
+  WAM.d_jpos_array.elements = 7;  
+  map_btstatecontrol(&WAM.Jsc, WAM.Jpos, WAM.Jvel, WAM.Jacc, 
+                      WAM.Jref, WAM.Jtrq, &WAM.dt);
+  btposition_interface_mapf_btPID(WAM.Jsc.btp, &(WAM.d_jpos_array));
+  /* Joint Control plugin initialization */
+  
+  
+  /* Control plugin initialization */
+  for (cnt = 0; cnt < 6; cnt ++){
+    init_btPID(&(WAM.d_pos_ctl[cnt]));
+    setgains_btPID(&(WAM.d_pos_ctl[cnt]),2000.0,5.0,0.0);
+  }
+  WAM.d_pos_array.pid = WAM.d_pos_ctl;
+  WAM.d_pos_array.elements = 6;  
+  map_btstatecontrol(&WAM.Csc, WAM.R6pos, WAM.R6vel, WAM.R6acc, 
+                      WAM.R6ref, WAM.R6trq, &WAM.dt);
+  /* Control plugin initialization */
   
   init_pwl(&WAM.pth,3,2); //Cartesian move path
 
@@ -150,6 +180,7 @@ int InitWAM(char *wamfile)
   setgains_btPID(&(WAM.pid[3]),8.0,0.1,0.0);
   //setgains_btPID(&(WAM.pid[3]),60.0,0.10,0.0);
   init_err_btPID(&(WAM.pid[3]));
+
 
   WAM.F = 0.0;
   WAM.isZeroed = FALSE;
@@ -183,6 +214,15 @@ int InitWAM(char *wamfile)
   link_mass_bot(&WAM.robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
   link_mass_bot(&WAM.robot,2,C_v3(-0.0443,0.2549,0.0),2.08);
   
+  /* end WAM tipped forward hack */
+  
+  link_geom_bot(&WAM.robot,0,0.0,0.0,0.0,-pi/2.0);
+  link_geom_bot(&WAM.robot,1,0.0,0.0,0.0,pi/2.0);
+  link_geom_bot(&WAM.robot,2,0.0,0.550,0.045,-pi/2.0);
+  
+  link_mass_bot(&WAM.robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
+  link_mass_bot(&WAM.robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
+  link_mass_bot(&WAM.robot,2,C_v3(-0.0443,0.2549,0.0),2.08);
   
   //init_wam_btrobot(&(WAM.robot));
    if (WAM.num_actuators == 4){
@@ -278,6 +318,8 @@ int InitWAM(char *wamfile)
     SCinit(&(WAM.sc[cnt]));
     SCsetpid(&(WAM.sc[cnt]),getval_vn(WAM.Kp,cnt),getval_vn(WAM.Kd,cnt),getval_vn(WAM.Ki,cnt),getval_vn(WAM.saturation,cnt));
     SCsettrjprof(&(WAM.sc[cnt]),getval_vn(WAM.vel,cnt),getval_vn(WAM.acc,cnt));
+    
+    setgains_btPID(&(WAM.d_jpos_ctl[cnt]), getval_vn(WAM.Kp,cnt),getval_vn(WAM.Kd,cnt),getval_vn(WAM.Ki,cnt));
   }
      
   test_and_log(
@@ -445,7 +487,7 @@ void WAMControlThread(void *data)
       skipcnt++;
       if (dt > skipmax) skipmax = dt;
     }
-      
+    WAM.dt = dt;
     
     
     test_and_log(
@@ -467,12 +509,14 @@ void WAMControlThread(void *data)
     Mpos2Jpos((WAM.Mpos), (WAM.Jpos)); //Convert from motor angles to joint angles
     // Joint space stuff
 
+    eval_bts(&(WAM.Jsc));
+    /*
     for (cnt = 0; cnt < WAM.num_actuators; cnt++) //Calculate control torque for each joint.
         {
             Mid = MotorID_From_ActIdx(cnt); //idx = joint we are controlling
             setval_vn(WAM.Jtrq,Mid,SCevaluate(&(WAM.sc[Mid]),getval_vn(WAM.Jpos,Mid), dt));
         }
-    
+*/
     // Cartesian space stuff
     set_vn(WAM.robot.q,WAM.Jpos);
 
@@ -481,6 +525,7 @@ void WAMControlThread(void *data)
     
     set_v3(WAM.Cpos,T_to_W_bot(&WAM.robot,WAM.Cpoint));
     R_to_q(WAM.qact,T_to_W_trans_bot(&WAM.robot));
+    
     //Cartesian trajectory generator
     if (WAM.trj.state){
       WAM.F = evaluate_traptrj(&WAM.trj,dt);
@@ -496,6 +541,9 @@ void WAMControlThread(void *data)
     
     WAM.qerr =GCdist_q(WAM.qref,WAM.qact); 
     set_v3(WAM.Ctrq,scale_v3(eval_err_btPID(&(WAM.pid[3]),WAM.qerr,dt),GCaxis_q(WAM.Ctrq,WAM.qref,WAM.qact)));
+    
+    
+    
     //Force application
     apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
     

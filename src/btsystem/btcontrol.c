@@ -432,6 +432,70 @@ void getsaturation_btPID(btPID *pid, btreal *saturation)
     test_and_log(
       pthread_mutex_unlock(&(pid->mutex)),"getsaturation_btPID unlock mutex failed");
 }
+/************************* btPID interface functions ***************************/
+void btposition_interface_mapf_btPID(btposition_interface* btp, btPID_array *pid)
+{
+  btp->eval = btposition_interface_eval_btPID;
+  btp->reset = btposition_interface_reset_btPID;
+  btp->pause = btposition_interface_pause_btPID;
+  btp->pos_reg = pid;
+}
+
+vect_n* btposition_interface_eval_btPID(struct btposition_interface_struct* btp)
+{
+  btPID_array *pids;
+  btPID* this;
+  int cnt;
+  
+  pids = (btPID_array*)btp->pos_reg;
+  
+  for (cnt = 0; cnt < pids->elements; cnt++){
+    this = &(pids->pid[cnt]);
+    sety_btPID(this,getval_vn(btp->q,cnt));//load all pointer data
+    setyref_btPID(this,getval_vn(btp->qref,cnt));//load all pointer data
+    setdt_btPID(this,*(btp->dt));
+    step_btPID(this);//eval
+    setval_vn(btp->t,cnt,lastresult_btPID(this));
+  }
+  return btp->t;
+}
+
+void btposition_interface_reset_btPID(struct btposition_interface_struct* btp)
+{
+  btPID_array *pids;
+  int cnt;
+  
+  pids = (btPID_array*)btp->pos_reg;
+  
+  for (cnt = 0; cnt < pids->elements; cnt++){
+    start_btPID(&(pids->pid[cnt]));
+  }
+}
+
+void btposition_interface_pause_btPID(struct btposition_interface_struct* btp)
+{
+  btPID_array *pids;
+  int cnt;
+  
+  pids = (btPID_array*)btp->pos_reg;
+  
+  for (cnt = 0; cnt < pids->elements; cnt++){
+    stop_btPID(&(pids->pid[cnt]));
+  }
+}
+/*
+void btposition_interface_set_ref_btPID(void *dat,vect_n* ref)
+{
+  btPID_array *pids;
+  int cnt;
+  
+  pids = (btPID_array*)dat;
+  
+  for (cnt = 0; cnt < pids->elements; cnt++){
+    setyref_btPID(&(pids->pid[cnt]),getval_vn(ref,cnt));
+  }
+}
+*/
 /********************************************************************************/
 
 /** Assumes trj->vr has been loaded with a valid vectray
