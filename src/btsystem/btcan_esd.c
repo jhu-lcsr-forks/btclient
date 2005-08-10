@@ -17,7 +17,7 @@
  *                                                                      *
  *======================================================================*/
 
-/** \file btcan.c
+/** \file btcan_esd.c
     Handles all communication with the robot over the CAN bus.
     Requires library files "libcan.a" and "libmitop.a".
     
