@@ -11,7 +11,7 @@ For a time - point list the relationship between time and arc-length is 1 to 1.
 So all we do is maintain the elapsed arc-length;
 
 */
-
+/*
 typedef struct {
   btreal s;
 }tpl_trj;
@@ -26,7 +26,7 @@ tpl_trj * new_tpl_trj()
   }
   return bttrj;
   
-}
+}*/
 btreal tpl_init_T(void *dat,btreal t)
 {
   tpl_trj *trj;
@@ -65,8 +65,10 @@ bttrajectory* tpl_load_n_register(char *filename)
   vectray *tmpray;
   
   trj = new_bttrajectory();
-  crv_trj = new_tpl_trj();
+  //crv_trj = new_tpl_trj();
+
   read_csv_file_vr(fileName, &tmpray);
+  new_param_by_arclen_pwl(btpath_pwl *pth, btpath_pwl *crv2)
   crv = new_pwl(tmpray->n-1,5);
   add_vectray_pwl(crv,tmpray);
   

@@ -585,8 +585,8 @@ void RenderScreen() //{{{
         mvprintw(line , column_offset + column_width*cnt, "IDLE  ");
       else if (wam->sc[Mid].mode == SCMODE_TORQUE)
         mvprintw(line , column_offset + column_width*cnt, "TORQUE");
-      else if (wam->sc[Mid].mode == SCMODE_PID)
-        mvprintw(line , column_offset + column_width*cnt, "PID   ");
+      else if (wam->sc[Mid].mode == SCMODE_POS)
+        mvprintw(line , column_offset + column_width*cnt, "POS   ");
       else
         mvprintw(line , column_offset + column_width*cnt, "UNK:%d ", wam->sc[Mid].mode);
       ++line;
@@ -612,13 +612,11 @@ void RenderScreen() //{{{
   }
 
     line = line2;
-    mvprintw(line, column_offset , "qref:%s", sprint_vn(vect_buf1,(vect_n*)wam->qref));
+    mvprintw(line, column_offset , "qref:%s", sprint_vn(vect_buf1,(vect_n*)wam->Jref));
     ++line;
-    mvprintw(line, column_offset , "qact:%s", sprint_vn(vect_buf2,(vect_n*)wam->qact));
+    mvprintw(line, column_offset , "q:%s", sprint_vn(vect_buf1,(vect_n*)wam->Jpos));
     ++line;
-    mvprintw(line, column_offset , "qaxis:%s", sprint_vn(vect_buf2,(vect_n*)wam->qaxis));
-    ++line;
-    mvprintw(line, column_offset , "qforced:%s", sprint_vn(vect_buf2,(vect_n*)wam->forced));
+     mvprintw(line, column_offset , "Jtrq:%s  ", sprint_vn(vect_buf1,(vect_n*)wam->Jtrq));
     ++line;
     mvprintw(line, column_offset , "Ctrq:%s qerr:%+8.4f ", sprint_vn(vect_buf1,(vect_n*)wam->Ctrq),wam->qerr);
     ++line;
@@ -632,6 +630,13 @@ void RenderScreen() //{{{
     ++line;  
     mvprintw(line, column_offset , "time:%+8.4f ", wam->log_time);
     ++line;  
+    mvprintw(line, column_offset , "dt:%+8.4f ", wam->dt);
+    ++line;  
+    mvprintw(line, column_offset , "state:%d Kp:%+8.4f Kd:%+8.4f Ki:%+8.4f e:%+8.4f last:%+8.4f",wam->d_jpos_ctl[0].state, wam->d_jpos_ctl[0].Kp, 
+             wam->d_jpos_ctl[0].Kd, wam->d_jpos_ctl[0].Ki, wam->d_jpos_ctl[0].e, wam->d_jpos_ctl[0].lastresult);
+    ++line;  
+    mvprintw(line, column_offset , "SCmode:%d ", wam->Jsc.mode);
+    ++line; 
     mptr = T_to_W_trans_bot(&(wam->robot));
     
     
@@ -721,7 +726,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       setProperty(0,10,VL2,FALSE,0); // Eliminate Velocity fault
       break;
     case 'i': // Set present joint controller to Idle mode (sends zero torque)
-      SCsetmode(&(wam->sc[cMid]), SCMODE_IDLE);
+      //SCsetmode(&(wam->sc[cMid]), SCMODE_IDLE);
+       setmode_bts(&(wam->Jsc),SCMODE_IDLE);
       break;
     case 'I': // Set ALL joint controllers to Idle mode (sends zero torque)
       fer(cnt, npucks){
@@ -758,12 +764,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         stop_btPID(&(wam->pid[3]));
       break;
     case 'p': // Set present joint controller to PID mode
-      SCsetmode(&(wam->sc[cMid]), SCMODE_PID);
+      //SCsetmode(&(wam->sc[cMid]), SCMODE_POS);
+      setmode_bts(&(wam->Jsc),SCMODE_POS);
       break;
     case 'P': // Set ALL joint controllers to PID mode
       fer(cnt, npucks){
         Mid = MotorID_From_ActIdx(cnt);
-        SCsetmode(&(wam->sc[Mid]), SCMODE_PID);
+        SCsetmode(&(wam->sc[Mid]), SCMODE_POS);
       }
       break;
         case 's': // Start Trajectory control on present puck

@@ -33,16 +33,6 @@ int get_segment_pwl(btpath_pwl *pth,btreal s); //Given an arclength, find what s
   Paths are stored as functions of pathlength
 */  
   
-
-
-/**
-piecewize linear path
-piecewize linear trajectory (s(t) - arc pos as a function of time)
-
-
-
-*/
-
 btpath_pwl * new_pwl(int vect_size,int rows)
 {
   
@@ -104,7 +94,7 @@ void new_param_by_arclen_pwl(btpath_pwl *pth, btpath_pwl *crv2)
   
   a = new_vn(1);
   
-  init_pwl(crv2,1,size_vr(pth->vr)); //allocate vectray with vector size 1
+  init_pwl(crv2,1,maxrows_vr(pth->vr)); //allocate vectray with vector size 1
   
   //dont assume the parameterization starts at 0.0
   t = getnodes_pwl(pth,0);
@@ -113,7 +103,7 @@ void new_param_by_arclen_pwl(btpath_pwl *pth, btpath_pwl *crv2)
   
   s = 0.0; //but arclength does start at 0.0
   
-  for(cnt = 1;cnt <= endof_vr(pth->vr);cnt++){ 
+  for(cnt = 1;cnt <= numrows_vr(pth->vr) - 1;cnt++){ 
     t = getnodes_pwl(pth,cnt);
     s += norm_vn(sub_vn(idxa_pwl(pth,cnt),idxb_pwl(pth,cnt-1)));
     pth->s[cnt] = s;
@@ -139,7 +129,7 @@ int add_arclen_point_pwl(btpath_pwl *pth, vect_n *p)
 {
   int idx;
   append_vr(pth->vr,p);
-  idx = endof_vr(pth->vr);
+  idx = numrows_vr(pth->vr)- 1;
   if (idx==0)
     pth->s[0] = 0.0;
   else
@@ -154,10 +144,10 @@ int add_arclen_point_pwl(btpath_pwl *pth, vect_n *p)
 int add_point_pwl(btpath_pwl *pth, vect_n *p, btreal s)
 {
   int idx;
-  idx = endof_vr(pth->vr);
+  idx = numrows_vr(pth->vr) - 1;
   if (pth->s[idx] > s) return -1; //time points must be added to the path as monotonically increasing
   append_vr(pth->vr,p);
-  idx = endof_vr(pth->vr);
+  idx = numrows_vr(pth->vr) - 1;
   if (idx==0)
     pth->s[0] = 0.0;
   else
@@ -183,9 +173,9 @@ int add_vectray_pwl(btpath_pwl *pth, vectray *vr)//use the first column for the 
   btreal s;
   destroy_vr(pth->vr);
   vect_size = vr->n - 1;
-  pth->vr = new_vr(vect_size,vr->rows);
+  pth->vr = new_vr(vect_size,vr->max_rows);
   cpy = new_vn(vect_size);
-  for (cnt = 0;cnt < vr->rows;cnt++){
+  for (cnt = 0;cnt < vr->max_rows;cnt++){
     setrange_vn(cpy,idx_vr(vr,cnt),0,1,vect_size);
     s = getval_vn(idx_vr(vr,cnt),0);
     add_point_pwl(pth,cpy,s);
@@ -200,7 +190,7 @@ int get_segment_pwl(btpath_pwl *pth,btreal s)
   int cnt, end;
   btreal send;
   
-  end = endof_vr(pth->vr);
+  end = numrows_vr(pth->vr) - 1;
   if (end < 0) return -2;
   
   if (fabs(s) > pth->s[end]) return end;
@@ -258,7 +248,7 @@ vect_n* ds_pwl(btpath_pwl *pth, btreal ds)
   int idx, end;
   btreal s;
  
-  end = endof_vr(pth->vr);
+  end = numrows_vr(pth->vr) - 1;
   if (end < 0){ //If there are no points in the path, return the start of the path
     set_vn(pth->proxy,idx_vr(pth->vr,0));
     pth->proxy_s = pth->s[0];
@@ -297,7 +287,7 @@ vect_n* dsinit_pwl(btpath_pwl *pth, btreal s)
 /** Get the total arclength of a path */
 btreal arclength_pwl(btpath_pwl *pth)
 { int idx;
-  idx = endof_vr(pth->vr);
+  idx = numrows_vr(pth->vr) - 1;
   if (idx < 0){ //If there are no points in the path, return the start of the path
      return 0.0;
   }

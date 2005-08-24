@@ -154,6 +154,8 @@ int InitWAM(char *wamfile)
   }
   WAM.d_jpos_array.pid = WAM.d_jpos_ctl;
   WAM.d_jpos_array.elements = 7;  
+  
+  WAM.Jsc.btp = &WAM.Jbtp;
   map_btstatecontrol(&WAM.Jsc, WAM.Jpos, WAM.Jvel, WAM.Jacc, 
                       WAM.Jref, WAM.Jtrq, &WAM.dt);
   btposition_interface_mapf_btPID(WAM.Jsc.btp, &(WAM.d_jpos_array));
@@ -167,6 +169,7 @@ int InitWAM(char *wamfile)
   }
   WAM.d_pos_array.pid = WAM.d_pos_ctl;
   WAM.d_pos_array.elements = 6;  
+  WAM.Csc.btp = &WAM.Cbtp;
   map_btstatecontrol(&WAM.Csc, WAM.R6pos, WAM.R6vel, WAM.R6acc, 
                       WAM.R6ref, WAM.R6trq, &WAM.dt);
   /* Control plugin initialization */
@@ -449,6 +452,8 @@ The following functionality is in this loop:
  - Joint Space Controller (pid, point-to-point trapezoidal trajectories)
  - Loop profiling - Period time, Read pos time, Write trq time, Calc time
  - Newton-Euler Recursive kinematics & dynamics
+ - Data logging
+ - Continuous teach & play
  \todo Make control loop profiling a compiler switch so it is not normally compiled
 */
 

@@ -56,7 +56,7 @@ Trajectory Actions and state changes
 enum trjstate {BTTRAJ_OFF = -1,BTTRAJ_STOPPED = 0,BTTRAJ_INPREP,BTTRAJ_READY,
                BTTRAJ_RUN,BTTRAJ_DONE,BTTRAJ_PAUSING,BTTRAJ_UNPAUSING,BTTRAJ_PAUSED};
 
-
+enum scstate {SCMODE_IDLE=0, SCMODE_TORQUE, SCMODE_POS, SCMODE_TRJ};
 /*================================================Position object================================*/
 /** A virtual interface for position control
 */
@@ -92,38 +92,34 @@ variables
 
 see trjstate for more state info
 */
-typedef struct 
+typedef struct bttrajectory_interface_struct
 {
-  void *trj; //The definition of the trajectory as well as operation state
-  void *crv;
-  
-  vect_n* (*init_S)(void *dat,btreal s);
-  btreal (*init_T)(void *dat,btreal t);
-  
-  btreal (*S_of_dt)(void *dat,btreal dt);
-  vect_n* (*Q_of_ds)(void *dat,btreal ds);
-  
-  
-  btreal t;  //elapsed time
-  btreal s1; //arc location on curve 1
-  btreal acc_pause,acc_stop; //pause and hard stop decellerations
+  double *dt; // pointer to location of dt info
   vect_n *q; //results
   
-  int state; //ready,running, paused, done
-  int direction; //1 = start at end and run backwards
-}bttrajectory;
+  void *dat; //Trajectory object pointer
+  
+  vect_n* (*eval)(struct bttrajectory_interface_struct *btt);
+  int (*getstate)(struct bttrajectory_interface_struct *btt);
+  void (*stop)(struct bttrajectory_interface_struct *btt);
 
-bttrajectory * new_bttrajectory();
+
+  
+ 
+  pthread_mutex_t mutex;
+}bttrajectory_interface;
+
+bttrajectory_interface * new_bttrajectory();
 //setup
-void setpath_bttrj(bttrajectory *trj,void *crv_dat, void *initfunc, void *evalfunc);
-void settraj_bttrj(bttrajectory *trj,void *trj_dat, void *initfunc, void *evalfunc);
+void setpath_bttrj(bttrajectory_interface *trj,void *crv_dat, void *initfunc, void *evalfunc);
+void settraj_bttrj(bttrajectory_interface *trj,void *trj_dat, void *initfunc, void *evalfunc);
 
 //use
-vect_n* eval_bttrj(bttrajectory *trj,btreal dt);
-int start_bttrj(bttrajectory *trj);
+vect_n* eval_bttrj(bttrajectory_interface *trj,btreal dt);
+int start_bttrj(bttrajectory_interface *trj);
 
-int getstate_bttrj(bttrajectory *trj);
-void stop_bttrj(bttrajectory *trj);
+int getstate_bttrj(bttrajectory_interface *trj);
+void stop_bttrj(bttrajectory_interface *trj);
 /*================================================State Controller object====================*/
 /*! \brief A state controller for switching between position control and torque control
 
@@ -142,7 +138,7 @@ typedef struct
   double *dt;
   double last_dt; //history: the last time step used.
   btposition_interface* btp;
-  bttrajectory *trj;
+  bttrajectory_interface *trj;
   int error; //nonzero if there are any errors
 
   pthread_mutex_t mutex;
@@ -150,7 +146,7 @@ typedef struct
 void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq, 
                    vect_n* qref, vect_n* t, double *dt);
 int init_bts(btstatecontrol *sc);
-int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory *trj);
+int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory_interface *trj);
 vect_n* eval_bts(btstatecontrol *sc);
 int setmode_bts(btstatecontrol *sc, int mode);
 

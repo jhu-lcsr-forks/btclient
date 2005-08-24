@@ -51,49 +51,7 @@ void mapdata_btpos(btposition_interface *btp,vect_n* q, vect_n* dq, vect_n* ddq,
 
 
 /**************************** trajectory functions ******************************/
-bttrajectory * new_bttrajectory()
-{
-  bttrajectory *bttrj;
-  if ((bttrj = (bttrajectory *)malloc(sizeof(bttrajectory))) == NULL)
-  {
-    syslog(LOG_ERR,"new_bttrajectory: memory allocation failed");
-    return NULL;
-  }
-  return bttrj;
-}
-void setpath_bttrj(bttrajectory *trj,void *crv_dat, void *initfunc, void *evalfunc)
-{
-  trj->crv = crv_dat;
-  trj->init_T = initfunc;
-  trj->S_of_dt = evalfunc;
-}
-void settraj_bttrj(bttrajectory *trj,void *trj_dat, void *initfunc, void *evalfunc)
-{
-  trj->trj = trj_dat;
-  trj->init_S = initfunc;
-  trj->Q_of_ds = evalfunc;
-}
 
-int start_bttrj(bttrajectory *trj)
-{
-  double ret1;
-  vect_n *ret2;
-  
-  ret1 = (*(trj->init_T))(trj->trj,0.0);
-  ret2 = (*(trj->init_S))(trj->crv,ret1);
-  
-}
-
-vect_n* eval_bttrj(bttrajectory *trj,btreal dt)
-{
-  double ret1;
-  vect_n *ret2;
-  
-  ret1 = (*(trj->S_of_dt))(trj->trj,dt);
-  ret2 = (*(trj->Q_of_ds))(trj->crv,ret1);
-  
-  return ret2;
-}
 /**************************** trajectory functions ******************************/
 /**************************** state controller functions ************************/
 void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq, 
@@ -115,7 +73,7 @@ position control techniques.
 
 
 */
-int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory *trj)
+int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory_interface *trj)
 {
 	/** \bug bumpless tranfer between control techniques here*/ 
   if (sc->mode == SCMODE_TORQUE){
@@ -175,7 +133,7 @@ vect_n* eval_bts(btstatecontrol *sc)
             break;
        case SCMODE_TRJ://PID
            // set_vn(sc->btp->qref,eval_bttrj(sc->trj,dt));
-        case SCMODE_PID://PID
+        case SCMODE_POS://PID
             set_vn(sc->t,(*(sc->btp->eval))(sc->btp));
             test_and_log(
               pthread_mutex_unlock(&(sc->mutex)),"SCevaluate unlock (idle) mutex failed");
@@ -209,10 +167,11 @@ int setmode_bts(btstatecontrol *sc, int mode)
     test_and_log(
       pthread_mutex_lock(&(sc->mutex)),"SCsetmode lock mutex failed");
       
-    if (getstate_bttrj(sc->trj) != BTTRAJ_STOPPED) stop_bttrj(sc->trj);
+    //if (getstate_bttrj(sc->trj) != BTTRAJ_STOPPED) stop_bttrj(sc->trj);
     
     set_vn(sc->btp->qref,sc->btp->q);
-    (*(sc->btp->eval))(sc->btp);
+    (*(sc->btp->reset))(sc->btp);
+    //(*(sc->btp->eval))(sc->btp);
     sc->mode = mode;
     
     test_and_log(

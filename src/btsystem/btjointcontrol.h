@@ -31,6 +31,7 @@ extern "C"
 /*================================================PID stuff================================*/
 #include <pthread.h>
 #include "btmath.h"
+#include "btcontrol_virt.h"
 
 #ifndef PI
 #define PI 3.141596
@@ -39,8 +40,8 @@ extern "C"
 #define		FIRST_ORDER 	1
 #define		SECOND_ORDER   2
 #define		FOURTH_ORDER   4
-
-enum {SCMODE_IDLE,SCMODE_TORQUE,SCMODE_PID,SCMODE_TRJ};
+/*Moved enum to btcontrol_virt.h*/
+//enum {SCMODE_IDLE,SCMODE_TORQUE,SCMODE_PID,SCMODE_TRJ,SCMODE_POS};
 /** PID regulator
 
 PIDregulator maintains configuration and state information for a generic PID controller.

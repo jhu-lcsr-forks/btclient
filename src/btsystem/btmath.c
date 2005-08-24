@@ -83,28 +83,49 @@ where to look first.
 /** @name Internal pointer list
   These functions are used internally for keeping track of the memory allocated
   for vector and matrix variables.
+  
+  An array of pointers is maintained. The list is added to each time a vector is 
+  allocated. The vector has an index into the array to avoid the need for searches. 
+  A vector can be released individually with rembtptr(). At program end all the pointers 
+  are released.
 */
 //@{
 int num_btptrs = 0;
 void *btptrs[MAX_BTPTRS];
+/** (internal) Adds a pointer to the garbage collection list
 
-void addbtptr(void *ptr)
+
+*/
+int addbtptr(void *ptr)
 {
   if (num_btptrs < MAX_BTPTRS)
   {
     num_btptrs++;
     btptrs[num_btptrs] = ptr;
+    return num_btptrs;
   }
-  else
+  else{
     syslog(LOG_ERR,"btptr: cannot free this ptr %p",ptr);
+    return 0;
+  }
+}
+
+int rembtptr(int idx)
+{
+  if (idx >= 0 || idx <= MAX_BTPTRS){
+    free(btptrs[idx]);
+    btptrs[idx] = NULL;
+  }
 }
 
 void freebtptr()
 {
   int cnt;
   syslog(LOG_ERR,"btptr: Releasing %d pointers",num_btptrs);
-  for(cnt = 0;cnt < num_btptrs; cnt++)
-    free(btptrs[cnt]);
+  for(cnt = 0;cnt < num_btptrs; cnt++){
+    if (btptrs[cnt] != NULL)
+      free(btptrs[cnt]);
+  }
 }
 /** Null pointer access flag */
 int btmath_ptr_ok(void *ptr,char *str)
@@ -156,6 +177,8 @@ BTINLINE void fill_vn(vect_n* dest, btreal val)
   new_vn() must be called for each vect_n object you wish to use. It allocates 
   memory and sets each element of the vector to 0.0.
   
+  For temporary (local scope) variables use init_local_vn().
+  
   \param size Valid values >= 1
   \return A pointer to the newly created vect_n object
   
@@ -199,9 +222,10 @@ vect_n * new_vn(int size) //allocate an n-vector
     return NULL;
   }
 
-  addbtptr(vmem);
+  
 
   n = (vect_n*)vmem;
+  n->idx = addbtptr(vmem);
   n->n = size;
 
   n->ret = (vect_n*)(vmem + sizeof(vect_n));
@@ -228,6 +252,49 @@ void free_vn(vect_n *p)
 {
   free(p);
 }
+/** Create a local vect_n
+
+\param header Pointer to array of size 2 of vect_n allocated on the local stack
+\param data Pointer to array of size 2*len of btreal on the local stack
+
+\code Usage
+void some_function(vect_n* dest, vect_n* src)
+{
+    vect_n tmp_vn[2],tmp2_vn[2];
+    btreal tmp_btreal[8],tmp_btreal2[100];
+    vect_n *tmp;
+    
+    tmp = init_local_vn(tmp_vn,tmp_btreal,4); //size 4, clear way
+    init_local_vn(tmp2_vn,tmp_btreal,6); //size 6 tricky way
+    
+    set_vn(tmp_vn,scale_vn(2.0,src));
+    set_vn(tmp2_vn,src);
+    
+}
+\endcode
+
+
+*/
+vect_n* init_local_vn(vect_n* header,btreal* data, int size)
+{
+  vect_n *n;
+
+  n = header;
+  n->n = size;
+  n->ret = header + 1;
+  n->q = data;
+  n->ret->n = size;
+  n->ret->q = data + size;
+  n->ret->ret = n->ret;
+#ifdef VECT_SIZE_CHK
+   vect_size_ok(size,MAX_VECTOR_SIZE,"new_vn");
+#endif
+  fill_vn(n,0.0);
+  fill_vn(n->ret,0.0);
+  return n;
+}
+
+
 /** Returns the number of elements in src
 */
 int len_vn(vect_n *src) //number of elements in the vector
@@ -622,6 +689,13 @@ char* sprint_vn(char *dest,vect_n* src)
     strcat(dest," >");
   }
 }
+/**Print a vector out to syslog*/
+void syslog_vn(char* header,vect_n* src)
+{
+  char buffer[100];
+  syslog(LOG_ERR,"%s %s",header,sprint_vn(buffer,src));
+}
+
 /** Print vect_n to a string buffer suitable for insertion into a comma delimited
 file.
  
@@ -902,16 +976,15 @@ int test_vn(btreal error)
 
 /**************************************** vectray functions ****************/
 /** Allocate an array of vect_n data in one block
- 
-  vect_ray has buffer overrun data so that idx_vr(ray,-1) and idx_vr(ray,rows + 1) are valid
+  vect_ray has buffer overrun data so that idx_vr(ray,-1) and idx_vr(ray,max_rows + 1) are valid
 */
-vectray * new_vr(int vect_size,int rows)
+vectray * new_vr(int vect_size,int max_rows)
 {
   void* vmem;
   vectray *n;
   int cnt;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = malloc(vect_size*(rows + 2)*sizeof(btreal)+sizeof(vectray))) == NULL)
+  if ((vmem = malloc(vect_size*(max_rows + 2)*sizeof(btreal)+sizeof(vectray))) == NULL)
   {
     syslog(LOG_ERR,"btmath: vectray memory allocation failed, size %d",vect_size);
     return NULL;
@@ -921,19 +994,20 @@ vectray * new_vr(int vect_size,int rows)
 
   n = (vectray*)vmem;
   n->n = vect_size;
-  n->rows = rows;
-  n->lastrow = 0; //the number of rows that are filled in the array
+  n->max_rows = max_rows;
+  n->num_rows = 0; //the number of rows that are filled in the array
   n->rayvect = new_vn(vect_size);
-
+  n->stride = vect_size;
   n->data = (btreal*)(vmem + sizeof(vectray)+ sizeof(btreal)*vect_size);
 
-  for (cnt = 0; cnt < rows; cnt ++)
+  for (cnt = 0; cnt < max_rows; cnt ++)
     fill_vn(idx_vr(n,cnt),0.0);
   return n;
 }
 void destroy_vr(vectray *vr)
 {
   //free(vr->rayvect);
+  
   free(vr);
 }
 /** Set internal vect_n proxy to the specified index.
@@ -948,9 +1022,11 @@ sets the internal vector structure to point to the indexed data and returns the
 */
 BTINLINE vect_n * idx_vr(vectray *ray,int idx)
 {
-  ray->rayvect->q = &(ray->data[ray->n * idx]);
+  ray->rayvect->q = &(ray->data[ray->stride * idx]);
   return ray->rayvect;
 }
+
+
 /** Reroute a vect_n data pointer to a block of data in a vector array
  
 This is a dangerous function to use. Read the code for more info.
@@ -962,7 +1038,7 @@ examples of use.
 */
 BTINLINE vect_n * mapdat_vr(vect_n *dest, vectray *ray, int idx)
 {
-  dest->q = &(ray->data[ray->n * idx]);
+  dest->q = &(ray->data[ray->stride * idx]);
   return dest;
 }
 /** Copy vect_n elements of a vectray element to another vect_n
@@ -971,7 +1047,7 @@ BTINLINE vect_n * mapdat_vr(vect_n *dest, vectray *ray, int idx)
 */
 BTINLINE vect_n * getvn_vr(vect_n *dest,vectray *ray, int idx)
 {
-  ray->rayvect->q = ray->data + ray->n * idx;
+  ray->rayvect->q = ray->data + ray->stride * idx;
   set_vn(dest,ray->rayvect);
   return dest;
 }
@@ -979,34 +1055,54 @@ BTINLINE vect_n * getvn_vr(vect_n *dest,vectray *ray, int idx)
 /** Add a vect_n to the array of vect_n's
  
 */
-BTINLINE void append_vr(vectray *ray, vect_n* v)
+BTINLINE int append_vr(vectray *ray, vect_n* v)
 {
-  //<! \bug Check to see if we are exceeding the bounds
-  set_vn(idx_vr(ray,ray->lastrow),v);
-  ray->lastrow++;
+  
+  if (ray->num_rows < ray->max_rows){
+    set_vn(idx_vr(ray,ray->num_rows),v);
+    ray->num_rows++;
+    return 0;
+  }
+  else{
+    return -1;
+  }
 }
 /** Returns the index of the last element in ray */
-BTINLINE int endof_vr(vectray *ray)
+BTINLINE int numrows_vr(vectray *ray)
 {
-  return ray->lastrow - 1;
+  return ray->num_rows;
 }
-/**
-\bug This needs to be changed to another name. the sizeof_ function should return the memory footprint. th050526
-*/
-/** Returns the present number of elements in ray */
-BTINLINE int sizeof_vr(vectray *ray)
-{
-  return (ray->lastrow );
-}
+
 /** Returns the maximum number of elements in ray */
-BTINLINE int size_vr(vectray *ray)
+BTINLINE int maxrows_vr(vectray *ray)
 {
-  return (ray->rows );
+  return (ray->max_rows );
 }
+/** Copy a subarray from one vectray to another
+
+*/
+void copy_sub_vr(vectray *dest, vectray *src, int src_r, int dest_r, int rows, int src_c, int dest_c, int columns)
+{
+  int i,j;
+  btreal *dest_start,*src_start;
+  
+  dest_start = dest->data + dest->stride * dest_r + dest_c;
+  src_start = src->data + src->stride * src_r + src_c;
+  for (i = 0; i < rows;i++){
+    for (j = 0; j < columns;j++){
+      *dest_start = *src_start;
+      dest_start++;
+      src_start++;
+    }
+    dest_start += dest->stride - columns;
+    src_start += src->stride - columns;
+  }
+}
+
 /** Erases all the elements in ray */
 BTINLINE void clear_vr(vectray *ray)
 {
-  ray->lastrow = 0;
+  ray->num_rows = 0;
 }
 
 /** Read a csv file and create a new vectray for the values.
@@ -1106,7 +1202,7 @@ int test_vr(btreal error)
   }
 
   read_csv_file_vr("test.csv",&vr2);
-  for (cnt = 0; cnt < size_vr(vr2); cnt++)
+  for (cnt = 0; cnt < numrows_vr(vr2); cnt++)
   {
     print_vn(idx_vr(vr2,cnt));
   }

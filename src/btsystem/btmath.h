@@ -48,8 +48,8 @@ typedef struct {
   void **plist;  //pointer to data
 }btmemlist;
 
-void addbtptr(void *ptr);
-
+int addbtptr(void *ptr);
+int rembtptr(int idx);
 void freebtptr();
 
 
@@ -111,18 +111,20 @@ add in bounds checking and verbose error reporting
    
   
 */
-
+/*================================*/
 typedef struct barrett_vect_n{
   struct barrett_vect_n *ret;  //pointer to return data for stacked operations
   int n;      //size of vector
   btreal *q;  //pointer to data
+  pthread_mutex_t mutex;
+  int idx; //Listing in btptrs garbage collection structure
 }vect_n;
-
+/*================================*/
 vect_n *new_vn(int size); //allocate an n-vector
 //void free_vn(vect_n *p);
 int len_vn(vect_n *src); //number of elements in the vector
 int sizeof_vn(vect_n *src); //return sizeof info for whole vector
-
+vect_n* init_local_vn(vect_n* header,btreal* data, int size);
 int new_vn_group(int num, int size, ...); //allocate a group of n-vectors
 
 void set_vn(vect_n* dest, vect_n* src); //assignment, copy
@@ -159,12 +161,19 @@ vect_n* bound_vn(vect_n* a, btreal min, btreal max);
 void print_vn(vect_n* src);
 char* sprint_vn(char *dest,vect_n* src);
 char* sprint_cvs_vn(char *dest,vect_n* src);
+void syslog_vn(char* header,vect_n* src);
 
 int strcount_vn(char **src_string,char *delimiter); //Count the number of double values in a string
 vect_n * sscan_vn(char *src);
 vect_n * strto_vn(vect_n *dest,char *src,char *delimiters); //Convert a string to a vect_n
 vect_n * cvsto_vn(vect_n* dest, char *src); //Convert a string into a vect_n
 int test_vn(btreal error); //test & verification suite
+/*       Local vect_n functions */
+
+
+
+
+
 
 /*===================== Vector Arrays=============================*/
 /** A vector array object, each vector has the same number of elements.
@@ -193,28 +202,33 @@ int test_vr(void)
   }
 }
 \endcode
-
 */
+
 typedef struct barrett_vectarray_n{
   btreal *data;
   vect_n *rayvect,*lval,*rval;
   unsigned int n;    //!< Number of elements in the vectors in this array
-  unsigned int rows; //!< Number of rows allocated (MAX Rows)
-  int lastrow; //!< present index into the array
+  unsigned int stride;  //!< Number of memory locations between each row. allows spliting one data memory block between vectrays.
+  unsigned int max_rows; //!< Number of rows allocated (MAX Rows)
+  int num_rows; //!< present index into the array
 }vectray;
 
-vectray * new_vr(int vect_size,int rows);
+vectray * new_vr(int vect_size,int max_rows);
+
 void destroy_vr(vectray *vr);
 
 //Access
+
 vect_n * mapdat_vr(vect_n *dest, vectray *ray, int idx); //map the data pointer of dest onto the index
 BTINLINE vect_n * idx_vr(vectray *ray,int idx); // pointer into vectray
 vect_n * getvn_vr(vect_n *dest,vectray *ray, int idx); //copy data at idx to dest
-BTINLINE int endof_vr(vectray *ray); //returns the index of the last point
-BTINLINE int sizeof_vr(vectray *ray);
-BTINLINE int size_vr(vectray *ray); //ray->rows
+BTINLINE int numrows_vr(vectray *ray); //returns the index of the last point
+BTINLINE int maxrows_vr(vectray *ray); //ray->rows
+
 //Add & Remove data
-void append_vr(vectray *ray, vect_n* v);
+void copy_sub_vr(vectray *dest, vectray *src, int src_r, int dest_r, int rows, int src_c, int dest_c, int columns);
+
+int append_vr(vectray *ray, vect_n* v);
 void insertbefore_vr(vectray *ray, vect_n* v);
 void insertafter_vr(vectray *ray, vect_n* v);
 void remove_vr(vectray *ray, int idx);

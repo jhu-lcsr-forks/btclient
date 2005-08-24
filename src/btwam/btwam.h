@@ -159,7 +159,7 @@ typedef struct btwam_struct{
   double dt;
   btstatecontrol Csc;
   btposition_interface Cbtp;
-  bttrajectory Ctrj;
+  bttrajectory_interface Ctrj;
   btPID d_pos_ctl[6];
   btPID_array d_pos_array;
   
@@ -187,7 +187,8 @@ wam_struct * GetWAM(void);
 
 int InitWAM(char *wamfile);
 void CloseWAM();
-void SetWAMpos(vect_n *wv);
+void SetWAMpos(vect_n *wv);/**\bug Change to DefineWAMpos()*/
+
 void WAMControlThread(void *data);
 
 int getGcomp();

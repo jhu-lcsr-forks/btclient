@@ -44,7 +44,7 @@
 
 #define sign(x) (x>=0?1:-1)      //Integer sign
 #define Sgn(x) (x>=0.0?1.0:-1.0) //Double sign
-//enum {SCMODE_IDLE,SCMODE_TORQUE,SCMODE_PID,SCMODE_TRJ};
+
 /*! Initialize the SimpleCtl structure */
 int SCinit(SimpleCtl *sc)
 {
@@ -102,7 +102,7 @@ double SCevaluate(SimpleCtl *sc, double position, double dt)
               pthread_mutex_unlock(&(sc->mutex)),"SCevaluate unlock mutex (idle) failed");
             return sc->command_torque;
             break;
-        case SCMODE_PID://PID
+        case SCMODE_POS://PID
             if (sc->trj.state == BTTRAJ_RUN)
             {
                 newcommand = evaluate_trajectory(&(sc->trj),dt);
@@ -187,7 +187,7 @@ int SCsetpid(SimpleCtl *sc,double kp,double kd,double ki, double saturation) //!
 
     int err;
 
-    if (sc->trj.state == BTTRAJ_RUN || sc->mode == SCMODE_PID) //make sure we don't screw with stuff in the middle of a trajectory.
+    if (sc->trj.state == BTTRAJ_RUN || sc->mode == SCMODE_POS) //make sure we don't screw with stuff in the middle of a trajectory.
         return -1;
 
     err = pthread_mutex_lock( &(sc->mutex) );
