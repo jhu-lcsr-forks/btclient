@@ -223,6 +223,7 @@ vect_n * mapdat_vr(vect_n *dest, vectray *ray, int idx); //map the data pointer 
 BTINLINE vect_n * idx_vr(vectray *ray,int idx); // pointer into vectray
 vect_n * getvn_vr(vect_n *dest,vectray *ray, int idx); //copy data at idx to dest
 BTINLINE int numrows_vr(vectray *ray); //returns the index of the last point
+BTINLINE int numelements_vr(vectray *ray);
 BTINLINE int maxrows_vr(vectray *ray); //ray->rows
 
 //Add & Remove data

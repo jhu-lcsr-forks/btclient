@@ -140,6 +140,7 @@ typedef struct btwam_struct{
   //JointSpace Position control
   vect_n *Kp,*Kd,*Ki,*saturation;
   //JointSpace Moves
+  bttrajectory_interface Jbtt;
   vect_n *vel,*acc;
   
   //CartesianSpace Position control
@@ -202,10 +203,16 @@ void MoveWAM(vect_n *pos);
 void MovePropsWAM(vect_n *vel, vect_n *acc);
 void CartesianMoveWAM(vect_n *pos); 
 void CartesianMovePropsWAM(btreal vel, btreal acc); 
+
+
 // Continuous Teach & Play Recording
 void StartContinuousTeach(int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
 void StopContinuousTeach(); 
+
 void ServiceContinuousTeach();
+
+ct_traj* LoadContinuousTeach(char* filename); //allocate and return vectray if successful
+
 
 int BlankWAMcallback(struct btwam_struct *wam);
 void registerWAMcallback(void *func);

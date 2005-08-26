@@ -947,6 +947,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     case 'y': //Stop continuos teach
         StopContinuousTeach(); 
         DecodeDL("teachpath","teach.csv",0);
+        LoadContinuousTeach("teach.csv");
+    break;
+    case 'U':
+        prep_trj_bts(&wam->Jsc,0.5,0.5);
+        start_trj_bts(&wam->Jsc);
+    break;
+    case 'u':
+        stop_trj_bts(&wam->Jsc);
     break;
     case '~':
             WACKYplay = !WACKYplay;

@@ -42,6 +42,7 @@ example usage
 #include <math.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <syslog.h>
 
 #include "btrobot.h"
@@ -509,6 +510,23 @@ void init_4dof_wam_bot(btrobot* robot)
   link_mass_bot(robot,3,C_v3(0.01465,0.0,0.1308),1.135);
   tool_mass_bot(robot,C_v3(0.0,0.0,0.0235),2.148);
 }
+
+void dumptofile_bot(btrobot* robot)
+{
+  int cnt;
+  FILE *outf;
+  char vect_buf1[100];
+  
+  outf = fopen("robotdump.txt","w");
+  
+  fprintf(outf,"Joint Parameters: %s",sprint_vn(vect_buf1,(vect_n*)robot->q));
+  for (cnt = -2; cnt < robot->num_links + 1; cnt++){
+    fprintf(outf,"Link %d \n",cnt);
+    fprintf(outf,"Alpha %+8.4f, Theta %+8.4f, A %+8.4f, d %+8.4f \n",robot->links[cnt].Alpha,robot->links[cnt].Theta,robot->links[cnt].A,robot->links[cnt].D);
+  }
+  fclose(outf);
+}
+
 
 void test_btrobot()
 {

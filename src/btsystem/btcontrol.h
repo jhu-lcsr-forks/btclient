@@ -127,46 +127,27 @@ void btposition_interface_reset_btPID(struct btposition_interface_struct* btp);
 vect_n* btposition_interface_eval_btPID(struct btposition_interface_struct* btp);
 void btposition_interface_mapf_btPID(btposition_interface* btp, btPID_array *pid);
 /*================================================Trajectory stuff================================*/
-/**
-State: 
- - 0 = uninitialized
- - 1 = initialized
- - 2 = position control is on and it's setpoint is at the trajectory start
- - 3 = running
- - 4 = pausing. we are decellerating to a stop (this should be done by warping time rather than distance.
- - 5 = paused. we are in the middle of a curve
- - 6 = unpausing. we are accellerating to match the desired trajectory
- - 7 = done
-*/
-/*! \brief Trajectory generator
-
-  trajectory provides configuration and state information for a set of trapezoidal tragectory
-  generation functions specified in trajectory.c.
-  
-  Make sure you set acc, and vel. These are the constant acceleration used and the 
-  maximum velocity allowed respectively.
-
-*/
 
 typedef struct 
 {
-  //state machine
-  int state; //!< 0: done, 1:run
+  btpath_pwl *pwl;
   
-  //internal state
-  btreal cmd;
-  btreal end;
-  btreal acc;
-  btreal vel;
-  btreal t;
-  btreal t1,t2; // Calculated inflection points of trapezoidal velocity curve
-  btreal x1,x2;
+  int state;
+  btreal start_error; //maximum error between present location and starting location
+  
+}ct_traj;
 
-}bttraptrj;
+void create_ct(ct_traj *trj,vectray *vr);
+vect_n* init_ct(ct_traj *trj);
+vect_n* eval_ct(ct_traj *trj, btreal dt);
 
-btreal evaluate_traptrj(bttraptrj *traj,btreal dt);
-void start_traptrj(bttraptrj *traj, btreal dist);
-void setprofile_traptrj(bttraptrj *traj, btreal vel, btreal acc);
+int done_ct(ct_traj *trj);
+int bttrajectory_interface_getstate_ct(struct bttrajectory_interface_struct *btt);
+vect_n* bttrajectory_interface_reset_ct(struct bttrajectory_interface_struct *btt);
+vect_n* bttrajectory_interface_eval_ct(struct bttrajectory_interface_struct *btt);
+
+void bttrajectory_interface_mapf_ct(bttrajectory_interface *btt,ct_traj *trj);
+
 
 
 

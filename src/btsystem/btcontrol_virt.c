@@ -35,8 +35,152 @@
 #include "btmath.h"
 #include "btcontrol_virt.h"
 #include "btjointcontrol.h"
+/************************** universal trajectory functions *****************/
+
+void setprofile_traptrj(bttraptrj *traj, btreal vel, btreal acc)
+{
+  traj->vel = fabs(vel);
+  traj->acc = fabs(acc);
+}
+
+/** Calculates all the variables necessary to set up a trapezoidal trajectory.
+
+\param dist the length of the trajectory
+
+*/
+void start_traptrj(bttraptrj *traj, btreal dist) //assumes that velocity and acceleration have been set to reasonable values
+{
+    double ax; //acceleration x
+
+    traj->cmd = 0;
+
+    traj->t1 = (traj->vel / traj->acc); //Calculate the "ramp-up" time
+
+    //Get the point at which acceleration stops
+    ax = 0.5*traj->acc*traj->t1*traj->t1; //x = 1/2 a t^2
+    
+    traj->end = dist;
+    if (ax > dist/2) //If the acceleration completion point is beyond the halfway point
+        ax = dist/2; //Stop accelerating at the halfway point
+    traj->x1 = ax;   //Set the top left point of the trapezoid
+    traj->x2 = dist - ax; //Set the top right point of the trapezoid
+    traj->t2 = (dist-(2*ax)) / traj->vel + traj->t1; //Find the time to start the "ramp-down"
+    traj->t = 0;
+    traj->state = BTTRAJ_RUN;
+    if (dist == 0.0) traj->state = BTTRAJ_STOPPED;
+}
+
+
+/*! Calculate next position on the trajectory
+
+evaluate_trajectory generates points on a trapezoidal velocity trajectory. The points accerate with
+constant acceleration specified by acc up to a maximum velocity specified by vel. The max velocity
+is maintained until approximately the time it will take to decellerate at acc to a velocity of zero.
+
+\param *traj pointer to the trajectory structure
+\param dt the time step to take (in the same units as vel and acc)
+
+\return The value returned is the next point on the trajectory after a step of dt.
+
+
+*/
+btreal evaluate_traptrj(bttraptrj *traj, btreal dt)
+{
+    btreal remaining_time,newtime,result;
+
+    if (traj->state == BTTRAJ_RUN)
+    {
+        traj->t += dt;
+        if (traj->cmd < traj->x1) //If we are in "accel" stage
+            traj->cmd = 0.5 * traj->acc * traj->t * traj->t;  //x = 1/2 a t^2
+        else if (traj->cmd < traj->x2) //If we are in "cruise" stage
+            traj->cmd = traj->x1 + traj->vel * (traj->t - traj->t1); //x = x + v t
+        else //We are in "decel" stage
+        {
+            /* time to hit zero = sqrt( (target position - current position)*2/a)
+                                 new position = 1/2 acc * (time to hit zero - dt)^2 */
+            remaining_time = sqrt((traj->end - traj->cmd)*2/traj->acc);
+            if (dt > remaining_time)
+            {
+                traj->cmd = traj->end;
+                traj->state = BTTRAJ_STOPPED;
+            }
+
+            newtime = (remaining_time-dt);
+            if(newtime <= 0)
+            {
+                traj->cmd = traj->end;
+                traj->state = BTTRAJ_STOPPED;
+            }
+            traj->cmd =  traj->end - 0.5 * traj->acc * newtime * newtime;
+        }
+
+    }
+    result = traj->cmd;
+
+    if (isnan(result))
+    {
+        syslog(LOG_ERR, "nan in eval_traj");
+        traj->cmd = traj->end;
+        traj->state = BTTRAJ_STOPPED;
+        return traj->end;
+    }
+    return result;
+}
+
+
+
 
 /**************************** position functions ******************************/
+void mapdata_bttrj(bttrajectory_interface *btt, vect_n* qref, double *dt)
+{
+  init_pwl(&(btt->pth),len_vn(qref),2);
+  btt->qref = qref;
+  btt->dt = dt;
+}
+
+vect_n* eval_bttrj(bttrajectory_interface *btt)
+{
+  
+  if (btt->state == BTTRAJ_INPREP){
+    if (btt->trj.state == BTTRAJ_STOPPED){
+      btt->state = BTTRAJ_READY;
+    }
+    set_vn(btt->qref, getval_pwl(&(btt->pth),evaluate_traptrj(&(btt->trj),*(btt->dt))));
+  }
+  
+  else if (btt->state == BTTRAJ_RUN)
+    set_vn(btt->qref,  (*(btt->eval))(btt));//evaluate path
+  
+  return btt->qref;
+}
+
+int prep_bttrj(bttrajectory_interface *btt,vect_n* q, btreal vel, btreal acc)
+{
+  if(btt->state == BTTRAJ_STOPPED){
+    clear_pwl(&(btt->pth));
+    add_arclen_point_pwl(&(btt->pth),q);
+    add_arclen_point_pwl(&(btt->pth),(*(btt->reset))(btt));
+    setprofile_traptrj(&(btt->trj), vel, acc);
+    start_traptrj(&(btt->trj), arclength_pwl(&(btt->pth)));
+    btt->state = BTTRAJ_INPREP;
+    return 1;
+  }
+  return 0;
+}
+int start_bttrj(bttrajectory_interface *btt)
+{
+  if(btt->state == BTTRAJ_READY){
+    btt->state == BTTRAJ_RUN;
+    return 1;
+  }
+  return 0;
+}
+int stop_bttrj(bttrajectory_interface *btt)
+{
+   btt->state == BTTRAJ_STOPPED;
+}
+/**************************** trajectory functions ******************************/
 void mapdata_btpos(btposition_interface *btp,vect_n* q, vect_n* dq, vect_n* ddq, 
                    vect_n* qref, vect_n* t, double *dt)
 {
@@ -47,10 +191,6 @@ void mapdata_btpos(btposition_interface *btp,vect_n* q, vect_n* dq, vect_n* ddq,
   btp->dt = dt;
   btp->t = t;
 }
-
-
-
-/**************************** trajectory functions ******************************/
 
 /**************************** trajectory functions ******************************/
 /**************************** state controller functions ************************/
@@ -64,6 +204,8 @@ void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq,
   sc->dt = dt;
   sc->t = t;
   mapdata_btpos(sc->btp,q,dq,ddq,qref,t,dt);
+  mapdata_bttrj(sc->trj,qref,dt);
+
 }
 
 /** Assign position and trajectory objects to the state controller
@@ -131,8 +273,8 @@ vect_n* eval_bts(btstatecontrol *sc)
               pthread_mutex_unlock(&(sc->mutex)),"SCevaluate unlock (idle) mutex failed");
             return sc->t;
             break;
-       case SCMODE_TRJ://PID
-           // set_vn(sc->btp->qref,eval_bttrj(sc->trj,dt));
+        case SCMODE_TRJ://PID
+            eval_bttrj(sc->trj);
         case SCMODE_POS://PID
             set_vn(sc->t,(*(sc->btp->eval))(sc->btp));
             test_and_log(
@@ -167,17 +309,25 @@ int setmode_bts(btstatecontrol *sc, int mode)
     test_and_log(
       pthread_mutex_lock(&(sc->mutex)),"SCsetmode lock mutex failed");
       
-    //if (getstate_bttrj(sc->trj) != BTTRAJ_STOPPED) stop_bttrj(sc->trj);
+    if (sc->trj->state != BTTRAJ_STOPPED) stop_bttrj(sc->trj);
     
     set_vn(sc->btp->qref,sc->btp->q);
     (*(sc->btp->reset))(sc->btp);
-    //(*(sc->btp->eval))(sc->btp);
     sc->mode = mode;
     
     test_and_log(
        pthread_mutex_unlock(&(sc->mutex)),"SCsetmode unlock (idle) mutex failed");
     return 0;
 }
-
+int prep_trj_bts(btstatecontrol *sc,btreal vel, btreal acc){
+  
+  return prep_bttrj(sc->trj,sc->q,vel,acc);
+}
+int start_trj_bts(btstatecontrol *sc){
+  return start_bttrj(sc->trj);
+}
+int stop_trj_bts(btstatecontrol *sc){
+  return stop_bttrj(sc->trj);
+}
 
 /**************************** state controller functions ************************/

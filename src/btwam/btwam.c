@@ -889,7 +889,7 @@ void getWAMjoints(vect_n *Mpos,vect_n *Mtrq,vect_n *Jpos,vect_n *Jtrq)
   set_vn(Jpos,WAM.Jpos);
   set_vn(Jtrq,WAM.Jtrq);
 }
-
+/** \bug Gcomp code in btwam.c needs work */
 int getGcomp()
 {
   return WAM.Gcomp;
@@ -1034,6 +1034,21 @@ void ServiceContinuousTeach()
 {
   evalDL(&(WAM.cteach));
 }
+
+ct_traj* LoadContinuousTeach(char* filename)
+{
+  vectray *vr;
+  ct_traj* ct;
+  //
+  ct = (ct_traj*)malloc(sizeof(ct_traj));
+  read_csv_file_vr(filename,&vr);
+  create_ct(ct,vr);
+  WAM.Jsc.trj = &WAM.Jbtt;
+  bttrajectory_interface_mapf_ct(WAM.Jsc.trj,ct);
+  return ct;
+}
+
+
 
 void registerWAMcallback(void *func)
 {

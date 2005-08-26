@@ -1072,7 +1072,11 @@ BTINLINE int numrows_vr(vectray *ray)
 {
   return ray->num_rows;
 }
-
+/** Returns the number of element in ray */
+BTINLINE int numelements_vr(vectray *ray)
+{
+  return ray->n;
+}
 /** Returns the maximum number of elements in ray */
 BTINLINE int maxrows_vr(vectray *ray)
 {

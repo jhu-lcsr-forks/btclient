@@ -40,97 +40,6 @@
 #define Sgn(x) (x>=0.0?1.0:-1.0)
 
 
-void setprofile_traptrj(bttraptrj *traj, btreal vel, btreal acc)
-{
-  traj->vel = fabs(vel);
-  traj->acc = fabs(acc);
-}
-
-/** Calculates all the variables necessary to set up a trapezoidal trajectory.
-
-\param dist the length of the trajectory
-
-*/
-void start_traptrj(bttraptrj *traj, btreal dist) //assumes that velocity and acceleration have been set to reasonable values
-{
-    double ax; //acceleration x
-
-    traj->cmd = 0;
-
-    traj->t1 = (traj->vel / traj->acc); //Calculate the "ramp-up" time
-
-    //Get the point at which acceleration stops
-    ax = 0.5*traj->acc*traj->t1*traj->t1; //x = 1/2 a t^2
-    
-    traj->end = dist;
-    if (ax > dist/2) //If the acceleration completion point is beyond the halfway point
-        ax = dist/2; //Stop accelerating at the halfway point
-    traj->x1 = ax;   //Set the top left point of the trapezoid
-    traj->x2 = dist - ax; //Set the top right point of the trapezoid
-    traj->t2 = (dist-(2*ax)) / traj->vel + traj->t1; //Find the time to start the "ramp-down"
-    traj->t = 0;
-    traj->state = BTTRAJ_RUN;
-    if (dist == 0.0) traj->state = BTTRAJ_STOPPED;
-}
-
-
-/*! Calculate next position on the trajectory
-
-evaluate_trajectory generates points on a trapezoidal velocity trajectory. The points accerate with
-constant acceleration specified by acc up to a maximum velocity specified by vel. The max velocity
-is maintained until approximately the time it will take to decellerate at acc to a velocity of zero.
-
-\param *traj pointer to the trajectory structure
-\param dt the time step to take (in the same units as vel and acc)
-
-\return The value returned is the next point on the trajectory after a step of dt.
-
-
-*/
-btreal evaluate_traptrj(bttraptrj *traj, btreal dt)
-{
-    btreal remaining_time,newtime,result;
-
-    if (traj->state == BTTRAJ_RUN)
-    {
-        traj->t += dt;
-        if (traj->cmd < traj->x1) //If we are in "accel" stage
-            traj->cmd = 0.5 * traj->acc * traj->t * traj->t;  //x = 1/2 a t^2
-        else if (traj->cmd < traj->x2) //If we are in "cruise" stage
-            traj->cmd = traj->x1 + traj->vel * (traj->t - traj->t1); //x = x + v t
-        else //We are in "decel" stage
-        {
-            /* time to hit zero = sqrt( (target position - current position)*2/a)
-                                 new position = 1/2 acc * (time to hit zero - dt)^2 */
-            remaining_time = sqrt((traj->end - traj->cmd)*2/traj->acc);
-            if (dt > remaining_time)
-            {
-                traj->cmd = traj->end;
-                traj->state = BTTRAJ_STOPPED;
-            }
-
-            newtime = (remaining_time-dt);
-            if(newtime <= 0)
-            {
-                traj->cmd = traj->end;
-                traj->state = BTTRAJ_STOPPED;
-            }
-            traj->cmd =  traj->end - 0.5 * traj->acc * newtime * newtime;
-        }
-
-    }
-    result = traj->cmd;
-
-    if (isnan(result))
-    {
-        syslog(LOG_ERR, "nan in eval_traj");
-        traj->cmd = traj->end;
-        traj->state = BTTRAJ_STOPPED;
-        return traj->end;
-    }
-    return result;
-}
-
 /**************************************************************************/
 
 /*! Initializes the btPID object
@@ -496,7 +405,67 @@ void btposition_interface_set_ref_btPID(void *dat,vect_n* ref)
   }
 }
 */
-/********************************************************************************/
+
+/**************************** Continuous trajectory ***************************/
+
+
+void create_ct(ct_traj *trj,vectray *vr)
+{
+  trj->state = BTTRAJ_OFF;
+  trj->pwl = new_pwl();
+  
+  init_pwl_from_vectray(trj->pwl,vr);
+  
+}
+vect_n* init_ct(ct_traj *trj)
+{
+  return dsinit_pwl(trj->pwl,0.0);
+}
+vect_n* eval_ct(ct_traj *trj, btreal dt)
+{
+  return ds_pwl(trj->pwl,dt);
+}
+
+int done_ct(ct_traj *trj)
+{
+  if (trj->pwl->proxy_s == arclength_pwl(trj->pwl))
+    return 1;
+  else return 0;
+}
+
+int bttrajectory_interface_getstate_ct(struct bttrajectory_interface_struct *btt)
+{
+  ct_traj* ct;
+  ct = (ct_traj*)btt->dat;
+  
+  if (done_ct(ct))
+    return BTTRAJ_DONE;
+  else return BTTRAJ_RUN;
+}
+
+vect_n* bttrajectory_interface_reset_ct(struct bttrajectory_interface_struct *btt)
+{
+  ct_traj* ct;
+  ct = (ct_traj*)btt->dat;
+  return dsinit_pwl(ct->pwl,0.0);
+}
+
+vect_n* bttrajectory_interface_eval_ct(struct bttrajectory_interface_struct *btt)
+{
+  ct_traj* ct;
+  ct = (ct_traj*)btt->dat;
+  return ds_pwl(ct->pwl,*(btt->dt));
+}
+void bttrajectory_interface_mapf_ct(bttrajectory_interface *btt,ct_traj *trj)
+{
+  btt->reset = bttrajectory_interface_reset_ct;
+  btt->eval = bttrajectory_interface_eval_ct;
+  btt->getstate = bttrajectory_interface_getstate_ct;
+  btt->dat = trj;
+}
+
+
+/******************************************************************************/
 
 /** Assumes trj->vr has been loaded with a valid vectray
 

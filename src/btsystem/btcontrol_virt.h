@@ -25,6 +25,7 @@ extern "C"
 #include <pthread.h>
 #include "btmath.h"
 #include "btos.h"
+#include "btpath.h"
 #ifndef PI
 #define PI 3.141596
 #endif /*PI*/
@@ -57,6 +58,50 @@ enum trjstate {BTTRAJ_OFF = -1,BTTRAJ_STOPPED = 0,BTTRAJ_INPREP,BTTRAJ_READY,
                BTTRAJ_RUN,BTTRAJ_DONE,BTTRAJ_PAUSING,BTTRAJ_UNPAUSING,BTTRAJ_PAUSED};
 
 enum scstate {SCMODE_IDLE=0, SCMODE_TORQUE, SCMODE_POS, SCMODE_TRJ};
+
+
+
+/**
+State: 
+ - 0 = uninitialized
+ - 1 = initialized
+ - 2 = position control is on and it's setpoint is at the trajectory start
+ - 3 = running
+ - 4 = pausing. we are decellerating to a stop (this should be done by warping time rather than distance.
+ - 5 = paused. we are in the middle of a curve
+ - 6 = unpausing. we are accellerating to match the desired trajectory
+ - 7 = done
+*/
+/*! \brief Trajectory generator
+
+  trajectory provides configuration and state information for a set of trapezoidal tragectory
+  generation functions specified in trajectory.c.
+  
+  Make sure you set acc, and vel. These are the constant acceleration used and the 
+  maximum velocity allowed respectively.
+
+*/
+
+typedef struct 
+{
+  //state machine
+  int state; //!< 0: done, 1:run
+  
+  //internal state
+  btreal cmd;
+  btreal end;
+  btreal acc;
+  btreal vel;
+  btreal t;
+  btreal t1,t2; // Calculated inflection points of trapezoidal velocity curve
+  btreal x1,x2;
+
+}bttraptrj;
+
+btreal evaluate_traptrj(bttraptrj *traj,btreal dt);
+void start_traptrj(bttraptrj *traj, btreal dist);
+void setprofile_traptrj(bttraptrj *traj, btreal vel, btreal acc);
+
 /*================================================Position object================================*/
 /** A virtual interface for position control
 */
@@ -95,20 +140,30 @@ see trjstate for more state info
 typedef struct bttrajectory_interface_struct
 {
   double *dt; // pointer to location of dt info
-  vect_n *q; //results
+  vect_n *qref; //results
   
   void *dat; //Trajectory object pointer
   
+  vect_n* (*reset)(struct bttrajectory_interface_struct *btt);
   vect_n* (*eval)(struct bttrajectory_interface_struct *btt);
   int (*getstate)(struct bttrajectory_interface_struct *btt);
-  void (*stop)(struct bttrajectory_interface_struct *btt);
 
-
-  
- 
+  // Straight trajectory
+  btpath_pwl pth;
+  bttraptrj trj;
+  int state;
   pthread_mutex_t mutex;
 }bttrajectory_interface;
+void mapdata_bttrj(bttrajectory_interface *btt, vect_n* qref, double *dt);
 
+vect_n* eval_bttrj(bttrajectory_interface *btt);
+
+int prep_bttrj(bttrajectory_interface *btt,vect_n* q, btreal vel, btreal acc);
+int start_bttrj(bttrajectory_interface *btt);
+int stop_bttrj(bttrajectory_interface *btt);
+
+
+/*           
 bttrajectory_interface * new_bttrajectory();
 //setup
 void setpath_bttrj(bttrajectory_interface *trj,void *crv_dat, void *initfunc, void *evalfunc);
@@ -119,7 +174,7 @@ vect_n* eval_bttrj(bttrajectory_interface *trj,btreal dt);
 int start_bttrj(bttrajectory_interface *trj);
 
 int getstate_bttrj(bttrajectory_interface *trj);
-void stop_bttrj(bttrajectory_interface *trj);
+void stop_bttrj(bttrajectory_interface *trj);*/
 /*================================================State Controller object====================*/
 /*! \brief A state controller for switching between position control and torque control
 
@@ -149,8 +204,9 @@ int init_bts(btstatecontrol *sc);
 int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory_interface *trj);
 vect_n* eval_bts(btstatecontrol *sc);
 int setmode_bts(btstatecontrol *sc, int mode);
-
-
+int prep_trj_bts(btstatecontrol *sc,btreal vel, btreal acc);
+int start_trj_bts(btstatecontrol *sc);
+int stop_trj_bts(btstatecontrol *sc);
 /********  Generic (simple) default implementation for virtual functions ******/
 /**
 

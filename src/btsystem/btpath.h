@@ -48,7 +48,9 @@ typedef struct {
 
 // Init / Destroy
 int init_pwl(btpath_pwl *pth, int vect_size,int rows);
-btpath_pwl * new_pwl(int vect_size,int rows);
+int init_pwl_from_vectray(btpath_pwl *pth,vectray *vr);
+
+btpath_pwl * new_pwl();
 void free_pwl(btpath_pwl *pth);
 void new_param_by_arclen_pwl(btpath_pwl *pth, btpath_pwl *crv2); //creates a second curve of arclength vs time
 
@@ -68,8 +70,8 @@ vect_n* ds_pwl(btpath_pwl *pth, btreal ds); //Shift our proxy by ds and return t
 btreal getnodes_pwl(btpath_pwl *pth,int idx); //return arclength at node[idx]
 btreal arclength_pwl(btpath_pwl *pth);
 
-int read_cvs_pwl(btpath_pwl *pth,FILE *infile);
-int write_cvs_pwl(btpath_pwl *pth,FILE *outfile);
+//int read_cvs_pwl(btpath_pwl *pth,FILE *infile);
+//int write_cvs_pwl(btpath_pwl *pth,FILE *outfile);
 
 /** Curve Trajectory Controller
 

@@ -31,9 +31,11 @@ int get_segment_pwl(btpath_pwl *pth,btreal s); //Given an arclength, find what s
   Paths define geometry in space.
   Trajectories define a location and velocity as a function of time.
   Paths are stored as functions of pathlength
-*/  
-  
-btpath_pwl * new_pwl(int vect_size,int rows)
+*/
+
+
+/** Allocate memory for a pwl data structure. Further allocation is done by init_pwl()*/
+btpath_pwl * new_pwl()
 {
   
   btpath_pwl * vmem;
@@ -46,8 +48,9 @@ btpath_pwl * new_pwl(int vect_size,int rows)
     return NULL;
   }
   
-  init_pwl(vmem,vect_size,rows);
+  return vmem;
 }
+
 /** Initialize a piecewize linear path */
 int init_pwl(btpath_pwl *pth, int vect_size,int rows)
 {
@@ -70,8 +73,39 @@ int init_pwl(btpath_pwl *pth, int vect_size,int rows)
   pth->segment = 0;
   pth->startnode = 0;
   pth->endnode = 0;
+  return 0;
 }
-
+int init_pwl_from_vectray(btpath_pwl *pth,vectray *vr)
+{
+  void* vmem;
+  int vect_size, rows;
+  int cnt;
+  
+  rows = numrows_vr(vr);
+  vect_size = numelements_vr(vr) - 1;
+  //allocate mem for vector,return vector, and return structure
+  if ((vmem = malloc(rows*sizeof(btreal))) == NULL) 
+  {
+    syslog(LOG_ERR,"btpath: init_pwl memory allocation failed, size %d",rows);
+    return -1;
+  }
+  
+  pth->s = (btreal*)vmem;
+  pth->vr = new_vr(vect_size,rows);
+  pth->proxy = new_vn(vect_size);
+  pth->tmp1 = new_vn(vect_size);
+  pth->tmp2 = new_vn(vect_size);
+  pth->proxy_s = 0.0;
+  pth->segment = 0;
+  pth->startnode = 0;
+  pth->endnode = 0;
+  
+  for (cnt = 0; cnt < rows;cnt ++){
+    setrange_vn(pth->tmp1,idx_vr(vr,cnt),0,1,vect_size);
+    add_point_pwl(pth,pth->tmp1, getval_vn(idx_vr(vr,cnt),0));
+  }
+  return 0;
+}
 /** Free the memory allocated during initialization of a btpath_pwl structure
 */
 void free_pwl(btpath_pwl *pth)
