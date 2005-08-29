@@ -29,7 +29,7 @@ extern "C"
 #include <stdlib.h>
 #include <string.h>
 
-enum {BTLOG_INT,BTLOG_LONG,BTLOG_DOUBLE};
+enum {BTLOG_INT = 0,BTLOG_LONG,BTLOG_DOUBLE,BTLOG_LONGLONG,BTLOG_BTREAL};
 /** btlogger helper structure
 
   This structure holds info on each piece of data that the user wants to log.
