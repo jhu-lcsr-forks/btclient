@@ -1,14 +1,61 @@
+/*======================================================================*
+ *  Module .............libbtsystem
+ *  File ...............btparser.c
+ *  Author .............Brian Zenowich
+ *  Creation Date ......15 Feb 2003
+ *  Addtl Authors ......
+ *                                                                      *
+ *  ******************************************************************  *
+ *                                                                      *
+ *  NOTES:
+ *
+ *  REVISION HISTORY:
+ *  16 Dec 2004 - BZ, SC, TH
+ *    Initial port to linux + RTAI
+ *                                                                      *
+ *======================================================================*/
+
+/** \file btparser.c
+    The functions in btparser.c allow an application to read a structured
+    configuration file and extract values from it.
+
+\verbatim
+# Example config file
+
+...blah
+
+\endverbatim
+
+*/
+
+/*==============================*
+ * INCLUDES - System Files      *
+ *==============================*/
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+/*==============================*
+ * INCLUDES - Project Files     *
+ *==============================*/
 #include "parser.h"
 
+/*==============================*
+ * PRIVATE Function Prototypes  *
+ *==============================*/
 int parseFile(char *fn);
 int parseGetVal(int type, char *str, void *loc);
 
+/*==============================*
+ * GLOBAL file-scope variables  *
+ *==============================*/
 char 	hdr[255];
 FILE	*outFile;
 
+/*==============================*
+ * Functions                    *
+ *==============================*/
+/* Strip everything after a hash mark, unless hash is preceeded by an escape char ('\') */
 void stripComments(char *str)
 {
     char *c;
@@ -22,6 +69,7 @@ void stripComments(char *str)
     }
 }
 
+/* Get the nested key value and update the header */
 void nestLine(char *line)
 {
     char *h;
@@ -35,6 +83,7 @@ void nestLine(char *line)
     *h = '\0'; // Terminate the hdr
 }
 
+/* Extract the key */
 void getKey(char *key, char *line)
 {
 	char *k = key;
@@ -44,6 +93,7 @@ void getKey(char *key, char *line)
     *k = '\0'; // Terminate the key
 }
 
+/* Write out the assignment statement */
 void assignLine(char *line)
 {
     char key[255];
@@ -70,6 +120,7 @@ void assignLine(char *line)
 	}
 }
 
+/* Update the header when exiting a nested statement */
 void killLine(char *line)
 {
     char *h;
@@ -78,7 +129,7 @@ void killLine(char *line)
     *h = '\0'; // Terminate the hdr   
 }
 
-
+/** Create a value-lookup file from a structured configuration file */
 int parseFile(char *fn)
 {
     FILE    *inFile;
@@ -168,6 +219,7 @@ int parseFile(char *fn)
     return(0);
 }
 
+/** Look up the value of a configuration key. parseFile() must be called prior to this function. */
 int parseGetVal(int type, char *find, void *loc)
 {
 	int intVal;
