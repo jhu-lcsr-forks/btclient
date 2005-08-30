@@ -150,17 +150,19 @@ vect_n* eval_bttrj(bttrajectory_interface *btt)
   }
   
   else if (btt->state == BTTRAJ_RUN)
-    set_vn(btt->qref,  (*(btt->eval))(btt));//evaluate path
+    set_vn(btt->qref, (*(btt->eval))(btt));//evaluate path
   
   return btt->qref;
 }
 
 int prep_bttrj(bttrajectory_interface *btt,vect_n* q, btreal vel, btreal acc)
 {
+  char vect_buf1[200];
   if(btt->state == BTTRAJ_STOPPED){
     clear_pwl(&(btt->pth));
     add_arclen_point_pwl(&(btt->pth),q);
     add_arclen_point_pwl(&(btt->pth),(*(btt->reset))(btt));
+
     setprofile_traptrj(&(btt->trj), vel, acc);
     start_traptrj(&(btt->trj), arclength_pwl(&(btt->pth)));
     btt->state = BTTRAJ_INPREP;
@@ -171,7 +173,7 @@ int prep_bttrj(bttrajectory_interface *btt,vect_n* q, btreal vel, btreal acc)
 int start_bttrj(bttrajectory_interface *btt)
 {
   if(btt->state == BTTRAJ_READY){
-    btt->state == BTTRAJ_RUN;
+    btt->state = BTTRAJ_RUN;
     return 1;
   }
   return 0;
@@ -179,6 +181,11 @@ int start_bttrj(bttrajectory_interface *btt)
 int stop_bttrj(bttrajectory_interface *btt)
 {
    btt->state == BTTRAJ_STOPPED;
+}
+
+int getstate_bttrj(bttrajectory_interface *btt)
+{
+  return btt->state;
 }
 /**************************** trajectory functions ******************************/
 void mapdata_btpos(btposition_interface *btp,vect_n* q, vect_n* dq, vect_n* ddq, 
@@ -319,14 +326,16 @@ int setmode_bts(btstatecontrol *sc, int mode)
        pthread_mutex_unlock(&(sc->mutex)),"SCsetmode unlock (idle) mutex failed");
     return 0;
 }
-int prep_trj_bts(btstatecontrol *sc,btreal vel, btreal acc){
-  
+int prep_trj_bts(btstatecontrol *sc,btreal vel, btreal acc)
+{
   return prep_bttrj(sc->trj,sc->q,vel,acc);
 }
-int start_trj_bts(btstatecontrol *sc){
+int start_trj_bts(btstatecontrol *sc)
+{
   return start_bttrj(sc->trj);
 }
-int stop_trj_bts(btstatecontrol *sc){
+int stop_trj_bts(btstatecontrol *sc)
+{
   return stop_bttrj(sc->trj);
 }
 

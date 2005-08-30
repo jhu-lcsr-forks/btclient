@@ -564,6 +564,20 @@ BTINLINE vect_n* unit_vn(vect_n* a) //unit vector
 /** Interpolate between two vectors
  
 Returns a point that is distance s along the line from a to b. The direction
+towards b is considered positive. s is 0 to dist(a,b);
+ 
+\param s Distance along line from a to b
+\param a Starting point
+\param b End point
+\return add_vn(a,scale_vn(s,unit_vn(sub_vn(b,a))));
+*/
+vect_n* unit_interp_vn(vect_n* a, vect_n* b,btreal s)
+{
+  return add_vn(a,scale_vn(s,unit_vn(sub_vn(b,a))));
+}
+/** Interpolate between two vectors with another paramater
+ 
+Returns a point that is distance s along the line from a to b. The direction
 towards b is considered positive
  
 \param s Distance along line from a to b
@@ -571,9 +585,9 @@ towards b is considered positive
 \param b End point
 \return add_vn(a,scale_vn(s,unit_vn(sub_vn(b,a))));
 */
-vect_n* interp_vn(vect_n* a, vect_n* b,btreal s)
+vect_n* interp_vn(vect_n* a, vect_n* b,btreal ds,btreal s)
 {
-  return add_vn(a,scale_vn(s,unit_vn(sub_vn(b,a))));
+  return add_vn(a,scale_vn(s/ds,sub_vn(b,a)));
 }
 /** Force a vect_n to be in the range min value to max value (inclusive)
  
@@ -663,10 +677,10 @@ void print_vn(vect_n* src)
   int i,j;
   if (src != NULL)
   {
-    printf("\n<");
+    printf("<");
     for(j = 0;j<src->n;j++)
       printf("%g,",src->q[j]);
-    printf(">\n");
+    printf(">");
   }
 }
 /** Print vect_n to a string buffer suitable for display or text file
@@ -688,6 +702,7 @@ char* sprint_vn(char *dest,vect_n* src)
     dest[strlen(dest)-1] = 0;
     strcat(dest," >");
   }
+  return dest;
 }
 /**Print a vector out to syslog*/
 void syslog_vn(char* header,vect_n* src)
@@ -703,7 +718,7 @@ file.
  1.2, 2.4, 5.3
 \endcode
 */
-char* sprint_cvs_vn(char *dest,vect_n* src)
+char* sprint_csv_vn(char *dest,vect_n* src)
 {
   int i,j;
   if (btmath_ptr_ok(src,"sprint_cvs_vn"))
@@ -713,6 +728,7 @@ char* sprint_cvs_vn(char *dest,vect_n* src)
       sprintf(dest+strlen(dest)," %8.4f,",src->q[j]);
     dest[strlen(dest)-1] = 0;
   }
+  return dest;
 }
 
 
@@ -823,14 +839,16 @@ vect_n * strto_vn(vect_n *dest,char *src,char *delimiters)
 
   start1 = src;
   num = strcount_vn(&start1,delimiters); // validate string and count the number of values
-
+  
   scan = start1;
 
   //while !done, vect.q[cnt] = strtod()
   for (cnt = 0; cnt < num; cnt++)
   {
     setval_vn(dest,cnt,strtod(scan,&second));
-    scan = second + 1; //skip over the comma
+    scan = strpbrk(second,",");
+    if (scan != NULL)
+      scan = scan + 1; //skip over the comma
   }
 
   return dest;
@@ -864,7 +882,9 @@ vect_n * sscan_vn(char *src)
     for (cnt = 0; cnt < num; cnt++)
     {
       setval_vn(dest,cnt,strtod(scan,&second));
-      scan = second + 1; //skip over the comma
+      scan = strpbrk(second,",");
+      if (scan != NULL)
+        scan = scan + 1; //skip over the comma
     }
 
     return dest;
@@ -878,21 +898,23 @@ vect_n * sscan_vn(char *src)
  
  
 */
-vect_n * cvsto_vn(vect_n* dest, char *src)
+vect_n * csvto_vn(vect_n* dest, char *src)
 {
   char *start1,*second,*scan;
   int cnt = 0,num = 0;
 
   start1 = src;
   num = strcount_vn(&start1," \n\r"); // validate string and count the number of values
-
+  if (num < 0) syslog(LOG_ERR,"strto_vn strcount_vn error %d",num);
   scan = start1;
 
   //while !done, vect.q[cnt] = strtod()
   for (cnt = 0; cnt < num; cnt++)
   {
     setval_vn(dest,cnt,strtod(scan,&second));
-    scan = second + 1; //skip over the comma
+    scan = strpbrk(second,",");
+    if (scan != NULL)
+    scan = scan + 1; //skip over the comma
   }
 
   return dest;
@@ -1113,7 +1135,7 @@ BTINLINE void clear_vr(vectray *ray)
 */
 int read_csv_file_vr(char *fileName, vectray **vr)
 {
-  char        line[MAX_LINE_LENGTH];
+  char        line[MAX_LINE_LENGTH],buff[250];
   int         charCt, i, row, columnCt;
   double      a[8];
   FILE        *inFile;
@@ -1162,6 +1184,7 @@ int read_csv_file_vr(char *fileName, vectray **vr)
   }
   //Allocate memory for the file
   *vr = new_vr(maxcols,rows);
+  syslog(LOG_ERR, "New vr. Col: %d Row: %d", maxcols,rows);
   tmp_v = new_vn(maxcols);
   //Load the file into memory
   rewind(inFile);
@@ -1177,8 +1200,9 @@ int read_csv_file_vr(char *fileName, vectray **vr)
     }
 
     fill_vn(tmp_v,0.0);
-    cvsto_vn(tmp_v,line);
-    set_vn(idx_vr(*vr,row),tmp_v);
+    csvto_vn(tmp_v,line);
+    append_vr(*vr,tmp_v);
+    syslog(LOG_ERR, "Creating Vector: [%s]", sprint_vn(buff,idx_vr(*vr,row)));
     ++row;
 
   }
@@ -1191,6 +1215,27 @@ int read_csv_file_vr(char *fileName, vectray **vr)
   return(0);
 }
 
+int write_csv_file_vr(char *filename, vectray *vr)
+{
+  int cnt;
+  FILE        *outFile;
+  char buff[250];
+
+
+  //Open the file
+  if((outFile = fopen(filename, "w")) == NULL)
+  {
+    syslog(LOG_ERR, "Trajectory file '%s' not found!", filename);
+    return(1);
+  }
+  
+  syslog(LOG_ERR, "write_csv_file_vr: %d",numrows_vr(vr));
+  for (cnt = -1; cnt < numrows_vr(vr) + 1; cnt ++)
+    fprintf(outFile,"%s\n",sprint_csv_vn(buff,idx_vr(vr,cnt)));
+  
+  fclose(outFile);
+  
+}
 
 int test_vr(btreal error)
 {

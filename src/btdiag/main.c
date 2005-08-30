@@ -241,11 +241,12 @@ ed to initialize system"))
   wam = GetWAM();
 
   /* Initialize our data logging structure */
-  wam->logdivider = 50;
+  wam->logdivider = 1;
   PrepDL(&(wam->log),6);
   AddDataDL(&(wam->log),&(wam->log_time),sizeof(double),2,"Time");
-  AddDataDL(&(wam->log),valptr_vn(wam->Jtrq),sizeof(btreal)*4,4,"Jtrq");
-  AddDataDL(&(wam->log),valptr_vn((vect_n*)wam->Cpos),sizeof(btreal)*3,4,"Cpos");
+  AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
+  AddDataDL(&(wam->log),valptr_vn(wam->Jref),sizeof(btreal)*7,4,"Jref");
+  AddDataDL(&(wam->log),valptr_vn(wam->Jtrq),sizeof(btreal)*7,4,"Jtrq");
   InitDL(&(wam->log),1000,"datafile.dat");
   
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
@@ -612,9 +613,9 @@ void RenderScreen() //{{{
   }
 
     line = line2;
-    mvprintw(line, column_offset , "qref:%s", sprint_vn(vect_buf1,(vect_n*)wam->Jref));
+    mvprintw(line, column_offset , "Jref:%s", sprint_vn(vect_buf1,(vect_n*)wam->Jref));
     ++line;
-    mvprintw(line, column_offset , "q:%s", sprint_vn(vect_buf1,(vect_n*)wam->Jpos));
+    mvprintw(line, column_offset , "Jpos:%s", sprint_vn(vect_buf1,(vect_n*)wam->Jpos));
     ++line;
      mvprintw(line, column_offset , "Jtrq:%s  ", sprint_vn(vect_buf1,(vect_n*)wam->Jtrq));
     ++line;
@@ -635,7 +636,7 @@ void RenderScreen() //{{{
     mvprintw(line, column_offset , "state:%d Kp:%+8.4f Kd:%+8.4f Ki:%+8.4f e:%+8.4f last:%+8.4f",wam->d_jpos_ctl[0].state, wam->d_jpos_ctl[0].Kp, 
              wam->d_jpos_ctl[0].Kd, wam->d_jpos_ctl[0].Ki, wam->d_jpos_ctl[0].e, wam->d_jpos_ctl[0].lastresult);
     ++line;  
-    mvprintw(line, column_offset , "SCmode:%d ", wam->Jsc.mode);
+    mvprintw(line, column_offset , "SCmode:%d TrjState:%d ", wam->Jsc.mode,wam->Jsc.trj->state);
     ++line; 
     mptr = T_to_W_trans_bot(&(wam->robot));
     
@@ -705,13 +706,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       outFile = fopen("gcomp.dat", "w");
       fprintf(outFile, "%f\n%f\n%f\n%f\n", A, B, C, D);
       fclose(outFile);
-      break;
+      break;*/
     case 'L': //Data logging on
       DLon(&(wam->log));
       break;
     case 'l': //Data logging off
       DLoff(&(wam->log));
-      break; */
+      break; 
     case 'D': //Haptics on
       bth.state = 1;
       break;
@@ -768,10 +769,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       setmode_bts(&(wam->Jsc),SCMODE_POS);
       break;
     case 'P': // Set ALL joint controllers to PID mode
-      fer(cnt, npucks){
-        Mid = MotorID_From_ActIdx(cnt);
-        SCsetmode(&(wam->sc[Mid]), SCMODE_POS);
-      }
+        setmode_bts(&(wam->Jsc),SCMODE_TRJ);
+      //fer(cnt, npucks){
+      //  Mid = MotorID_From_ActIdx(cnt);
+      //  SCsetmode(&(wam->sc[Mid]), SCMODE_POS);
+     // }
       break;
         case 's': // Start Trajectory control on present puck
             SCstarttrj(&(wam->sc[cMid]), commands[cpuck]);
@@ -899,7 +901,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         }
         finish_entry();
     break;
-            case ';':   /* Play through playlist once */
+    case ';':   /* Play through playlist once */
             DLon(&(wam->log));
             MLplay(&ml);
             break;
@@ -919,14 +921,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             DLoff(&(wam->log));
             MLstop(&ml);
             break;
-        case 'l':   /* Load playlist from file */
-            start_entry();
+        //case 'l':   /* Load playlist from file */
+         /*   start_entry();
             addstr("Enter filename for playlist read: ");
             refresh();
             scanw("%s", fn);
             MLload(&ml, fn);
             finish_entry();
-            break;
+            break;*/
         case 'w':   /* Write current playlist to file */
             start_entry();
             addstr("Enter filename for playlist save: ");
@@ -942,15 +944,20 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             MLdel(&ml);
             break;
     case 'Y': //Start continuos teach
-        StartContinuousTeach(0,50,"teachpath");
+        StartContinuousTeach(1,50,"teachpath");
     break;
     case 'y': //Stop continuos teach
         StopContinuousTeach(); 
         DecodeDL("teachpath","teach.csv",0);
-        LoadContinuousTeach("teach.csv");
+        
     break;
     case 'U':
+        LoadContinuousTeach("teach.csv");
         prep_trj_bts(&wam->Jsc,0.5,0.5);
+        while (wam->Jsc.trj->state != BTTRAJ_READY){
+          usleep(100000);
+        }
+        //wam->Jsc.trj->state = BTTRAJ_READY;
         start_trj_bts(&wam->Jsc);
     break;
     case 'u':

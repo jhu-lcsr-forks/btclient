@@ -446,6 +446,7 @@ int bttrajectory_interface_getstate_ct(struct bttrajectory_interface_struct *btt
 vect_n* bttrajectory_interface_reset_ct(struct bttrajectory_interface_struct *btt)
 {
   ct_traj* ct;
+  //syslog(LOG_ERR,"Starting reset ct");
   ct = (ct_traj*)btt->dat;
   return dsinit_pwl(ct->pwl,0.0);
 }

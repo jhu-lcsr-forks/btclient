@@ -104,6 +104,7 @@ int init_pwl_from_vectray(btpath_pwl *pth,vectray *vr)
     setrange_vn(pth->tmp1,idx_vr(vr,cnt),0,1,vect_size);
     add_point_pwl(pth,pth->tmp1, getval_vn(idx_vr(vr,cnt),0));
   }
+  syslog(LOG_ERR,"init_pwl_from_vectray: %d points",cnt);
   return 0;
 }
 /** Free the memory allocated during initialization of a btpath_pwl structure
@@ -265,7 +266,7 @@ vect_n * getval_pwl(btpath_pwl *pth, btreal s)
     return pth->proxy;
   }
 
-  set_vn(pth->proxy,interp_vn(idxa_pwl(pth,idx-1),idxb_pwl(pth,idx),s - pth->s[idx-1]));
+  set_vn(pth->proxy,interp_vn(idxa_pwl(pth,idx-1),idxb_pwl(pth,idx),pth->s[idx] - pth->s[idx-1],s - pth->s[idx-1]));
   
   pth->segment = idx;
   pth->proxy_s = s;  
@@ -304,8 +305,9 @@ vect_n* ds_pwl(btpath_pwl *pth, btreal ds)
       idx = pth->segment;
     }
   }
+
+  set_vn(pth->proxy,interp_vn(idxa_pwl(pth,idx-1),idxb_pwl(pth,idx),pth->s[idx] - pth->s[idx-1],s - pth->s[idx-1]));
   
-  set_vn(pth->proxy,interp_vn(idxa_pwl(pth,idx),idxb_pwl(pth,idx-1),s - pth->s[idx-1]));
   pth->proxy_s = s;  
   
   return pth->proxy;

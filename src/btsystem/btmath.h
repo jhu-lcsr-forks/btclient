@@ -153,20 +153,21 @@ vect_n* wedge_vn(vect_n* a, vect_n*b);
 btreal  dot_vn(vect_n* a, vect_n* b);
 btreal  norm_vn(vect_n* a); //euclidian norm
 vect_n* unit_vn(vect_n* a); //unit vector
-vect_n* interp_vn(vect_n* a, vect_n* b,btreal s); //linear interpolation, if s is greater than available, it is exstrapolated
+vect_n* unit_interp_vn(vect_n* a, vect_n* b,btreal s); //linear interpolation, if s is greater than available, it is exstrapolated
+vect_n* interp_vn(vect_n* a, vect_n* b,btreal ds,btreal s);
 vect_n* bound_vn(vect_n* a, btreal min, btreal max);
 //int eq_vn(vect_n* a, vect_n* b); //equals
 //int zero_vn(vect_n* a, vect_n* b); //zero vector test
 
 void print_vn(vect_n* src);
 char* sprint_vn(char *dest,vect_n* src);
-char* sprint_cvs_vn(char *dest,vect_n* src);
+char* sprint_csv_vn(char *dest,vect_n* src);
 void syslog_vn(char* header,vect_n* src);
 
 int strcount_vn(char **src_string,char *delimiter); //Count the number of double values in a string
 vect_n * sscan_vn(char *src);
 vect_n * strto_vn(vect_n *dest,char *src,char *delimiters); //Convert a string to a vect_n
-vect_n * cvsto_vn(vect_n* dest, char *src); //Convert a string into a vect_n
+vect_n * csvto_vn(vect_n* dest, char *src); //Convert a string into a vect_n
 int test_vn(btreal error); //test & verification suite
 /*       Local vect_n functions */
 
@@ -237,6 +238,7 @@ void clear_vr(vectray *ray); //erase everything and set it to zero
 
 //File I/O
 int read_csv_file_vr(char *fileName, vectray **vr);
+int write_csv_file_vr(char *filename, vectray *vr);
 
 int test_vr(btreal error);
 /*===================== Vector List=============================*/
