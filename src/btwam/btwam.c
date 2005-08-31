@@ -154,7 +154,7 @@ int InitWAM(char *wamfile)
   }
   WAM.d_jpos_array.pid = WAM.d_jpos_ctl;
   WAM.d_jpos_array.elements = 7;  
-  
+  init_bts(&WAM.Jsc);
   map_btstatecontrol(&WAM.Jsc, WAM.Jpos, WAM.Jvel, WAM.Jacc, 
                       WAM.Jref, WAM.Jtrq, &WAM.dt);
   btposition_interface_mapf_btPID(&WAM.Jsc, &(WAM.d_jpos_array));
@@ -168,10 +168,11 @@ int InitWAM(char *wamfile)
   }
   WAM.d_pos_array.pid = WAM.d_pos_ctl;
   WAM.d_pos_array.elements = 6;  
-
+  init_bts(&WAM.Csc);
   map_btstatecontrol(&WAM.Csc, WAM.R6pos, WAM.R6vel, WAM.R6acc, 
                       WAM.R6ref, WAM.R6trq, &WAM.dt);
   btposition_interface_mapf_btPID(&WAM.Csc, &(WAM.d_pos_array));
+  
   /* Control plugin initialization */
   
   init_pwl(&WAM.pth,3,2); //Cartesian move path
@@ -1042,6 +1043,7 @@ void registerWAMcallback(void *func)
 {
   if (func != NULL)
     WAM.force_callback = func;
+  else func = BlankWAMcallback;
 }
 
 int BlankWAMcallback(struct btwam_struct *wam)

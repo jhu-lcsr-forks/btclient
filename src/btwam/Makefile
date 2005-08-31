@@ -16,7 +16,7 @@ $(LIB_OBJS) : $(INCL_FILES)
 default: lib
 
 clean: 
-	rm *.o ${LIB_TARG} 
+	rm *.o ${LIB_TARG} $(PATH_INSTALL)/${LIB_TARG}
 
 small:
 	rm *.o *~ *.bak

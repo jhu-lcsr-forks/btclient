@@ -960,11 +960,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         
     case 'U':
         prep_trj_bts(&wam->Jsc,0.5,0.5);
-        while (wam->Jsc.btt.state != BTTRAJ_READY){
+        while (wam->Jsc.btt.state == BTTRAJ_INPREP){
           usleep(100000);
         }
+    
         //wam->Jsc.trj->state = BTTRAJ_READY;
         start_trj_bts(&wam->Jsc);
+        
     break;
     case 'u':
         stop_trj_bts(&wam->Jsc);

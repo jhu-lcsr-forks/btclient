@@ -179,10 +179,10 @@ int prep_bttrj(bttrajectory_interface *btt,vect_n* q, btreal vel, btreal acc)
     start_traptrj(&(btt->trj), arclength_pwl(&(btt->pth)));
     btt->state = BTTRAJ_INPREP;
 
-    return 1;
+    return 0;
   }
 
-  return 0;
+  return -1;
 }
 int start_bttrj(bttrajectory_interface *btt)
 {
@@ -196,7 +196,7 @@ int start_bttrj(bttrajectory_interface *btt)
 }
 int stop_bttrj(bttrajectory_interface *btt)
 {
-  btt->state == BTTRAJ_STOPPED;
+  btt->state = BTTRAJ_STOPPED;
   return 0;
 }
 
@@ -249,15 +249,15 @@ void maptrajectory_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void*
 void mapposition_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* pause)
 {
   test_and_log( pthread_mutex_lock(&(sc->mutex)),"mapobj_bttrj lock mutex failed");
-  if (sc->mode == SCMODE_TORQUE)
+  if (sc->mode != SCMODE_POS && sc->mode != SCMODE_TRJ)
   {
     sc->btp.reset = reset;
     sc->btp.eval = eval;
     sc->btp.pause = pause;
     sc->btp.dat = dat;
     //put everything into a known state
-    set_vn(sc->btp.qref,sc->btp.q);
-    (*(sc->btp.reset))(&sc->btp);
+    //set_vn(sc->btp.qref,sc->btp.q);
+    //(*(sc->btp.reset))(&sc->btp);
     sc->mode = SCMODE_TORQUE;
     sc->btt.state = BTTRAJ_STOPPED;
   }
@@ -399,6 +399,7 @@ int setmode_bts(btstatecontrol *sc, int mode)
     }
     break;
   default:
+    sc->mode = SCMODE_TORQUE;
     break;
   }
     test_and_log(

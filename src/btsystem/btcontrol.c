@@ -460,14 +460,19 @@ vect_n* bttrajectory_interface_reset_ct(struct bttrajectory_interface_struct *bt
   ct_traj* ct;
   //syslog(LOG_ERR,"Starting reset ct");
   ct = (ct_traj*)btt->dat;
+  
   return dsinit_pwl(ct->pwl,0.0);
 }
 
 vect_n* bttrajectory_interface_eval_ct(struct bttrajectory_interface_struct *btt)
 {
   ct_traj* ct;
+  vect_n* ret;
   ct = (ct_traj*)btt->dat;
-  return ds_pwl(ct->pwl,*(btt->dt));
+  ret = ds_pwl(ct->pwl,*(btt->dt));
+  if (done_ct(ct))
+    btt->state = BTTRAJ_DONE;
+  return ret;
 }
 
 void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj)
