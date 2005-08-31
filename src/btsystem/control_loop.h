@@ -29,6 +29,7 @@
 extern "C"
 {
 #endif/* __cplusplus */
+/*  Example code for passing parameters. See control_loop.c example.
 #include "btsystem.h"
 #include "btjointcontrol.h"
 
@@ -39,6 +40,7 @@ typedef struct
   actuator_struct *act;
   SimpleCtl *sc;
 }control_thd_parms;
+*/
 
 void start_control_threads(int priority, double sample_period, void *function,void *args);
 void stop_control_threads();

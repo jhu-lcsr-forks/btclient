@@ -58,8 +58,8 @@
  * INCLUDES - Project Files     *
  *==============================*/
 #include "control_loop.h"
-#include "btcan.h"
-#include "btsystem.h"
+//#include "btcan.h"
+//#include "btsystem.h"
 //th041216#include "traj.h"
 
 sem_t     timer_semaphore;

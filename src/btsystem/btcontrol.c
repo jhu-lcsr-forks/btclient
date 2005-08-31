@@ -342,6 +342,9 @@ void getsaturation_btPID(btPID *pid, btreal *saturation)
       pthread_mutex_unlock(&(pid->mutex)),"getsaturation_btPID unlock mutex failed");
 }
 /************************* btPID interface functions ***************************/
+/* Repackages the above PID routines for vectors
+   Provides the default function plugins for the btstate controller (in btcontrol_virt)
+*/
 void btposition_interface_mapf_btPID(btstatecontrol *sc, btPID_array *pid)
 {
   mapposition_bts(sc,(void*) pid,
