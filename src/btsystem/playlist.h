@@ -51,7 +51,7 @@ int MLdestroy(SC_move_list *ml);
 void MLeval(SC_move_list *ml);
 void MLloadnext(SC_move_list *ml);
 int MLadd(SC_move_list *ml, move_info *points); //points is move_info[Nsc] in size
-int MLaddSC(SC_move_list *ml); //points is move_info[Nsc] in size
+int MLaddSC(SC_move_list *ml); 
 int MLdel(SC_move_list *ml);
 int MLfirst(SC_move_list *ml);
 int MLnext(SC_move_list *ml);

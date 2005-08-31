@@ -155,11 +155,9 @@ int InitWAM(char *wamfile)
   WAM.d_jpos_array.pid = WAM.d_jpos_ctl;
   WAM.d_jpos_array.elements = 7;  
   
-  WAM.Jsc.btp = &WAM.Jbtp;
-  WAM.Jsc.trj = &WAM.Jbtt;
   map_btstatecontrol(&WAM.Jsc, WAM.Jpos, WAM.Jvel, WAM.Jacc, 
                       WAM.Jref, WAM.Jtrq, &WAM.dt);
-  btposition_interface_mapf_btPID(WAM.Jsc.btp, &(WAM.d_jpos_array));
+  btposition_interface_mapf_btPID(&WAM.Jsc, &(WAM.d_jpos_array));
   /* Joint Control plugin initialization */
   
   
@@ -170,10 +168,10 @@ int InitWAM(char *wamfile)
   }
   WAM.d_pos_array.pid = WAM.d_pos_ctl;
   WAM.d_pos_array.elements = 6;  
-  WAM.Csc.btp = &WAM.Cbtp;
-  WAM.Csc.trj = &WAM.Ctrj;
+
   map_btstatecontrol(&WAM.Csc, WAM.R6pos, WAM.R6vel, WAM.R6acc, 
                       WAM.R6ref, WAM.R6trq, &WAM.dt);
+  btposition_interface_mapf_btPID(&WAM.Csc, &(WAM.d_pos_array));
   /* Control plugin initialization */
   
   init_pwl(&WAM.pth,3,2); //Cartesian move path
@@ -1037,21 +1035,6 @@ void ServiceContinuousTeach()
   evalDL(&(WAM.cteach));
 }
 
-ct_traj* LoadContinuousTeach(char* filename)
-{
-  vectray *vr;
-  ct_traj* ct;
-  //
-  ct = (ct_traj*)malloc(sizeof(ct_traj));
-  read_csv_file_vr(filename,&vr);
-
-  create_ct(ct,vr);
-  
-  //write_csv_file_vr("test",ct->pwl->vr);
-  //WAM.Jsc.trj = &WAM.Jbtt;
-  bttrajectory_interface_mapf_ct(WAM.Jsc.trj,ct);
-  return ct;
-}
 
 
 

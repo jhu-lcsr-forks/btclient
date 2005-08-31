@@ -107,7 +107,7 @@ void setprofile_traptrj(bttraptrj *traj, btreal vel, btreal acc);
 */
 typedef struct btposition_interface_struct
 {
-  void *pos_reg;
+  void *dat;
   
   //vect_n* (*init)(void *dat, vect_n* q, vect_n* qref);
   vect_n* (*eval)(struct btposition_interface_struct* btp);
@@ -154,27 +154,18 @@ typedef struct bttrajectory_interface_struct
   int state;
   pthread_mutex_t mutex;
 }bttrajectory_interface;
+//void init_bttrj(bttrajectory_interface *btt);
 void mapdata_bttrj(bttrajectory_interface *btt, vect_n* qref, double *dt);
+void mapobj_bttrj(bttrajectory_interface *btt,void* dat,void* reset,void* eval,void* getstate);
+
 
 vect_n* eval_bttrj(bttrajectory_interface *btt);
-
 int prep_bttrj(bttrajectory_interface *btt,vect_n* q, btreal vel, btreal acc);
 int start_bttrj(bttrajectory_interface *btt);
 int stop_bttrj(bttrajectory_interface *btt);
 
 
-/*           
-bttrajectory_interface * new_bttrajectory();
-//setup
-void setpath_bttrj(bttrajectory_interface *trj,void *crv_dat, void *initfunc, void *evalfunc);
-void settraj_bttrj(bttrajectory_interface *trj,void *trj_dat, void *initfunc, void *evalfunc);
 
-//use
-vect_n* eval_bttrj(bttrajectory_interface *trj,btreal dt);
-int start_bttrj(bttrajectory_interface *trj);
-
-int getstate_bttrj(bttrajectory_interface *trj);
-void stop_bttrj(bttrajectory_interface *trj);*/
 /*================================================State Controller object====================*/
 /*! \brief A state controller for switching between position control and torque control
 
@@ -192,8 +183,8 @@ typedef struct
   vect_n* q,*dq,*ddq,*qref; //!< Internal buffer for position and reference position
   double *dt;
   double last_dt; //history: the last time step used.
-  btposition_interface* btp;
-  bttrajectory_interface *trj;
+  btposition_interface btp;
+  bttrajectory_interface btt;
   int error; //nonzero if there are any errors
 
   pthread_mutex_t mutex;
@@ -201,34 +192,12 @@ typedef struct
 void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq, 
                    vect_n* qref, vect_n* t, double *dt);
 int init_bts(btstatecontrol *sc);
-int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory_interface *trj);
+//int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory_interface *trj);
 vect_n* eval_bts(btstatecontrol *sc);
 int setmode_bts(btstatecontrol *sc, int mode);
 int prep_trj_bts(btstatecontrol *sc,btreal vel, btreal acc);
 int start_trj_bts(btstatecontrol *sc);
 int stop_trj_bts(btstatecontrol *sc);
-/********  Generic (simple) default implementation for virtual functions ******/
-/**
-
-pid_pos_ctl
-
-
-btstatecontrol* new_default_statecontrol()
-{
-	malloc(sizeof(btstatecontrol)
-	init_bts()
-	
-	
-	
-}
-
-
-
-
-
-
-*/
-
 
 
 #ifdef __cplusplus

@@ -125,7 +125,7 @@ btreal lastresult_btPID(btPID *pid);
 void btposition_interface_pause_btPID(struct btposition_interface_struct* btp);
 void btposition_interface_reset_btPID(struct btposition_interface_struct* btp);
 vect_n* btposition_interface_eval_btPID(struct btposition_interface_struct* btp);
-void btposition_interface_mapf_btPID(btposition_interface* btp, btPID_array *pid);
+void btposition_interface_mapf_btPID(btstatecontrol *sc, btPID_array *pid);
 /*================================================Trajectory stuff================================*/
 
 typedef struct 
@@ -138,6 +138,7 @@ typedef struct
 }ct_traj;
 
 void create_ct(ct_traj *trj,vectray *vr);
+int readfile_ct(ct_traj* ct,char* filename);
 vect_n* init_ct(ct_traj *trj);
 vect_n* eval_ct(ct_traj *trj, btreal dt);
 
@@ -146,7 +147,7 @@ int bttrajectory_interface_getstate_ct(struct bttrajectory_interface_struct *btt
 vect_n* bttrajectory_interface_reset_ct(struct bttrajectory_interface_struct *btt);
 vect_n* bttrajectory_interface_eval_ct(struct bttrajectory_interface_struct *btt);
 
-void bttrajectory_interface_mapf_ct(bttrajectory_interface *btt,ct_traj *trj);
+void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj);
 
 
 

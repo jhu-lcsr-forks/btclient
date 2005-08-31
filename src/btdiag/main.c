@@ -117,6 +117,7 @@ int useTRC          = FALSE;
 
 wam_struct *wam;
 SC_move_list ml;
+ct_traj ct;
 //extern wam_struct WAM;  // this is a hack that will be resolved - sc
 extern int isZeroed;
 static RT_TASK *mainTask;
@@ -636,7 +637,7 @@ void RenderScreen() //{{{
     mvprintw(line, column_offset , "state:%d Kp:%+8.4f Kd:%+8.4f Ki:%+8.4f e:%+8.4f last:%+8.4f",wam->d_jpos_ctl[0].state, wam->d_jpos_ctl[0].Kp, 
              wam->d_jpos_ctl[0].Kd, wam->d_jpos_ctl[0].Ki, wam->d_jpos_ctl[0].e, wam->d_jpos_ctl[0].lastresult);
     ++line;  
-    mvprintw(line, column_offset , "SCmode:%d TrjState:%d ", wam->Jsc.mode,wam->Jsc.trj->state);
+    mvprintw(line, column_offset , "SCmode:%d TrjState:%d ", wam->Jsc.mode,wam->Jsc.btt.state);
     ++line; 
     mptr = T_to_W_trans_bot(&(wam->robot));
     
@@ -746,12 +747,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         SCsetmode(&(wam->sc[Mid]), SCMODE_TORQUE);
       }
       break;
+      /*
     case 'H': // Cartesian controller on
       set_v3(wam->Cref,wam->Cpos);
       fer(cnt, 3) {
         start_btPID(&(wam->pid[cnt]));
       }
-      break;
+      break;*/
     case 'h': // Cartesian controller off
       fer(cnt, 3) {
         stop_btPID(&(wam->pid[cnt]));
@@ -951,10 +953,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         DecodeDL("teachpath","teach.csv",0);
         
     break;
+    case 'H':
+        readfile_ct(&ct,"teach.csv");
+        bttrajectory_interface_mapf_ct(&wam->Jsc,&ct);
+        break;
+        
     case 'U':
-        LoadContinuousTeach("teach.csv");
         prep_trj_bts(&wam->Jsc,0.5,0.5);
-        while (wam->Jsc.trj->state != BTTRAJ_READY){
+        while (wam->Jsc.btt.state != BTTRAJ_READY){
           usleep(100000);
         }
         //wam->Jsc.trj->state = BTTRAJ_READY;

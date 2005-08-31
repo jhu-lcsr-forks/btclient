@@ -342,12 +342,12 @@ void getsaturation_btPID(btPID *pid, btreal *saturation)
       pthread_mutex_unlock(&(pid->mutex)),"getsaturation_btPID unlock mutex failed");
 }
 /************************* btPID interface functions ***************************/
-void btposition_interface_mapf_btPID(btposition_interface* btp, btPID_array *pid)
+void btposition_interface_mapf_btPID(btstatecontrol *sc, btPID_array *pid)
 {
-  btp->eval = btposition_interface_eval_btPID;
-  btp->reset = btposition_interface_reset_btPID;
-  btp->pause = btposition_interface_pause_btPID;
-  btp->pos_reg = pid;
+  mapposition_bts(sc,(void*) pid,
+                     btposition_interface_reset_btPID,
+                     btposition_interface_eval_btPID,
+                     btposition_interface_pause_btPID);
 }
 
 vect_n* btposition_interface_eval_btPID(struct btposition_interface_struct* btp)
@@ -356,7 +356,7 @@ vect_n* btposition_interface_eval_btPID(struct btposition_interface_struct* btp)
   btPID* this;
   int cnt;
   
-  pids = (btPID_array*)btp->pos_reg;
+  pids = (btPID_array*)btp->dat;
   
   for (cnt = 0; cnt < pids->elements; cnt++){
     this = &(pids->pid[cnt]);
@@ -374,7 +374,7 @@ void btposition_interface_reset_btPID(struct btposition_interface_struct* btp)
   btPID_array *pids;
   int cnt;
   
-  pids = (btPID_array*)btp->pos_reg;
+  pids = (btPID_array*)btp->dat;
   
   for (cnt = 0; cnt < pids->elements; cnt++){
     start_btPID(&(pids->pid[cnt]));
@@ -386,7 +386,7 @@ void btposition_interface_pause_btPID(struct btposition_interface_struct* btp)
   btPID_array *pids;
   int cnt;
   
-  pids = (btPID_array*)btp->pos_reg;
+  pids = (btPID_array*)btp->dat;
   
   for (cnt = 0; cnt < pids->elements; cnt++){
     stop_btPID(&(pids->pid[cnt]));
@@ -416,6 +416,15 @@ void create_ct(ct_traj *trj,vectray *vr)
   
   init_pwl_from_vectray(trj->pwl,vr);
   
+}
+int readfile_ct(ct_traj* ct,char* filename)
+{
+  vectray *vr;
+
+  read_csv_file_vr(filename,&vr);
+  create_ct(ct,vr);
+  destroy_vr(vr);
+  return 0;
 }
 vect_n* init_ct(ct_traj *trj)
 {
@@ -457,13 +466,16 @@ vect_n* bttrajectory_interface_eval_ct(struct bttrajectory_interface_struct *btt
   ct = (ct_traj*)btt->dat;
   return ds_pwl(ct->pwl,*(btt->dt));
 }
-void bttrajectory_interface_mapf_ct(bttrajectory_interface *btt,ct_traj *trj)
+
+void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj)
 {
-  btt->reset = bttrajectory_interface_reset_ct;
-  btt->eval = bttrajectory_interface_eval_ct;
-  btt->getstate = bttrajectory_interface_getstate_ct;
-  btt->dat = trj;
+  maptrajectory_bts(sc,(void*) trj,
+                       bttrajectory_interface_reset_ct,
+                       bttrajectory_interface_eval_ct,
+                       bttrajectory_interface_getstate_ct);
+
 }
+/** \bug No error checking or error return*/
 
 
 /******************************************************************************/
