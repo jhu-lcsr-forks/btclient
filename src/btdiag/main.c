@@ -118,6 +118,9 @@ int useTRC          = FALSE;
 wam_struct *wam;
 SC_move_list ml;
 ct_traj ct;
+vectray *vr;
+via_trj vt[7];
+via_trj_array vtray;
 //extern wam_struct WAM;  // this is a hack that will be resolved - sc
 extern int isZeroed;
 static RT_TASK *mainTask;
@@ -634,8 +637,8 @@ void RenderScreen() //{{{
     ++line;  
     mvprintw(line, column_offset , "dt:%+8.4f ", wam->dt);
     ++line;  
-    mvprintw(line, column_offset , "state:%d Kp:%+8.4f Kd:%+8.4f Ki:%+8.4f e:%+8.4f last:%+8.4f",wam->d_jpos_ctl[0].state, wam->d_jpos_ctl[0].Kp, 
-             wam->d_jpos_ctl[0].Kd, wam->d_jpos_ctl[0].Ki, wam->d_jpos_ctl[0].e, wam->d_jpos_ctl[0].lastresult);
+    mvprintw(line, column_offset , "state:%d idx:%d n:%d acc:%+8.4f t:%+8.4f  t_acc:%+8.4f t_vel:%+8.4f",
+                vt[0].state,vt[0].idx,vt[0].n, vt[0].acc,vt[0].t, vt[0].t_acc, vt[0].t_vel);
     ++line;  
     mvprintw(line, column_offset , "SCmode:%d TrjState:%d ", wam->Jsc.mode,wam->Jsc.btt.state);
     ++line; 
@@ -954,8 +957,16 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         
     break;
     case 'H':
-        readfile_ct(&ct,"teach.csv");
-        bttrajectory_interface_mapf_ct(&wam->Jsc,&ct);
+        //readfile_ct(&ct,"teach.csv");
+        //bttrajectory_interface_mapf_ct(&wam->Jsc,&ct);
+        read_csv_file_vr("teach.csv",&vr);
+        vtray.elements = 7;
+        vtray.trj = vt;
+        fer(cnt,7){
+          SetAcc_vt(&(vtray.trj[cnt]),0.5);
+          vtray.trj[cnt].vr = vr;
+        }
+        bttrajectory_interface_mapf_vt(&wam->Jsc,&vtray);
         break;
         
     case 'U':
