@@ -178,7 +178,8 @@ typedef struct
   double t0,q0,v0;
   double acc,vel;
   double last_vel;
-  
+  double last_cmd; //added for temp debugging
+  double last_et;//added for temp debugging
   
   vectray *vr; //Pointer to a trajectory file
   int row; //Present row of the trajectory file
@@ -187,11 +188,20 @@ typedef struct
   
 }via_trj;
 
+typedef struct
+{
+  via_trj* trj;
+  int elements;
+}via_trj_array;
 
+void SetAcc_vt(via_trj *trj,double acc);
 double eval_via_trj(via_trj *trj,double dt);
-void start_via_trj(via_trj *trj,double start,int n,int col,double acc);
+double start_via_trj(via_trj *trj,int col);
 void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double v_prev, double v_next, double seg_acc, int end);
-
+int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt);
+vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt);
+vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt);
+void bttrajectory_interface_mapf_vt(btstatecontrol *sc,via_trj_array *trj);
 
 /*================================================Ramp object================================*/
 

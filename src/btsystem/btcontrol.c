@@ -492,15 +492,15 @@ void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj)
 
 
 */
-void start_via_trj(via_trj *trj,double start,int n,int col,double acc)
+double start_via_trj(via_trj *trj,int col)
 {
-    double Dt,Dq,Dv,Dt_next,Dq_next,Dv_next;
+    double Dt,Dq,Dv,Dt_next,Dq_next,Dv_next,ret;
 
     trj->idx = 0;
-    trj->n = n;
+    trj->n = numrows_vr(trj->vr)-2;
     trj->col = col;
-    setval_vn(idx_vr(trj->vr,0),col,start); //force starting point to be our current point
-    trj->trj_acc = acc;
+    ret = getval_vn(idx_vr(trj->vr,0),col); //force starting point to be our current point
+    
 
     trj->segment = 0;//acc first
 
@@ -519,13 +519,16 @@ void start_via_trj(via_trj *trj,double start,int n,int col,double acc)
     trj->q0 = getval_vn(idx_vr(trj->vr,trj->idx),trj->col);
     trj->v0 = 0;
     trj->state = BTTRAJ_RUN;
-
+    return ret;
     /*syslog(LOG_ERR, "col=%d idx=%d vel=%f t_vel=%f t_acc=%f q0=%f v0=%f t=%f t0=%f q1=%f q2=%f t1=%f t2=%f",
            trj->col,trj->idx,trj->vel,trj->t_vel,trj->t_acc,
            trj->q0,trj->v0,trj->t,trj->t0,(trj->tf)[trj->idx][trj->col], (trj->tf)[trj->idx+1][trj->col],
                 (trj->tf)[trj->idx][0], (trj->tf)[trj->idx+1][0]); */
 }
-
+void SetAcc_vt(via_trj *trj,double acc)
+{
+  trj->trj_acc = acc;
+}
 double eval_via_trj(via_trj *trj,double dt)
 {
     double Dt,Dq,Dv,Dt_next,Dq_next,Dv_next,acc_next,t_acc_next,end,et,cmd;
@@ -616,6 +619,8 @@ double eval_via_trj(via_trj *trj,double dt)
 
     }
     //syslog(LOG_ERR, "VIA %d %d %f", trj->idx, trj->col, cmd);
+    trj->last_et = et;
+    trj->last_cmd = cmd;
     return cmd;
 
 }
@@ -666,6 +671,53 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
 }
 
 
+int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt)
+{
+  
+  int cnt;
+  int ret;
+  via_trj_array* vt;
+  vt = (via_trj_array*)btt->dat;
+  ret = BTTRAJ_DONE;
+  for (cnt = 0;cnt<vt->elements;cnt++){
+    if (vt->trj[cnt].state == BTTRAJ_RUN) 
+      ret = BTTRAJ_RUN;
+  }
+  return ret;
+}
+
+vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt)
+{
+  double ret;
+  int cnt;
+  via_trj_array* vt;
+  vt = (via_trj_array*)btt->dat;
+  for (cnt = 0;cnt<vt->elements;cnt++){
+    setval_vn(btt->qref,cnt,start_via_trj(&(vt->trj[cnt]),cnt));
+  }
+  return btt->qref;
+}
+
+vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt)
+{
+  double ret;
+  int cnt;
+  via_trj_array* vt;
+  vt = (via_trj_array*)btt->dat;
+  for (cnt = 0;cnt<vt->elements;cnt++){
+    setval_vn(btt->qref,cnt,eval_via_trj(&(vt->trj[cnt]),*(btt->dt)));
+  }
+  return btt->qref;
+}
+
+void bttrajectory_interface_mapf_vt(btstatecontrol *sc,via_trj_array *trj)
+{
+  maptrajectory_bts(sc,(void*) trj,
+                       bttrajectory_interface_reset_vt,
+                       bttrajectory_interface_eval_vt,
+                       bttrajectory_interface_getstate_vt);
+
+}
 
 /**************************** btramp functions **********************************/
 /** Initialize the data for a btramp object.
