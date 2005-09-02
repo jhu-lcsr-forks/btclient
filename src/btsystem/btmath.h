@@ -113,11 +113,13 @@ add in bounds checking and verbose error reporting
 */
 /*================================*/
 typedef struct barrett_vect_n{
+  void *vtable;  //filler for D compatibility
+  void *monitor; //filler for D compatibility
   struct barrett_vect_n *ret;  //pointer to return data for stacked operations
   int n;      //size of vector
   btreal *q;  //pointer to data
-  pthread_mutex_t mutex;
-  int idx; //Listing in btptrs garbage collection structure
+  //pthread_mutex_t mutex;
+  //int idx; //Listing in btptrs garbage collection structure
 }vect_n;
 /*================================*/
 vect_n *new_vn(int size); //allocate an n-vector

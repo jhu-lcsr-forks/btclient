@@ -225,7 +225,7 @@ vect_n * new_vn(int size) //allocate an n-vector
   
 
   n = (vect_n*)vmem;
-  n->idx = addbtptr(vmem);
+  addbtptr(vmem);
   n->n = size;
 
   n->ret = (vect_n*)(vmem + sizeof(vect_n));
@@ -1202,7 +1202,7 @@ int read_csv_file_vr(char *fileName, vectray **vr)
     fill_vn(tmp_v,0.0);
     csvto_vn(tmp_v,line);
     append_vr(*vr,tmp_v);
-    syslog(LOG_ERR, "Creating Vector: [%s]", sprint_vn(buff,idx_vr(*vr,row)));
+    //syslog(LOG_ERR, "Creating Vector: [%s]", sprint_vn(buff,idx_vr(*vr,row)));
     ++row;
 
   }

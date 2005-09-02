@@ -637,8 +637,8 @@ void RenderScreen() //{{{
     ++line;  
     mvprintw(line, column_offset , "dt:%+8.4f ", wam->dt);
     ++line;  
-    mvprintw(line, column_offset , "state:%d idx:%d n:%d acc:%+8.4f t:%+8.4f  t_acc:%+8.4f t_vel:%+8.4f",
-                vt[0].state,vt[0].idx,vt[0].n, vt[0].acc,vt[0].t, vt[0].t_acc, vt[0].t_vel);
+    mvprintw(line, column_offset , "state:%d idx:%d n:%d acc:%+8.4f et:%+8.4f  cmd:%+8.4f q0:%+8.4f",
+                vt[0].state,vt[0].idx,vt[0].n, vt[0].acc,vt[0].last_et, vt[0].last_cmd, vt[0].q0);
     ++line;  
     mvprintw(line, column_offset , "SCmode:%d TrjState:%d ", wam->Jsc.mode,wam->Jsc.btt.state);
     ++line; 
@@ -960,10 +960,10 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         //readfile_ct(&ct,"teach.csv");
         //bttrajectory_interface_mapf_ct(&wam->Jsc,&ct);
         read_csv_file_vr("teach.csv",&vr);
-        vtray.elements = 7;
+        vtray.elements = numelements_vr(vr)-1;
         vtray.trj = vt;
-        fer(cnt,7){
-          SetAcc_vt(&(vtray.trj[cnt]),0.5);
+        fer(cnt,vtray.elements){
+          SetAcc_vt(&(vtray.trj[cnt]),1.0);
           vtray.trj[cnt].vr = vr;
         }
         bttrajectory_interface_mapf_vt(&wam->Jsc,&vtray);
