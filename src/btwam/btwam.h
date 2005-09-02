@@ -156,7 +156,7 @@ typedef struct btwam_struct{
   btpath_pwl pth;
   
   //Cartesian Controllers
-  vect_n *R6pos,*R6vel,*R6acc,*R6ref,*R6trq;
+  vect_n *R6pos,*R6vel,*R6acc,*R6ref,*R6force;
   double dt;
   btstatecontrol Csc;
   btposition_interface Cbtp;

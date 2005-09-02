@@ -162,7 +162,7 @@ int InitWAM(char *wamfile)
   
   
   /* Control plugin initialization */
-  for (cnt = 0; cnt < 6; cnt ++){
+  for (cnt = 0; cnt < 3; cnt ++){
     init_btPID(&(WAM.d_pos_ctl[cnt]));
     setgains_btPID(&(WAM.d_pos_ctl[cnt]),2000.0,5.0,0.0);
   }
@@ -516,13 +516,7 @@ void WAMControlThread(void *data)
     // Joint space stuff
 
     eval_bts(&(WAM.Jsc));
-    /*
-    for (cnt = 0; cnt < WAM.num_actuators; cnt++) //Calculate control torque for each joint.
-        {
-            Mid = MotorID_From_ActIdx(cnt); //idx = joint we are controlling
-            setval_vn(WAM.Jtrq,Mid,SCevaluate(&(WAM.sc[Mid]),getval_vn(WAM.Jpos,Mid), dt));
-        }
-*/
+   
     // Cartesian space stuff
     set_vn(WAM.robot.q,WAM.Jpos);
 
@@ -530,26 +524,11 @@ void WAMControlThread(void *data)
     eval_fd_bot(&WAM.robot);
     
     set_v3(WAM.Cpos,T_to_W_bot(&WAM.robot,WAM.Cpoint));
-    R_to_q(WAM.qact,T_to_W_trans_bot(&WAM.robot));
+    set_vn(WAM.R6pos,(vect_n*)WAM.Cpos);
     
-    //Cartesian trajectory generator
-    if (WAM.trj.state){
-      WAM.F = evaluate_traptrj(&WAM.trj,dt);
-      set_vn((vect_n*)WAM.Cref,getval_pwl(&WAM.pth, WAM.F));
-    }
-    //Cartesian position constraint
-    for (cnt = 0; cnt < 3; cnt ++){
-      setval_v3(WAM.Cforce,cnt,eval_btPID(&(WAM.pid[cnt]),getval_v3(WAM.Cpos,cnt), getval_v3(WAM.Cref,cnt), dt));
-    }
-    //Cartesian angular constraint
-    set_q(WAM.qaxis,mul_q(WAM.qact,conj_q(WAM.qref)));
-    set_q(WAM.forced,force_closest_q(WAM.qaxis));
-    
-    WAM.qerr =GCdist_q(WAM.qref,WAM.qact); 
-    set_v3(WAM.Ctrq,scale_v3(eval_err_btPID(&(WAM.pid[3]),WAM.qerr,dt),GCaxis_q(WAM.Ctrq,WAM.qref,WAM.qact)));
-    
-    
-    
+    eval_bts(&(WAM.Csc));
+    set_v3(WAM.Cforce,(vect_3*)R6force,0,3,3);
+    setrange_vn((vect_n*)WAM.Ctrq,R6force);
     //Force application
     apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
     
@@ -787,28 +766,6 @@ void CartesianMoveWAM(vect_n *pos)
     usleep(50000);
     //if ((count % 1000) == 0)  syslog(LOG_ERR,"waited 1 second to reach position");
   }
-}
-void CartesianPlayWAM(char* filename)
-{/*
-  vectray *vr,*oldpthvr;
-  int cnt,end;
-  //read csv file
-  read_csv_file_vr(filename,&vr);
-  //move to start point
-  CartesianMoveWAM(idx_vr(vr,0));
-  //add play points
-  clear_pwl(&WAM.pth);
-  if (sizeof_vr(vr) > sizeof_vr(WAM.pth.vr)){
-    syslog(LOG_ERR,"CartesianPlayWAM:playlist array is too big");
-    return;
-  }
-  end = sizeof_vr(vr);
-  for (cnt = 0; cnt < end; cnt ++){
-    add_point_pwl(&WAM.pth,idx_vr(vr,0));
-  }
-  //move to start
-  //play
-*/
 }
 
 

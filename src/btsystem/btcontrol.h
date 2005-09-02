@@ -193,11 +193,21 @@ typedef struct
   via_trj* trj;
   int elements;
 }via_trj_array;
-
+/*internal*/
 void SetAcc_vt(via_trj *trj,double acc);
 double eval_via_trj(via_trj *trj,double dt);
 double start_via_trj(via_trj *trj,int col);
 void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double v_prev, double v_next, double seg_acc, int end);
+
+/*API*/
+//via_trj_array* read_file_vt(char* filename);
+//via_trj_array* new_vt(int num_columns, int max_points);
+//int add_point_vt(via_trj_array* vt,double t,vect_n *pt);
+//int add_point_at_vel_vt(via_trj_array* vt,double vel,vect_n *pt);//return index of point
+//del_point(via_trj_array* vt,int idx);
+//register_vt(btstatecontrol *sc,via_trj_array *trj);
+
+/* Interface */
 int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt);
 vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt);
 vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt);

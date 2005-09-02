@@ -147,7 +147,8 @@ void mapdata_bttrj(bttrajectory_interface *btt, vect_n* qref, double *dt)
   btt->dt = dt;
 }
 
-
+/** \bug Should the trajectories themselves handle moveing to the start of the 
+trajectory? (I think so) */
 vect_n* eval_bttrj(bttrajectory_interface *btt)
 {
   if (btt->state == BTTRAJ_INPREP)
