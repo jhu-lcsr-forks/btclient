@@ -215,8 +215,8 @@ int main(int argc, char **argv)
   mainTask = rt_task_init(nam2num("main01"), 0, 0, 0); /* defaults */
 
   if(test_and_log(   
-    InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),"Fail
-ed to initialize system"))
+    InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
+    "Failed to initialize system"))
     {return -1;}
 
   /* Check and handle any command line arguments */

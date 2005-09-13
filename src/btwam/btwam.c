@@ -147,6 +147,7 @@ int InitWAM(char *wamfile)
   WAM.R6vel = new_vn(6);
   WAM.R6acc = new_vn(6);
   WAM.R6trq = new_vn(6);
+  WAM.R6force = new_vn(6);
   
   /* Joint Control plugin initialization */
   for (cnt = 0; cnt < 7; cnt ++){
@@ -527,8 +528,8 @@ void WAMControlThread(void *data)
     set_vn(WAM.R6pos,(vect_n*)WAM.Cpos);
     
     eval_bts(&(WAM.Csc));
-    set_v3(WAM.Cforce,(vect_3*)R6force,0,3,3);
-    setrange_vn((vect_n*)WAM.Ctrq,R6force);
+    set_v3(WAM.Cforce,(vect_3*)WAM.R6force);
+    setrange_vn((vect_n*)WAM.Ctrq,WAM.R6force,0,3,3);
     //Force application
     apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
     

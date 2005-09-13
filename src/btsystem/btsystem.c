@@ -51,6 +51,7 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <pthread.h>
 //th041216#include <sys/syspage.h>
 
 /*==============================*

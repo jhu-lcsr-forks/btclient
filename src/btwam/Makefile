@@ -6,9 +6,9 @@ CC = gcc
 PATH_INCLUDE = -I./include -I/usr/realtime/include -I../btsystem
 PATH_INSTALL = ../..
 #Replace -DUSE_FUSION with -DUSE_RTAI31
-CFLAGS += -g -DUSE_RTAI31 -static ${PATH_INCLUDE}
+CFLAGS += -g -DUSE_RTAI31  ${PATH_INCLUDE}
 #Replace -lrtai with -llxrt
-LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L./lib -lm -lpthread -llxrt -lntcan
+LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L/usr/local/lib -L./lib -lm -lpthread -llxrt -lntcan
 
 #Make *.o files rebuild on any change to *.h
 $(LIB_OBJS) : $(INCL_FILES)
