@@ -25,7 +25,7 @@
 #include "stdio.h"
 #include "syslog.h"
 #include "btwam.h"
-
+#define TWOPI 6.283185
 int gimbalsInit = 0;
 double gimbalsOffset[3];
 double gimbalsGain[3];
@@ -47,9 +47,9 @@ int getGimbalsAngles(double *gimbals)
 
     /* Extract the gimbals position information from the temp array */
     /* Gimbals position is returned in Q4.12, so we must divide by 2^12 to get radians */
-    gimbals[0] = WAM->act[4].puck.position / 4096.0;// * gimbalsGain[0] + gimbalsOffset[0];
-    gimbals[1] = WAM->act[5].puck.position / 4096.0;// * gimbalsGain[1] + gimbalsOffset[1];
-    gimbals[2] = WAM->act[6].puck.position / 4096.0;// * gimbalsGain[2] + gimbalsOffset[2];
+    gimbals[0] = TWOPI * act[0].puck.position / act[0].motor.counts_per_rev;// * gimbalsGain[0] + gimbalsOffset[0];
+    gimbals[1] = TWOPI * act[1].puck.position / act[1].motor.counts_per_rev;// * gimbalsGain[1] + gimbalsOffset[1];
+    gimbals[2] = TWOPI * act[2].puck.position / act[2].motor.counts_per_rev;// * gimbalsGain[2] + gimbalsOffset[2];
     
     return(0); /* Return success */
 }
@@ -68,6 +68,9 @@ int initGimbals(void)
         usleep(100000);
         setProperty(0,5,DIG0,FALSE,1);
         setProperty(0,5,DIG1,FALSE,1);
+        WAM->act[4].motor.counts_per_rev = 4096.0;
+        WAM->act[5].motor.counts_per_rev = 4096.0;
+        WAM->act[6].motor.counts_per_rev = 4096.0;
 #if 0          
         /* Read the gain/offset information from the gimbals.dat file */
         if((inFile = fopen("gimbals.dat", "r")) == NULL)
