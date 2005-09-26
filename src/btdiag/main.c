@@ -119,8 +119,8 @@ wam_struct *wam;
 SC_move_list ml;
 ct_traj ct;
 vectray *vr;
-via_trj vt[7];
-via_trj_array vtray;
+
+via_trj_array *vta;
 //extern wam_struct WAM;  // this is a hack that will be resolved - sc
 extern int isZeroed;
 static RT_TASK *mainTask;
@@ -959,14 +959,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     case 'H':
         //readfile_ct(&ct,"teach.csv");
         //bttrajectory_interface_mapf_ct(&wam->Jsc,&ct);
-        read_csv_file_vr("teach.csv",&vr);
-        vtray.elements = numelements_vr(vr)-1;
-        vtray.trj = vt;
-        fer(cnt,vtray.elements){
-          SetAcc_vt(&(vtray.trj[cnt]),1.0);
-          vtray.trj[cnt].vr = vr;
-        }
-        bttrajectory_interface_mapf_vt(&wam->Jsc,&vtray);
+        vta = read_file_vta("teach.csv");
+        register_vta(&wam->Jsc,vta);
         break;
         
     case 'U':
