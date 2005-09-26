@@ -47,6 +47,7 @@
 #include "btcontrol.h"
 #include "btpath.h"
 #include "btlogger.h"
+#include "btos.h"
 
 
 #define WAM2004
