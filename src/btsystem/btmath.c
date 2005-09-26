@@ -1119,7 +1119,7 @@ BTINLINE int append_vr(vectray *ray, vect_n* v)
  Adds a point to the vectray if room is available and returns
  a pointer to a vector to copy to it.
 */
-BTINLINE vectray * vn_append_vr(vectray *ray)
+BTINLINE vect_n * vn_append_vr(vectray *ray)
 {
   
   if (ray->num_rows < ray->max_rows){
@@ -1136,13 +1136,13 @@ BTINLINE vectray * vn_append_vr(vectray *ray)
  Insert a point to the vectray if room is available and returns
  a pointer to a vector to copy to it.
 */
-BTINLINE vectray * vn_insert_vr(vectray *ray,int idx)
+BTINLINE vect_n * vn_insert_vr(vectray *ray,int idx)
 {
   int cnt;
   if (ray->num_rows < ray->max_rows){
     //set_vn(idx_vr(ray,ray->num_rows),v);
     ray->num_rows++;
-    for(cnt = ray->num_rows-1;cnt > idx idx;cnt--)
+    for(cnt = ray->num_rows-1;cnt > idx;cnt--)
     {
       set_vn(lval_vr(ray,cnt),rval_vr(ray,cnt-1));
     }
@@ -1207,8 +1207,8 @@ vectray * resize_vr(vectray *vr,int max_rows)
   vectray *newvr;
   
   newvr = new_vr(vr->n,max_rows);
-  copy_sub_vr(newvr,vr,0,0,vr->maxrows,0,0,vr->n);
-  destroy(vr);
+  copy_sub_vr(newvr,vr,0,0,vr->max_rows,0,0,vr->n);
+  destroy_vr(vr);
   return newvr;
 }
 
@@ -1229,7 +1229,7 @@ btreal arclength_vr(vectray *ray)
   int cnt;
   for(cnt = 1;cnt < ray->num_rows;cnt++)
   {
-    len += norm_vn(lval_vr(ray,cnt-1),rval_vr(ray,cnt));
+    len += norm_vn(sub_vn(lval_vr(ray,cnt-1),rval_vr(ray,cnt)));
   }
   return len;
 }

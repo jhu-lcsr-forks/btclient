@@ -240,7 +240,8 @@ void copy_sub_vr(vectray *dest, vectray *src, int src_r, int dest_r, int rows,
                                               int src_c, int dest_c, int columns);
 
 int append_vr(vectray *ray, vect_n* v);
-vectray * vn_append_vr(vectray *ray)
+vect_n* vn_append_vr(vectray *ray);
+vect_n* vn_insert_vr(vectray *ray,int idx);
 void insertbefore_vr(vectray *ray, vect_n* v);
 void insertafter_vr(vectray *ray, vect_n* v);
 int delete_vr(vectray *ray, int idx);

@@ -9,11 +9,7 @@
 #include <stdlib.h>
 #include "btos.h"
 
-#ifdef NULL_PTR_GUARD
-  #define BTPTR_CHK(x,y) btptr_ok((x),(y));
-#else
-  #define BTPTR_CHK(x,y) 
-#endif
+
 
 /** Null pointer access flag */
 int btptr_ok(void *ptr,char *str)

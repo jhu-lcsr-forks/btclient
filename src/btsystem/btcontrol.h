@@ -201,7 +201,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
 
 /*API*/
 //via_trj_array* malloc_new_vta(int num_columns);
-via_trj_array* read_file_vta(char* filename);
+via_trj_array* read_file_vta(char* filename,int extrapoints);
 via_trj_array* new_vta(int num_columns,int max_rows);
 void set_acc_vta(via_trj_array* vt,btreal acc);
 int add_point_vta(via_trj_array* vt,vect_n *pt);
@@ -217,41 +217,7 @@ int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt
 vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt);
 vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt);
 void register_vta(btstatecontrol *sc,via_trj_array *vt);
-/*================================================Ramp object================================*/
 
-enum btramp_state {BTRAMP_MAX = 0, BTRAMP_MIN, BTRAMP_UP, BTRAMP_DOWN, BTRAMP_PAUSE};
-/** Constant acceleration function.
-
-btramp is used to smoothly transition a variable from one value to another over 
-a period of time. It is thread safe. See init_btramp().
-
-Use set_btramp() to change the state and control the 
-btramp object. btramp states are as follows. 
-
-- BTRAMP_MAX = scaler is set to the minimum value  
-- BTRAMP_MIN = scaler is set to the min value each evaluation
-- BTRAMP_UP = Scaler is increased by rate*dt each evaluation. When scaler >= BTRAMP_MAX, 
-the state changes to BTRAMP_MAX
-- BTRAMP_DOWN = Scaler is decreased by rate*dt each evaluation. When scaler >= BTRAMP_MIN, 
-the state changes to BTRAMP_MIN
-- BTRAMP_PAUSE, Default = Scaler is not touched.
-*/
-
-typedef struct 
-{
-  btreal *scaler;
-  btreal min,max;
-  btreal rate; // dscaler/dt units per second
-  int state; 
-  pthread_mutex_t mutex;
-}btramp;
-
-void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate);
-void set_btramp(btramp *r,enum btramp_state state);
-void setrate_btramp(btramp *r,btreal rate);
-btreal get_btramp(btramp *r);
-btreal eval_btramp(btramp *r,btreal dt);
-btreal rate_eval_btramp(btramp *r,btreal dt,btreal rate);
 
 #ifdef __cplusplus
 }

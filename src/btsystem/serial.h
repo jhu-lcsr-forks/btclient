@@ -29,3 +29,4 @@ int serialLook(PORT *port, int *bytesPresent);
 
 /** Set the baud rate */
 int serialSetBaud(PORT *port, long baud);
+

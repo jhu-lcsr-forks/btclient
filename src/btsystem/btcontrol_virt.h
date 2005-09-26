@@ -29,6 +29,45 @@ extern "C"
 #ifndef PI
 #define PI 3.141596
 #endif /*PI*/
+
+/*================================================Ramp object================================*/
+
+enum btramp_state {BTRAMP_MAX = 0, BTRAMP_MIN, BTRAMP_UP, BTRAMP_DOWN, BTRAMP_PAUSE};
+/** Constant acceleration function.
+
+btramp is used to smoothly transition a variable from one value to another over 
+a period of time. It is thread safe. See init_btramp().
+
+Use set_btramp() to change the state and control the 
+btramp object. btramp states are as follows. 
+
+- BTRAMP_MAX = scaler is set to the minimum value  
+- BTRAMP_MIN = scaler is set to the min value each evaluation
+- BTRAMP_UP = Scaler is increased by rate*dt each evaluation. When scaler >= BTRAMP_MAX, 
+the state changes to BTRAMP_MAX
+- BTRAMP_DOWN = Scaler is decreased by rate*dt each evaluation. When scaler >= BTRAMP_MIN, 
+the state changes to BTRAMP_MIN
+- BTRAMP_PAUSE, Default = Scaler is not touched.
+*/
+
+typedef struct 
+{
+  btreal *scaler;
+  btreal min,max;
+  btreal rate; // dscaler/dt units per second
+  int state; 
+  pthread_mutex_t mutex;
+}btramp;
+
+void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate);
+void set_btramp(btramp *r,enum btramp_state state);
+void setrate_btramp(btramp *r,btreal rate);
+btreal get_btramp(btramp *r);
+btreal eval_btramp(btramp *r,btreal dt);
+int getstate_btramp(btramp *r);
+btreal rate_eval_btramp(btramp *r,btreal dt,btreal rate);
+
+
 /**
 Trajectory States
  - -1 = Off
@@ -249,10 +288,11 @@ void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq,
 int init_bts(btstatecontrol *sc);
 //int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory_interface *trj);
 vect_n* eval_bts(btstatecontrol *sc);
+vect_n* eval_trj_bts(btstatecontrol *sc);
 int setmode_bts(btstatecontrol *sc, int mode);
 int prep_trj_bts(btstatecontrol *sc);
 int moveto_bts(btstatecontrol *sc,vect_n* dest);
-int moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc);
+void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc);
 int movestatus(btstatecontrol *sc);
 int start_trj_bts(btstatecontrol *sc);
 int stop_trj_bts(btstatecontrol *sc);

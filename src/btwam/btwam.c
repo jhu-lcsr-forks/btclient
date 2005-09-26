@@ -773,13 +773,13 @@ btreal getGcomp()
  */
 void setGcomp(btreal scale)
 {
-  if (amt == 0.0){
+  if (scale == 0.0){
     WAM.Gcomp = 0;
     set_gravity_bot(&WAM.robot, 0.0);
   }
   else{
     WAM.Gcomp = 1;
-    set_gravity_bot(&WAM.robot, amt);
+    set_gravity_bot(&WAM.robot, scale);
   }
 }
 

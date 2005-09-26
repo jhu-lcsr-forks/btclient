@@ -29,6 +29,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include <syslog.h>
+#include "btmath.h"
 #include "btcontrol.h"
 #include "btos.h"
 #include "btcontrol_virt.h"
@@ -714,10 +715,10 @@ via_trj_array* malloc_new_vta(int num_columns)
 {
   void *vmem;
   via_trj_array* vt;
-  
-  if ((vmem = malloc(sizeof(via_trj_array)+num_columns*sizeof(via_trj))) == NULL)
+  vmem = (void*)malloc(sizeof(via_trj_array) + (size_t)num_columns * sizeof(via_trj));
+  if (vmem == NULL)
   {
-    syslog(LOG_ERR,"new_vt: memory allocation failed, size %d",size);
+    syslog(LOG_ERR,"new_vt: memory allocation failed, size %d",num_columns);
     return NULL;
   }
   
@@ -751,7 +752,7 @@ void set_acc_vta(via_trj_array* vt,btreal acc)
 {
   int cnt;
   for(cnt = 0;cnt < vt->elements;cnt++)
-    SetAcc_vt(&(vt.trj[cnt]),acc);
+    SetAcc_vt(&(vt->trj[cnt]),acc);
 }
 /** Allocate a vta object and vectray objects */
 via_trj_array* new_vta(int num_columns,int max_rows)
@@ -793,7 +794,7 @@ int ins_point_vta(via_trj_array* vt,int idx, vect_n *pt)
   vectray* vr;
   vect_n* vn;
   vr = vt->trj[0].vr;
-  vn = vn_insert_vr(vr);
+  vn = vn_insert_vr(vr,idx);
   if (vn != NULL){
     setrange_vn(vn,pt,1,0,len_vn(vn)-1);
     return 0;
@@ -819,7 +820,7 @@ int scale_vta(via_trj_array* vt,double vel,double acc)
   setval_vn(idx_vr(vr,0),0,0.0);
   
   for(cnt = 1;cnt < numrows_vr(vr);cnt++){
-    arclen += norm_vn(lval_vr(ray,cnt-1),rval_vr(ray,cnt));
+    arclen += norm_vn(sub_vn(lval_vr(vr,cnt-1),rval_vr(vr,cnt)));
     setval_vn(idx_vr(vr,cnt),0,arclen/vel);
   }
   return 0;
@@ -876,90 +877,6 @@ void register_vta(btstatecontrol *sc,via_trj_array *vt)
                     bttrajectory_interface_eval_vt,
                     bttrajectory_interface_getstate_vt);
 }
-/**************************** btramp functions **********************************/
-/** Initialize the data for a btramp object.
- 
-This should be called only once as it allocates memory for a mutex object.
-*/
-void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate)
-{
-  test_and_log(
-    pthread_mutex_init(&(r->mutex),NULL),
-    "Could not initialize  mutex for simple controller.");
-  r->scaler = var;
-  r->min = min;
-  r->max = max;
-  r->rate = rate;
-}
-/** Set the state of a btramp object.
- 
-See btramp for valid values of state.
-*/
-void set_btramp(btramp *r,enum btramp_state state)
-{
-  test_and_log(
-    pthread_mutex_lock(&(r->mutex)),"btramp_up lock mutex failed");
-  r->state = state;
-  test_and_log(
-    pthread_mutex_unlock(&(r->mutex)),"btramp_up unlock mutex failed");
-}
-/** Return the present value of a btramp scaler.
- 
-*/
-btreal get_btramp(btramp *r)
-{
-  return *(r->scaler);
-}
-/** Evaluate a btramp object for time slice dt
- 
-See btramp documentation for object states. Note that BTRAMP_UP and BTRAMP_DOWN 
-will degenerate into BTRAMP_MAX and BTRAMP_MIN respectively. 
-*/
-btreal eval_btramp(btramp *r,btreal dt)
-{
-  test_and_log(
-    pthread_mutex_lock(&(r->mutex)),"eval_btramp lock mutex failed");
-  if (r->state == BTRAMP_MAX)
-  {
-    *(r->scaler) = r->max;
-  }
-  else if (r->state == BTRAMP_MIN)
-  {
-    *(r->scaler) = r->min;
-  }
-  else if (r->state == BTRAMP_UP)
-  {
-    *(r->scaler) += dt*r->rate;
-    if (*(r->scaler) > r->max)
-    {
-      *(r->scaler) = r->max;
-      r->state = BTRAMP_MAX;
-    }
-  }
-  else if (r->state == BTRAMP_DOWN)
-  {
-    *(r->scaler) -= dt*r->rate;
-    if (*(r->scaler) < r->min)
-    {
-      *(r->scaler) = r->min;
-      r->state = BTRAMP_MIN;
-    }
-  }
-  //default case is to do nothing
-  test_and_log(
-    pthread_mutex_unlock(&(r->mutex)),"eval_btramp unlock mutex failed");
-  return *(r->scaler);
-}
-void setrate_btramp(btramp *r,btreal rate)
-{
-  test_and_log(
-    pthread_mutex_lock(&(r->mutex)),"setrate_btramp lock mutex failed");
-    r->rate = rate;
-    test_and_log(
-    pthread_mutex_unlock(&(r->mutex)),"setrate_btramp unlock mutex failed");
-
-}
-/**************************** btramp functions **********************************/
 
 /*======================================================================*
  *                                                                      *

@@ -47,7 +47,7 @@ typedef struct btexit_struct{
   void* fp;
   int num_parms;
   void** parms;
-}
+}btexit_list;
 void register_btexit_function();
 void deregister_btexit_function();
 void btexit();
@@ -57,7 +57,11 @@ void btexit();
 typedef pthread_mutex_t btmutex;
 
 
-
+#ifdef NULL_PTR_GUARD
+  #define BTPTR_CHK(x,y) btptr_ok((x),(y));
+#else
+  #define BTPTR_CHK(x,y) 
+#endif
 
 int btptr_ok(void *ptr,char *str);
 BTINLINE int test_and_log(int ret,const char *str);

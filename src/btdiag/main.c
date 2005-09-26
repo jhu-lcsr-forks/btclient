@@ -114,13 +114,14 @@ int WACKYplay       = FALSE;
 int showWhere       = FALSE;
 int disp_puck       = FALSE;
 int useTRC          = FALSE;
+int gcompToggle = 0;
 
 wam_struct *wam;
 SC_move_list ml;
 ct_traj ct;
 vectray *vr;
 
-via_trj_array *vta;
+via_trj_array *vta = NULL;
 //extern wam_struct WAM;  // this is a hack that will be resolved - sc
 extern int isZeroed;
 static RT_TASK *mainTask;
@@ -139,7 +140,7 @@ bteffect_global myglobal;
 vect_3 *p1,*p2,*p3;
 bthaptic_scene bth;
 btgeom_state pstate;
-btlogger log;
+//btlogger btlog;
 
 
 /*==============================*
@@ -637,9 +638,10 @@ void RenderScreen() //{{{
     ++line;  
     mvprintw(line, column_offset , "dt:%+8.4f ", wam->dt);
     ++line;  
+/*    if (vta != NULL)
     mvprintw(line, column_offset , "state:%d idx:%d n:%d acc:%+8.4f et:%+8.4f  cmd:%+8.4f q0:%+8.4f",
-                vt[0].state,vt[0].idx,vt[0].n, vt[0].acc,vt[0].last_et, vt[0].last_cmd, vt[0].q0);
-    ++line;  
+                vta[0].state,vta[0].idx,vta[0].n, vta[0].acc,vta[0].last_et, vta[0].last_cmd, vta[0].q0);
+  */  ++line;  
     mvprintw(line, column_offset , "SCmode:%d TrjState:%d ", wam->Jsc.mode,wam->Jsc.btt.state);
     ++line; 
     mptr = T_to_W_trans_bot(&(wam->robot));
@@ -798,7 +800,15 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       clear();
       break;
     case 'g': /* Toggle gravity compensation */
-      toggleGcomp();
+      if(gcompToggle){
+        gcompToggle = 0;
+        setGcomp(0.0);
+      }
+      else {
+        gcompToggle = 1;
+        setGcomp(1.0);
+      }
+
       refresh();
       break;
     case 'Z': /* Zero WAM */
@@ -959,12 +969,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     case 'H':
         //readfile_ct(&ct,"teach.csv");
         //bttrajectory_interface_mapf_ct(&wam->Jsc,&ct);
-        vta = read_file_vta("teach.csv");
+        vta = read_file_vta("teach.csv",0);
         register_vta(&wam->Jsc,vta);
         break;
         
     case 'U':
-        prep_trj_bts(&wam->Jsc,0.5,0.5);
+        moveparm_bts(&wam->Jsc,0.5,0.5);
+        prep_trj_bts(&wam->Jsc);
         while (wam->Jsc.btt.state == BTTRAJ_INPREP){
           usleep(100000);
         }
