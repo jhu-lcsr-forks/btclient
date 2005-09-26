@@ -91,14 +91,14 @@ void start_control_threads(int priority, double sample_period, void *function,vo
 
     /* start control_thread - the thread which controls the robot */
   pthread_attr_init(&control_attr);
-  pthread_attr_setinheritsched(&control_attr, PTHREAD_EXPLICIT_SCHED);
+  pthread_attr_setschedpolicy(&control_attr, SCHED_FIFO);
+  pthread_attr_getschedparam(&control_attr, &control_param);
   control_param.sched_priority = priority;
   pthread_attr_setschedparam(&control_attr, &control_param);
   
   shutdown_threads = 0;
   
   pthread_create(&control_thd_id, &control_attr, function, args);
-  sched_setscheduler(control_thd_id, SCHED_FIFO, &control_param);
 
   if (control_thd_id == -1)
   {
