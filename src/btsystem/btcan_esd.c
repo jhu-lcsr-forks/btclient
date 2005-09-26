@@ -499,7 +499,7 @@ int getBusStatus(int bus, long *status)
         if(!err)
         {
             // Parse the reply
-            err = parseMessage(id_in, len_in, data, &id_in, &property_in, &status[id-1]);
+            err = parseMessage(id_in, len_in, data, &id_in, &property_in, &status[id]);
         }
         else syslog(LOG_ERR, "getBusStatus(): canReadMsg returned error");
     }
