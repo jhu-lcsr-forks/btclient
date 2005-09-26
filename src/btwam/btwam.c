@@ -362,91 +362,7 @@ wam_struct * GetWAM()
   return &WAM;
 }
 
-/** Load wam configuration data
- 
-\verbatim
-wam file format
-<motor_position> x7  //matches actuator indexes to motor indexes. See Actangle2Mpos
-<Zero0> x7
-<StopTorque> x7
-<Park0>x7
-<Order> x7
-<Kp> x7
-<Kd> x7
-<Ki> x7
-<saturation> x7
-<Vel> x7
-<Acc> x7
-\endverbatim
-*/
-int LoadWAM(char *wamfile)
-{
-  FILE *in;
-  if ((in = fopen(wamfile, "r")) == NULL)
-  {
-    syslog(LOG_ERR, "Could not open actuator data file: %s", wamfile);
-    return -1;
-  }
 
-  fscanf(in,"%d, %d, %d, %d, %d, %d, %d",&(WAM.motor_position[0]),&(WAM.motor_position[1]),&(WAM.motor_position[2]),&(WAM.motor_position[3]),&(WAM.motor_position[4]),&(WAM.motor_position[5]),&(WAM.motor_position[6]));
-  read_wam_vector(in,(WAM.zero_offsets));
-  read_wam_vector(in,(WAM.stop_torque));
-  read_wam_vector(in,(WAM.park_location));
-  fscanf(in,"%d, %d, %d, %d, %d, %d, %d",&(WAM.zero_order[0]),&(WAM.zero_order[1]),&(WAM.zero_order[2]),&(WAM.zero_order[3]),&(WAM.zero_order[4]),&(WAM.zero_order[5]),&(WAM.zero_order[6]));
-  read_wam_vector(in,(WAM.Kp));
-  read_wam_vector(in,(WAM.Kd));
-  read_wam_vector(in,(WAM.Ki));
-  read_wam_vector(in,(WAM.saturation));
-  read_wam_vector(in,(WAM.vel));
-  read_wam_vector(in,(WAM.acc));
-  fclose(in);
-  return 0;
-}
-/** Write WAM configuration information to a file.
-*/
-void SaveWAM(char *wamfile)
-{
-  FILE *out;
-  if ((out = fopen(wamfile, "w")) == NULL)
-  {
-    syslog(LOG_ERR, "Could not open actuator data file: %s", wamfile);
-    return;
-  }
-
-  
-  fprintf(out,"%d, %d, %d, %d, %d, %d, %d\n",(WAM.motor_position[0]),(WAM.motor_position[1]),(WAM.motor_position[2]),(WAM.motor_position[3]),(WAM.motor_position[4]),(WAM.motor_position[5]),(WAM.motor_position[6]));
-  write_wam_vector(out,(WAM.zero_offsets));
-  write_wam_vector(out,(WAM.stop_torque));
-  write_wam_vector(out,(WAM.park_location));
-  fprintf(out,"%d, %d, %d, %d, %d, %d, %d\n",(WAM.zero_order[0]),(WAM.zero_order[1]),(WAM.zero_order[2]),(WAM.zero_order[3]),(WAM.zero_order[4]),(WAM.zero_order[5]),(WAM.zero_order[6]));
-  write_wam_vector(out,(WAM.Kp));
-  write_wam_vector(out,(WAM.Kd));
-  write_wam_vector(out,(WAM.Ki));
-  write_wam_vector(out,(WAM.saturation));
-  write_wam_vector(out,(WAM.vel));
-  write_wam_vector(out,(WAM.acc));
-  fclose(out);
-}
-/** Syslog wam configuration information for debugging
-*/
-void DumpWAM2Syslog()
-{
-  syslog(LOG_ERR,"Dump of WAM data---------------------------");
-  
-  dump_wam_vector((WAM.zero_offsets));
-  dump_wam_vector((WAM.stop_torque));
-  dump_wam_vector((WAM.park_location));
-  syslog(LOG_ERR,"%d, %d, %d, %d, %d, %d, %d",(WAM.zero_order[0]),(WAM.zero_order[1]),(WAM.zero_order[2]),(WAM.zero_order[3]),(WAM.zero_order[4]),(WAM.zero_order[5]),(WAM.zero_order[6]));
-  syslog(LOG_ERR,"%d, %d, %d, %d, %d, %d, %d",(WAM.motor_position[0]),(WAM.motor_position[1]),(WAM.motor_position[2]),(WAM.motor_position[3]),(WAM.motor_position[4]),(WAM.motor_position[5]),(WAM.motor_position[6]));
-  dump_wam_vector((WAM.Kp));
-  dump_wam_vector((WAM.Kd));
-  dump_wam_vector((WAM.Ki));
-  dump_wam_vector((WAM.saturation));
-  dump_wam_vector((WAM.vel));
-  dump_wam_vector((WAM.acc));
-  syslog(LOG_ERR,"Num pucks %d",WAM.num_actuators);
-  syslog(LOG_ERR,"End dump of WAM data-----------------------------");
-}
 
 /** This function closes the control loop on the WAM using a PID regulator in joint space.
 
@@ -848,27 +764,23 @@ void getWAMjoints(vect_n *Mpos,vect_n *Mtrq,vect_n *Jpos,vect_n *Jtrq)
   set_vn(Jpos,WAM.Jpos);
   set_vn(Jtrq,WAM.Jtrq);
 }
-/** \bug Gcomp code in btwam.c needs work */
-int getGcomp()
+/**  */
+btreal getGcomp()
 {
-  return WAM.Gcomp;
+  return get_gravity_bot(&WAM.robot);
 }
 /** Enable or disable the gravity compensation calculation
  */
-void setGcomp( int onoff)
+void setGcomp(btreal scale)
 {
-  WAM.Gcomp = onoff;
-
-}
-/** Toggle the gravity compensation calculation
- */
-void toggleGcomp()
-{
-  WAM.Gcomp = !WAM.Gcomp;
-  if(WAM.Gcomp)
-	  set_gravity_bot(&WAM.robot, 1.0);
-  else
-	  set_gravity_bot(&WAM.robot, 0.0);
+  if (amt == 0.0){
+    WAM.Gcomp = 0;
+    set_gravity_bot(&WAM.robot, 0.0);
+  }
+  else{
+    WAM.Gcomp = 1;
+    set_gravity_bot(&WAM.robot, amt);
+  }
 }
 
 /** Sample the torques required to hold a given position
@@ -949,6 +861,92 @@ void setSafetyLimits(double jointVel, double tipVel, double elbowVel)
     SetByID(SAFETY_MODULE, VL2, conversion);
   }
 
+}
+
+/** Load wam configuration data
+ 
+\verbatim
+wam file format
+<motor_position> x7  //matches actuator indexes to motor indexes. See Actangle2Mpos
+<Zero0> x7
+<StopTorque> x7
+<Park0>x7
+<Order> x7
+<Kp> x7
+<Kd> x7
+<Ki> x7
+<saturation> x7
+<Vel> x7
+<Acc> x7
+\endverbatim
+*/
+int LoadWAM(char *wamfile)
+{
+  FILE *in;
+  if ((in = fopen(wamfile, "r")) == NULL)
+  {
+    syslog(LOG_ERR, "Could not open actuator data file: %s", wamfile);
+    return -1;
+  }
+
+  fscanf(in,"%d, %d, %d, %d, %d, %d, %d",&(WAM.motor_position[0]),&(WAM.motor_position[1]),&(WAM.motor_position[2]),&(WAM.motor_position[3]),&(WAM.motor_position[4]),&(WAM.motor_position[5]),&(WAM.motor_position[6]));
+  read_wam_vector(in,(WAM.zero_offsets));
+  read_wam_vector(in,(WAM.stop_torque));
+  read_wam_vector(in,(WAM.park_location));
+  fscanf(in,"%d, %d, %d, %d, %d, %d, %d",&(WAM.zero_order[0]),&(WAM.zero_order[1]),&(WAM.zero_order[2]),&(WAM.zero_order[3]),&(WAM.zero_order[4]),&(WAM.zero_order[5]),&(WAM.zero_order[6]));
+  read_wam_vector(in,(WAM.Kp));
+  read_wam_vector(in,(WAM.Kd));
+  read_wam_vector(in,(WAM.Ki));
+  read_wam_vector(in,(WAM.saturation));
+  read_wam_vector(in,(WAM.vel));
+  read_wam_vector(in,(WAM.acc));
+  fclose(in);
+  return 0;
+}
+/** Write WAM configuration information to a file.
+*/
+void SaveWAM(char *wamfile)
+{
+  FILE *out;
+  if ((out = fopen(wamfile, "w")) == NULL)
+  {
+    syslog(LOG_ERR, "Could not open actuator data file: %s", wamfile);
+    return;
+  }
+
+  
+  fprintf(out,"%d, %d, %d, %d, %d, %d, %d\n",(WAM.motor_position[0]),(WAM.motor_position[1]),(WAM.motor_position[2]),(WAM.motor_position[3]),(WAM.motor_position[4]),(WAM.motor_position[5]),(WAM.motor_position[6]));
+  write_wam_vector(out,(WAM.zero_offsets));
+  write_wam_vector(out,(WAM.stop_torque));
+  write_wam_vector(out,(WAM.park_location));
+  fprintf(out,"%d, %d, %d, %d, %d, %d, %d\n",(WAM.zero_order[0]),(WAM.zero_order[1]),(WAM.zero_order[2]),(WAM.zero_order[3]),(WAM.zero_order[4]),(WAM.zero_order[5]),(WAM.zero_order[6]));
+  write_wam_vector(out,(WAM.Kp));
+  write_wam_vector(out,(WAM.Kd));
+  write_wam_vector(out,(WAM.Ki));
+  write_wam_vector(out,(WAM.saturation));
+  write_wam_vector(out,(WAM.vel));
+  write_wam_vector(out,(WAM.acc));
+  fclose(out);
+}
+/** Syslog wam configuration information for debugging
+*/
+void DumpWAM2Syslog()
+{
+  syslog(LOG_ERR,"Dump of WAM data---------------------------");
+  
+  dump_wam_vector((WAM.zero_offsets));
+  dump_wam_vector((WAM.stop_torque));
+  dump_wam_vector((WAM.park_location));
+  syslog(LOG_ERR,"%d, %d, %d, %d, %d, %d, %d",(WAM.zero_order[0]),(WAM.zero_order[1]),(WAM.zero_order[2]),(WAM.zero_order[3]),(WAM.zero_order[4]),(WAM.zero_order[5]),(WAM.zero_order[6]));
+  syslog(LOG_ERR,"%d, %d, %d, %d, %d, %d, %d",(WAM.motor_position[0]),(WAM.motor_position[1]),(WAM.motor_position[2]),(WAM.motor_position[3]),(WAM.motor_position[4]),(WAM.motor_position[5]),(WAM.motor_position[6]));
+  dump_wam_vector((WAM.Kp));
+  dump_wam_vector((WAM.Kd));
+  dump_wam_vector((WAM.Ki));
+  dump_wam_vector((WAM.saturation));
+  dump_wam_vector((WAM.vel));
+  dump_wam_vector((WAM.acc));
+  syslog(LOG_ERR,"Num pucks %d",WAM.num_actuators);
+  syslog(LOG_ERR,"End dump of WAM data-----------------------------");
 }
 /** Initialize Continuous teach and play
 

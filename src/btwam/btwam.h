@@ -180,7 +180,14 @@ typedef struct btwam_struct{
   btreal teach_time;
 }wam_struct;
 
+/**  Final API **/
 
+btreal getGcomp();
+void setGcomp(btreal scale);
+int BlankWAMcallback(struct btwam_struct *wam);
+void registerWAMcallback(void *func);
+
+/** Old API **/
 
 int MotorID_From_ActIdx(int idx);
 
@@ -192,17 +199,16 @@ void SetWAMpos(vect_n *wv);/**\bug Change to DefineWAMpos()*/
 
 void WAMControlThread(void *data);
 
-int getGcomp();
-void setGcomp( int onoff);
-void toggleGcomp();
+
+
 
 void getLagrangian4(double *A, double *B, double *C, double *D);
 
 
-void MoveWAM(vect_n *pos);
-void MovePropsWAM(vect_n *vel, vect_n *acc);
-void CartesianMoveWAM(vect_n *pos); 
-void CartesianMovePropsWAM(btreal vel, btreal acc); 
+void MoveWAM(vect_n *pos); /** \bug depreciated: use moveto_bts() */
+void MovePropsWAM(vect_n *vel, vect_n *acc);/** \bug depreciated: use moveprops_bts() */
+void CartesianMoveWAM(vect_n *pos); /** \bug depreciated: use moveto_bts() */
+void CartesianMovePropsWAM(btreal vel, btreal acc); /** \bug depreciated: use moveprops_bts() */
 
 
 // Continuous Teach & Play Recording
@@ -214,8 +220,7 @@ void ServiceContinuousTeach();
 ct_traj* LoadContinuousTeach(char* filename); //allocate and return vectray if successful
 
 
-int BlankWAMcallback(struct btwam_struct *wam);
-void registerWAMcallback(void *func);
+
 #endif /*_BTWAM_H*/
 
 /*======================================================================*
