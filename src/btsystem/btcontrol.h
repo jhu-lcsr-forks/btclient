@@ -200,19 +200,23 @@ double start_via_trj(via_trj *trj,int col);
 void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double v_prev, double v_next, double seg_acc, int end);
 
 /*API*/
-//via_trj_array* read_file_vt(char* filename);
-//via_trj_array* new_vt(int num_columns, int max_points);
-//int add_point_vt(via_trj_array* vt,double t,vect_n *pt);
-//int add_point_at_vel_vt(via_trj_array* vt,double vel,vect_n *pt);//return index of point
-//del_point(via_trj_array* vt,int idx);
-//register_vt(btstatecontrol *sc,via_trj_array *trj);
+//via_trj_array* malloc_new_vta(int num_columns);
+via_trj_array* read_file_vta(char* filename);
+via_trj_array* new_vta(int num_columns,int max_rows);
+void set_acc_vta(via_trj_array* vt,btreal acc);
+int add_point_vta(via_trj_array* vt,vect_n *pt);
+int ins_point_vta(via_trj_array* vt,int idx, vect_n *pt);
+int scale_vta(via_trj_array* vt,double vel,double acc);
+int del_point_vta(via_trj_array* vt,int idx);
+void free_vta(via_trj_array* vt);
+void write_file_vta(via_trj_array* vt,char *filename);
+
 
 /* Interface */
 int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt);
 vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt);
 vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt);
-void bttrajectory_interface_mapf_vt(btstatecontrol *sc,via_trj_array *trj);
-
+void register_vta(btstatecontrol *sc,via_trj_array *vt);
 /*================================================Ramp object================================*/
 
 enum btramp_state {BTRAMP_MAX = 0, BTRAMP_MIN, BTRAMP_UP, BTRAMP_DOWN, BTRAMP_PAUSE};
@@ -244,9 +248,10 @@ typedef struct
 
 void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate);
 void set_btramp(btramp *r,enum btramp_state state);
-
+void setrate_btramp(btramp *r,btreal rate);
 btreal get_btramp(btramp *r);
 btreal eval_btramp(btramp *r,btreal dt);
+btreal rate_eval_btramp(btramp *r,btreal dt,btreal rate);
 
 #ifdef __cplusplus
 }

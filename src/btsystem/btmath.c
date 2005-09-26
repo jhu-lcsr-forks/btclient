@@ -12,7 +12,7 @@
  *                                                                      *
  *======================================================================*/
 
-/** \file btmath.c
+/** \fi le btmath.c
     A common set of mathematical operations. 
     
     This code provides objects and methods for:
@@ -71,7 +71,7 @@ where to look first.
 
 #define MAX_LINE_LENGTH     255
 #define MAX_BTPTRS 1000
-
+#define MAX_VECTOR_SIZE 1000
 //#DEFINE VECT_N_DEBUG
 //#DEFINE VECT_N_BOUNDS  //perform bounds checking
 //#DEFINE MATR_N_DEBUG
@@ -136,7 +136,7 @@ int btmath_ptr_ok(void *ptr,char *str)
   }
   return 1;
 }
-#define MAX_VECTOR_SIZE 1000
+
 /** Prints an error if array index is out of range */
 int vect_size_ok(int idx,int max,char *str)
 {
@@ -222,8 +222,6 @@ vect_n * new_vn(int size) //allocate an n-vector
     return NULL;
   }
 
-  
-
   n = (vect_n*)vmem;
   addbtptr(vmem);
   n->n = size;
@@ -269,11 +267,8 @@ void some_function(vect_n* dest, vect_n* src)
     
     set_vn(tmp_vn,scale_vn(2.0,src));
     set_vn(tmp2_vn,src);
-    
 }
 \endcode
-
-
 */
 vect_n* init_local_vn(vect_n* header,btreal* data, int size)
 {
@@ -346,9 +341,7 @@ BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
    /*if (dest->n < src->n)
     syslog(LOG_ERR,"btmath:set_vn:warn: dest->n < src->n");*/
 #endif
-#ifdef BTSLOW_AND_SAFE
 
-#endif
   if (dest->n < src->n) max = dest->n;
   else max = src->n;
   for (cnt=0;cnt < max;cnt++)
@@ -509,9 +502,10 @@ BTINLINE vect_n* sub_vn(vect_n* a, vect_n* b)
     a->ret->q[cnt] = a->q[cnt] - b->q[cnt];
   return a->ret;
 }
+/*
 BTINLINE vect_n* wedge_vn(vect_n* a, vect_n*b) // need to figure this out
 {
-}
+}*/
 /** Vector Dot Product
  
 ret = a[0] * b[0] + ... + a[i] * b[i]
@@ -577,17 +571,25 @@ vect_n* unit_interp_vn(vect_n* a, vect_n* b,btreal s)
 }
 /** Interpolate between two vectors with another paramater
  
-Returns a point that is distance s along the line from a to b. The direction
-towards b is considered positive
- 
-\param s Distance along line from a to b
-\param a Starting point
+The vectors are combined with another dimension t.
+For instance, if you have two vectors with an externally stored time, you
+can interpolate between them in time.
+\code
+(v2 - v1) / (t2-t1) = (vx - v1) / (tx - t1)
+dt = t2 - t1
+t = tx - t1
+(v2 - v1) / dt = (vx - v1) / t
+v1 + (v2 - v1) t/dt = vx
+\endcode
+
+\param dt Difference between end point and starting point
+\param t Distance in dimension t you want to interpolate for.
 \param b End point
 \return add_vn(a,scale_vn(s,unit_vn(sub_vn(b,a))));
 */
-vect_n* interp_vn(vect_n* a, vect_n* b,btreal ds,btreal s)
+vect_n* interp_vn(vect_n* a, vect_n* b,btreal dt,btreal t)
 {
-  return add_vn(a,scale_vn(s/ds,sub_vn(b,a)));
+  return add_vn(a,scale_vn(t/dt,sub_vn(b,a)));
 }
 /** Force a vect_n to be in the range min value to max value (inclusive)
  
@@ -627,9 +629,7 @@ BTINLINE vect_n* e_mul_vn(vect_n* a, vect_n* b) // Per Element multiply
   return a->ret;
 }
 /** Per element power
- 
- 
-ret[i] = a[i]^b
+  ret[i] = a[i]^b
 */
 BTINLINE vect_n* e_pow_vn(vect_n* a, btreal b)
 {
@@ -640,8 +640,7 @@ BTINLINE vect_n* e_pow_vn(vect_n* a, btreal b)
   return a->ret;
 }
 /** Per element square root
- 
-ret[i] = sqrt(a[i])
+ ret[i] = sqrt(a[i])
 */
 BTINLINE vect_n* e_sqrt_vn(vect_n* a)
 {
@@ -652,8 +651,7 @@ BTINLINE vect_n* e_sqrt_vn(vect_n* a)
   return a->ret;
 }
 /** Per element square
- 
-ret[i] = a[i]^2
+ ret[i] = a[i]^2
 */
 BTINLINE vect_n* e_sqr_vn(vect_n* a)
 {
@@ -669,8 +667,7 @@ BTINLINE vect_n* e_sqr_vn(vect_n* a)
  */
 //@{
 /** Use printf to print values of a vect_n
- 
-This function prints three lines for each vector. Consider using sprint_vn instead.
+ This function prints three lines for each vector. Consider using sprint_vn instead.
 */
 void print_vn(vect_n* src)
 {
@@ -687,6 +684,20 @@ void print_vn(vect_n* src)
  
 \code
 < 1.2, 2.4, 5.3>
+\endcode
+
+\code
+void main()
+{
+  char buff1[100],buff2[100];
+  vect_n x,v;
+  
+  v = new_vn(5);
+  x = new_vn(5);
+  fill_vn(v,3.0);
+  set_vn(x,scale_vn(4.2,v));
+  printf("x: %s \nv: %s",sprint_vn(buff1,v),sprint_vn(buff2,v));
+}
 \endcode
 */
 char* sprint_vn(char *dest,vect_n* src)
@@ -717,6 +728,8 @@ file.
 \code
  1.2, 2.4, 5.3
 \endcode
+
+see: sprint_vn()
 */
 char* sprint_csv_vn(char *dest,vect_n* src)
 {
@@ -1019,6 +1032,8 @@ vectray * new_vr(int vect_size,int max_rows)
   n->max_rows = max_rows;
   n->num_rows = 0; //the number of rows that are filled in the array
   n->rayvect = new_vn(vect_size);
+  n->lval = new_vn(vect_size);
+  n->rval = new_vn(vect_size);
   n->stride = vect_size;
   n->data = (btreal*)(vmem + sizeof(vectray)+ sizeof(btreal)*vect_size);
 
@@ -1047,7 +1062,16 @@ BTINLINE vect_n * idx_vr(vectray *ray,int idx)
   ray->rayvect->q = &(ray->data[ray->stride * idx]);
   return ray->rayvect;
 }
-
+vect_n * lval_vr(vectray *ray,int idx)
+{
+  ray->lval->q = &(ray->data[ray->stride * idx]);
+  return ray->lval;
+}
+vect_n * rval_vr(vectray *ray,int idx)
+{
+  ray->rval->q = &(ray->data[ray->stride * idx]);
+  return ray->rval;
+}
 
 /** Reroute a vect_n data pointer to a block of data in a vector array
  
@@ -1089,6 +1113,59 @@ BTINLINE int append_vr(vectray *ray, vect_n* v)
     return -1;
   }
 }
+
+
+/** 
+ Adds a point to the vectray if room is available and returns
+ a pointer to a vector to copy to it.
+*/
+BTINLINE vectray * vn_append_vr(vectray *ray)
+{
+  
+  if (ray->num_rows < ray->max_rows){
+    //set_vn(idx_vr(ray,ray->num_rows),v);
+    ray->num_rows++;
+    return idx_vr(ray,ray->num_rows);
+  }
+  else{
+    return NULL;
+  }
+}
+
+/** 
+ Insert a point to the vectray if room is available and returns
+ a pointer to a vector to copy to it.
+*/
+BTINLINE vectray * vn_insert_vr(vectray *ray,int idx)
+{
+  int cnt;
+  if (ray->num_rows < ray->max_rows){
+    //set_vn(idx_vr(ray,ray->num_rows),v);
+    ray->num_rows++;
+    for(cnt = ray->num_rows-1;cnt > idx idx;cnt--)
+    {
+      set_vn(lval_vr(ray,cnt),rval_vr(ray,cnt-1));
+    }
+    return idx_vr(ray,idx);
+  }
+  else{
+    return NULL;
+  }
+}
+/** Remove a vector from the vector array and copy all subsequent
+vectors up one
+*/
+int delete_vr(vectray *ray, int idx)
+{
+  int cnt;
+  for(cnt = idx;cnt < ray->num_rows - 1;cnt++)
+  {
+   set_vn(lval_vr(ray,cnt),rval_vr(ray,cnt+1));
+  }
+  ray->num_rows--;
+  return 0;
+}
+
 /** Returns the index of the last element in ray */
 BTINLINE int numrows_vr(vectray *ray)
 {
@@ -1125,11 +1202,38 @@ void copy_sub_vr(vectray *dest, vectray *src, int src_r, int dest_r, int rows, i
   }
 }
 
+vectray * resize_vr(vectray *vr,int max_rows)
+{
+  vectray *newvr;
+  
+  newvr = new_vr(vr->n,max_rows);
+  copy_sub_vr(newvr,vr,0,0,vr->maxrows,0,0,vr->n);
+  destroy(vr);
+  return newvr;
+}
+
 /** Erases all the elements in ray */
 BTINLINE void clear_vr(vectray *ray)
 {
   ray->num_rows = 0;
 }
+
+/** Calculate the lenth of all the points if you
+connected the dots.
+
+Used by scale_vta()
+*/
+btreal arclength_vr(vectray *ray)
+{
+  btreal len = 0.0;
+  int cnt;
+  for(cnt = 1;cnt < ray->num_rows;cnt++)
+  {
+    len += norm_vn(lval_vr(ray,cnt-1),rval_vr(ray,cnt));
+  }
+  return len;
+}
+
 
 /** Read a csv file and create a new vectray for the values.
 */

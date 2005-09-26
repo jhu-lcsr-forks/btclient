@@ -709,6 +709,122 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
   seg->dt_acc1 = dt_acc1;
   seg->dt_acc2 = dt_acc2;
 }
+/** Internal function to allocate memory for a vta object*/
+via_trj_array* malloc_new_vta(int num_columns)
+{
+  void *vmem;
+  via_trj_array* vt;
+  
+  if ((vmem = malloc(sizeof(via_trj_array)+num_columns*sizeof(via_trj))) == NULL)
+  {
+    syslog(LOG_ERR,"new_vt: memory allocation failed, size %d",size);
+    return NULL;
+  }
+  
+  vt = (via_trj_array*)vmem;
+  vt->trj = vmem + sizeof(via_trj_array);
+  vt->elements = num_columns;
+  return vt;
+}
+via_trj_array* read_file_vta(char* filename,int extrapoints)
+{
+  via_trj_array* vt;
+  vectray *vr;
+  int cnt;
+  if (read_csv_file_vr(filename,&vr) != 0) return NULL;
+  vr = resize_vr(vr,maxrows_vr(vr)+extrapoints);
+  
+  vt = malloc_new_vta(numelements_vr(vr)-1);
+  for(cnt = 0;cnt < vt->elements;cnt++){
+    SetAcc_vt(&(vt->trj[cnt]),1.0);
+    vt->trj[cnt].vr = vr;
+  }
+  
+  return vt;
+}
+void write_file_vta(via_trj_array* vt,char *filename)
+{
+  write_csv_file_vr(filename,vt->trj[0].vr);
+}
+/** set acceleration on corners of via trajectory */
+void set_acc_vta(via_trj_array* vt,btreal acc)
+{
+  int cnt;
+  for(cnt = 0;cnt < vt->elements;cnt++)
+    SetAcc_vt(&(vt.trj[cnt]),acc);
+}
+/** Allocate a vta object and vectray objects */
+via_trj_array* new_vta(int num_columns,int max_rows)
+{
+  via_trj_array* vt;
+  vectray *vr;
+  int cnt;
+  vt = malloc_new_vta(num_columns);
+  vr = new_vr(num_columns+1,max_rows);
+  for(cnt = 0;cnt < vt->elements;cnt++){
+    SetAcc_vt(&(vt->trj[cnt]),1.0);
+    vt->trj[cnt].vr = vr;
+  }
+}
+/** Free memory allocated during new_vr()
+*/
+void free_vta(via_trj_array* vt)
+{
+  destroy_vr(vt->trj[0].vr);
+  free(vt);
+}
+
+/** Add a point*/
+int add_point_vta(via_trj_array* vt,vect_n *pt)
+{
+  vectray* vr;
+  vect_n* vn;
+  vr = vt->trj[0].vr;
+  vn = vn_append_vr(vr);
+  if (vn != NULL){
+    setrange_vn(vn,pt,1,0,len_vn(vn)-1);
+    return 0;
+  }
+  else return -1;
+}
+/** insert a point*/
+int ins_point_vta(via_trj_array* vt,int idx, vect_n *pt)
+{
+  vectray* vr;
+  vect_n* vn;
+  vr = vt->trj[0].vr;
+  vn = vn_insert_vr(vr);
+  if (vn != NULL){
+    setrange_vn(vn,pt,1,0,len_vn(vn)-1);
+    return 0;
+  }
+  else return -1;
+}
+int del_point_vta(via_trj_array* vt,int idx)
+{
+  delete_vr(vt->trj[0].vr,idx);
+  return 0;
+}
+
+/** Adjust all the time points in a via point trajectory array
+based on input velocity.
+\bug Need to include acceleration in the calculation.
+*/
+int scale_vta(via_trj_array* vt,double vel,double acc)
+{
+  btreal arclen = 0,thislen;
+  vectray *vr;
+  int cnt;
+  vr = vt->trj[0].vr;
+  setval_vn(idx_vr(vr,0),0,0.0);
+  
+  for(cnt = 1;cnt < numrows_vr(vr);cnt++){
+    arclen += norm_vn(lval_vr(ray,cnt-1),rval_vr(ray,cnt));
+    setval_vn(idx_vr(vr,cnt),0,arclen/vel);
+  }
+  return 0;
+}
+
 
 
 int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt)
@@ -753,15 +869,13 @@ vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt
   return btt->qref;
 }
 
-void bttrajectory_interface_mapf_vt(btstatecontrol *sc,via_trj_array *trj)
-{
-  maptrajectory_bts(sc,(void*) trj,
+void register_vta(btstatecontrol *sc,via_trj_array *vt)
+{ 
+  maptrajectory_bts(sc,(void*) vt,
                     bttrajectory_interface_reset_vt,
                     bttrajectory_interface_eval_vt,
                     bttrajectory_interface_getstate_vt);
-
 }
-
 /**************************** btramp functions **********************************/
 /** Initialize the data for a btramp object.
  
@@ -836,7 +950,15 @@ btreal eval_btramp(btramp *r,btreal dt)
     pthread_mutex_unlock(&(r->mutex)),"eval_btramp unlock mutex failed");
   return *(r->scaler);
 }
+void setrate_btramp(btramp *r,btreal rate)
+{
+  test_and_log(
+    pthread_mutex_lock(&(r->mutex)),"setrate_btramp lock mutex failed");
+    r->rate = rate;
+    test_and_log(
+    pthread_mutex_unlock(&(r->mutex)),"setrate_btramp unlock mutex failed");
 
+}
 /**************************** btramp functions **********************************/
 
 /*======================================================================*

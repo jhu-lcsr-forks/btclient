@@ -222,7 +222,10 @@ void set_gravity_bot(btrobot* robot, double Gscale) //set value to scale effect 
   for (cnt = 0;cnt < robot->num_links + 1;cnt++)
     robot->links[cnt].Gscale = Gscale;
 }
-
+btreal get_gravity_bot(btrobot* robot)
+{
+  return robot->links[0].Gscale;
+}
 //void set_jacobian_scheme_bot(btrobot* robot,int scheme); //how to handle extra dof
 
 /** Data access function to set the present joint angle state of the robot object.

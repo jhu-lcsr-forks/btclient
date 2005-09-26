@@ -107,6 +107,7 @@ void tool_mass_bot(btrobot* robot, vect_3 *cog,double m);
 
 void make_transform_btlink(btlink* link,double q); //set the transform matrix
 void set_gravity_bot(btrobot* robot, double Gscale); //set percent effect of gravity
+btreal get_gravity_bot(btrobot* robot);
 //void set_jacobian_scheme_bot(btrobot* robot,int scheme); //how to handle extra dof
 
 

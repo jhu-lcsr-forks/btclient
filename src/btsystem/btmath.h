@@ -23,6 +23,7 @@ extern "C"
 #define PRACTICALLY_ZERO 0.0000001 //For avoiding divide by zero
 
 #define mov_vn set_vn
+#define cpy_vn set_vn
 //#define VECT_N_DEBUG
 //#define VECT_N_BOUNDS  //perform bounds checking
 #define VECT_N_MAXSIZE 100
@@ -111,11 +112,14 @@ add in bounds checking and verbose error reporting
    
   
 */
+
 /*================================*/
 typedef struct barrett_vect_n{
   void *vtable;  //filler for D compatibility
   void *monitor; //filler for D compatibility
   struct barrett_vect_n *ret;  //pointer to return data for stacked operations
+ // btvect_stack *stk; //Stack object for temporary variable allocation
+ // int stk_id; //location on the stack. -1 = not on the stack
   int n;      //size of vector
   btreal *q;  //pointer to data
   //pthread_mutex_t mutex;
@@ -151,7 +155,7 @@ vect_n* e_pow_vn(vect_n* a, btreal b);
 vect_n* e_sqrt_vn(vect_n* a);
 vect_n* e_sqr_vn(vect_n* a);
 
-vect_n* wedge_vn(vect_n* a, vect_n*b); 
+//vect_n* wedge_vn(vect_n* a, vect_n*b); 
 btreal  dot_vn(vect_n* a, vect_n* b);
 btreal  norm_vn(vect_n* a); //euclidian norm
 vect_n* unit_vn(vect_n* a); //unit vector
@@ -217,27 +221,31 @@ typedef struct barrett_vectarray_n{
 }vectray;
 
 vectray * new_vr(int vect_size,int max_rows);
-
+vectray * resize_vr(vectray *vr,int max_rows);
 void destroy_vr(vectray *vr);
 
 //Access
 
 vect_n * mapdat_vr(vect_n *dest, vectray *ray, int idx); //map the data pointer of dest onto the index
 BTINLINE vect_n * idx_vr(vectray *ray,int idx); // pointer into vectray
+vect_n * lval_vr(vectray *ray,int idx);
+vect_n * rval_vr(vectray *ray,int idx);
 vect_n * getvn_vr(vect_n *dest,vectray *ray, int idx); //copy data at idx to dest
 BTINLINE int numrows_vr(vectray *ray); //returns the index of the last point
 BTINLINE int numelements_vr(vectray *ray);
 BTINLINE int maxrows_vr(vectray *ray); //ray->rows
 
 //Add & Remove data
-void copy_sub_vr(vectray *dest, vectray *src, int src_r, int dest_r, int rows, int src_c, int dest_c, int columns);
+void copy_sub_vr(vectray *dest, vectray *src, int src_r, int dest_r, int rows, 
+                                              int src_c, int dest_c, int columns);
 
 int append_vr(vectray *ray, vect_n* v);
+vectray * vn_append_vr(vectray *ray)
 void insertbefore_vr(vectray *ray, vect_n* v);
 void insertafter_vr(vectray *ray, vect_n* v);
-void remove_vr(vectray *ray, int idx);
+int delete_vr(vectray *ray, int idx);
 void clear_vr(vectray *ray); //erase everything and set it to zero
-
+btreal arclength_vr(vectray *ray);
 //File I/O
 int read_csv_file_vr(char *fileName, vectray **vr);
 int write_csv_file_vr(char *filename, vectray *vr);

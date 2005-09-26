@@ -9,6 +9,21 @@
 #include <stdlib.h>
 #include "btos.h"
 
+#ifdef NULL_PTR_GUARD
+  #define BTPTR_CHK(x,y) btptr_ok((x),(y));
+#else
+  #define BTPTR_CHK(x,y) 
+#endif
+
+/** Null pointer access flag */
+int btptr_ok(void *ptr,char *str)
+{
+  if (ptr == NULL){
+    syslog(LOG_ERR,"bt ERROR: you tried to access a null pointer in %s",str);
+    return 0;
+  }
+  return 1;
+}
 
 BTINLINE int test_and_log(int ret, const char *str)
 {

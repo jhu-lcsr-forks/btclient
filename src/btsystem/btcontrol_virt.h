@@ -132,8 +132,6 @@ void mapdata_btpos(btposition_interface *btp,vect_n* q, vect_n* dq, vect_n* ddq,
 /** bttrajectory sets up virtual functions for running an arbitrary trajectory along
 an arbitrary curve. Curve and trajectory initialization are done outside.
 
-we assume that the curve (and trajectory) are capable of maintaining their state
-variables
 
 see trjstate for more state info
 */
@@ -156,15 +154,6 @@ typedef struct bttrajectory_interface_struct
 }bttrajectory_interface;
 //void init_bttrj(bttrajectory_interface *btt);
 void mapdata_bttrj(bttrajectory_interface *btt, vect_n* qref, double *dt);
-void mapobj_bttrj(bttrajectory_interface *btt,void* dat,void* reset,void* eval,void* getstate);
-
-
-vect_n* eval_bttrj(bttrajectory_interface *btt);
-int prep_bttrj(bttrajectory_interface *btt,vect_n* q, btreal vel, btreal acc);
-int start_bttrj(bttrajectory_interface *btt);
-int stop_bttrj(bttrajectory_interface *btt);
-
-
 
 /*================================================State Controller object====================*/
 /*! \brief A state controller for switching between position control and torque control
@@ -175,18 +164,84 @@ control, moving trajectory control, and no control (idle)
 
 If the position control is off, a zero torque is returned.
 
+Typical use:
+Initialization:
+\code
+  btstatecontrol Jsc;
+  btposition_interface Jbtp;
+  vect_n *Mpos,*Mtrq,*Jpos,*Jvel,*Jacc,*Jref,*Jtrq;
+  double dt;
+  
+  //<snip> initialize vect_n objects
+  
+  init_bts(&Jsc);
+  map_btstatecontrol(&Jsc, Jpos, Jvel, Jacc, 
+                      Jref, Jtrq, &dt);
+  btposition_interface_mapf_btPID(&Jsc, &(d_jpos_array));
+\endcode
+Use:
+\code
+  via_trj_array *vta;  //A trajectory object that implements the sc virtual function interface
+  vta = read_file_vta("teach.csv"); //create a trajectory object
+  register_vta(&Jsc,vta); //wrapper for maptrajectory_bts() see btcontrol.c
+  //notice that once we register our specific trajectory object, everything 
+  //is done through the generic _bts() functions.
+  
+  prep_trj_bts(&Jsc,0.5,0.5); //Move the wam to the start position of the trajectory
+  while (Jsc.btt.state == BTTRAJ_INPREP){ //wait until we are there
+          usleep(100000);
+  }
+  start_trj_bts(&wam->Jsc); //Start the trajectory we registered
+  sleep(10); //run for 10 seconds
+  stop_trj_bts(&wam->Jsc); //stop the trajectory
+\endcode
+Meanwhile in another loop:
+\code
+eval_bts(&(WAM.Jsc));
+\endcode
+
+You can implement a position controller and a trajectory controller. Both can be 
+"cold swapped". ie, you can turn off your controller, replace it with another control
+object dynamically and then turn it back on.
+
+See the via_trj_array object for an example of implementing an object that can be
+plugged in. For a trajectory we implement an eval, reset, and getstate function. 
+These are then registered using the maptrajectory_bts() function.
+\code
+int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt);
+vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt);
+vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt);
+void register_vta(btstatecontrol *sc,via_trj_array *vt);
+void register_vta(btstatecontrol *sc,via_trj_array *vt)
+{ 
+  maptrajectory_bts(sc,(void*) vt,
+                    bttrajectory_interface_reset_vt,
+                    bttrajectory_interface_eval_vt,
+                    bttrajectory_interface_getstate_vt);
+}
+\endcode
 */
+
 typedef struct
 {
   int mode; //!< 0:idle, 1:torque, 2:pos 3:pos + trj
   vect_n* t; //!< Internal buffer for torques
   vect_n* q,*dq,*ddq,*qref; //!< Internal buffer for position and reference position
   double *dt;
+  double local_dt; //for time warping...
+  double dt_scale;
+  btramp ramp;
   double last_dt; //history: the last time step used.
+  
   btposition_interface btp;
   bttrajectory_interface btt;
   int error; //nonzero if there are any errors
 
+  // Straight trajectory
+  btpath_pwl pth;
+  bttraptrj trj;
+  btreal vel,acc;
+  int prep_only;
   pthread_mutex_t mutex;
 }btstatecontrol;
 void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq, 
@@ -195,9 +250,14 @@ int init_bts(btstatecontrol *sc);
 //int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory_interface *trj);
 vect_n* eval_bts(btstatecontrol *sc);
 int setmode_bts(btstatecontrol *sc, int mode);
-int prep_trj_bts(btstatecontrol *sc,btreal vel, btreal acc);
+int prep_trj_bts(btstatecontrol *sc);
+int moveto_bts(btstatecontrol *sc,vect_n* dest);
+int moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc);
+int movestatus(btstatecontrol *sc);
 int start_trj_bts(btstatecontrol *sc);
 int stop_trj_bts(btstatecontrol *sc);
+int pause_trj_bts(btstatecontrol *sc,btreal period);
+int unpause_trj_bts(btstatecontrol *sc,btreal period);
 
 
 #ifdef __cplusplus

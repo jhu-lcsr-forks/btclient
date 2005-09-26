@@ -41,8 +41,17 @@ extern "C"
   
   \bug Finish this code
 */
+typedef struct btexit_struct{
+  struct btexit_struct* next;
+  char name[20];
+  void* fp;
+  int num_parms;
+  void** parms;
+}
 void register_btexit_function();
+void deregister_btexit_function();
 void btexit();
+
 
 //mutex & threads
 typedef pthread_mutex_t btmutex;
@@ -50,7 +59,7 @@ typedef pthread_mutex_t btmutex;
 
 
 
-
+int btptr_ok(void *ptr,char *str);
 BTINLINE int test_and_log(int ret,const char *str);
 BTINLINE void * xmalloc(size_t size);
 
