@@ -295,6 +295,8 @@ set_v3(b,neg_vn((vect_n*)b)); //b= <-1.0, -1.0, -1.0>
 \endcode
 */
 typedef struct barrett_vect_3{
+  void *vtable;  //filler for D compatibility
+  void *monitor; //filler for D compatibility
   struct barrett_vect_3* ret;  
   int n;      //size of vector
   btreal *q;
@@ -352,6 +354,8 @@ definitions are in btmath.c.
 
 */
 typedef struct barrett_quat{
+  void *vtable;  //filler for D compatibility
+  void *monitor; //filler for D compatibility
   struct barrett_quat* ret;  
   int n;      //size of vector
   btreal *q;

@@ -282,7 +282,7 @@ vect_n* init_local_vn(vect_n* header,btreal* data, int size)
   n->ret->q = data + size;
   n->ret->ret = n->ret;
 #ifdef VECT_SIZE_CHK
-   vect_size_ok(size,MAX_VECTOR_SIZE,"new_vn");
+   vect_size_ok(size,MAX_VECTOR_SIZE,"init_local_vn");
 #endif
   fill_vn(n,0.0);
   fill_vn(n->ret,0.0);
@@ -336,8 +336,16 @@ BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
    btmath_ptr_ok(src,"set_vn src");
 #endif
 #ifdef VECT_SIZE_CHK
-   vect_size_ok(dest->n,MAX_VECTOR_SIZE,"set_vn dest");
-   vect_size_ok(src->n,MAX_VECTOR_SIZE,"set_vn src");
+   if(!vect_size_ok(dest->n,MAX_VECTOR_SIZE,"set_vn dest"))
+   {
+     syslog(LOG_ERR,"btmath:set_vn:dest:pointer:%x",dest);
+     return;
+   }
+   if(!vect_size_ok(src->n,MAX_VECTOR_SIZE,"set_vn src"))
+   {
+     syslog(LOG_ERR,"btmath:set_vn:src:pointer:%x:dest:pointer:%x",src,dest);
+     return;
+   }
    /*if (dest->n < src->n)
     syslog(LOG_ERR,"btmath:set_vn:warn: dest->n < src->n");*/
 #endif

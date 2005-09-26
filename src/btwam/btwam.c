@@ -445,7 +445,7 @@ void WAMControlThread(void *data)
     
     eval_bts(&(WAM.Csc));
     set_v3(WAM.Cforce,(vect_3*)WAM.R6force);
-    setrange_vn((vect_n*)WAM.Ctrq,WAM.R6force,0,3,3);
+   //setrange_vn((vect_n*)WAM.Ctrq,WAM.R6force,0,2,3);
     //Force application
     apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
     
