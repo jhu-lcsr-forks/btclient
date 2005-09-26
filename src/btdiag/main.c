@@ -394,14 +394,25 @@ void StartDisplayThread()
   pthread_t           display_thd_id;
   pthread_attr_t      display_attr;
   struct sched_param  display_param;
+  int		      err;
 
-  pthread_attr_init(&display_attr);
-  pthread_attr_setinheritsched(&display_attr, PTHREAD_EXPLICIT_SCHED);
+  err = pthread_attr_init(&display_attr);
+  if(err) syslog(LOG_ERR, "StartDisplayThread() pthread_attr_init err = %d", err);
+  
+  err = pthread_attr_setschedpolicy(&display_attr, SCHED_FIFO);
+  if(err) syslog(LOG_ERR, "StartDisplayThread() pthread_attr_setschedpolicy err = %d", err);
+ 
+  err = pthread_attr_getschedparam(&display_attr, &display_param);
+  if(err) syslog(LOG_ERR, "StartDisplayThread() pthread_attr_getschedparam err = %d", err);
+
   display_param.sched_priority = 10;
-  pthread_attr_setschedparam(&display_attr, &display_param);
-
-  pthread_create(&display_thd_id, &display_attr, (void*)DisplayThread, 0);
-  sched_setscheduler(display_thd_id, SCHED_FIFO, &display_param);
+ 
+  err = pthread_attr_setschedparam(&display_attr, &display_param);
+  if(err) syslog(LOG_ERR, "StartDisplayThread() pthread_attr_setschedparam err = %d", err);
+  
+  err = pthread_create(&display_thd_id, &display_attr, (void*)DisplayThread, 0);
+  if(err) syslog(LOG_ERR, "StartDisplayThread() pthread_create err = %d", err);
+  
   if (display_thd_id == -1)
   {
     syslog(LOG_ERR, "start_display_thread:Couldn't start display thread!");
