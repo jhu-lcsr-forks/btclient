@@ -63,8 +63,11 @@ typedef pthread_mutex_t btmutex;
   #define BTPTR_CHK(x,y) 
 #endif
 
+#define LogErr(x) test_and_log((x),"")
+
 int btptr_ok(void *ptr,char *str);
 BTINLINE int test_and_log(int ret,const char *str);
+
 BTINLINE void * xmalloc(size_t size);
 
 
