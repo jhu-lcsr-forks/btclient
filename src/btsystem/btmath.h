@@ -34,6 +34,7 @@ extern "C"
 
 typedef double btreal;
 
+
 /** The list of all pointers allocated by btmath
 
   Btmemlist maintains a list of all pointers allocated by
@@ -125,11 +126,36 @@ typedef struct barrett_vect_n{
   //pthread_mutex_t mutex;
   //int idx; //Listing in btptrs garbage collection structure
 }vect_n;
+
+#define STATIC_SIZE_VN(n) (1+(sizeof(vect_n)*2+sizeof(btreal)*2*(n))/sizeof(vect_n))
+/** Create a local vect_n
+
+\param x variable name you want to use locally;
+\param n Number of elements in vector
+
+\code Usage
+vect_n* add3()
+{
+   vect_n ret;
+   LOCAL_VN(x,6);
+   LOCAL_VN(y,6);
+   
+   ret = new_vn(6);
+   fill_vn(x,1.0);
+   fill_vn(y,2.0);
+   set_vn(ret,add_vn(x,y));
+   return ret;
+}
+\endcode
+*/
+#define LOCAL_VN(x,n) vect_n x[(1+(sizeof(vect_n)*2+sizeof(btreal)*2*(n))/sizeof(vect_n))]; init_vn((x),(n))
 /*================================*/
-vect_n *new_vn(int size); //allocate an n-vector
+vect_n* new_vn(int size); //allocate an n-vector
+vect_n* init_vn(vect_n* v); //Link up a vect_n object
 //void free_vn(vect_n *p);
 int len_vn(vect_n *src); //number of elements in the vector
 int sizeof_vn(vect_n *src); //return sizeof info for whole vector
+
 vect_n* init_local_vn(vect_n* header,btreal* data, int size);
 int new_vn_group(int num, int size, ...); //allocate a group of n-vectors
 
@@ -217,7 +243,8 @@ typedef struct barrett_vectarray_n{
   unsigned int n;    //!< Number of elements in the vectors in this array
   unsigned int stride;  //!< Number of memory locations between each row. allows spliting one data memory block between vectrays.
   unsigned int max_rows; //!< Number of rows allocated (MAX Rows)
-  int num_rows; //!< present index into the array
+  int num_rows; //!< Number of rows filled so far
+  int edit_point;//!< present index into the array
 }vectray;
 
 vectray * new_vr(int vect_size,int max_rows);
@@ -239,13 +266,22 @@ BTINLINE int maxrows_vr(vectray *ray); //ray->rows
 void copy_sub_vr(vectray *dest, vectray *src, int src_r, int dest_r, int rows, 
                                               int src_c, int dest_c, int columns);
 
-int append_vr(vectray *ray, vect_n* v);
-vect_n* vn_append_vr(vectray *ray);
-vect_n* vn_insert_vr(vectray *ray,int idx);
-void insertbefore_vr(vectray *ray, vect_n* v);
-void insertafter_vr(vectray *ray, vect_n* v);
-int delete_vr(vectray *ray, int idx);
 void clear_vr(vectray *ray); //erase everything and set it to zero
+
+// Edit point movement
+void next_vr(vectray *ray);
+void prev_vr(vectray *ray);
+void start_vr(vectray *ray);
+void end_vr(vectray *ray);
+int edit_at_vr(vectray *ray,int idx);
+int edit_point_vr(vectray *ray);
+// Edit functions
+int append_vr(vectray *ray, vect_n* v);
+int insert_vr(vectray *ray, vect_n* v);
+int delete_vr(vectray *ray);
+
+
+// helper functions
 btreal arclength_vr(vectray *ray);
 //File I/O
 int read_csv_file_vr(char *fileName, vectray **vr);

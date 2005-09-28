@@ -192,6 +192,7 @@ typedef struct
 {
   via_trj* trj;
   int elements;
+
 }via_trj_array;
 /*internal*/
 void SetAcc_vt(via_trj *trj,double acc);
@@ -204,10 +205,16 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
 via_trj_array* read_file_vta(char* filename,int extrapoints);
 via_trj_array* new_vta(int num_columns,int max_rows);
 void set_acc_vta(via_trj_array* vt,btreal acc);
-int add_point_vta(via_trj_array* vt,vect_n *pt);
-int ins_point_vta(via_trj_array* vt,int idx, vect_n *pt);
+
+void next_point_vta(via_trj_array* vt);
+void prev_point_vta(via_trj_array* vt);
+int ins_point_vta(via_trj_array* vt, vect_n *pt);
+int del_point_vta(via_trj_array* vt);
+int get_current_point_vta(via_trj_array* vt);
+int set_current_point_vta(via_trj_array* vt,int idx);
+vectray* get_vr_vta(via_trj_array* vt);
 int scale_vta(via_trj_array* vt,double vel,double acc);
-int del_point_vta(via_trj_array* vt,int idx);
+
 void free_vta(via_trj_array* vt);
 void write_file_vta(via_trj_array* vt,char *filename);
 

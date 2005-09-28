@@ -12,7 +12,7 @@
  *                                                                      *
  *======================================================================*/
 
-/** \fi le btmath.c
+/** \file btmath.c
     A common set of mathematical operations. 
     
     This code provides objects and methods for:
@@ -215,30 +215,50 @@ vect_n * new_vn(int size) //allocate an n-vector
 {
   void* vmem;
   vect_n *n;
+  
+  #ifdef VECT_SIZE_CHK
+   vect_size_ok(size,MAX_VECTOR_SIZE,"new_vn");
+  #endif
+  
   //allocate mem for vector,return vector, and return structure
   if ((vmem = malloc(2*size*sizeof(btreal)+2*sizeof(vect_n))) == NULL)
   {
     syslog(LOG_ERR,"btmath: vect_n memory allocation failed, size %d",size);
     return NULL;
   }
-
-  n = (vect_n*)vmem;
+   
   addbtptr(vmem);
-  n->n = size;
+  n = init_vn((vect_n*)vmem);
+  return n;
+}
 
+/** Takes a vect_n* to a block of memory and initializes the
+vect_n data structures.
+
+Values are not initialized
+
+note: a vect_n* instead of a void* is used for convinience when
+linking up stack allocated vect_n's.
+
+
+*/
+vect_n* init_vn(vect_n* v, int size)
+{
+  void* vmem;
+  vect_n* n;
+
+  vmem = (void*)v;
+  n = (vect_n*)vmem;
+  n->n = size;
   n->ret = (vect_n*)(vmem + sizeof(vect_n));
   n->q = (btreal*)(vmem+ 2*sizeof(vect_n));
   n->ret->n = size;
-
   n->ret->q = (btreal*)(vmem + 2*sizeof(vect_n) + size*sizeof(btreal));
   n->ret->ret = n->ret;
-#ifdef VECT_SIZE_CHK
-   vect_size_ok(size,MAX_VECTOR_SIZE,"new_vn");
-#endif
-  fill_vn(n,0.0);
-  fill_vn(n->ret,0.0);
   return n;
 }
+
+
 /** Free the memory of a vect_n object
   This function frees the memory previously allocated. Instead of calling free_vn()
   it is easier to call freebtptr() at the end of your program to free all the btmath
@@ -1043,6 +1063,7 @@ vectray * new_vr(int vect_size,int max_rows)
   n->lval = new_vn(vect_size);
   n->rval = new_vn(vect_size);
   n->stride = vect_size;
+  n->edit_point = 0;
   n->data = (btreal*)(vmem + sizeof(vectray)+ sizeof(btreal)*vect_size);
 
   for (cnt = 0; cnt < max_rows; cnt ++)
@@ -1107,7 +1128,11 @@ BTINLINE vect_n * getvn_vr(vect_n *dest,vectray *ray, int idx)
 }
 
 /** Add a vect_n to the array of vect_n's
- 
+  This is the fastest way to copy data from a vector to
+  an array.
+
+ \retval 0 = Append was successful
+         -1 = The array is full.
 */
 BTINLINE int append_vr(vectray *ray, vect_n* v)
 {
@@ -1121,57 +1146,132 @@ BTINLINE int append_vr(vectray *ray, vect_n* v)
     return -1;
   }
 }
-
-
-/** 
- Adds a point to the vectray if room is available and returns
- a pointer to a vector to copy to it.
+/** Increment vector array edit point 
+    see edit_point_vr()
 */
-BTINLINE vect_n * vn_append_vr(vectray *ray)
+void next_vr(vectray *ray)
 {
-  
-  if (ray->num_rows < ray->max_rows){
-    //set_vn(idx_vr(ray,ray->num_rows),v);
-    ray->num_rows++;
-    return idx_vr(ray,ray->num_rows);
-  }
-  else{
-    return NULL;
-  }
+  if(ray->edit_point < ray->num_rows) ray->edit_point++;
 }
-
-/** 
- Insert a point to the vectray if room is available and returns
- a pointer to a vector to copy to it.
+/** Decrement vector array edit point 
+    see edit_point_vr()
 */
-BTINLINE vect_n * vn_insert_vr(vectray *ray,int idx)
+void prev_vr(vectray *ray)
+{
+  if(ray->edit_point > 0) ray->edit_point--;
+}
+/** Set edit point to beginning of array 
+    see edit_point_vr()
+*/
+void start_vr(vectray *ray)
+{
+  ray->edit_point = 0;
+}
+/** Set edit point to very end of a vector array.
+
+  Note that this moves the edit point beyond the
+  last row such that an insert_vr() will add a row to
+  the end.
+    see edit_point_vr()
+*/
+void end_vr(vectray *ray)
+{
+  ray->edit_point = ray->num_rows;
+}
+/** Set the edit point to the index provided
+ see edit_point_vr()
+ 
+ \retval 0 = set edit point was successful
+         -1 = the provided index was out of bounds.
+*/
+int edit_at_vr(vectray *ray,int idx)
+{
+  if ((idx >= 0) && (idx <= ray->num_rows)){
+    ray->edit_point = idx;
+    return 0;
+  }
+  else return -1;
+}
+/** Get the present edit point for a vector array.
+
+The vectray object maintains an internal index for editing called
+the edit point. \bug not yet threadsafe
+
+Moving the edit point is accomplished using the following functions:
+ - next_vr()
+ - prev_vr()
+ - start_vr()
+ - end_vr()
+ - edit_at_vr()
+ 
+Editing at the edit point is accomplished with:
+ - insert_vr()
+ - delete_vr()
+ 
+
+
+*/
+int edit_point_vr(vectray *ray)
+{
+  return ray->edit_point;
+  
+}
+/** 
+ Insert a point to the vectray if room is available.
+ 
+ \bug The array does NOT automatically grow!
+ 
+ blank spot is inserted
+ num_rows is incremented
+ edit_point is incremented
+ \retval 0 = Insert was successful
+         -1 = The array is full.
+*/
+BTINLINE int insert_vr(vectray *ray,vect_n *src)
 {
   int cnt;
   if (ray->num_rows < ray->max_rows){
-    //set_vn(idx_vr(ray,ray->num_rows),v);
-    ray->num_rows++;
-    for(cnt = ray->num_rows-1;cnt > idx;cnt--)
+    for(cnt = ray->num_rows;cnt > ray->edit_point;cnt--)
     {
       set_vn(lval_vr(ray,cnt),rval_vr(ray,cnt-1));
     }
-    return idx_vr(ray,idx);
+    set_vn(idx_vr(ray,ray->edit_point),src);
+    ray->num_rows++;
+    ray->edit_point++;
+    return 0;
   }
   else{
-    return NULL;
+    return -1;
   }
 }
+
 /** Remove a vector from the vector array and copy all subsequent
-vectors up one
+vectors to fill the gap.
+
+If the edit point is at or beyond the end of the array (one past the last row) then
+the last row will be deleted.
+
+It is safe to call delete_vr() on an empty array.
+
+\retval 0 = Delete was successful
+         1 = The array is empty.
 */
-int delete_vr(vectray *ray, int idx)
+int delete_vr(vectray *ray)
 {
   int cnt;
-  for(cnt = idx;cnt < ray->num_rows - 1;cnt++)
+  for(cnt = ray->edit_point;cnt < ray->num_rows - 1;cnt++)
   {
    set_vn(lval_vr(ray,cnt),rval_vr(ray,cnt+1));
   }
+   
   ray->num_rows--;
-  return 0;
+  if (ray->num_rows < 0) ray->num_rows = 0; //bound to zero
+  
+  //Move edit point if we deleted from end of array
+  if (ray->edit_point > ray->num_rows) 
+    ray->edit_point = ray->num_rows;
+  if (ray->num_rows > 0) return 0;
+  else return 1;
 }
 
 /** Returns the index of the last element in ray */

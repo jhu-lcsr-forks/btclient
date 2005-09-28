@@ -293,7 +293,7 @@ int setmode_bts(btstatecontrol *sc, int mode);
 int prep_trj_bts(btstatecontrol *sc);
 int moveto_bts(btstatecontrol *sc,vect_n* dest);
 void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc);
-int movestatus(btstatecontrol *sc);
+int movestatus_bts(btstatecontrol *sc);
 int start_trj_bts(btstatecontrol *sc);
 int stop_trj_bts(btstatecontrol *sc);
 int pause_trj_bts(btstatecontrol *sc,btreal period);

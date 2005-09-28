@@ -775,36 +775,36 @@ void free_vta(via_trj_array* vt)
   free(vt);
 }
 
-/** Add a point*/
-int add_point_vta(via_trj_array* vt,vect_n *pt)
+void next_point_vta(via_trj_array* vt)
 {
-  vectray* vr;
-  vect_n* vn;
-  vr = vt->trj[0].vr;
-  vn = vn_append_vr(vr);
-  if (vn != NULL){
-    setrange_vn(vn,pt,1,0,len_vn(vn)-1);
-    return 0;
-  }
-  else return -1;
+  next_vr(vt->trj[0].vr);
 }
-/** insert a point*/
-int ins_point_vta(via_trj_array* vt,int idx, vect_n *pt)
+
+void prev_point_vta(via_trj_array* vt)
 {
-  vectray* vr;
-  vect_n* vn;
-  vr = vt->trj[0].vr;
-  vn = vn_insert_vr(vr,idx);
-  if (vn != NULL){
-    setrange_vn(vn,pt,1,0,len_vn(vn)-1);
-    return 0;
-  }
-  else return -1;
+   prev_vr(vt->trj[0].vr);
 }
-int del_point_vta(via_trj_array* vt,int idx)
+int ins_point_vta(via_trj_array* vt, vect_n *pt)
 {
-  delete_vr(vt->trj[0].vr,idx);
-  return 0;
+  return insert_vr(vt->trj[0].vr,pt);
+}
+int del_point_vta(via_trj_array* vt)
+{
+  return delete_vr(vt->trj[0].vr);
+}
+int get_current_point_vta(via_trj_array* vt)
+{
+  return edit_point_vr(vt->trj[0].vr);
+}
+int set_current_point_vta(via_trj_array* vt,int idx)
+{
+  
+  return edit_at_vr(vt->trj[0].vr,idx);
+}
+vectray* get_vr_vta(via_trj_array* vt)
+{
+  if (vt == NULL) return NULL;
+  else return vt->trj[0].vr;
 }
 
 /** Adjust all the time points in a via point trajectory array

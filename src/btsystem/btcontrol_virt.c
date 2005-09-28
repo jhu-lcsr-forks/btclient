@@ -441,7 +441,7 @@ void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc)
 
 }
 /** Return the state of the present trajectory generator */
-int movestatus(btstatecontrol *sc)
+int movestatus_bts(btstatecontrol *sc)
 {
   return sc->btt.state;
 }

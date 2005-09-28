@@ -32,6 +32,7 @@ BTINLINE int test_and_log(int ret, const char *str)
     return 0;
 }
 
+
 BTINLINE void * xmalloc(size_t size)
 {
  void* vmem;
