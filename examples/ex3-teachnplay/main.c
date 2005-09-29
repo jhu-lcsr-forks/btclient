@@ -577,6 +577,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     //  Load trajectory - from file, from memory
     //  Play trajectory
   case 'T':
+    setmode_bts(active_bts,SCMODE_TRJ);
     moveparm_bts(active_bts,0.5,0.5);
     prep_trj_bts(active_bts);
     while (movestatus_bts(active_bts) == BTTRAJ_INPREP)

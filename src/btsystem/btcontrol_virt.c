@@ -361,7 +361,7 @@ int setmode_bts(btstatecontrol *sc, int mode)
 
       set_vn(sc->btp.qref,sc->btp.q);
       (*(sc->btp.reset))(&sc->btp);
-      sc->mode = SCMODE_IDLE;
+      sc->mode = SCMODE_TRJ;
     }
     break;
   default:
@@ -373,11 +373,18 @@ int setmode_bts(btstatecontrol *sc, int mode)
   return 0;
 }
 /** Move the wam from its present position to the starting position of the
-loaded trajectory. */
+loaded trajectory. 
+
+\return 0 = success
+       -1 = Trajectory not in a stopped state. (Prerequisite)
+       -2 = Statecontroller not in TRJ state. (prerequisite)
+*/
 int prep_trj_bts(btstatecontrol *sc)
 {
   char vect_buf1[200];
   BTPTR_CHK(sc,"moveparm_bts")
+  
+  if(sc->mode != SCMODE_TRJ) return -2;
   test_and_log(
     pthread_mutex_lock(&(sc->mutex)),"prep_trj_bts lock mutex failed");
   if(sc->btt.state == BTTRAJ_STOPPED)
@@ -417,7 +424,7 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
     setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
     start_traptrj(&(sc->trj), arclength_pwl(&(sc->pth)));
     sc->btt.state = BTTRAJ_INPREP;
-    sc->prep_only = 0;
+    sc->prep_only = 1;
     return 0;
     test_and_log(
       pthread_mutex_unlock(&(sc->mutex)),"moveto_bts unlock mutex failed");
