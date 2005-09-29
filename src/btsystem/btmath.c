@@ -1442,7 +1442,7 @@ int write_csv_file_vr(char *filename, vectray *vr)
   }
   
   syslog(LOG_ERR, "write_csv_file_vr: %d",numrows_vr(vr));
-  for (cnt = -1; cnt < numrows_vr(vr) + 1; cnt ++)
+  for (cnt = 0; cnt < numrows_vr(vr) ; cnt ++)
     fprintf(outFile,"%s\n",sprint_csv_vn(buff,idx_vr(vr,cnt)));
   
   fclose(outFile);

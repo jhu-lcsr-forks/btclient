@@ -435,8 +435,10 @@ void RenderMAIN_SCREEN()
   if (vta != NULL)
   {//print current point
     vr = get_vr_vta(vta);
+    mvprintw(line, 0, "Taught Points:%d",numrows_vr(vr));
+    line++;
     if (numrows_vr(vr)>0)
-      mvprintw(line, column_offset , "Current Teach Point :%s ", sprint_vn(vect_buf1,idx_vr(vr,get_current_point_vta(vta))));
+      mvprintw(line,0 , "Current Teach Point :%s ", sprint_vn(vect_buf1,idx_vr(vr,get_current_point_vta(vta))));
     ++line;
   }
   entryLine = line + 2;
