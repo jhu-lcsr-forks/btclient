@@ -111,23 +111,23 @@ int InitWAM(char *wamfile)
   int cnt,ret;
   const double pi = 3.14159;
   
-  WAM.zero_offsets = new_vn(10);
-  WAM.stop_torque = new_vn(10);
-  WAM.park_location = new_vn(10);
-  WAM.Mpos = new_vn(10);
-  WAM.Mtrq  = new_vn(10);
-  WAM.Jpos = new_vn(10);
-  WAM.Jvel = new_vn(10);
-  WAM.Jacc = new_vn(10);
-  WAM.Jref = new_vn(10);
-  WAM.Jtrq = new_vn(10);
-  WAM.Ttrq = new_vn(10);
-  WAM.Kp = new_vn(10);
-  WAM.Kd = new_vn(10);
-  WAM.Ki = new_vn(10);
-  WAM.saturation = new_vn(10);
-  WAM.vel = new_vn(10);
-  WAM.acc = new_vn(10);
+  WAM.zero_offsets = new_vn(7);
+  WAM.stop_torque = new_vn(7);
+  WAM.park_location = new_vn(7);
+  WAM.Mpos = new_vn(7);
+  WAM.Mtrq  = new_vn(7);
+  WAM.Jpos = new_vn(7);
+  WAM.Jvel = new_vn(7);
+  WAM.Jacc = new_vn(7);
+  WAM.Jref = new_vn(7);
+  WAM.Jtrq = new_vn(7);
+  WAM.Ttrq = new_vn(7);
+  WAM.Kp = new_vn(7);
+  WAM.Kd = new_vn(7);
+  WAM.Ki = new_vn(7);
+  WAM.saturation = new_vn(7);
+  WAM.vel = new_vn(7);
+  WAM.acc = new_vn(7);
   WAM.Cpos = new_v3();
   WAM.Cpoint = new_v3();
   WAM.Cref = new_v3();
@@ -235,7 +235,7 @@ int InitWAM(char *wamfile)
      link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
 
      tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
-     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.45);
+     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.05),0.346); //Ball grip
      
      /*2 links in series*/
      //link_mass_bot(&WAM.robot,3,C_v3(0.027,0.0,0.283),1.891);
@@ -594,7 +594,7 @@ void SetWAMpos(vect_n *wv)
   vect_n *motor_angle;
   double result;
   
-  motor_angle = new_vn(10);
+  motor_angle = new_vn(7);
   /* Tell the safety logic to ignore the next faults */
   SetByID(SAFETY_MODULE, IFAULT, 8);
 
@@ -995,9 +995,6 @@ void ServiceContinuousTeach()
   evalDL(&(WAM.cteach));
 }
 
-
-
-
 void registerWAMcallback(void *func)
 {
   if (func != NULL)
@@ -1009,45 +1006,7 @@ int BlankWAMcallback(struct btwam_struct *wam)
 {
   return 0;
 }
-/*
-int playViaTrajectoryFile(char *fileName, double timeScale)
-{
-  //double  **trajList;
-  int     err;
-  int     rows, columns;
-  int     i, cnt, idx;
-  char outbuff[100];
-  vect_n  *jointAngle, *vel, *acc;
 
-  jointAngle = new_vn(10);
-  vel  = new_vn(10);
-  acc  = new_vn(10);
-  
-  //Initialize the trajectory
-  err = init_traj_file(fileName, &trajList, &rows, &columns);
-  if(err)
-    return(err);
-  syslog(LOG_ERR, "After init_traj_file, rows %d, columns %d", rows, columns);
-  //Go to initial position with a preset vel and acc
-  for(i = 0; i < columns-1; i++)
-  {
-    syslog(LOG_ERR, "Started loading %d", i);
-    setval_vn(jointAngle,i,trajList[0][i+1]);
-    setval_vn(vel,i,1.0);
-    setval_vn(acc,i, 0.5);
-    syslog(LOG_ERR, "Finished loading %d", i);
-  }
-  syslog(LOG_ERR, "Set initial jointAngle: %s",sprint_vn(outbuff,jointAngle));
-  MovePropsWAM(vel, acc);
-  MoveWAM(jointAngle);
-  for (cnt = 0;cnt < WAM.num_actuators;cnt++)
-  {
-    idx = WAM.motor_position[cnt]; //idx = joint we are controlling
-    SCstartViaTrjFile( &(WAM.sc[idx]), &trajList, rows, idx,timeScale);
-  }
-
-}
-*/
 /*======================================================================*
  *                                                                      *
  *             Copyright (c) 2003 Barrett Technology, Inc.              *

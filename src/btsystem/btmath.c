@@ -228,7 +228,7 @@ vect_n * new_vn(int size) //allocate an n-vector
   }
    
   addbtptr(vmem);
-  n = init_vn((vect_n*)vmem);
+  n = init_vn((vect_n*)vmem, size);
   return n;
 }
 

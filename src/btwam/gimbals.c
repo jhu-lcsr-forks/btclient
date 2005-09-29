@@ -47,9 +47,9 @@ int getGimbalsAngles(double *gimbals)
 
     /* Extract the gimbals position information from the temp array */
     /* Gimbals position is returned in Q4.12, so we must divide by 2^12 to get radians */
-    gimbals[0] = TWOPI * act[0].puck.position / act[0].motor.counts_per_rev;// * gimbalsGain[0] + gimbalsOffset[0];
-    gimbals[1] = TWOPI * act[1].puck.position / act[1].motor.counts_per_rev;// * gimbalsGain[1] + gimbalsOffset[1];
-    gimbals[2] = TWOPI * act[2].puck.position / act[2].motor.counts_per_rev;// * gimbalsGain[2] + gimbalsOffset[2];
+    gimbals[0] = TWOPI * WAM->act[0].puck.position / WAM->act[0].motor.counts_per_rev;// * gimbalsGain[0] + gimbalsOffset[0];
+    gimbals[1] = TWOPI * WAM->act[1].puck.position / WAM->act[1].motor.counts_per_rev;// * gimbalsGain[1] + gimbalsOffset[1];
+    gimbals[2] = TWOPI * WAM->act[2].puck.position / WAM->act[2].motor.counts_per_rev;// * gimbalsGain[2] + gimbalsOffset[2];
     
     return(0); /* Return success */
 }
@@ -58,7 +58,9 @@ int initGimbals(void)
 {
     FILE *inFile;
     int i;
-
+    wam_struct *WAM;
+    
+    WAM = GetWAM();
     if(!gimbalsInit)
     {
         /* Wake the gimbals puck */

@@ -312,7 +312,9 @@ vect_n* eval_bts(btstatecontrol *sc)
 }
 
 
-
+int getmode_bts(btstatecontrol *sc){
+  return sc->mode;
+}
 /*! \brief Set the state controller mode
  
   Sets the controller mode. To keep anything from "jumping" unexpectedly, we reset our

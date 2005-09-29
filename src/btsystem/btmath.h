@@ -151,7 +151,7 @@ vect_n* add3()
 #define LOCAL_VN(x,n) vect_n x[(1+(sizeof(vect_n)*2+sizeof(btreal)*2*(n))/sizeof(vect_n))]; init_vn((x),(n))
 /*================================*/
 vect_n* new_vn(int size); //allocate an n-vector
-vect_n* init_vn(vect_n* v); //Link up a vect_n object
+vect_n* init_vn(vect_n* v, int size); //Link up a vect_n object
 //void free_vn(vect_n *p);
 int len_vn(vect_n *src); //number of elements in the vector
 int sizeof_vn(vect_n *src); //return sizeof info for whole vector

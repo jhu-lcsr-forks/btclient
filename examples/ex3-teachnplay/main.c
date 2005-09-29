@@ -87,7 +87,9 @@ int trjisdirty = 0; //=1 if edits made to a trajectory data structure.
 int trjidx;
 
 btstatecontrol *active_bts;
-vect_n* active_pos,active_trq;
+vect_n* active_pos;
+vect_n* active_trq;
+vect_n *wv;
 char active_file[250];
 wam_struct *wam;
 vectray *vr;
@@ -129,7 +131,7 @@ int main(int argc, char **argv)
   char    chr,cnt;
   int     err;
   int i;
-
+  wv = new_vn(7);
   struct sched_param mysched;
 
   /* Initialize the ncurses screen library */
@@ -201,6 +203,12 @@ int main(int argc, char **argv)
 
   npucks = wam->num_actuators; // Get the number of initialized actuators
 
+  //prep modes
+  setmode_bts(&(wam->Csc),SCMODE_IDLE);
+  active_bts = &(wam->Jsc);
+  active_pos = wam->Jpos;
+  active_trq = wam->Jtrq;
+
   start_control_threads(10, 0.002, WAMControlThread, (void *)0);
 
   StartDisplayThread();
@@ -265,7 +273,6 @@ void Shutdown()
   syslog(LOG_ERR, "stop_control_threads");
   stop_control_threads();
   syslog(LOG_ERR, "closelog");
-  MLdestroy(&ml);
   closelog();
   syslog(LOG_ERR, "endwin");
   endwin();
@@ -383,34 +390,42 @@ void RenderMAIN_SCREEN()
   int cpt;
   double gimb[4];
   vectray* vr;
+  char vect_buf1[250];
 
 
-  
   /***** Display the interface text *****/
   line = 0;
   mvprintw(line , 0, "Barrett Technology Diagnostic Application (btdiag)");
   ++line;
-  
-  if (active_bts == &(wam->Jsc))  mvprintw(line , 0, "Mode: Joint Space");
-  else if (active_bts == &(wam->Csc))  mvprintw(line , 0, "Mode: Cartesian Space");
-  else  mvprintw(line , 0, "Mode: Undefined!!!");
-  
-  if (getmode_bts(active_bts)==SCMODE_IDLE) mvprintw(line , 24, "Constraint: IDLE");
-  else if (getmode_bts(active_bts)==SCMODE_POS) mvprintw(line , 24, "Constraint: POSITION");
-  else if (getmode_bts(active_bts)==SCMODE_TRJ) mvprintw(line , 24, "Constraint: TRAJECTORY");
-  else mvprintw(line , 24, "Constraint: UNDEFINED!!!");
+
+  if (active_bts == &(wam->Jsc))
+    mvprintw(line , 0, "Mode: Joint Space");
+  else if (active_bts == &(wam->Csc))
+    mvprintw(line , 0, "Mode: Cartesian Space");
+  else
+    mvprintw(line , 0, "Mode: Undefined!!!");
+
+  if (getmode_bts(active_bts)==SCMODE_IDLE)
+    mvprintw(line , 24, "Constraint: IDLE");
+  else if (getmode_bts(active_bts)==SCMODE_POS)
+    mvprintw(line , 24, "Constraint: POSITION");
+  else if (getmode_bts(active_bts)==SCMODE_TRJ)
+    mvprintw(line , 24, "Constraint: TRAJECTORY");
+  else
+    mvprintw(line , 24, "Constraint: UNDEFINED!!!");
   ++line;
 
-  mvprintw(line, column_offset , "Position :%s ", sprint_vn(vect_buf1,active_pos);
+  mvprintw(line, column_offset , "Position :%s ", sprint_vn(vect_buf1,active_pos));
   ++line;
   mvprintw(line, column_offset , "Force :%s ", sprint_vn(vect_buf1,active_trq));
   ++line;
   ++line;
-  if (vta != NULL){//print current point
+  if (vta != NULL)
+  {//print current point
     vr = get_vr_vta(vta);
     if (numrows_vr(vr)>0)
-      mvprintw(line, column_offset , "Current Teach Point :%s ", sprint_vn(vect_buf1,idx_vr(vr,get_current_vta(vta))));
-      ++line
+      mvprintw(line, column_offset , "Current Teach Point :%s ", sprint_vn(vect_buf1,idx_vr(vr,get_current_point_vta(vta))));
+    ++line;
   }
   refresh();
 }
@@ -419,7 +434,7 @@ void RenderMAIN_SCREEN()
 */
 void RenderJOINTSPACE_SCREEN()
 {
- 
+
   refresh();
 }
 /** Draw the main information screen.
@@ -433,7 +448,7 @@ void RenderCARTSPACE_SCREEN()
 void clearScreen(void)
 {
   test_and_log(
-  pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+    pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
   clear();
   pthread_mutex_unlock( &(disp_mutex) );
 }
@@ -447,6 +462,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
   double ftmp,tacc,tvel;
   int dtmp;
   int cMid,Mid;
+  char fn[250],chr;
+  int ret;
 
   cMid = MotorID_From_ActIdx(cpuck);
   switch (c)
@@ -465,8 +482,25 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     if (cpuck >= npucks)
       cpuck = 0;
     break;
+  case 'z': /* Send zero-position to WAM */
+    const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
+    //const_vn(wv, 0.0, -2.017, 0.0, 3.14, 0.0, 0.0, 0.0); //blanklink
+    SetWAMpos(wv);
+    break;
+  case 'g': /* Toggle gravity compensation */
+    if(gcompToggle)
+    {
+      gcompToggle = 0;
+      setGcomp(0.0);
+    }
+    else
+    {
+      gcompToggle = 1;
+      setGcomp(1.0);
+    }
+    break;
 
-  case '_': /* Refresh display */
+    case '_': /* Refresh display */
     clearScreen();
     break;
 
@@ -479,6 +513,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       active_bts = &(wam->Csc);
       active_pos = wam->R6pos;
       active_trq = wam->R6force;
+      clearScreen();
       test_and_log(pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
       //present_screen = CARTSPACE_SCREEN;
       pthread_mutex_unlock(&(disp_mutex));
@@ -489,16 +524,17 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       active_bts = &(wam->Jsc);
       active_pos = wam->Jpos;
       active_trq = wam->Jtrq;
+      clearScreen();
       test_and_log(pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
       //present_screen = JOINTSPACE_SCREEN;
       pthread_mutex_unlock(&(disp_mutex));
     }
     break;
-  case 'p'  //Constrain / free
-      if (getmode_bts(active_bts)!=SCMODE_IDLE)
-        setmode_bts(active_bts,SCMODE_IDLE);
-      else
-        setmode_bts(active_bts,SCMODE_POS);
+  case 'p':  //Constrain / free
+    if (getmode_bts(active_bts)!=SCMODE_IDLE)
+      setmode_bts(active_bts,SCMODE_IDLE);
+    else
+      setmode_bts(active_bts,SCMODE_POS);
     break;
 
     //Constrained mode:
@@ -591,7 +627,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
   case '-':
     if(getmode_bts(active_bts)==SCMODE_IDLE)
     {
-      del_point_vta(vta,active_pos);
+      del_point_vta(vta);
     }
     break;
   case 's': //Scale vta
