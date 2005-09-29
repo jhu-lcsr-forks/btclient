@@ -1062,6 +1062,7 @@ vectray * new_vr(int vect_size,int max_rows)
   n->rayvect = new_vn(vect_size);
   n->lval = new_vn(vect_size);
   n->rval = new_vn(vect_size);
+  n->eval = new_vn(vect_size);
   n->stride = vect_size;
   n->edit_point = 0;
   n->data = (btreal*)(vmem + sizeof(vectray)+ sizeof(btreal)*vect_size);
@@ -1101,7 +1102,11 @@ vect_n * rval_vr(vectray *ray,int idx)
   ray->rval->q = &(ray->data[ray->stride * idx]);
   return ray->rval;
 }
-
+vect_n * edit_vr(vectray *ray)
+{
+  ray->rval->q = &(ray->data[ray->stride * ray->edit_point]);
+  return ray->rval;
+}
 /** Reroute a vect_n data pointer to a block of data in a vector array
  
 This is a dangerous function to use. Read the code for more info.
@@ -1315,6 +1320,8 @@ vectray * resize_vr(vectray *vr,int max_rows)
   vectray *newvr;
   
   newvr = new_vr(vr->n,max_rows);
+  newvr->num_rows = vr->num_rows;
+  newvr->edit_point = vr->edit_point;
   copy_sub_vr(newvr,vr,0,0,vr->max_rows,0,0,vr->n);
   destroy_vr(vr);
   return newvr;
@@ -1442,7 +1449,7 @@ int write_csv_file_vr(char *filename, vectray *vr)
   }
   
   syslog(LOG_ERR, "write_csv_file_vr: %d",numrows_vr(vr));
-  for (cnt = 0; cnt < numrows_vr(vr) ; cnt ++)
+  for (cnt = 0; cnt < numrows_vr(vr); cnt ++)
     fprintf(outFile,"%s\n",sprint_csv_vn(buff,idx_vr(vr,cnt)));
   
   fclose(outFile);

@@ -239,7 +239,7 @@ int test_vr(void)
 
 typedef struct barrett_vectarray_n{
   btreal *data;
-  vect_n *rayvect,*lval,*rval;
+  vect_n *rayvect,*lval,*rval,*eval;
   unsigned int n;    //!< Number of elements in the vectors in this array
   unsigned int stride;  //!< Number of memory locations between each row. allows spliting one data memory block between vectrays.
   unsigned int max_rows; //!< Number of rows allocated (MAX Rows)
@@ -257,6 +257,7 @@ vect_n * mapdat_vr(vect_n *dest, vectray *ray, int idx); //map the data pointer 
 BTINLINE vect_n * idx_vr(vectray *ray,int idx); // pointer into vectray
 vect_n * lval_vr(vectray *ray,int idx);
 vect_n * rval_vr(vectray *ray,int idx);
+vect_n * edit_vr(vectray *ray);
 vect_n * getvn_vr(vect_n *dest,vectray *ray, int idx); //copy data at idx to dest
 BTINLINE int numrows_vr(vectray *ray); //returns the index of the last point
 BTINLINE int numelements_vr(vectray *ray);

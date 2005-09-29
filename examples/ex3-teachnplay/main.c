@@ -390,17 +390,17 @@ void finish_entry()
 void RenderMAIN_SCREEN()
 {
   //int val;
-  int cnt, idx,Mid;
+  int cnt, idx,Mid,cp;
   int line,line2;
-  int cpt;
+  int cpt,nrows;
   double gimb[4];
   vectray* vr;
   char vect_buf1[250];
 
-
+  clear();
   /***** Display the interface text *****/
   line = 0;
-  mvprintw(line , 0, "Barrett Technology Diagnostic Application (btdiag)");
+  mvprintw(line , 0, "Barrett Technology Teach & Play Example");
   ++line;
 
 
@@ -435,11 +435,32 @@ void RenderMAIN_SCREEN()
   if (vta != NULL)
   {//print current point
     vr = get_vr_vta(vta);
-    mvprintw(line, 0, "Taught Points:%d",numrows_vr(vr));
+    cpt = get_current_point_vta(vta);
+    nrows = numrows_vr(vr);
+    mvprintw(line,0,"Current Index:%d of %d",cpt,nrows);
     line++;
-    if (numrows_vr(vr)>0)
-      mvprintw(line,0 , "Current Teach Point :%s ", sprint_vn(vect_buf1,idx_vr(vr,get_current_point_vta(vta))));
-    ++line;
+    
+    mvprintw(line, 0 ,   "Previos Teach Point :");
+    mvprintw(line+1, 0 , "Current Teach Point :");
+    mvprintw(line+2, 0 , "   Next Teach Point :");
+    
+    if (nrows > 0){
+      if (nrows != cpt)
+        mvprintw(line+1, 21 , "%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt)));
+      else
+        mvprintw(line+1, 21 , "END OF LIST");
+    }
+    else mvprintw(line+1, 21 , "EMPTY LIST");
+    
+    if (nrows >0 && cpt > 0)
+      mvprintw(line, 21,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt-1)));
+    
+    if (nrows >1)
+      if (cpt < nrows-1)
+        mvprintw(line+2, 21,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt+1)));
+      else if (cpt == nrows-1)
+        mvprintw(line+2, 21, "END OF LIST");
+    line +=3;
   }
   entryLine = line + 2;
   refresh();
@@ -606,6 +627,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       scanw("%s", fn);
       if (vta != NULL)
       {
+        
         write_file_vta(vta,fn);
       }
       finish_entry();

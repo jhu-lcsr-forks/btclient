@@ -787,7 +787,9 @@ void prev_point_vta(via_trj_array* vt)
 }
 int ins_point_vta(via_trj_array* vt, vect_n *pt)
 {
-  return insert_vr(vt->trj[0].vr,pt);
+  LOCAL_VN(tmp,len_vn(pt)+1);
+  setrange_vn(tmp,pt,1,0,len_vn(pt));
+  return insert_vr(vt->trj[0].vr,tmp);
 }
 int del_point_vta(via_trj_array* vt)
 {
@@ -814,7 +816,7 @@ based on input velocity.
 */
 int scale_vta(via_trj_array* vt,double vel,double acc)
 {
-  btreal arclen = 0,thislen;
+  btreal arclen = 0.0,thislen;
   vectray *vr;
   int cnt;
   vr = vt->trj[0].vr;
