@@ -209,9 +209,10 @@ int main(int argc, char **argv)
   active_pos = wam->Jpos;
   active_trq = wam->Jtrq;
   //new trajectory
-        vta = new_vta(len_vn(active_pos),50);
-      register_vta(active_bts,vta);
-      active_file[0] = 0;
+  vta = new_vta(len_vn(active_pos),50);
+  register_vta(active_bts,vta);
+  active_file[0] = 0;
+
 
   start_control_threads(10, 0.002, WAMControlThread, (void *)0);
 
@@ -402,6 +403,7 @@ void RenderMAIN_SCREEN()
   mvprintw(line , 0, "Barrett Technology Diagnostic Application (btdiag)");
   ++line;
 
+
   if (active_bts == &(wam->Jsc))
     mvprintw(line , 0, "Mode: Joint Space");
   else if (active_bts == &(wam->Csc))
@@ -422,6 +424,7 @@ void RenderMAIN_SCREEN()
     mvprintw(line , 24, "Constraint: TRAJECTORY");
   else
     mvprintw(line , 24, "Constraint: UNDEFINED!!!");
+
   ++line;
 
   mvprintw(line, column_offset , "Position :%s ", sprint_vn(vect_buf1,active_pos));
