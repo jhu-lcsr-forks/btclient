@@ -208,6 +208,10 @@ int main(int argc, char **argv)
   active_bts = &(wam->Jsc);
   active_pos = wam->Jpos;
   active_trq = wam->Jtrq;
+  //new trajectory
+        vta = new_vta(len_vn(active_pos),50);
+      register_vta(active_bts,vta);
+      active_file[0] = 0;
 
   start_control_threads(10, 0.002, WAMControlThread, (void *)0);
 
@@ -405,6 +409,11 @@ void RenderMAIN_SCREEN()
   else
     mvprintw(line , 0, "Mode: Undefined!!!");
 
+  if (vta == NULL)
+    mvprintw(line , 50, "Trajectory: NONE");
+  else
+    mvprintw(line , 50, "Trajectory: %s",active_file);
+  
   if (getmode_bts(active_bts)==SCMODE_IDLE)
     mvprintw(line , 24, "Constraint: IDLE");
   else if (getmode_bts(active_bts)==SCMODE_POS)
@@ -427,6 +436,7 @@ void RenderMAIN_SCREEN()
       mvprintw(line, column_offset , "Current Teach Point :%s ", sprint_vn(vect_buf1,idx_vr(vr,get_current_point_vta(vta))));
     ++line;
   }
+  entryLine = line + 2;
   refresh();
 }
 /** Draw the main information screen.
