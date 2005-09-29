@@ -1,0 +1,21 @@
+Example 3 - Teach & Play with the WAM
+
+This is a program that demonstrates basic teach & play functionality. It uses
+ncurses to provide a simple interactive user interface. The main() and ProcessInput() 
+functions do all the interesting work.
+
+To compile & run
+
+1. #make
+2. Switch on WAM
+3. Idle WAM (press SHIFT and IDLE buttons on pendant. The yellow light should come on)
+4. #./run
+
+Things to note:
+
+./.runinfo - The name of your executable is placed in this config file. ./run is
+a script to do all the things needed by RTAI in order to run your program in realtime.
+
+./Makefile - note the location of the barrett include files and libraries
+
+The esdcan-driver module must be loaded. Use #lsmod to see if it is.
