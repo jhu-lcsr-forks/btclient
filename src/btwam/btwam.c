@@ -232,24 +232,27 @@ int InitWAM(char *wamfile)
   //init_wam_btrobot(&(WAM.robot));
    if (WAM.num_actuators == 4){
      link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
-     //link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
-     
-     //2 links in series
-     link_mass_bot(&WAM.robot,3,C_v3(0.027,0.0,0.283),1.891);
-     tool_geom_bot(&WAM.robot,0.0,0.639,0.0,0.0);
-     
-     //tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
+     link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
+
+     tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
      tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.45);
      
-     //Blank link end mass
+     /*2 links in series*/
+     //link_mass_bot(&WAM.robot,3,C_v3(0.027,0.0,0.283),1.891);
+     //tool_geom_bot(&WAM.robot,0.0,0.639,0.0,0.0);
+          
+     /*Blank link end mass*/
      //tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
      //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.025),2.50);
+     
      /*Hand end mass*/
-//     tool_geom_bot(&WAM.robot,0.0,0.371,0.0,0.0);
-//     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),1.13);
+     //tool_geom_bot(&WAM.robot,0.0,0.371,0.0,0.0);
+     //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),1.13);
+     
      /*
-      link_geom_bot(&WAM.robot,3,-pi/2.0,0.0,0.4,-pi/2.0);
+     link_geom_bot(&WAM.robot,3,-pi/2.0,0.0,0.4,-pi/2.0);
      link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
+     
      tool_geom_bot(&WAM.robot,0.0,0.3574,0.0,0.0);
      tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.000);*/
    }
