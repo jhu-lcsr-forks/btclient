@@ -235,12 +235,11 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
 { 
   int state;
   BTPTR_CHK(sc,"moveparm_bts")
-  test_and_log(
-    pthread_mutex_lock(&(sc->mutex)),"eval_trj_bts lock mutex failed");
+  
   state = sc->btt.state;
   if (state == BTTRAJ_INPREP)
   {
-    if (state == BTTRAJ_STOPPED)
+    if (sc->trj.state == BTTRAJ_STOPPED)
     {
       if (sc->prep_only)
         sc->btt.state = BTTRAJ_DONE;
@@ -255,9 +254,7 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
     else if (state == BTTRAJ_UNPAUSING && getstate_btramp(&(sc->ramp)) == BTRAMP_MAX) sc->btt.state = BTTRAJ_RUN;
     set_vn(sc->btt.qref, (*(sc->btt.eval))(&(sc->btt)));//evaluate path
   }
-  test_and_log(
-    pthread_mutex_unlock(&(sc->mutex)),"eval_trj_bts unlock mutex failed");
-
+  
   return sc->btt.qref;
 }
 
@@ -293,8 +290,8 @@ vect_n* eval_bts(btstatecontrol *sc)
     return sc->t;
     break;
   case SCMODE_TRJ://PID
-    eval_btramp(&(sc->ramp),*(sc->dt));
-    sc->local_dt = *(sc->dt) * sc->dt_scale;
+    //eval_btramp(&(sc->ramp),*(sc->dt));
+    //sc->local_dt = *(sc->dt) * sc->dt_scale;
     eval_trj_bts(sc);
   case SCMODE_POS://PID
     set_vn(sc->t,(*(sc->btp.eval))(&sc->btp));
@@ -351,10 +348,7 @@ int setmode_bts(btstatecontrol *sc, int mode)
   case SCMODE_TRJ:
     if (sc->btp.dat == NULL )
       sc->mode = SCMODE_IDLE;
-    else if (sc->btt.dat == NULL)
-    { //do nothing
-    }
-    else
+    else if (sc->btt.dat != NULL)
     {
       if (sc->btt.state != BTTRAJ_STOPPED)
         stop_trj_bts(sc);
@@ -391,10 +385,14 @@ int prep_trj_bts(btstatecontrol *sc)
   {
     clear_pwl(&(sc->pth));
     add_arclen_point_pwl(&(sc->pth),sc->q);
+    syslog_vn("prep start:",sc->q);
     add_arclen_point_pwl(&(sc->pth),(*(sc->btt.reset))(&(sc->btt)));
-
+    syslog_vn("prep end:",idx_vr(sc->pth.vr,1));
+    
     setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
+    syslog(LOG_ERR,"prep Acc: %f Vel:%f",sc->vel, sc->acc);
     start_traptrj(&(sc->trj), arclength_pwl(&(sc->pth)));
+    syslog(LOG_ERR,"prep Arclen:%f",arclength_pwl(&(sc->pth)));
     sc->btt.state = BTTRAJ_INPREP;
     sc->prep_only = 0;
     test_and_log(

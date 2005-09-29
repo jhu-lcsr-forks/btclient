@@ -229,6 +229,8 @@ vect_n * new_vn(int size) //allocate an n-vector
    
   addbtptr(vmem);
   n = init_vn((vect_n*)vmem, size);
+  fill_vn(n,0.0);
+  fill_vn(n->ret,0.0);
   return n;
 }
 
@@ -477,6 +479,23 @@ BTINLINE void einit_vn(vect_n* dest,int i) // einit_vn(&a,3) = <0,0,0,1,0>
   dest->q[i] = 1.0;
   //setval_vn(dest,1.0);
 }
+vect_n* subset_vn(vect_n* src,int start,int end)
+{
+  int cnt;
+  #ifdef VECT_SIZE_CHK
+  if((end-start) < 0 || (end-start)>src->n)
+    syslog(LOG_ERR,"btmath ERROR:subset_vn tried to use: start:%d end:%d",start,end);
+  #endif
+  src->ret->n = end - start;
+  for (cnt=0;cnt < src->ret->n;cnt++)
+    src->ret->q[cnt] = src->q[start + cnt];
+  return src->ret;
+}
+void reset_vn(vect_n* src)
+{
+  src->ret->n = src->n;
+}
+
 //@}
 /** @name vect_n Operator Functions
     N element vector operation functions.

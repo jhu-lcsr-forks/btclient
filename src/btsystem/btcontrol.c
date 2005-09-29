@@ -819,14 +819,20 @@ int scale_vta(via_trj_array* vt,double vel,double acc)
   btreal arclen = 0.0,thislen;
   vectray *vr;
   int cnt;
+  vect_n* lval,*rval;
+  
   vr = vt->trj[0].vr;
   setval_vn(idx_vr(vr,0),0,0.0);
   
   for(cnt = 1;cnt < numrows_vr(vr);cnt++){
-    arclen += norm_vn(sub_vn(lval_vr(vr,cnt-1),rval_vr(vr,cnt)));
+    lval = lval_vr(vr,cnt-1);
+    rval = rval_vr(vr,cnt);
+    arclen += norm_vn(sub_vn(subset_vn(lval,1,lval->n),subset_vn(rval,1,rval->n)));
+    reset_vn(lval);
+    reset_vn(rval); /** \bug the reset_vn() function is a bit of a hack, is there a better way?*/
     setval_vn(idx_vr(vr,cnt),0,arclen/vel);
   }
-  return 0;
+  return 0; 
 }
 
 

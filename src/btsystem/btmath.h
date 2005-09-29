@@ -169,6 +169,8 @@ btreal getval_vn(vect_n* dest, int idx);
 vect_n* const_vn(vect_n* a, ...); //set vector to a constant array of btreals
 void einit_vn(vect_n* dest,int i); // einit_vn(&a,3) = <0,0,0,1,0,0>
 void fill_vn(vect_n* dest, btreal val);
+vect_n* subset_vn(vect_n* src,int start,int end);
+void reset_vn(vect_n* src);
 
 vect_n* neg_vn(vect_n* a); //negate a vector
 vect_n* scale_vn(btreal a, vect_n* v);

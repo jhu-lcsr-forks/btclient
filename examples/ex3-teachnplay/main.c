@@ -192,11 +192,14 @@ int main(int argc, char **argv)
 
   /* Initialize our data logging structure */
   wam->logdivider = 1;
-  PrepDL(&(wam->log),6);
+  PrepDL(&(wam->log),7);
   AddDataDL(&(wam->log),&(wam->log_time),sizeof(double),2,"Time");
-  AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
-  AddDataDL(&(wam->log),valptr_vn(wam->Jref),sizeof(btreal)*7,4,"Jref");
-  AddDataDL(&(wam->log),valptr_vn(wam->Jtrq),sizeof(btreal)*7,4,"Jtrq");
+  AddDataDL(&(wam->log),&(wam->loop_time),sizeof(RTIME),BTLOG_LONGLONG,"loop_time");
+  AddDataDL(&(wam->log),&(wam->loop_period),sizeof(RTIME),BTLOG_LONGLONG,"loop_period");
+  AddDataDL(&(wam->log),&(wam->readpos_time),sizeof(RTIME),BTLOG_LONGLONG,"readpos_time");
+  AddDataDL(&(wam->log),&(wam->user_time),sizeof(RTIME),BTLOG_LONGLONG,"user_time");
+  AddDataDL(&(wam->log),&(wam->Jsc_time),sizeof(RTIME),BTLOG_LONGLONG,"Jsc_time");
+
   InitDL(&(wam->log),1000,"datafile.dat");
 
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
@@ -218,7 +221,7 @@ int main(int argc, char **argv)
 
   StartDisplayThread();
 
-
+  DLon(&(wam->log));
   while (!done)
   {
 
@@ -230,7 +233,7 @@ int main(int argc, char **argv)
 
     usleep(100000); // Sleep for 0.1s
   }
-
+  DLon(&(wam->log));
   Shutdown();
   syslog(LOG_ERR, "CloseSystem");
   CloseSystem();
@@ -428,6 +431,12 @@ void RenderMAIN_SCREEN()
   ++line;
 
   mvprintw(line, column_offset , "Position :%s ", sprint_vn(vect_buf1,active_pos));
+  ++line;++line;
+  mvprintw(line, column_offset , "Pos :%s ", sprint_vn(vect_buf1,active_bts->q));
+  ++line;
+  mvprintw(line, column_offset , "Targ Pos :%s ", sprint_vn(vect_buf1,active_bts->qref));
+  ++line;
+  mvprintw(line, column_offset , "Time :%f ", active_bts->dt);
   ++line;
   mvprintw(line, column_offset , "Force :%s ", sprint_vn(vect_buf1,active_trq));
   ++line;
@@ -462,6 +471,9 @@ void RenderMAIN_SCREEN()
         mvprintw(line+2, 21, "END OF LIST");
     line +=3;
   }
+  line++;
+  mvprintw(line,0,"bts: state:%d",active_bts->mode);
+  if(active_bts->btt.dat != NULL)mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
   entryLine = line + 2;
   refresh();
 }
@@ -494,12 +506,13 @@ void clearScreen(void)
 */
 void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate action.
 {
-  int cnt;
+  int cnt,elapsed = 0;
   double ftmp,tacc,tvel;
   int dtmp;
   int cMid,Mid;
   char fn[250],chr;
   int ret;
+  int done1;
 
   cMid = MotorID_From_ActIdx(cpuck);
   switch (c)
@@ -580,13 +593,24 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     setmode_bts(active_bts,SCMODE_TRJ);
     moveparm_bts(active_bts,0.5,0.5);
     prep_trj_bts(active_bts);
-    while (movestatus_bts(active_bts) == BTTRAJ_INPREP)
+    elapsed = 0;
+    done1 = 0;
+    while (movestatus_bts(active_bts) == BTTRAJ_INPREP && !done1)
     {
       usleep(100000);
+      elapsed ++;
+      syslog(LOG_ERR,"Waiting for prep: elapsed:%d Status:%d",elapsed,movestatus_bts(active_bts));
+      if (elapsed > 50) done1 = 1;
+      
     }
-
+    syslog(LOG_ERR,"Done with prep");
     //wam->Jsc.trj->state = BTTRAJ_READY;
+    if (elapsed < 50)
     start_trj_bts(active_bts);
+    else {
+      setmode_bts(active_bts,SCMODE_IDLE);
+      stop_trj_bts(active_bts);
+    }
     break;
   case 't':
     stop_trj_bts(active_bts);

@@ -168,7 +168,8 @@ typedef struct btwam_struct{
   btreal F;
   
   //Loop timing info
-  RTIME loop_time,loop_period,readpos_time,writetrq_time,user_time;
+  RTIME loop_time,loop_period,readpos_time,writetrq_time,user_time,Jsc_time,Csc_time;
+  double skipmax;
   pthread_mutex_t loop_mutex; //This mutex is set while the wam control loop is in operation. It is to help slow loops access control loop data
   
   //Data logging

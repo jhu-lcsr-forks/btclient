@@ -70,7 +70,7 @@ wam_struct WAM;
 extern int gimbalsInit;
 
 #define LOW_TRQ_COEFFICIENT (0.75)
-#define BTREALTIME
+//#define BTREALTIME
 
 /*==============================*
  * Internal use Functions       *
@@ -390,14 +390,15 @@ void WAMControlThread(void *data)
   RT_TASK *WAMControlThreadTask;
 
   WAMControlThreadTask = rt_task_init(nam2num("WAMCon"), 0, 0, 0);
-#ifdef BTREALTIME
+//#ifdef  BTREALTIME
   rt_make_hard_real_time();
-#endif
+//#endif
   syslog(LOG_ERR,"WAMControl initial hard");
   rt_task_make_periodic_relative_ns(WAMControlThreadTask, sample_period2, sample_period2);
   dt_targ = Sample_Period;
   skiptarg = 1.5 * dt_targ;
   dt = dt_targ;
+  WAM.skipmax = 0.0;
   syslog(LOG_ERR,"WAMControl periodic %d, %f", sample_period2,dt);
   
   last_loop = rt_get_cpu_time_ns();
@@ -411,7 +412,7 @@ void WAMControlThread(void *data)
     dt = (double)WAM.loop_period / 1000000000.0;
     if (dt > skiptarg){
       skipcnt++;
-      if (dt > skipmax) skipmax = dt;
+      if (dt > WAM.skipmax) WAM.skipmax = dt;
     }
     WAM.dt = dt;
     
@@ -433,10 +434,13 @@ void WAMControlThread(void *data)
 #endif
     ActAngle2Mpos((WAM.Mpos)); //Move motor angles into a wam_vector variable
     Mpos2Jpos((WAM.Mpos), (WAM.Jpos)); //Convert from motor angles to joint angles
+    
     // Joint space stuff
-
+    pos1_time = rt_get_cpu_time_ns(); ///prof
     eval_bts(&(WAM.Jsc));
-   
+    pos2_time = rt_get_cpu_time_ns(); ///prof
+    WAM.Jsc_time = pos2_time - pos1_time; ///prof
+    
     // Cartesian space stuff
     set_vn(WAM.robot.q,WAM.Jpos);
 
@@ -446,13 +450,20 @@ void WAMControlThread(void *data)
     set_v3(WAM.Cpos,T_to_W_bot(&WAM.robot,WAM.Cpoint));
     set_vn(WAM.R6pos,(vect_n*)WAM.Cpos);
     
+    pos1_time = rt_get_cpu_time_ns(); ///prof
     eval_bts(&(WAM.Csc));
+    pos2_time = rt_get_cpu_time_ns(); ///prof
+    WAM.user_time = pos2_time - pos1_time; ///prof
+    
     set_v3(WAM.Cforce,(vect_3*)WAM.R6force);
    //setrange_vn((vect_n*)WAM.Ctrq,WAM.R6force,0,2,3);
     //Force application
     apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
     
+    pos1_time = rt_get_cpu_time_ns(); ///prof
     (*WAM.force_callback)(&WAM);
+    pos2_time = rt_get_cpu_time_ns(); ///prof
+    WAM.user_time = pos2_time - pos1_time; ///prof
     
     eval_bd_bot(&WAM.robot);
     get_t_bot(&WAM.robot,WAM.Ttrq);
