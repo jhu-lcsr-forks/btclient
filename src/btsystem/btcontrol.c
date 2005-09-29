@@ -766,6 +766,7 @@ via_trj_array* new_vta(int num_columns,int max_rows)
     SetAcc_vt(&(vt->trj[cnt]),1.0);
     vt->trj[cnt].vr = vr;
   }
+  return vt;
 }
 /** Free memory allocated during new_vr()
 */
