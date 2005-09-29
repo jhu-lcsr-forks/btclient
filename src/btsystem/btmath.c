@@ -1053,7 +1053,7 @@ vectray * new_vr(int vect_size,int max_rows)
     return NULL;
   }
 
-  addbtptr(vmem);
+  //addbtptr(vmem);
 
   n = (vectray*)vmem;
   n->n = vect_size;
