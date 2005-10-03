@@ -760,9 +760,9 @@ char* sprint_vn(char *dest,vect_n* src)
     dest[0] = '<';
     dest[1] = 0;
     for(j = 0;j<src->n;j++)
-      sprintf(dest+strlen(dest)," %8.4f,",src->q[j]);
+      sprintf(dest+strlen(dest),"%8.4f,",src->q[j]);
     dest[strlen(dest)-1] = 0;
-    strcat(dest," >");
+    strcat(dest,">");
   }
   return dest;
 }

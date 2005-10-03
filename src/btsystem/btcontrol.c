@@ -742,12 +742,14 @@ via_trj_array* read_file_vta(char* filename,int extrapoints)
 }
 void write_file_vta(via_trj_array* vt,char *filename)
 {
-  write_csv_file_vr(filename,vt->trj[0].vr);
+  if (vt != NULL) 
+    write_csv_file_vr(filename,vt->trj[0].vr);
 }
 /** set acceleration on corners of via trajectory */
 void set_acc_vta(via_trj_array* vt,btreal acc)
 {
   int cnt;
+  if (vt != NULL)
   for(cnt = 0;cnt < vt->elements;cnt++)
     SetAcc_vt(&(vt->trj[cnt]),acc);
 }
@@ -769,8 +771,10 @@ via_trj_array* new_vta(int num_columns,int max_rows)
 */
 void destroy_vta(via_trj_array** vt)
 {
-  destroy_vr(&(*vt)->trj[0].vr);
-  btfree((void**)vt);
+  if (vt != NULL){
+    destroy_vr(&(*vt)->trj[0].vr);
+    btfree((void**)vt);
+  }
 }
 /**Increment the edit point by one.
 
@@ -779,7 +783,8 @@ it stays there.
 */
 void next_point_vta(via_trj_array* vt)
 {
-  next_vr(vt->trj[0].vr);
+  if (vt != NULL) 
+    next_vr(vt->trj[0].vr);
 }
 /**Decrement the edit point by one.
 
@@ -788,17 +793,20 @@ it stays there.
 */
 void prev_point_vta(via_trj_array* vt)
 {
-   prev_vr(vt->trj[0].vr);
+  if (vt != NULL)
+    prev_vr(vt->trj[0].vr);
 }
 /** set the edit point to the begining of the list*/
 void first_point_vta(via_trj_array* vt)
 {
-   start_vr(vt->trj[0].vr);
+  if (vt != NULL)
+    start_vr(vt->trj[0].vr);
 }
 /**Set the edit point to the end of the list*/
 void last_point_vta(via_trj_array* vt)
 {
-   end_vr(vt->trj[0].vr);
+  if (vt != NULL)
+    end_vr(vt->trj[0].vr);
 }
 /** Insert a location into the teach & play list
 at the edit point. To add a location to the end of the list, you
@@ -808,7 +816,8 @@ int ins_point_vta(via_trj_array* vt, vect_n *pt)
 {
   LOCAL_VN(tmp,len_vn(pt)+1);
   setrange_vn(tmp,pt,1,0,len_vn(pt));
-  return insert_vr(vt->trj[0].vr,tmp);
+  if (vt == NULL) return -1;
+  else return insert_vr(vt->trj[0].vr,tmp);
 }
 /** Delete the location at the edit point from the
 teach & play list.
@@ -816,18 +825,20 @@ teach & play list.
 */
 int del_point_vta(via_trj_array* vt)
 {
-  return delete_vr(vt->trj[0].vr);
+  if (vt == NULL) return -1;
+  else return delete_vr(vt->trj[0].vr);
 }
 /** Return the index of the present edit point*/
 int get_current_point_vta(via_trj_array* vt)
 {
-  return edit_point_vr(vt->trj[0].vr);
+  if (vt == NULL) return -1;
+  else return edit_point_vr(vt->trj[0].vr);
 }
 /** Set the index of the present edit point */
 int set_current_point_vta(via_trj_array* vt,int idx)
 {
-  
-  return edit_at_vr(vt->trj[0].vr,idx);
+  if (vt == NULL) return -1;
+  else return edit_at_vr(vt->trj[0].vr,idx);
 }
 vectray* get_vr_vta(via_trj_array* vt)
 {
@@ -845,6 +856,8 @@ int scale_vta(via_trj_array* vt,double vel,double acc)
   vectray *vr;
   int cnt;
   vect_n* lval,*rval;
+  
+  if (vt == NULL) return -1;
   
   vr = vt->trj[0].vr;
   setval_vn(idx_vr(vr,0),0,0.0);

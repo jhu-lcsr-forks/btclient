@@ -15,6 +15,8 @@
 
 /** \file main.c
     Provides a dignostic interface to a set of motor controllers.
+ \todo
+ Cartesian playback
  
  */
 
@@ -333,10 +335,6 @@ void DisplayThread()
   {
     test_and_log(
       pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
-
-
-
-
     switch (present_screen)
     {
     case MAIN_SCREEN:
@@ -401,6 +399,8 @@ void RenderMAIN_SCREEN()
   //clear();
   /***** Display the interface text *****/
   line = 0;
+  //mvprintw(line , 0, "012345678 1 2345678 2 2345678 3 2345678 4 2345678 5 2345678 6 2345678 7 2345678-8");++line;
+  
   mvprintw(line , 0, "Barrett Technology Teach & Play Example");
   ++line;
 
@@ -426,17 +426,18 @@ void RenderMAIN_SCREEN()
   else
     mvprintw(line , 24, "Constraint: UNDEFINED!!!");
 
-  ++line;
-
-  mvprintw(line, column_offset , "Position :%s ", sprint_vn(vect_buf1,active_pos));
   ++line;++line;
-  mvprintw(line, column_offset , "Pos :%s ", sprint_vn(vect_buf1,active_bts->q));
+
+  mvprintw(line, 0 , "Position :%s ", sprint_vn(vect_buf1,active_pos));
   ++line;
-  mvprintw(line, column_offset , "Targ Pos :%s ", sprint_vn(vect_buf1,active_bts->qref));
+  /*
+  mvprintw(line, 0 , "Pos :%s ", sprint_vn(vect_buf1,active_bts->q));
   ++line;
-  mvprintw(line, column_offset , "Time :%f ", active_bts->dt);
+  mvprintw(line, 0 , "Targ Pos :%s ", sprint_vn(vect_buf1,active_bts->qref));
   ++line;
-  mvprintw(line, column_offset , "Force :%s ", sprint_vn(vect_buf1,active_trq));
+  mvprintw(line, 0 , "Time :%f ", active_bts->dt);
+  ++line;*/
+  mvprintw(line, 0 , "Force :%s ", sprint_vn(vect_buf1,active_trq));
   ++line;
   ++line;
   if (vta != NULL)
@@ -444,20 +445,20 @@ void RenderMAIN_SCREEN()
     vr = get_vr_vta(vta);
     cpt = get_current_point_vta(vta);
     nrows = numrows_vr(vr);
-    mvprintw(line,0,"Current Index:%d of %d",cpt,nrows);
+    mvprintw(line,0,"Current Index:%d of %d    ",cpt,nrows-1);
     line++;
     
-    mvprintw(line, 0 ,   "Previos Teach Point :");
-    mvprintw(line+1, 0 , "Current Teach Point :");
-    mvprintw(line+2, 0 , "   Next Teach Point :");
+    mvprintw(line, 0 ,   "Previos Teach Point :                             ");
+    mvprintw(line+1, 0 , "Current Teach Point :                             ");
+    mvprintw(line+2, 0 , "   Next Teach Point :                             ");
     
     if (nrows > 0){
       if (nrows != cpt)
         mvprintw(line+1, 21 , "%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt)));
       else
-        mvprintw(line+1, 21 , "END OF LIST");
+        mvprintw(line+1, 21 , "END OF LIST                                      ");
     }
-    else mvprintw(line+1, 21 , "EMPTY LIST");
+    else mvprintw(line+1, 21 , "EMPTY LIST                                      ");
     
     if (nrows >0 && cpt > 0)
       mvprintw(line, 21,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt-1)));
@@ -466,10 +467,16 @@ void RenderMAIN_SCREEN()
       if (cpt < nrows-1)
         mvprintw(line+2, 21,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt+1)));
       else if (cpt == nrows-1)
-        mvprintw(line+2, 21, "END OF LIST");
+        mvprintw(line+2, 21, "END OF LIST                                       ");
     line +=3;
   }
-  line++;
+  else{
+    line++;
+    line++;
+    mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
+    line +=2;
+  }
+  line++;line++;
   mvprintw(line,0,"bts: state:%d",active_bts->mode);
   if(active_bts->btt.dat != NULL)mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
   entryLine = line + 2;
@@ -553,7 +560,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
   case '\t':  //Switch between jointspace and cartesian space trajectories
     if (vta != NULL)
-      free_vta(&vta); //empty out the data if it was full
+      destroy_vta(&vta); //empty out the data if it was full
 
     if (active_bts == &(wam->Jsc))
     { //switch to cartesian space mode.
@@ -585,9 +592,6 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       setmode_bts(active_bts,SCMODE_POS);
     break;
 
-    //Constrained mode:
-    //  Load trajectory - from file, from memory
-    //  Play trajectory
   case 'T':
     setmode_bts(active_bts,SCMODE_TRJ);
     moveparm_bts(active_bts,0.5,0.5);
@@ -598,14 +602,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     {
       usleep(100000);
       elapsed ++;
-      syslog(LOG_ERR,"Waiting for prep: elapsed:%d Status:%d",elapsed,movestatus_bts(active_bts));
-      if (elapsed > 50) done1 = 1;
+      if (elapsed > 100) done1 = 1;
       
     }
     syslog(LOG_ERR,"Done with prep");
     //wam->Jsc.trj->state = BTTRAJ_READY;
-    if (elapsed < 50)
-    start_trj_bts(active_bts);
+    if (elapsed < 100)
+      start_trj_bts(active_bts);
     else {
       setmode_bts(active_bts,SCMODE_IDLE);
       stop_trj_bts(active_bts);
@@ -614,9 +617,6 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
   case 't':
     stop_trj_bts(active_bts);
     break;
-    //  Stop trajectory
-    //  Move to specified location
-
 
   case 'Y': //Start continuos teach
     StartContinuousTeach(1,50,"teachpath");
@@ -635,7 +635,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       refresh();
       scanw("%s", active_file);
       if (vta != NULL)
-        free_vta(&vta); //empty out the data if it was full
+        destroy_vta(&vta); //empty out the data if it was full
 
       vta = read_file_vta(active_file,20);
       register_vta(active_bts,vta);
@@ -666,7 +666,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       refresh();
       ret = scanw("%d", &dtmp);
       if (vta != NULL)
-        free_vta(&vta);
+        destroy_vta(&vta);
 
 
       vta = new_vta(len_vn(active_pos),dtmp);
