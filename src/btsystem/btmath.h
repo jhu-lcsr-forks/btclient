@@ -250,8 +250,8 @@ typedef struct barrett_vectarray_n{
 }vectray;
 
 vectray * new_vr(int vect_size,int max_rows);
-vectray * resize_vr(vectray *vr,int max_rows);
-void destroy_vr(vectray *vr);
+vectray * resize_vr(vectray **vr,int max_rows);
+void destroy_vr(vectray **vr);
 
 //Access
 

@@ -437,7 +437,7 @@ int readfile_ct(ct_traj* ct,char* filename)
 
   read_csv_file_vr(filename,&vr);
   create_ct(ct,vr);
-  destroy_vr(vr);
+  destroy_vr(&vr);
   return 0;
 }
 vect_n* init_ct(ct_traj *trj)
@@ -715,13 +715,10 @@ via_trj_array* malloc_new_vta(int num_columns)
 {
   void *vmem;
   via_trj_array* vt;
-  vmem = (void*)malloc(sizeof(via_trj_array) + (size_t)num_columns * sizeof(via_trj));
-  if (vmem == NULL)
-  {
-    syslog(LOG_ERR,"new_vt: memory allocation failed, size %d",num_columns);
-    return NULL;
-  }
   
+  
+  vmem = btmalloc(sizeof(via_trj_array) + (size_t)num_columns * sizeof(via_trj));
+    
   vt = (via_trj_array*)vmem;
   vt->trj = vmem + sizeof(via_trj_array);
   vt->elements = num_columns;
@@ -770,35 +767,63 @@ via_trj_array* new_vta(int num_columns,int max_rows)
 }
 /** Free memory allocated during new_vr()
 */
-void free_vta(via_trj_array* vt)
+void destroy_vta(via_trj_array** vt)
 {
-  destroy_vr(vt->trj[0].vr);
-  free(vt);
+  destroy_vr((*vt)->trj[0].vr);
+  btfree(vt);
 }
+/**Increment the edit point by one.
 
+If the edit point reaches the end of the list,
+it stays there.
+*/
 void next_point_vta(via_trj_array* vt)
 {
   next_vr(vt->trj[0].vr);
 }
+/**Decrement the edit point by one.
 
+If the edit point reaches the beginning of the list,
+it stays there.
+*/
 void prev_point_vta(via_trj_array* vt)
 {
    prev_vr(vt->trj[0].vr);
 }
+/** set the edit point to the begining of the list*/
+void first_point_vta(via_trj_array* vt)
+{
+   start_vr(vt->trj[0].vr);
+}
+/**Set the edit point to the end of the list*/
+void last_point_vta(via_trj_array* vt)
+{
+   end_vr(vt->trj[0].vr);
+}
+/** Insert a location into the teach & play list
+at the edit point. To add a location to the end of the list, you
+may move the edit point to the end.
+*/
 int ins_point_vta(via_trj_array* vt, vect_n *pt)
 {
   LOCAL_VN(tmp,len_vn(pt)+1);
   setrange_vn(tmp,pt,1,0,len_vn(pt));
   return insert_vr(vt->trj[0].vr,tmp);
 }
+/** Delete the location at the edit point from the
+teach & play list.
+
+*/
 int del_point_vta(via_trj_array* vt)
 {
   return delete_vr(vt->trj[0].vr);
 }
+/** Return the index of the present edit point*/
 int get_current_point_vta(via_trj_array* vt)
 {
   return edit_point_vr(vt->trj[0].vr);
 }
+/** Set the index of the present edit point */
 int set_current_point_vta(via_trj_array* vt,int idx)
 {
   
@@ -835,8 +860,9 @@ int scale_vta(via_trj_array* vt,double vel,double acc)
   return 0; 
 }
 
-
-
+/** Implements the getstate interface for bttrajectory_interface_struct.
+See bttrajectory_interface_struct
+*/
 int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt)
 {
 
@@ -852,8 +878,9 @@ int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt
   }
   return ret;
 }
-
-vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt)
+/** Implements the reset interface for bttrajectory_interface_struct.
+See bttrajectory_interface_struct
+*/vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt)
 {
   double ret;
   int cnt;
@@ -865,7 +892,9 @@ vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *bt
   }
   return btt->qref;
 }
-
+/** Implements the eval interface for bttrajectory_interface_struct.
+See bttrajectory_interface_struct
+*/
 vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt)
 {
   double ret;
@@ -878,7 +907,8 @@ vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt
   }
   return btt->qref;
 }
-
+/** Registers the necessary data and function pointers with the 
+btstatecontrol 
 void register_vta(btstatecontrol *sc,via_trj_array *vt)
 { 
   maptrajectory_bts(sc,(void*) vt,

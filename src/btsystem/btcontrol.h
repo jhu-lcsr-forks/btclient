@@ -127,7 +127,12 @@ void btposition_interface_reset_btPID(struct btposition_interface_struct* btp);
 vect_n* btposition_interface_eval_btPID(struct btposition_interface_struct* btp);
 void btposition_interface_mapf_btPID(btstatecontrol *sc, btPID_array *pid);
 /*================================================Trajectory stuff================================*/
+/** A piecewize linear interpolating trajectory
 
+  ct_traj stores an array of time,position data and 
+  plays it back by linear interpolation.
+
+*/
 typedef struct 
 {
   btpath_pwl *pwl;
@@ -146,7 +151,6 @@ int done_ct(ct_traj *trj);
 int bttrajectory_interface_getstate_ct(struct bttrajectory_interface_struct *btt);
 vect_n* bttrajectory_interface_reset_ct(struct bttrajectory_interface_struct *btt);
 vect_n* bttrajectory_interface_eval_ct(struct bttrajectory_interface_struct *btt);
-
 void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj);
 
 
@@ -156,6 +160,10 @@ typedef struct {
   double vel,acc1,acc2,dt_vel,dt_acc1,dt_acc2;
 }Seg_int;
 
+/** A piecewise linear trajectory with parabolic blending.
+
+
+*/
 typedef struct 
 {
   int state;
@@ -168,7 +176,7 @@ typedef struct
   
   
   //===========parameters
-  double trj_acc;
+  double trj_acc; //acceleration that controls the blending
   
   
   //===========state
@@ -188,36 +196,55 @@ typedef struct
   
 }via_trj;
 
-typedef struct
-{
-  via_trj* trj;
-  int elements;
 
-}via_trj_array;
 /*internal*/
 void SetAcc_vt(via_trj *trj,double acc);
 double eval_via_trj(via_trj *trj,double dt);
 double start_via_trj(via_trj *trj,int col);
 void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double v_prev, double v_next, double seg_acc, int end);
 
-/*API*/
-//via_trj_array* malloc_new_vta(int num_columns);
-via_trj_array* read_file_vta(char* filename,int extrapoints);
-via_trj_array* new_vta(int num_columns,int max_rows);
-void set_acc_vta(via_trj_array* vt,btreal acc);
+/** A piecewise linear trajectory with parabolic blending using vect_n data.
 
+A simple edit api is provided to simplify programming user interaction with this 
+data structure.
+
+see via_trj data structure for details. 
+btcontrol.c has the API documentation.
+
+This data structure is used for implementing a trajectory object for the
+btstatecontrol object. See bttrajectory_interface_struct object for information 
+on creating your own.
+
+*/
+typedef struct
+{
+  via_trj* trj;
+  int elements;
+}via_trj_array;
+/*Memory Management API*/
+//via_trj_array* malloc_new_vta(int num_columns);
+
+via_trj_array* new_vta(int num_columns,int max_rows);
+void destroy_vta(via_trj_array** vt);
+vectray* get_vr_vta(via_trj_array* vt);
+
+// Edit API
 void next_point_vta(via_trj_array* vt);
 void prev_point_vta(via_trj_array* vt);
+void first_point_vta(via_trj_array* vt);
+void last_point_vta(via_trj_array* vt);
 int ins_point_vta(via_trj_array* vt, vect_n *pt);
 int del_point_vta(via_trj_array* vt);
 int get_current_point_vta(via_trj_array* vt);
 int set_current_point_vta(via_trj_array* vt,int idx);
-vectray* get_vr_vta(via_trj_array* vt);
+
+
 int scale_vta(via_trj_array* vt,double vel,double acc);
+void set_acc_vta(via_trj_array* vt,btreal acc);
 
-void free_vta(via_trj_array* vt);
+//File I/O
 void write_file_vta(via_trj_array* vt,char *filename);
-
+via_trj_array* read_file_vta(char* filename,int extrapoints);
 
 /* Interface */
 int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt);

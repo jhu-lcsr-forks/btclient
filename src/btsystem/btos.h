@@ -58,9 +58,9 @@ typedef pthread_mutex_t btmutex;
 
 
 #ifdef NULL_PTR_GUARD
-  #define BTPTR_CHK(x,y) btptr_ok((x),(y));
+  #define BTPTR_OK(x,y) btptr_ok((x),(y))
 #else
-  #define BTPTR_CHK(x,y) 
+  #define BTPTR_OK(x,y) 
 #endif
 
 #define LogErr(x) test_and_log((x),"")
@@ -68,9 +68,9 @@ typedef pthread_mutex_t btmutex;
 int btptr_ok(void *ptr,char *str);
 BTINLINE int test_and_log(int ret,const char *str);
 
-BTINLINE void * xmalloc(size_t size);
+BTINLINE void * btmalloc(size_t size);
 
-
+BTINLINE void btfree(void **ptr);
 
 
 

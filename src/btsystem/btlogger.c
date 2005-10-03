@@ -66,11 +66,8 @@ after calling InitDL().
 */
 int PrepDL(btlogger *db, int fields)
 {
-  if ((db->data = malloc(fields * sizeof(btdata_info)))==NULL)
-  {
-    syslog(LOG_ERR,"InitDL:Could not allocate field array");
-    return -1;
-  }
+  db->data = btmalloc(fields * sizeof(btdata_info));
+  
   db->fields = 0;
   db->maxfields = fields;
   return 0;
@@ -133,19 +130,9 @@ int InitDL(btlogger *db,int size, char *filename)
   db->buffersize = size;
   datasize = DataSizeDL(db);
   db->data_size = datasize;
-  if ((db->DLbuffer1 = malloc(size * datasize))==NULL)
-  {
-    syslog(LOG_ERR,"InitDL:Could not allocate buffer1",filename);
-    fclose(db->DLfile);
-    return -2;
-  }
-  if ((db->DLbuffer2 = malloc(size * datasize))==NULL)
-  {
-    syslog(LOG_ERR,"InitDL:Could not allocate buffer2",filename);
-    free(db->DLbuffer1);
-    fclose(db->DLfile);
-    return -3;
-  }
+  db->DLbuffer1 = btmalloc(size * datasize);
+  db->DLbuffer2 = btmalloc(size * datasize);
+  
   InitDataFileDL(db);
   db->DL = db->DLbuffer1;
   return 0;
@@ -399,12 +386,8 @@ int DecodeDL(char *infile, char *outfile, int header)
       break;
     fread(&length,sizeof(long),1,inf);
     syslog(LOG_ERR,"DecodeDL:record index: %d length: %ld",current_index,length);
-
-    if ((data = malloc(length))==NULL)
-    {
-      syslog(LOG_ERR,"Aborting because of memory allocation error.");
-      return -3;
-    }
+    data = btmalloc(length);
+    
 
     fread(data,sizeof(char),length,inf);
 

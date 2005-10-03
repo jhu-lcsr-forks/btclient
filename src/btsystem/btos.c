@@ -10,7 +10,6 @@
 #include "btos.h"
 
 
-
 /** Null pointer access flag */
 int btptr_ok(void *ptr,char *str)
 {
@@ -32,19 +31,35 @@ BTINLINE int test_and_log(int ret, const char *str)
     return 0;
 }
 
+/**Memory allocation wrapper
 
-BTINLINE void * xmalloc(size_t size)
+  Causes an exit if we run out of memory.
+*/
+BTINLINE void * btmalloc(size_t size)
 {
  void* vmem;
 
   //allocate mem for vector,return vector, and return structure
   if ((vmem = malloc(size)) == NULL) 
   {
-    syslog(LOG_ERR,"xMalloc: memory allocation failed, size %d",size);
+    syslog(LOG_ERR,"btMalloc: memory allocation failed, size %d",size);
+    exit(1);
   }
   return vmem;
 }
+/**Memory deallocation wrapper
 
+  free's memory at *ptr and then sets *ptr to NULL.
+*/
+
+BTINLINE void btfree(void **ptr)
+{
+#ifdef NULL_PTR_GUARD
+  if(BTPTR_OK(*ptr,"btfree"))
+#endif
+  free(*ptr);
+  *ptr = NULL;
+}
 
 
 

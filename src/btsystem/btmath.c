@@ -158,10 +158,7 @@ BTINLINE void fill_vn(vect_n* dest, btreal val)
 {
   int cnt;
 
-#ifdef NULL_PTR_GUARD
-   btmath_ptr_ok(dest,"fill_vn");
-#endif
-
+  BTPTR_OK(*ptr,"btfree");
 
   for (cnt=0;cnt < dest->n;cnt++)
     dest->q[cnt] = val;
@@ -221,12 +218,8 @@ vect_n * new_vn(int size) //allocate an n-vector
   #endif
   
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = malloc(2*size*sizeof(btreal)+2*sizeof(vect_n))) == NULL)
-  {
-    syslog(LOG_ERR,"btmath: vect_n memory allocation failed, size %d",size);
-    return NULL;
-  }
-   
+  vmem = btmalloc(2*size*sizeof(btreal)+2*sizeof(vect_n));
+  
   addbtptr(vmem);
   n = init_vn((vect_n*)vmem, size);
   fill_vn(n,0.0);
@@ -268,10 +261,11 @@ vect_n* init_vn(vect_n* v, int size)
   
   \bug depreciated because freeing a pointer twice is bad and freebtptr supercedes
 */
-void free_vn(vect_n *p)
+void free_vn(vect_n **p)
 {
-  free(p);
+  btfree(p);
 }
+
 /** Create a local vect_n
 
 \param header Pointer to array of size 2 of vect_n allocated on the local stack
@@ -353,10 +347,9 @@ BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
 {
   int cnt,max;
 
-#ifdef NULL_PTR_GUARD
-   btmath_ptr_ok(dest,"set_vn dest");
-   btmath_ptr_ok(src,"set_vn src");
-#endif
+  BTPTR_OK(dest,"set_vn dest");
+  BTPTR_OK(src,"set_vn src");
+
 #ifdef VECT_SIZE_CHK
    if(!vect_size_ok(dest->n,MAX_VECTOR_SIZE,"set_vn dest"))
    {
@@ -368,8 +361,6 @@ BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
      syslog(LOG_ERR,"btmath:set_vn:src:pointer:%x:dest:pointer:%x",src,dest);
      return;
    }
-   /*if (dest->n < src->n)
-    syslog(LOG_ERR,"btmath:set_vn:warn: dest->n < src->n");*/
 #endif
 
   if (dest->n < src->n) max = dest->n;
@@ -383,8 +374,23 @@ BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
 void setrange_vn(vect_n* dest, vect_n* src, int dest_start, int src_start, int num)
 {
   int cnt,max;
+  BTPTR_OK(dest,"setrange_vn dest");
+  BTPTR_OK(src,"setrange_vn src");
 
-  //th Add vector size checking code here
+#ifdef VECT_SIZE_CHK
+   if(!vect_size_ok(dest_start,dest->n-1,"setrange_vn dest"))
+   {
+     syslog(LOG_ERR,"btmath:set_vn:dest:pointer:%x",dest);
+     return;
+   }
+   if(!vect_size_ok(src_start,dest->n-1,"setrange_vn src"))
+   {
+     syslog(LOG_ERR,"btmath:set_vn:src:pointer:%x:dest:pointer:%x",src,dest);
+     return;
+   }
+#endif
+
+
   for (cnt=0;cnt < num;cnt++)
     dest->q[dest_start + cnt] = src->q[src_start + cnt];
 
@@ -423,9 +429,8 @@ BTINLINE void inject_vn(vect_n* dest, btreal* src) //copy btreal array to vector
 */
 BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
 {
-#ifdef NULL_PTR_GUARD
-  btmath_ptr_ok(dest,"setval_vn");
-#endif
+
+  BTPTR_OK(dest,"setval_vn");
 
 #ifdef VECT_SIZE_CHK
   if(!vect_size_ok(idx,dest->n,"setval_vn"))
@@ -441,9 +446,7 @@ BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
 */
 BTINLINE btreal getval_vn(vect_n* dest, int idx)
 {
-#ifdef NULL_PTR_GUARD
-  btmath_ptr_ok(dest,"getval_vn");
-#endif
+  BTPTR_OK(dest,"getval_vn");
 
 #ifdef VECT_SIZE_CHK
   if(!vect_size_ok(idx,dest->n,"getval_vn"))
@@ -482,6 +485,7 @@ BTINLINE void einit_vn(vect_n* dest,int i) // einit_vn(&a,3) = <0,0,0,1,0>
 vect_n* subset_vn(vect_n* src,int start,int end)
 {
   int cnt;
+  BTPTR_OK(src,"subset_vn");
   #ifdef VECT_SIZE_CHK
   if((end-start) < 0 || (end-start)>src->n)
     syslog(LOG_ERR,"btmath ERROR:subset_vn tried to use: start:%d end:%d",start,end);
@@ -1066,13 +1070,7 @@ vectray * new_vr(int vect_size,int max_rows)
   vectray *n;
   int cnt;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = malloc(vect_size*(max_rows + 2)*sizeof(btreal)+sizeof(vectray))) == NULL)
-  {
-    syslog(LOG_ERR,"btmath: vectray memory allocation failed, size %d",vect_size);
-    return NULL;
-  }
-
-  //addbtptr(vmem);
+  vmem = btmalloc(vect_size*(max_rows + 2)*sizeof(btreal)+sizeof(vectray));
 
   n = (vectray*)vmem;
   n->n = vect_size;
@@ -1090,11 +1088,9 @@ vectray * new_vr(int vect_size,int max_rows)
     fill_vn(idx_vr(n,cnt),0.0);
   return n;
 }
-void destroy_vr(vectray *vr)
+void destroy_vr(vectray **vr)
 {
-  //free(vr->rayvect);
-  
-  free(vr);
+  btfree(vr);
 }
 /** Set internal vect_n proxy to the specified index.
  
@@ -1334,14 +1330,14 @@ void copy_sub_vr(vectray *dest, vectray *src, int src_r, int dest_r, int rows, i
   }
 }
 
-vectray * resize_vr(vectray *vr,int max_rows)
+vectray * resize_vr(vectray **vr,int max_rows)
 {
-  vectray *newvr;
-  
-  newvr = new_vr(vr->n,max_rows);
-  newvr->num_rows = vr->num_rows;
-  newvr->edit_point = vr->edit_point;
-  copy_sub_vr(newvr,vr,0,0,vr->max_rows,0,0,vr->n);
+  vectray *newvr,*tvr;
+  tvr = *vr;
+  newvr = new_vr(tvr->n,max_rows);
+  newvr->num_rows = tvr->num_rows;
+  newvr->edit_point = tvr->edit_point;
+  copy_sub_vr(newvr,tvr,0,0,tvr->max_rows,0,0,tvr->n);
   destroy_vr(vr);
   return newvr;
 }
@@ -1517,11 +1513,8 @@ vect_3 * new_v3() //allocate an n-vector
   void* vmem;
   vect_3 *n;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = malloc(2*sizeof(vect_3))) == NULL)
-  {
-    syslog(LOG_ERR,"btmath: vect_3 memory allocation failed, size %d",3);
-    return NULL;
-  }
+  vmem = btmalloc(2*sizeof(vect_3));
+  
   addbtptr(vmem);
   n = (vect_3*)vmem;
   n->n = 3;
@@ -1780,11 +1773,8 @@ quat * new_q() //allocate an n-vector
   void* vmem;
   quat *n;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = malloc(2*sizeof(quat))) == NULL)
-  {
-    syslog(LOG_ERR,"btmath: quat memory allocation failed, size %d",3);
-    return NULL;
-  }
+  vmem = btmalloc(2*sizeof(quat));
+  
   addbtptr(vmem);
   n = (quat*)vmem;
   n->n = 4;
@@ -2172,11 +2162,8 @@ matr_h * new_mh() //allocate an n-vector
   void *ptr;
   matr_h *n;
   //allocate mem for return structure
-  if ((ptr = malloc(2*sizeof(matr_h))) == NULL)
-  {
-    syslog(LOG_ERR,"btmath: matr_h memory allocation failed");
-    return NULL;
-  }
+  ptr = btmalloc(2*sizeof(matr_h));
+
   addbtptr(ptr);
   n = (matr_h*)ptr;
   n->ret = (matr_h*)(ptr + sizeof(matr_h));
@@ -2709,12 +2696,9 @@ btfilter * new_btfilter(int size)
   size_ = size;
   if (size_ < 5)
     size_ = 5;
-  if ((vmem = (void*)malloc(sizeof(btfilter)+size_*4*sizeof(btreal))) == NULL)
-  {
-    syslog(LOG_ERR,"btmath: filter memory allocation failed");
-    return NULL;
-  }
-
+  
+  vmem = btmalloc(sizeof(btfilter)+size_*4*sizeof(btreal));
+  
   addbtptr(vmem);
   ptr = (btfilter*)vmem;
   ptr->d = (btreal*)(vmem + sizeof(btfilter));
@@ -2945,11 +2929,9 @@ btfilter_vn * new_btfilter_vn(int size,int vsize)
   size_ = size;
   if (size_ < 5)
     size_ = 5;
-  if ((vmem = malloc(sizeof(btfilter_vn))) == NULL)
-  {
-    syslog(LOG_ERR,"btmath: filter memory allocation failed");
-    return NULL;
-  }
+  
+  vmem = btmalloc(sizeof(btfilter_vn));
+  
   addbtptr(vmem);
   ptr = (btfilter_vn*)vmem;
 

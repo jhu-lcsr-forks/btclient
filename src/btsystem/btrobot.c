@@ -94,11 +94,9 @@ int new_btlink(btlink* link,int type)
 int new_bot(btrobot* robot, int nlinks)
 {
   void* ptr;
-  int cnt;  
+  int cnt;
   
-  if ((ptr = malloc((nlinks+3)*sizeof(btlink))) == NULL){
-    return 1;
-  }
+  ptr = btmalloc((nlinks+3)*sizeof(btlink));
   
   robot->num_links = nlinks;
   robot->user = (btlink*)ptr;

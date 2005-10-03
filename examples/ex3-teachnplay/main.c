@@ -131,11 +131,11 @@ int main(int argc, char **argv)
   char    chr,cnt;
   int     err;
   int i;
-  wv = new_vn(7);
   struct sched_param mysched;
-
+  wv = new_vn(7);
   /* Initialize the ncurses screen library */
-  init_ncurses();
+  init_ncurses(); atexit(endwin);
+  
 
   /* Initialize syslog */
   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
@@ -280,8 +280,6 @@ void Shutdown()
 {
   syslog(LOG_ERR, "stop_control_threads");
   stop_control_threads();
-  syslog(LOG_ERR, "closelog");
-  closelog();
   syslog(LOG_ERR, "endwin");
   endwin();
   syslog(LOG_ERR, "rt_task_delete");
@@ -400,7 +398,7 @@ void RenderMAIN_SCREEN()
   vectray* vr;
   char vect_buf1[250];
 
-  clear();
+  //clear();
   /***** Display the interface text *****/
   line = 0;
   mvprintw(line , 0, "Barrett Technology Teach & Play Example");
@@ -555,7 +553,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
   case '\t':  //Switch between jointspace and cartesian space trajectories
     if (vta != NULL)
-      free_vta(vta); //empty out the data if it was full
+      free_vta(&vta); //empty out the data if it was full
+
     if (active_bts == &(wam->Jsc))
     { //switch to cartesian space mode.
       setmode_bts(&(wam->Jsc),SCMODE_IDLE);
@@ -636,7 +635,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       refresh();
       scanw("%s", active_file);
       if (vta != NULL)
-        free_vta(vta); //empty out the data if it was full
+        free_vta(&vta); //empty out the data if it was full
+
       vta = read_file_vta(active_file,20);
       register_vta(active_bts,vta);
       finish_entry();
@@ -666,7 +666,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       refresh();
       ret = scanw("%d", &dtmp);
       if (vta != NULL)
-        free_vta(vta);
+        free_vta(&vta);
+
 
       vta = new_vta(len_vn(active_pos),dtmp);
       register_vta(active_bts,vta);

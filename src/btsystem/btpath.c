@@ -42,11 +42,7 @@ btpath_pwl * new_pwl()
 
   int cnt;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = (btpath_pwl *)malloc(sizeof(btpath_pwl))) == NULL) 
-  {
-    syslog(LOG_ERR,"new_pwl: memory allocation failed");
-    return NULL;
-  }
+  vmem = (btpath_pwl *)btmalloc(sizeof(btpath_pwl));
   
   return vmem;
 }
@@ -58,12 +54,8 @@ int init_pwl(btpath_pwl *pth, int vect_size,int rows)
 
   int cnt;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = malloc(rows*sizeof(btreal))) == NULL) 
-  {
-    syslog(LOG_ERR,"btpath: init_pwl memory allocation failed, size %d",rows);
-    return -1;
-  }
-  
+  vmem = btmalloc(rows*sizeof(btreal));
+    
   pth->s = (btreal*)vmem;
   pth->vr = new_vr(vect_size,rows);
   pth->proxy = new_vn(vect_size);
@@ -84,11 +76,7 @@ int init_pwl_from_vectray(btpath_pwl *pth,vectray *vr)
   rows = numrows_vr(vr);
   vect_size = numelements_vr(vr) - 1;
   //allocate mem for vector,return vector, and return structure
-  if ((vmem = malloc(rows*sizeof(btreal))) == NULL) 
-  {
-    syslog(LOG_ERR,"btpath: init_pwl memory allocation failed, size %d",rows);
-    return -1;
-  }
+  vmem = btmalloc(rows*sizeof(btreal));
   
   pth->s = (btreal*)vmem;
   pth->vr = new_vr(vect_size,rows);
@@ -111,11 +99,8 @@ int init_pwl_from_vectray(btpath_pwl *pth,vectray *vr)
 */
 void free_pwl(btpath_pwl *pth)
 {
-  destroy_vr(pth->vr);
-  //free_vn(pth->proxy);
-  //free_vn(pth->tmp1);
-  //free_vn(pth->tmp2);
-  free(pth->s);
+  destroy_vr(&(pth->vr));
+  btfree(&(pth->s));
 }
 /** Break a curve paramaterized by t (usually time) into x(s) and s(t) | s = arclength. 
 
@@ -206,7 +191,7 @@ int add_vectray_pwl(btpath_pwl *pth, vectray *vr)//use the first column for the 
   vect_n *cpy;
   int cnt,vect_size,array_size;
   btreal s;
-  destroy_vr(pth->vr);
+  destroy_vr(&(pth->vr));
   vect_size = vr->n - 1;
   pth->vr = new_vr(vect_size,vr->max_rows);
   cpy = new_vn(vect_size);
