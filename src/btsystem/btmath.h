@@ -20,8 +20,10 @@ extern "C"
 {
 #endif/* __cplusplus */
  
-#define PRACTICALLY_ZERO 0.0000001 //For avoiding divide by zero
 
+#include "btos.h"
+
+#define PRACTICALLY_ZERO 0.0000001 //For avoiding divide by zero
 #define mov_vn set_vn
 #define cpy_vn set_vn
 //#define VECT_N_DEBUG

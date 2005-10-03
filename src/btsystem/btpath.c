@@ -100,7 +100,7 @@ int init_pwl_from_vectray(btpath_pwl *pth,vectray *vr)
 void free_pwl(btpath_pwl *pth)
 {
   destroy_vr(&(pth->vr));
-  btfree(&(pth->s));
+  btfree((void**)&(pth->s));
 }
 /** Break a curve paramaterized by t (usually time) into x(s) and s(t) | s = arclength. 
 

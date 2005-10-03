@@ -214,7 +214,7 @@ void mapposition_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* p
 int init_bts(btstatecontrol *sc)
 {
   int err;
-  BTPTR_OK(sc,"moveparm_bts");
+  BTPTR_OK(sc,"moveparm_bts")
   sc->mode = 0;
   sc->last_dt = 1;
   sc->btt.dat = NULL;
@@ -234,7 +234,7 @@ int init_bts(btstatecontrol *sc)
 inline vect_n* eval_trj_bts(btstatecontrol *sc)
 { 
   int state;
-  BTPTR_OK(sc,"moveparm_bts");
+  BTPTR_OK(sc,"moveparm_bts")
   
   state = sc->btt.state;
   if (state == BTTRAJ_INPREP)
@@ -275,7 +275,7 @@ vect_n* eval_bts(btstatecontrol *sc)
   double newtorque;
   double cmptorque;
   int err;
-  BTPTR_OK(sc,"moveparm_bts");
+  BTPTR_OK(sc,"moveparm_bts")
 
   test_and_log(
     pthread_mutex_lock(&(sc->mutex)),"eval_bts lock mutex failed");
@@ -325,7 +325,7 @@ int setmode_bts(btstatecontrol *sc, int mode)
 {
   int err;
   double tmp;
-  BTPTR_OK(sc,"moveparm_bts");
+  BTPTR_OK(sc,"moveparm_bts")
 
   test_and_log(
     pthread_mutex_lock(&(sc->mutex)),"setmode_bts lock mutex failed");
@@ -376,7 +376,7 @@ loaded trajectory.
 int prep_trj_bts(btstatecontrol *sc)
 {
   char vect_buf1[200];
-  BTPTR_OK(sc,"moveparm_bts");
+  BTPTR_OK(sc,"moveparm_bts")
   
   if(sc->mode != SCMODE_TRJ) return -2;
   test_and_log(
@@ -410,7 +410,7 @@ int prep_trj_bts(btstatecontrol *sc)
 int moveto_bts(btstatecontrol *sc,vect_n* dest)
 {
   char vect_buf1[200];
-  BTPTR_OK(sc,"moveparm_bts");
+  BTPTR_OK(sc,"moveparm_bts")
   test_and_log(
     pthread_mutex_lock(&(sc->mutex)),"moveto_bts lock mutex failed");
   if(sc->btt.state == BTTRAJ_STOPPED)
@@ -438,7 +438,7 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
 during the initial prep move */
 void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc)
 {
-  BTPTR_OK(sc,"moveparm_bts");
+  BTPTR_OK(sc,"moveparm_bts")
   test_and_log(
     pthread_mutex_lock(&(sc->mutex)),"moveparm_bts lock mutex failed");
   sc->vel = vel; //Safe value for units of radians and meters
@@ -457,7 +457,7 @@ the start of the trajectory with prep_trj_bts() */
 int start_trj_bts(btstatecontrol *sc)
 {
   int ret = 0;
-  BTPTR_OK(sc,"moveparm_bts");
+  BTPTR_OK(sc,"moveparm_bts")
   test_and_log(
     pthread_mutex_lock(&(sc->mutex)),"start_trj_bts lock mutex failed");
   if(sc->btt.state == BTTRAJ_READY)
@@ -474,7 +474,7 @@ int start_trj_bts(btstatecontrol *sc)
 /** Stop the trajectory generator */
 int stop_trj_bts(btstatecontrol *sc)
 {
-  BTPTR_OK(sc,"moveparm_bts");
+  BTPTR_OK(sc,"moveparm_bts")
   test_and_log(
     pthread_mutex_lock(&(sc->mutex)),"stop_trj_bts lock mutex failed");
   sc->btt.state = BTTRAJ_STOPPED;
@@ -487,7 +487,7 @@ int stop_trj_bts(btstatecontrol *sc)
 int pause_trj_bts(btstatecontrol *sc,btreal period)
 {
   int state;
-  BTPTR_OK(sc,"moveparm_bts");
+  BTPTR_OK(sc,"moveparm_bts")
   state = sc->btt.state;
   if (state == BTTRAJ_RUN || state == BTTRAJ_PAUSING || state == BTTRAJ_UNPAUSING || state == BTTRAJ_PAUSED){
   setrate_btramp(&(sc->ramp),period);
@@ -503,7 +503,7 @@ int pause_trj_bts(btstatecontrol *sc,btreal period)
 int unpause_trj_bts(btstatecontrol *sc,btreal period)
 {
   int state;
-  BTPTR_OK(sc,"moveparm_bts");
+  BTPTR_OK(sc,"moveparm_bts")
   state = sc->btt.state;
   if (state == BTTRAJ_RUN || state == BTTRAJ_PAUSING || state == BTTRAJ_UNPAUSING || state == BTTRAJ_PAUSED){
   setrate_btramp(&(sc->ramp),period);

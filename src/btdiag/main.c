@@ -58,6 +58,7 @@
 #include "bthaptics.h"
 #include "playlist.h"
 #include "btgeometry.h"
+#include "btcontrol.h"
 
 /*==============================*
  * PRIVATE DEFINED constants    *

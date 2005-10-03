@@ -158,7 +158,7 @@ BTINLINE void fill_vn(vect_n* dest, btreal val)
 {
   int cnt;
 
-  BTPTR_OK(*ptr,"btfree");
+  BTPTR_OK(*ptr,"btfree")
 
   for (cnt=0;cnt < dest->n;cnt++)
     dest->q[cnt] = val;
@@ -263,7 +263,7 @@ vect_n* init_vn(vect_n* v, int size)
 */
 void free_vn(vect_n **p)
 {
-  btfree(p);
+  btfree((void**)p);
 }
 
 /** Create a local vect_n
@@ -347,8 +347,8 @@ BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
 {
   int cnt,max;
 
-  BTPTR_OK(dest,"set_vn dest");
-  BTPTR_OK(src,"set_vn src");
+  BTPTR_OK(dest,"set_vn dest")
+  BTPTR_OK(src,"set_vn src")
 
 #ifdef VECT_SIZE_CHK
    if(!vect_size_ok(dest->n,MAX_VECTOR_SIZE,"set_vn dest"))
@@ -374,8 +374,8 @@ BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
 void setrange_vn(vect_n* dest, vect_n* src, int dest_start, int src_start, int num)
 {
   int cnt,max;
-  BTPTR_OK(dest,"setrange_vn dest");
-  BTPTR_OK(src,"setrange_vn src");
+  BTPTR_OK(dest,"setrange_vn dest")
+  BTPTR_OK(src,"setrange_vn src")
 
 #ifdef VECT_SIZE_CHK
    if(!vect_size_ok(dest_start,dest->n-1,"setrange_vn dest"))
@@ -430,7 +430,7 @@ BTINLINE void inject_vn(vect_n* dest, btreal* src) //copy btreal array to vector
 BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
 {
 
-  BTPTR_OK(dest,"setval_vn");
+  BTPTR_OK(dest,"setval_vn")
 
 #ifdef VECT_SIZE_CHK
   if(!vect_size_ok(idx,dest->n,"setval_vn"))
@@ -446,7 +446,7 @@ BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
 */
 BTINLINE btreal getval_vn(vect_n* dest, int idx)
 {
-  BTPTR_OK(dest,"getval_vn");
+  BTPTR_OK(dest,"getval_vn")
 
 #ifdef VECT_SIZE_CHK
   if(!vect_size_ok(idx,dest->n,"getval_vn"))
@@ -485,7 +485,7 @@ BTINLINE void einit_vn(vect_n* dest,int i) // einit_vn(&a,3) = <0,0,0,1,0>
 vect_n* subset_vn(vect_n* src,int start,int end)
 {
   int cnt;
-  BTPTR_OK(src,"subset_vn");
+  BTPTR_OK(src,"subset_vn")
   #ifdef VECT_SIZE_CHK
   if((end-start) < 0 || (end-start)>src->n)
     syslog(LOG_ERR,"btmath ERROR:subset_vn tried to use: start:%d end:%d",start,end);
@@ -1090,7 +1090,7 @@ vectray * new_vr(int vect_size,int max_rows)
 }
 void destroy_vr(vectray **vr)
 {
-  btfree(vr);
+  btfree((void**)vr);
 }
 /** Set internal vect_n proxy to the specified index.
  

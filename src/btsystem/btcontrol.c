@@ -730,7 +730,7 @@ via_trj_array* read_file_vta(char* filename,int extrapoints)
   vectray *vr;
   int cnt;
   if (read_csv_file_vr(filename,&vr) != 0) return NULL;
-  vr = resize_vr(vr,maxrows_vr(vr)+extrapoints);
+  vr = resize_vr(&vr,maxrows_vr(vr)+extrapoints);
   
   vt = malloc_new_vta(numelements_vr(vr)-1);
   for(cnt = 0;cnt < vt->elements;cnt++){
@@ -769,8 +769,8 @@ via_trj_array* new_vta(int num_columns,int max_rows)
 */
 void destroy_vta(via_trj_array** vt)
 {
-  destroy_vr((*vt)->trj[0].vr);
-  btfree(vt);
+  destroy_vr(&(*vt)->trj[0].vr);
+  btfree((void**)vt);
 }
 /**Increment the edit point by one.
 
@@ -908,7 +908,7 @@ vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt
   return btt->qref;
 }
 /** Registers the necessary data and function pointers with the 
-btstatecontrol 
+btstatecontrol object */
 void register_vta(btstatecontrol *sc,via_trj_array *vt)
 { 
   maptrajectory_bts(sc,(void*) vt,
