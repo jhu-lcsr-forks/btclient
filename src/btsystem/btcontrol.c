@@ -29,6 +29,8 @@
 #include <pthread.h>
 #include <errno.h>
 #include <syslog.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "btmath.h"
 #include "btcontrol.h"
 #include "btos.h"
@@ -501,6 +503,7 @@ void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj)
 
 /******************************************************************************/
 
+enum VT_SEG {VTS_IN_ACC = 0, VTS_IN_VEL};
 /** Assumes trj->vr has been loaded with a valid vectray
  
  
@@ -515,7 +518,7 @@ double start_via_trj(via_trj *trj,int col)
   ret = getval_vn(idx_vr(trj->vr,0),trj->col); //force starting point to be our current point
 
   trj->last_cmd = 0.0;
-  trj->segment = 0;//acc first
+  trj->segment = VTS_IN_ACC;//acc first
 
   Dt_next = getval_vn(idx_vr(trj->vr,trj->idx+2),0) - getval_vn(idx_vr(trj->vr,trj->idx+1),0);
   Dq_next = getval_vn(idx_vr(trj->vr,trj->idx+2),trj->col) - getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col);
@@ -533,11 +536,8 @@ double start_via_trj(via_trj *trj,int col)
   trj->v0 = 0;
   trj->state = BTTRAJ_RUN;
   return ret;
-  /*syslog(LOG_ERR, "col=%d idx=%d vel=%f t_vel=%f t_acc=%f q0=%f v0=%f t=%f t0=%f q1=%f q2=%f t1=%f t2=%f",
-         trj->col,trj->idx,trj->vel,trj->t_vel,trj->t_acc,
-         trj->q0,trj->v0,trj->t,trj->t0,(trj->tf)[trj->idx][trj->col], (trj->tf)[trj->idx+1][trj->col],
-              (trj->tf)[trj->idx][0], (trj->tf)[trj->idx+1][0]); */
 }
+
 void SetAcc_vt(via_trj *trj,double acc)
 {
   trj->trj_acc = acc;
@@ -548,9 +548,9 @@ double eval_via_trj(via_trj *trj,double dt)
   double tn,tp,qn,qp;
   if (trj->state == BTTRAJ_RUN)
   {
-    trj->t += dt;
+    trj->t += dt;  //increment time
 
-    if ((trj->segment == 0) && (trj->t > trj->t_acc))
+    if ((trj->segment == VTS_IN_ACC) && (trj->t > trj->t_acc))
     { //done with acc, set up vel
       if (trj->idx >= trj->n-1)
       {
@@ -558,19 +558,22 @@ double eval_via_trj(via_trj *trj,double dt)
       }
       else
       {
-        trj->vel = trj->seg.vel;
-        trj->dt_vel = trj->seg.dt_vel;
-        trj->t0 = trj->t_acc;
-        trj->t_vel = trj->dt_vel + trj->t0;
         trj->q0 = trj->q0 + trj->v0*trj->dt_acc + 0.5*trj->dt_acc*trj->dt_acc*trj->acc;
-        trj->segment = 1;
+        trj->vel = trj->seg.vel;
+        
+        trj->t0 = trj->t_acc;
+        trj->dt_vel = trj->seg.dt_vel;
+        trj->t_vel = trj->dt_vel + trj->t0;
+        
+        
+        trj->segment = VTS_IN_VEL;
       }
 
     }
-    else if((trj->segment == 1) && (trj->t > trj->t_vel))
-    {//setup acc segment
+    else if((trj->segment == VTS_IN_VEL) && (trj->t > trj->t_vel))
+    { //setup acc segment
       trj->idx++;
-      if (trj->idx >= trj->n-1)
+      if (trj->idx >= trj->n-1) //Setup final deceleration
       {
         trj->acc = trj->seg.acc2;
         trj->dt_acc = trj->seg.dt_acc2;
@@ -578,7 +581,7 @@ double eval_via_trj(via_trj *trj,double dt)
         trj->t_acc = trj->dt_acc + trj->t0;
         trj->q0 = trj->q0 + trj->vel*trj->dt_vel;
         trj->v0 = trj->vel;
-        trj->segment = 0;//acc first
+        trj->segment = VTS_IN_ACC;//acc first
       }
       else
       {
@@ -613,10 +616,7 @@ double eval_via_trj(via_trj *trj,double dt)
         trj->v0 = trj->vel;
       }
 
-      /*syslog(LOG_ERR, "col=%d idx=%d vel=%f t_vel=%f t_acc=%f q0=%f v0=%f t=%f t0=%f q1=%f q2=%f t1=%f t2=%f",
-      trj->col,trj->idx,trj->vel,trj->t_vel,trj->t_acc,
-      trj->q0,trj->v0,trj->t,trj->t0,(trj->tf)[trj->idx][trj->col], (trj->tf)[trj->idx+1][trj->col],
-           (trj->tf)[trj->idx][0], (trj->tf)[trj->idx+1][0]); */
+
     }
 
 
@@ -644,63 +644,75 @@ double eval_via_trj(via_trj *trj,double dt)
 /**
  
   see Notebook TH#6 pp146,147
+  
+  \param seg_acc - Acceleration with which to blend linear segments. Expected to be positive;
 */
 void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double v_prev, double v_next, double seg_acc, int end)
 {
   double dt,dq;
   double vel,acc1,acc2,dt_vel,dt_acc1,dt_acc2;
-  double min_acc;
+  double min_acc,use_acc;
 
 
   dt = t2 - t1;
   dq = q2 - q1;
 
-  if (end == 0)
+  syslog(LOG_ERR, "CalcSeg: in: q1: %f q2: %f  t1: %f t2: %f",q1,q2,t1,t2);
+  syslog(LOG_ERR, "CalcSeg: in: vprev: %f vnext: %f  acc: %f end: %d",v_prev,v_next,seg_acc,end);
+  use_acc = fabs(seg_acc); //Force to positive
+  
+  if (end == 0) //Starting segment (Accelerate to the next point)
   {
     min_acc = 8*fabs(dq)/(3*dt*dt);
 
-    if (seg_acc < min_acc)
+    if (use_acc < min_acc)
     { //accelleration must get us to vel_mode at halfway point
-      acc1 = min_acc;
+      use_acc = min_acc;
       syslog(LOG_ERR, "CalcSegment: Boosted acceleration to %f to match velocity change",acc1);
     }
-    else{
-      acc1 = Sgn(dq)*seg_acc;
-    }
-    dt_acc1 = dt - sqrt(dt*dt - 2*dq/acc1);
-
-    vel = dq/(dt - dt_acc1);
+    
+    dt_acc1 = dt - sqrt(dt*dt - 2*fabs(dq)/use_acc);
+    acc1 = Sgn(dq)*use_acc;
+    vel = (dq - 0.5*acc1*dt_acc1*dt_acc1)/(dt - dt_acc1);
     acc2 = Sgn(v_next - vel)*seg_acc;
     dt_acc2 = (v_next - vel)/acc2;
-    dt_vel = dt - dt_acc1 - dt_acc2/2;
+    dt_vel = dt - dt_acc1 - dt_acc2/2.0;
+    if (dt_vel < 0.0){
+      dt_vel = 0.0; 
+      syslog(LOG_ERR, "CalcSegment: Init Acc: Not enough acceleration!");
+      syslog(LOG_ERR, "CalcSegment: Init Acc: dt:%f dt_acc1:%f 0.5*dt_acc2:%f",dt,dt_acc1,dt_acc2/2.0);
+    }
   }
   else if (end == 1)
   {
     vel = dq/dt;
-    acc1 = Sgn(vel - v_prev)*seg_acc;
+    acc1 = Sgn(vel - v_prev)*use_acc;
     dt_acc1 = (vel - v_prev)/acc1;
-    acc2 = Sgn(v_next - vel)*seg_acc;
+    acc2 = Sgn(v_next - vel)*use_acc;
     dt_acc2 = (v_next - vel)/acc2;
     dt_vel = dt - dt_acc1/2 - dt_acc2/2;
   }
-  else
+  else //Ending segment (decelerate)
   {
-    min_acc = 8*fabs(dq)/(3*dt*dt);
+    min_acc = 8.0*fabs(dq)/(3.0*dt*dt);
 
-    if (seg_acc < min_acc)
+    if (use_acc < min_acc)
     { //accelleration must get us to vel_mode at halfway point
-      acc2 = min_acc;
+      use_acc = min_acc;
       syslog(LOG_ERR, "CalcSegment: Boosted acc:%f to match end velocity change %f %f",acc1,dq,dt);
       syslog(LOG_ERR, "CalcSegment:  %f %f %f %f",q1,q2,t1,t2);
     }
-    else{
-      acc2 = Sgn(dq)*seg_acc;
-    }
-    dt_acc2 = dt - sqrt(dt*dt - 2*dq/acc2);
-    vel = dq/(dt - dt_acc2);
-    acc1 = Sgn((vel - v_prev))*seg_acc;
+    dt_acc2 = dt - sqrt(dt*dt - 2*fabs(dq)/use_acc);
+    acc2 = -1.0*Sgn(dq)*use_acc;
+    vel = (dq - 0.5*acc2*dt_acc2*dt_acc2)/(dt - dt_acc2);
+    acc1 = Sgn((vel - v_prev))*use_acc;
     dt_acc1 = ((vel - v_prev))/acc1;
     dt_vel = dt - dt_acc2 - dt_acc1/2;
+     if (dt_vel < 0.0){
+      dt_vel = 0.0; 
+      syslog(LOG_ERR, "CalcSegment: Final Acc: Not enough acceleration!");
+      syslog(LOG_ERR, "CalcSegment: Final Acc: dt:%f dt_acc1:%f 0.5*dt_acc2:%f",dt,dt_acc1,dt_acc2/2.0);
+    }
   }
 
   seg->vel = vel;
@@ -709,6 +721,8 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
   seg->dt_vel = dt_vel;
   seg->dt_acc1 = dt_acc1;
   seg->dt_acc2 = dt_acc2;
+  syslog(LOG_ERR, "CalcSegment: Time: dt_acc1: %f dt_vel: %f dt_acc2: %f",dt_acc1,dt_vel,dt_acc2);
+  syslog(LOG_ERR, "CalcSegment: val: acc1: %f vel: %f  acc2: %f",acc1,vel,acc2);
 }
 /** Internal function to allocate memory for a vta object*/
 via_trj_array* malloc_new_vta(int num_columns)
@@ -744,6 +758,26 @@ void write_file_vta(via_trj_array* vt,char *filename)
 {
   if (vt != NULL) 
     write_csv_file_vr(filename,vt->trj[0].vr);
+}
+vect_n* sim_vta(via_trj_array* vt,double dt,double duration,char*filename)
+{
+  FILE *out;
+  char buff[250];
+  double t = dt;
+  LOCAL_VN(qref,7);
+  
+  
+  out = fopen(filename,"w");
+  reset_vta(vt,dt,qref);
+  fprintf(out,"%8.4f, %s\n",t,sprint_csv_vn(buff,qref));
+  
+  while (t < duration){
+    t += dt;
+    eval_vta(vt,dt,qref);
+    fprintf(out,"%8.4f, %s\n",t,sprint_csv_vn(buff,qref));
+  }
+  
+  fclose(out);
 }
 /** set acceleration on corners of via trajectory */
 void set_acc_vta(via_trj_array* vt,btreal acc)
@@ -872,6 +906,28 @@ int scale_vta(via_trj_array* vt,double vel,double acc)
   }
   return 0; 
 }
+vect_n* reset_vta(via_trj_array* vt,double dt,vect_n* qref)
+{
+  double ret;
+  int cnt;
+
+  for (cnt = 0;cnt<vt->elements;cnt++)
+  {
+    setval_vn(qref,cnt,start_via_trj(&(vt->trj[cnt]),cnt));
+  }
+  return qref;
+  
+}
+vect_n* eval_vta(via_trj_array* vt,double dt,vect_n* qref)
+{
+  double ret;
+  int cnt;
+  for (cnt = 0;cnt<vt->elements;cnt++)
+  {
+    setval_vn(qref,cnt,eval_via_trj(&(vt->trj[cnt]),dt));
+  }
+  return qref;
+}
 
 /** Implements the getstate interface for bttrajectory_interface_struct.
 See bttrajectory_interface_struct
@@ -905,6 +961,7 @@ See bttrajectory_interface_struct
   }
   return btt->qref;
 }
+
 /** Implements the eval interface for bttrajectory_interface_struct.
 See bttrajectory_interface_struct
 */

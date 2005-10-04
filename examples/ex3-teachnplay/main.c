@@ -89,13 +89,15 @@ int trjisdirty = 0; //=1 if edits made to a trajectory data structure.
 int trjidx;
 
 btstatecontrol *active_bts;
+
+
 vect_n* active_pos;
 vect_n* active_trq;
 vect_n *wv;
 char active_file[250];
 wam_struct *wam;
 vectray *vr;
-via_trj_array *vta = NULL;
+via_trj_array *vta = NULL,*vtb = NULL;
 
 
 extern int isZeroed;
@@ -640,6 +642,24 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       vta = read_file_vta(active_file,20);
       register_vta(active_bts,vta);
       finish_entry();
+    }
+    break;
+  case 'L':
+    if(getmode_bts(active_bts)==SCMODE_IDLE)
+    {
+      start_entry();
+      addstr("Enter filename for trajectory: ");
+      refresh();
+      scanw("%s", active_file);
+      finish_entry();
+      
+      if (vtb != NULL)
+        destroy_vta(&vtb); //empty out the data if it was full
+
+      vtb = read_file_vta(active_file,0);
+      sim_vta(vtb,0.002,30.0,"sim.csv");
+      
+      
     }
     break;
     //  Save trajectory

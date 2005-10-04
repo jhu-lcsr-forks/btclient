@@ -246,6 +246,11 @@ void set_acc_vta(via_trj_array* vt,btreal acc);
 void write_file_vta(via_trj_array* vt,char *filename);
 via_trj_array* read_file_vta(char* filename,int extrapoints);
 
+//Use
+vect_n* eval_vta(via_trj_array* vt,double dt,vect_n* qref);
+vect_n* reset_vta(via_trj_array* vt,double dt,vect_n* qref);
+vect_n* sim_vta(via_trj_array* vt,double dt,double duration,char*filename);
+
 /* Interface */
 int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt);
 vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt);

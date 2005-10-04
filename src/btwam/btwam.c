@@ -171,7 +171,7 @@ int InitWAM(char *wamfile)
   WAM.d_pos_array.elements = 6;  
   init_bts(&WAM.Csc);
   map_btstatecontrol(&WAM.Csc, WAM.R6pos, WAM.R6vel, WAM.R6acc, 
-                      WAM.R6ref, WAM.R6trq, &WAM.dt);
+                      WAM.R6ref, WAM.R6force, &WAM.dt);
   btposition_interface_mapf_btPID(&WAM.Csc, &(WAM.d_pos_array));
   
   /* Control plugin initialization */
