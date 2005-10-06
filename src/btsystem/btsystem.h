@@ -160,7 +160,7 @@ extern "C"
 {
 #endif/* __cplusplus */
 //Top level functions-----------------------------
-int InitializeSystem(char *actuatorfile,char *busfile,char *motorfile,char *puckfile); //Global bus variables, global actuator variable, load data from files, open can bus
+int InitializeSystem(char *fn);
 void CloseSystem(); //
   //private 
 void DumpData2Syslog();  

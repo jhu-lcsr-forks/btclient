@@ -4,9 +4,9 @@
 
 \section qs Programming Quickstart
 
-To learn to write software for the WAM Barrett recommends the following course.
+To learn to write software for the WAM, Barrett recommends the following course.
 
-- Follow the quickstart sheet shipped with the WAM to get the WAM set up and runnig.
+- Follow the quickstart sheet shipped with the WAM to get the WAM set up and running.
 - Compile and run each of the example programs
 - Read the code of the example programs
 - Scan through the list of Barrett code library functions
@@ -14,7 +14,7 @@ To learn to write software for the WAM Barrett recommends the following course.
 
  \section intro Introduction
 
- The Barrett Technology software library provides the following functionality.
+ The Barrett Technology software library provides the following functionality:
 
 -# Communication with the safety module and motor controllers on the CAN bus using Barrett’s proprietary communications protocol.
 -# Automatic recognition puck+motor pairs (actuators) attached to the CAN bus. Simplified command and control of actuators.
@@ -29,7 +29,7 @@ To best utilize the WAM system the programmer will want to develop some familiar
 
 The following is an overview of the library functionality and what code files provide the functionality. 
 
-  \section fctly Borrett Module Functionality
+  \section fctly Barrett Module Functionality
 
 Essential:
 - btwam.c: This is the primary file used for controlling the WAM.
