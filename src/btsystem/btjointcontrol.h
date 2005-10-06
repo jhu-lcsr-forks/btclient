@@ -186,7 +186,7 @@ typedef struct
   int error; //nonzero if there are any errors
   double ddebug;
   int idebug;
-  pthread_mutex_t mutex;
+  btmutex mutex;
 }SimpleCtl;
 
 int SCinit(SimpleCtl *sc);

@@ -69,9 +69,7 @@ void init_btPID(btPID *pid)
   pid->state = 0;
   pid->external_error_calc = 0;
 
-  test_and_log(
-    pthread_mutex_init(&(pid->mutex),NULL),
-    "Could not initialize mutex for btPID.");
+  btmutex_init(&pid->mutex);
 
 }
 /** Initialize a btPID object for use with an external error.
@@ -88,15 +86,13 @@ void init_err_btPID(btPID *pid)
 */
 void reset_btPID(btPID *pid)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"reset_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   pid->se = 0;
   pid->firsttick = 1;
   pid->yref = pid->y;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"reset_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 
 /** Start the PID regulator
@@ -106,16 +102,14 @@ void reset_btPID(btPID *pid)
 */
 void start_btPID(btPID *pid)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"reset_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   pid->se = 0;
   pid->firsttick = 1;
   pid->yref = pid->y;
   pid->state = 1;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"reset_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 /** Stop the PID regulator
  
@@ -124,13 +118,11 @@ void start_btPID(btPID *pid)
 */
 void stop_btPID(btPID *pid)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"reset_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   pid->state = 0;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"reset_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 /** Increments the state by dt and returns the output of the regulator.
  
@@ -143,8 +135,7 @@ and then calculates the error between y and yref.
 */
 btreal step_btPID(btPID *pid)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"step_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   if (pid->state)
   {
@@ -176,98 +167,83 @@ btreal step_btPID(btPID *pid)
     pid->lastresult = 0.0;
   }
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"step_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
   return(pid->lastresult); //bz
 }
 /** Set measured value 'y'. See btPID object of more info.*/
 void sety_btPID(btPID *pid, btreal y)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"sety_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   pid->y = y;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"sety_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 /** Set reference value 'yref'. See btPID object of more info.*/
 void setyref_btPID(btPID *pid, btreal yref)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"setyref_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   pid->yref = yref;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"setyref_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 /** Set time step value 'dt'. See btPID object of more info.*/
 void setdt_btPID(btPID *pid, btreal dt)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"setdt_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   pid->dt = dt;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"setdt_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 /** Get the last calculated effort value. See btPID object of more info.*/
 btreal lastresult_btPID(btPID *pid)
 {
   btreal ret;
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"lastresult_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   ret = pid->lastresult;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"lastresult_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 
   return ret;
 }
 /** Evaluate the btPID object. See btPID object of more info.*/
 btreal eval_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"eval_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   pid->y = y;
   pid->yref = yref;
   pid->dt = dt;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"eval_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 
   return step_btPID(pid);
 }
 
 btreal eval_err_btPID(btPID *pid, btreal error, btreal dt)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"eval_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   pid->e = error;
   pid->dt = dt;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"eval_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 
   return step_btPID(pid);
 }
 /** Set all the input values. See btPID object of more info.*/
 void setinputs_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"setinputs_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   pid->y = y;
   pid->yref = yref;
   pid->dt = dt;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"setinputs_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 /** Set the gains.
  
@@ -275,8 +251,7 @@ If the library is compiled with BTDUMMYPROOF, we will verify that you only
 change the gains when tho regulator is in the off state. See btPID object of more info.*/
 void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"setgains_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
 #ifdef BTDUMMYPROOF
 
@@ -297,8 +272,7 @@ void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
   }
 #endif
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"setgains_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 /** Set saturation of the regulator. If set anti-windup will kick in above this value. See btPID object of more info.
  
@@ -306,50 +280,42 @@ void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
 */
 void setsaturation_btPID(btPID *pid, btreal saturation)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"setsaturation_btPID lock mutex failed");
-
+  btmutex_lock(&(pid->mutex));
+  
   pid->saturation = saturation;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"setsaturation_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 /** Get the present gain values. */
 void getgains_btPID(btPID *pid, btreal *Kp, btreal *Kd, btreal *Ki)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"getgains_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   *Kp = pid->Kp;
   *Kd = pid->Kd;
   *Ki = pid->Ki;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"getgains_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 /** Get the present input values */
 void getinputs_btPID(btPID *pid, btreal *y, btreal *yref, btreal *dt)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"getinputs_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   *y = pid->y;
   *yref = pid->yref;
   *dt = pid->dt;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"getinputs_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 /** Get the present saturation values */
 void getsaturation_btPID(btPID *pid, btreal *saturation)
 {
-  test_and_log(
-    pthread_mutex_lock(&(pid->mutex)),"getsaturation_btPID lock mutex failed");
+  btmutex_lock(&(pid->mutex));
 
   *saturation = pid->saturation;
 
-  test_and_log(
-    pthread_mutex_unlock(&(pid->mutex)),"getsaturation_btPID unlock mutex failed");
+  btmutex_unlock(&(pid->mutex));
 }
 /************************* btPID interface functions ***************************/
 /* Repackages the above PID routines for vectors
@@ -784,8 +750,9 @@ void set_acc_vta(via_trj_array* vt,btreal acc)
 {
   int cnt;
   if (vt != NULL)
-  for(cnt = 0;cnt < vt->elements;cnt++)
+  for(cnt = 0;cnt < vt->elements;cnt++){
     SetAcc_vt(&(vt->trj[cnt]),acc);
+  }
 }
 /** Allocate a vta object and vectray objects */
 via_trj_array* new_vta(int num_columns,int max_rows)
@@ -874,6 +841,8 @@ int set_current_point_vta(via_trj_array* vt,int idx)
   if (vt == NULL) return -1;
   else return edit_at_vr(vt->trj[0].vr,idx);
 }
+/** Get a pointer to the vectray object being used by this via trajectory
+object */
 vectray* get_vr_vta(via_trj_array* vt)
 {
   if (vt == NULL) return NULL;
@@ -892,6 +861,9 @@ int scale_vta(via_trj_array* vt,double vel,double acc)
   vect_n* lval,*rval;
   
   if (vt == NULL) return -1;
+  
+  vt->vel = vel;
+  set_acc_vta(vt,acc);
   
   vr = vt->trj[0].vr;
   setval_vn(idx_vr(vr,0),0,0.0);

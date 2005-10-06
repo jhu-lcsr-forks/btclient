@@ -86,7 +86,7 @@ matr_h *myFrame;
 
 
 #ifdef USE_RTAI31
-pthread_mutex_t disp_mutex;
+btmutex disp_mutex;
 #endif
 #ifdef USE_FUSION
 RT_MUTEX disp_mutex;
@@ -202,9 +202,7 @@ int main(int argc, char **argv)
   //refresh();
 
   /* Initialize the display mutex */
-  test_and_log(
-      pthread_mutex_init(&(disp_mutex),NULL),
-      "Could not initialize mutex for displays.");
+  btmutex_init(&disp_mutex);
   
 
   /* Initialize rtlinux subsystem */
@@ -442,8 +440,7 @@ void DisplayThread()
   refresh();
   while (!done)
   {
-    test_and_log(
-      pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+    btmutex_lock(&disp_mutex);
     
       
     
@@ -454,7 +451,7 @@ void DisplayThread()
       RenderScreen();
       break;
     }
-    pthread_mutex_unlock(&(disp_mutex));
+    btmutex_unlock(&disp_mutex);
     usleep(100000);
   }
   rt_task_delete(displayTask);
@@ -467,8 +464,7 @@ void DisplayThread()
 void start_entry()
 {
   int err;
-  test_and_log(
-      pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+  btmutex_lock(&disp_mutex);
   move(entryLine, 1);
   echo();
   timeout( -1);
@@ -484,7 +480,7 @@ void finish_entry()
   move(entryLine, 1);
   addstr("                                                                              ");
   refresh();
-  pthread_mutex_unlock( &(disp_mutex) );
+  btmutex_unlock(&disp_mutex);
 }
 
 /** Draw the main information screen.
@@ -669,10 +665,9 @@ void RenderScreen() //{{{
 
 void clearScreen(void)
 {
-  test_and_log(
-      pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+  btmutex_lock(&disp_mutex);
   clear();
-  pthread_mutex_unlock( &(disp_mutex) );
+  btmutex_unlock(&disp_mutex);
 }
 
 /** Process user input.

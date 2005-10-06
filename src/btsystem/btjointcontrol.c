@@ -60,9 +60,7 @@ int SCinit(SimpleCtl *sc)
     sc->trj.vel = .00000001;
     PIDinit(&(sc->pid),0, 0, 0, 0.002);
     
-    test_and_log(
-      pthread_mutex_init(&(sc->mutex),NULL),
-      "Could not initialize  mutex for simple controller.");
+    btmutex_init(&(sc->mutex);
 }
 
 /*! Evaluate the Simple Controller
@@ -84,22 +82,19 @@ double SCevaluate(SimpleCtl *sc, double position, double dt)
     int err;
 
     
-    test_and_log(
-      pthread_mutex_lock(&(sc->mutex)),"SCevaluate lock mutex failed");
+    btmutex_lock(&(sc->mutex));
     
     sc->position = position;
     switch (sc->mode)
     {
         case SCMODE_IDLE://Idle
-            test_and_log(
-              pthread_mutex_unlock(&(sc->mutex)),"SCevaluate unlock mutex (idle) failed");
+            btmutex_unlock(&(sc->mutex));
             sc->command_torque = 0.0;
             return sc->command_torque;
             break;
         case SCMODE_TORQUE://Torque
             sc->command_torque = sc->requested_torque;
-            test_and_log(
-              pthread_mutex_unlock(&(sc->mutex)),"SCevaluate unlock mutex (idle) failed");
+            btmutex_unlock(&(sc->mutex));
             return sc->command_torque;
             break;
         case SCMODE_POS://PID
@@ -114,14 +109,12 @@ double SCevaluate(SimpleCtl *sc, double position, double dt)
             
             sc->command_torque = newtorque;
 
-            test_and_log(
-              pthread_mutex_unlock(&(sc->mutex)),"SCevaluate unlock mutex (idle) failed");
+            btmutex_unlock(&(sc->mutex));
             return newtorque;
             break;
         default:
             sc->error = 1;
-            test_and_log(
-              pthread_mutex_unlock(&(sc->mutex)),"SCevaluate unlock mutex (idle) failed");
+            btmutex_unlock(&(sc->mutex));
             return 0.0;
         }
 
@@ -140,21 +133,15 @@ int SCsetmode(SimpleCtl *sc, int mode)
     int err;
     double tmp;
 
-    err = pthread_mutex_lock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCsetmode lock mutex failed: %d", err);
-    }
+    btmutex_lock(&(sc->mutex));
+    
     if (sc->trj.state != BTTRAJ_STOPPED) sc->trj.state = BTTRAJ_STOPPED;
     sc->pid.y = sc->position;
     PIDreset(&(sc->pid));
     tmp = PIDcalc(&(sc->pid));
     sc->mode = mode;
-    err = pthread_mutex_unlock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCsetmode unlock mutex failed: %d", err);
-    }
+    
+    btmutex_unlock(&(sc->mutex));
     return 0;
 }
 
@@ -163,17 +150,11 @@ int SCsettorque(SimpleCtl *sc,double torque)
 {
     int err;
 
-    err = pthread_mutex_lock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCsettorque lock mutex failed: %d", err);
-    }
+    btmutex_lock(&(sc->mutex));
+    
     sc->requested_torque = torque; //use a buffer since we are not necessarily running from the same thread as evaluatecontroller
-    err = pthread_mutex_unlock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCsettorque unlock mutex failed: %d", err);
-    }
+    
+    btmutex_unlock(&(sc->mutex));
 
     if (sc->mode != SCMODE_TORQUE)
     {
@@ -190,21 +171,14 @@ int SCsetpid(SimpleCtl *sc,double kp,double kd,double ki, double saturation) //!
     if (sc->trj.state == BTTRAJ_RUN || sc->mode == SCMODE_POS) //make sure we don't screw with stuff in the middle of a trajectory.
         return -1;
 
-    err = pthread_mutex_lock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCsetpid lock mutex failed: %d", err);
-    }
+    btmutex_lock(&(sc->mutex));
+    
     sc->pid.Kp = kp;
     sc->pid.Kd = kd;
     sc->pid.Ki = ki;
     sc->pid.saturation = saturation;
 
-    err = pthread_mutex_unlock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCsetpid unlock mutex failed: %d", err);
-    }
+    btmutex_unlock(&(sc->mutex));
 
     return 0;
 }
@@ -216,17 +190,11 @@ int SCsetcmd(SimpleCtl *sc,double cmd) //sets pid command position. if in traj m
     if (sc->trj.state != BTTRAJ_STOPPED)
         return -1;
 
-    err = pthread_mutex_lock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCsetcmd lock mutex failed: %d", err);
-    }
+    btmutex_lock(&(sc->mutex));
+    
     sc->pid.yref = cmd;
-    err = pthread_mutex_unlock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCsetcmd unlock mutex failed: %d", err);
-    }
+    
+    btmutex_unlock(&(sc->mutex));
     return 0;
 }
 
@@ -237,19 +205,12 @@ int SCsettrjprof(SimpleCtl *sc,double vel,double acc)
     if (sc->trj.state == BTTRAJ_RUN)
         return -1;
 
-    err = pthread_mutex_lock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCsettrjprof lock mutex failed: %d", err);
-    }
+    btmutex_lock(&(sc->mutex));
+    
     sc->trj.vel = fabs(vel);
     sc->trj.acc = fabs(acc);
 
-    err = pthread_mutex_unlock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCsettrjprof unlock mutex failed: %d", err);
-    }
+    btmutex_unlock(&(sc->mutex));
     return 0;
 
 }
@@ -261,19 +222,12 @@ int SCstarttrj(SimpleCtl *sc,double end)
     if (sc->trj.state != BTTRAJ_STOPPED)
         return -1;
 
-    err = pthread_mutex_lock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCstarttrj lock mutex failed: %d", err);
-    }
+    btmutex_lock(&(sc->mutex));
+    
     here = sc->pid.yref;
     init_trajectory(&(sc->trj),here,end);
 
-    err = pthread_mutex_unlock( &(sc->mutex) );
-    if(err != 0)
-    {
-        syslog(LOG_ERR, "SCstarttrj unlock mutex failed: %d", err);
-    }
+    btmutex_unlock(&(sc->mutex));
     return 0;
 }
 

@@ -173,7 +173,7 @@ void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq,
 /** Register virtual functions and data for a trajectory with btstatecontrol */
 void maptrajectory_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* getstate)
 {
-  test_and_log( pthread_mutex_lock(&(sc->mutex)),"maptrajectory_bts lock mutex failed");
+  btmutex_lock(&(sc->mutex));
 
   if (sc->btt.state == BTTRAJ_STOPPED)
   {
@@ -185,12 +185,12 @@ void maptrajectory_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void*
     set_vn(sc->qref,sc->q); //Initialize trajectory output to a sane value
     sc->btt.state = BTTRAJ_STOPPED;
   }
-  test_and_log(pthread_mutex_unlock(&(sc->mutex)),"maptrajectory_bts unlock mutex (idle) failed");
+  btmutex_unlock(&(sc->mutex));
 }
 /** Register virtual functions and data for a position control object with btstatecontrol*/
 void mapposition_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* pause)
 {
-  test_and_log( pthread_mutex_lock(&(sc->mutex)),"maptrajectory_bts lock mutex failed");
+  btmutex_lock(&(sc->mutex));
   if (sc->mode != SCMODE_POS && sc->mode != SCMODE_TRJ)
   {
     sc->btp.reset = reset;
@@ -204,7 +204,7 @@ void mapposition_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* p
     sc->mode = SCMODE_IDLE;
     sc->btt.state = BTTRAJ_STOPPED;
   }
-  test_and_log(pthread_mutex_unlock(&(sc->mutex)),"maptrajectory_bts unlock mutex (idle) failed");
+  btmutex_unlock(&(sc->mutex));
 }
 
 /*! Initialize the state controller structure
@@ -213,7 +213,6 @@ void mapposition_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* p
 */
 int init_bts(btstatecontrol *sc)
 {
-  pthread_mutexattr_t mattr;
   
   int err;
   BTPTR_OK(sc,"moveparm_bts")
@@ -229,11 +228,7 @@ int init_bts(btstatecontrol *sc)
   init_btramp(&(sc->ramp),&(sc->dt_scale),0.0,1.0,2);
   set_btramp(&(sc->ramp),BTRAMP_MAX);
   
-  pthread_mutexattr_init(&mattr);
-  pthread_mutexattr_settype(&mattr,PTHREAD_MUTEX_ERRORCHECK_NP);
-  test_and_log(
-    pthread_mutex_init(&(sc->mutex),NULL),
-    "Could not initialize  mutex for state controller.");
+  btmutex_init(&(sc->mutex));
 }
 
 inline vect_n* eval_trj_bts(btstatecontrol *sc)
@@ -282,8 +277,8 @@ vect_n* eval_bts(btstatecontrol *sc)
   int err;
   BTPTR_OK(sc,"moveparm_bts")
 
-  test_and_log(
-    pthread_mutex_lock(&(sc->mutex)),"eval_bts lock mutex failed");
+  btmutex_lock(&(sc->mutex));
+  
   sc->last_dt = *(sc->dt);
 
   switch (sc->mode)
@@ -303,8 +298,7 @@ vect_n* eval_bts(btstatecontrol *sc)
     fill_vn(sc->t,0.0);
     break;
   }
-  test_and_log(
-      pthread_mutex_unlock(&(sc->mutex)),"eval_bts unlock (default) mutex failed");
+  btmutex_unlock(&(sc->mutex));
   return sc->t;
 }
 
@@ -327,8 +321,7 @@ int setmode_bts(btstatecontrol *sc, int mode)
   double tmp;
   BTPTR_OK(sc,"moveparm_bts")
 
-  test_and_log(
-    pthread_mutex_lock(&(sc->mutex)),"setmode_bts lock mutex failed");
+  btmutex_lock(&(sc->mutex));
 
   switch (mode)
   {
@@ -362,8 +355,7 @@ int setmode_bts(btstatecontrol *sc, int mode)
     sc->mode = SCMODE_IDLE;
     break;
   }
-  test_and_log(
-    pthread_mutex_unlock(&(sc->mutex)),"setmode_bts unlock (idle) mutex failed");
+  btmutex_unlock(&(sc->mutex));
   return 0;
 }
 /** Move the wam from its present position to the starting position of the
@@ -380,8 +372,9 @@ int prep_trj_bts(btstatecontrol *sc)
   BTPTR_OK(sc,"moveparm_bts")
   
   if(sc->mode != SCMODE_TRJ) return -2;
-  test_and_log(
-    pthread_mutex_lock(&(sc->mutex)),"prep_trj_bts lock mutex failed");
+  
+  btmutex_lock(&(sc->mutex));
+  
   if(sc->btt.state == BTTRAJ_STOPPED)
   {
     clear_pwl(&(sc->pth));
@@ -401,8 +394,7 @@ int prep_trj_bts(btstatecontrol *sc)
   else{
     ret = -1;
   }
-  test_and_log(
-    pthread_mutex_unlock(&(sc->mutex)),"prep_trj_bts unlock (idle) mutex failed");
+  btmutex_unlock(&(sc->mutex));
 
   return ret;
   //return prep_bttrj(&sc->btt,sc->q,vel,acc);
@@ -413,8 +405,9 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
   char vect_buf1[200];
   int ret;
   BTPTR_OK(sc,"moveparm_bts")
-  test_and_log(
-    pthread_mutex_lock(&(sc->mutex)),"moveto_bts lock mutex failed");
+  
+  btmutex_lock(&(sc->mutex));
+  
   if(sc->btt.state == BTTRAJ_STOPPED)
   {
     clear_pwl(&(sc->pth));
@@ -429,9 +422,8 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
   }
   else{
     ret = -1;
-  }  test_and_log(
-    pthread_mutex_unlock(&(sc->mutex)),"moveto_bts unlock mutex failed");
-
+  }  
+  btmutex_unlock(&(sc->mutex));
   return ret;
 
 }
@@ -440,12 +432,11 @@ during the initial prep move */
 void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc)
 {
   BTPTR_OK(sc,"moveparm_bts")
-  test_and_log(
-    pthread_mutex_lock(&(sc->mutex)),"moveparm_bts lock mutex failed");
+  btmutex_lock(&(sc->mutex));
+  
   sc->vel = vel; //Safe value for units of radians and meters
   sc->acc = acc;
-  test_and_log(
-    pthread_mutex_unlock(&(sc->mutex)),"moveparm_bts unlock mutex failed");
+  btmutex_unlock(&(sc->mutex));
 
 }
 /** Return the state of the present trajectory generator */
@@ -459,15 +450,15 @@ int start_trj_bts(btstatecontrol *sc)
 {
   int ret = 0;
   BTPTR_OK(sc,"moveparm_bts")
-  test_and_log(
-    pthread_mutex_lock(&(sc->mutex)),"start_trj_bts lock mutex failed");
+  
+  btmutex_lock(&(sc->mutex));
+  
   if(sc->btt.state == BTTRAJ_READY)
   {
     sc->btt.state = BTTRAJ_RUN;
     ret = -1;
   }
-  test_and_log(
-    pthread_mutex_unlock(&(sc->mutex)),"start_trj_bts unlock mutex failed");
+  btmutex_unlock(&(sc->mutex));
 
   return ret;
 }
@@ -475,12 +466,11 @@ int start_trj_bts(btstatecontrol *sc)
 int stop_trj_bts(btstatecontrol *sc)
 {
   BTPTR_OK(sc,"moveparm_bts")
-  test_and_log(
-    pthread_mutex_lock(&(sc->mutex)),"stop_trj_bts lock mutex failed");
+  
+  btmutex_lock(&(sc->mutex));
+  
   sc->btt.state = BTTRAJ_STOPPED;
-  test_and_log(
-    pthread_mutex_unlock(&(sc->mutex)),"stop_trj_bts unlock mutex failed");
-
+  btmutex_unlock(&(sc->mutex));
   return 0;
 }
 int pause_trj_bts(btstatecontrol *sc,btreal period)
@@ -492,11 +482,11 @@ int pause_trj_bts(btstatecontrol *sc,btreal period)
   setrate_btramp(&(sc->ramp),period);
   set_btramp(&(sc->ramp),BTRAMP_DOWN);
     
-  test_and_log(
-    pthread_mutex_lock(&(sc->mutex)),"pause_trj_bts lock mutex failed");
+  
+  btmutex_lock(&(sc->mutex));
+  
   sc->btt.state = BTTRAJ_PAUSING;
-  test_and_log(
-    pthread_mutex_unlock(&(sc->mutex)),"pause_trj_bts unlock mutex failed");
+  btmutex_unlock(&(sc->mutex));
   }
 }
 int unpause_trj_bts(btstatecontrol *sc,btreal period)
@@ -508,11 +498,10 @@ int unpause_trj_bts(btstatecontrol *sc,btreal period)
   setrate_btramp(&(sc->ramp),period);
   set_btramp(&(sc->ramp),BTRAMP_UP);
     
-  test_and_log(
-    pthread_mutex_lock(&(sc->mutex)),"unpause_trj_bts lock mutex failed");
+  btmutex_lock(&(sc->mutex));
+  
   sc->btt.state = BTTRAJ_UNPAUSING;
-  test_and_log(
-    pthread_mutex_unlock(&(sc->mutex)),"unpause_trj_bts unlock mutex failed");
+  btmutex_unlock(&(sc->mutex));
   }
 }
 
@@ -525,9 +514,7 @@ This should be called only once as it allocates memory for a mutex object.
 */
 void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate)
 {
-  test_and_log(
-    pthread_mutex_init(&(r->mutex),NULL),
-    "Could not initialize  mutex for simple controller.");
+  btmutex_init(&(r->mutex));
   r->scaler = var;
   r->min = min;
   r->max = max;
@@ -539,11 +526,10 @@ See btramp for valid values of state.
 */
 void set_btramp(btramp *r,enum btramp_state state)
 {
-  test_and_log(
-    pthread_mutex_lock(&(r->mutex)),"btramp_up lock mutex failed");
+  btmutex_lock(&(r->mutex));
+  
   r->state = state;
-  test_and_log(
-    pthread_mutex_unlock(&(r->mutex)),"btramp_up unlock mutex failed");
+  btmutex_unlock(&(r->mutex));
 }
 /** Return the present value of a btramp scaler.
  
@@ -567,8 +553,8 @@ will degenerate into BTRAMP_MAX and BTRAMP_MIN respectively.
 */
 btreal eval_btramp(btramp *r,btreal dt)
 {
-  test_and_log(
-    pthread_mutex_lock(&(r->mutex)),"eval_btramp lock mutex failed");
+  btmutex_lock(&(r->mutex));
+  
   if (r->state == BTRAMP_MAX)
   {
     *(r->scaler) = r->max;
@@ -596,17 +582,16 @@ btreal eval_btramp(btramp *r,btreal dt)
     }
   }
   //default case is to do nothing
-  test_and_log(
-    pthread_mutex_unlock(&(r->mutex)),"eval_btramp unlock mutex failed");
+  btmutex_unlock(&(r->mutex));
   return *(r->scaler);
 }
 void setrate_btramp(btramp *r,btreal rate)
 {
-  test_and_log(
-    pthread_mutex_lock(&(r->mutex)),"setrate_btramp lock mutex failed");
-    r->rate = rate;
-    test_and_log(
-    pthread_mutex_unlock(&(r->mutex)),"setrate_btramp unlock mutex failed");
+  btmutex_lock(&(r->mutex));
+    
+  r->rate = rate;
+    
+  btmutex_unlock(&(r->mutex));
 
 }
 /**************************** btramp functions **********************************/

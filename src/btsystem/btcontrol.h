@@ -177,7 +177,7 @@ typedef struct
   
   //===========parameters
   double trj_acc; //acceleration that controls the blending
-  
+  double trj_vel;
   
   //===========state
   int segment; //0 = acc, 1=vel
@@ -215,11 +215,51 @@ This data structure is used for implementing a trajectory object for the
 btstatecontrol object. See bttrajectory_interface_struct object for information 
 on creating your own.
 
+\bug If sequential time values are the same or out of order the behavior is undefined
+this should be checked for and handled.
+
+See also example_3 of the code examples.
+Example code:
+\code
+int cnt;
+via_trj_array *vta = NULL;
+vect_n* pos1,pos2;
+
+pos1 = new_vn(6);
+pos2 = new_vn(6);
+fill_vn(pos2,10.0);
+
+vta = new_vta(6,50); //6 DOF, Maximum of 50 edit points
+register_vta(active_bts,vta); //Register trajectory with state controller
+
+if(cnt = 0;cnt<15;cnt++){ //Add path that goes back & forth 15 times
+  ins_point_vta(vta,pos1);
+  ins_point_vta(vta,pos2);
+}
+
+  setmode_bts(active_bts,SCMODE_TRJ);
+  moveparm_bts(active_bts,0.5,0.5);
+  prep_trj_bts(active_bts);
+ 
+  while (movestatus_bts(active_bts) == BTTRAJ_INPREP)
+  {
+      usleep(100000); //give up processor for other threads
+  }
+
+  start_trj_bts(active_bts);
+  sleep(60); //run for one minute
+  stop_trj_bts(active_bts);
+ 
+\endcode
+
+
+
 */
 typedef struct
 {
   via_trj* trj;
   int elements;
+  double vel;
 }via_trj_array;
 /*Memory Management API*/
 //via_trj_array* malloc_new_vta(int num_columns);

@@ -1,24 +1,30 @@
 /*======================================================================*
- *  Module .............btdiag
+ *  Module .............ex3
  *  File ...............main.c
  *  Author .............Traveler Hauptman
- *  Creation Date ......29 Apr 2005
+ *  Creation Date ......06 Oct 2005
  *                                                                      *
  *  ******************************************************************  *
  *                                                                      *
  *  NOTES:
  *
  *  REVISION HISTORY:
- * 050429 TH - Reworked for new library
  *                                                                      *
  *======================================================================*/
 
 /** \file main.c
-    Provides a dignostic interface to a set of motor controllers.
- \todo
- Cartesian playback
- 
- */
+    An interactive teach and play demo.
+
+This program allows a user to test and interact with the teach and play
+features of the WAM library.
+
+The user can switch between cartesian space and joint space. The toggle 
+variable is a pointer to the present btstatecontroller.
+
+Note that if a trajectory is modified, you must call 's' scale trajectory on
+it to properly establish the time values.
+
+*/
 
 /*==============================*
  * INCLUDES - System Files      *
@@ -44,11 +50,6 @@
 /*==============================*
  * PRIVATE DEFINED constants    *
  *==============================*/
-#define column_offset     (15)
-#define column_width      (11)
-
-enum {MAIN_SCREEN = 0, JOINTSPACE_SCREEN, CARTSPACE_SCREEN, LAST_SCREEN};
-
 
 /*==============================*
  * PRIVATE MACRO definitions    *
@@ -61,44 +62,29 @@ enum {MAIN_SCREEN = 0, JOINTSPACE_SCREEN, CARTSPACE_SCREEN, LAST_SCREEN};
 /*==============================*
  * GLOBAL file-scope variables  *
  *==============================*/
-char divider[column_offset + (column_width * MAX_NODES)];
+
 
 pthread_mutex_t disp_mutex;
 
-int active = 0;
-int npucks;
-int cpuck = 0;
 int entryLine;
 
-
-long saved_bus_error = 0;
-int modes[15] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-long int temperatures[MAX_NODES];
-double commands[15];
-double newpid[15];
-
-int present_screen = MAIN_SCREEN;
-
-int startup_stage   = FALSE; //Set to TRUE when main loop is started. Used to control sigint handler
 int useGimbals      = FALSE;
 int done            = FALSE;
 
 int gcompToggle = 0;
 
-int trjisdirty = 0; //=1 if edits made to a trajectory data structure.
-int trjidx;
-
 btstatecontrol *active_bts;
-
 
 vect_n* active_pos;
 vect_n* active_trq;
 vect_n *wv;
+
 char active_file[250];
+char *user_def = "User edited point list";
 wam_struct *wam;
+
 vectray *vr;
 via_trj_array *vta = NULL,*vtb = NULL;
-
 
 extern int isZeroed;
 static RT_TASK *mainTask;
@@ -118,8 +104,6 @@ void clearScreen(void);
 void finish_entry(void);
 void start_entry(void);
 void init_ncurses(void);
-
-int WAMcallback(struct btwam_struct *wam);
 
 /*==============================*
  * Functions                    *
@@ -143,7 +127,7 @@ int main(int argc, char **argv)
 
   /* Initialize syslog */
   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
-
+  atexit(closelog);
   /* Initialize the display mutex */
   test_and_log(
     pthread_mutex_init(&(disp_mutex),NULL),
@@ -161,10 +145,10 @@ int main(int argc, char **argv)
 
   if(test_and_log(
             InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
-            "Failed to initialize system"))
-  {
-    return -1;
+            "Failed to initialize system")){
+     exit(-1);
   }
+  atexit(CloseSystem);//register CloseSystem for shutdown
 
   /* Check and handle any command line arguments */
   if(argc > 1)
@@ -181,40 +165,23 @@ int main(int argc, char **argv)
   err =  InitWAM("wam.dat");
   if(err)
   {
-    CloseSystem();
-    closelog();
-    endwin();
     exit(1);
-
   }
 
   /* Obtain a pointer to the wam state object */
   wam = GetWAM();
-  active_bts = &(wam->Jsc);
+
   signal(SIGINT, sigint_handler); //register the interrupt handler
-  startup_stage = 1;
-
-  /* Initialize our data logging structure */
-  wam->logdivider = 1;
-  PrepDL(&(wam->log),7);
-  AddDataDL(&(wam->log),&(wam->log_time),sizeof(double),2,"Time");
-  AddDataDL(&(wam->log),&(wam->loop_time),sizeof(RTIME),BTLOG_LONGLONG,"loop_time");
-  AddDataDL(&(wam->log),&(wam->loop_period),sizeof(RTIME),BTLOG_LONGLONG,"loop_period");
-  AddDataDL(&(wam->log),&(wam->readpos_time),sizeof(RTIME),BTLOG_LONGLONG,"readpos_time");
-  AddDataDL(&(wam->log),&(wam->user_time),sizeof(RTIME),BTLOG_LONGLONG,"user_time");
-  AddDataDL(&(wam->log),&(wam->Jsc_time),sizeof(RTIME),BTLOG_LONGLONG,"Jsc_time");
-
-  InitDL(&(wam->log),1000,"datafile.dat");
 
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
 
-  npucks = wam->num_actuators; // Get the number of initialized actuators
 
   //prep modes
-  setmode_bts(&(wam->Csc),SCMODE_IDLE);
   active_bts = &(wam->Jsc);
+  setmode_bts(active_bts,SCMODE_IDLE);
   active_pos = wam->Jpos;
   active_trq = wam->Jtrq;
+  
   //new trajectory
   vta = new_vta(len_vn(active_pos),50);
   register_vta(active_bts,vta);
@@ -222,10 +189,10 @@ int main(int argc, char **argv)
 
 
   start_control_threads(10, 0.002, WAMControlThread, (void *)0);
-
+  atexit(stop_control_threads);
+  
   StartDisplayThread();
 
-  DLon(&(wam->log));
   while (!done)
   {
 
@@ -237,19 +204,12 @@ int main(int argc, char **argv)
 
     usleep(100000); // Sleep for 0.1s
   }
-  DLon(&(wam->log));
   Shutdown();
-  syslog(LOG_ERR, "CloseSystem");
-  CloseSystem();
-  CloseDL(&(wam->log));
+
   DecodeDL("datafile.dat","dat.csv",1);
-  freebtptr();
-}
-
-int WAMcallback(struct btwam_struct *wam)
-{
-
-  return 0;
+  syslog(LOG_ERR, "rt_task_delete");
+  rt_task_delete(mainTask);
+  exit(1);
 }
 
 /* Initialize the ncurses screen library */
@@ -262,32 +222,12 @@ void init_ncurses(void)
   clear();
 }
 
-
 /** Traps the Ctrl-C signal.
     Quits the program gracefully when Ctrl-C is hit.
 */
 void sigint_handler()
 {
-  if (!startup_stage)
-  {
-    endwin();
     exit(1);
-  }
-  else
-    done = 1;
-}
-
-/** Shut the application down gracefully.
-    Stops the control threads, ncurses, syslog, and frees the movelist.
-*/
-void Shutdown()
-{
-  syslog(LOG_ERR, "stop_control_threads");
-  stop_control_threads();
-  syslog(LOG_ERR, "endwin");
-  endwin();
-  syslog(LOG_ERR, "rt_task_delete");
-  rt_task_delete(mainTask);
 }
 
 /** Starts the display thread.
@@ -324,39 +264,20 @@ void DisplayThread()
 
   displayTask = rt_task_init(nam2num("displa"), 0, 0, 0);
 
-  /* Create the divider line */
-  divider[0] = '\0';
-  for(cnt = 0; cnt < column_offset + wam->num_actuators * column_width; cnt++)
-  {
-    strcat(divider, "-");
-  }
-
   clear();
   refresh();
   while (!done)
   {
     test_and_log(
       pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
-    switch (present_screen)
-    {
-    case MAIN_SCREEN:
-      RenderMAIN_SCREEN();
-      break;
-    case JOINTSPACE_SCREEN:
-      RenderMAIN_SCREEN();
-      break;
-    case CARTSPACE_SCREEN:
-      RenderMAIN_SCREEN();
-      break;
-    default:
-      RenderMAIN_SCREEN();
-      break;
-    }
+
+    RenderMAIN_SCREEN();
+
     pthread_mutex_unlock(&(disp_mutex));
     usleep(100000);
   }
-  rt_task_delete(displayTask);
 
+  rt_task_delete(displayTask);
 }
 
 /** Locks the display mutex.
@@ -369,7 +290,7 @@ void start_entry()
     pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
   move(entryLine, 1);
   echo();
-  timeout( -1);
+  timeout(-1);
 }
 
 /** Unlocks the display mutex.
@@ -432,13 +353,6 @@ void RenderMAIN_SCREEN()
 
   mvprintw(line, 0 , "Position :%s ", sprint_vn(vect_buf1,active_pos));
   ++line;
-  /*
-  mvprintw(line, 0 , "Pos :%s ", sprint_vn(vect_buf1,active_bts->q));
-  ++line;
-  mvprintw(line, 0 , "Targ Pos :%s ", sprint_vn(vect_buf1,active_bts->qref));
-  ++line;
-  mvprintw(line, 0 , "Time :%f ", active_bts->dt);
-  ++line;*/
   mvprintw(line, 0 , "Force :%s ", sprint_vn(vect_buf1,active_trq));
   ++line;
   ++line;
@@ -450,9 +364,9 @@ void RenderMAIN_SCREEN()
     mvprintw(line,0,"Current Index:%d of %d    ",cpt,nrows-1);
     line++;
     
-    mvprintw(line, 0 ,   "Previos Teach Point :                             ");
-    mvprintw(line+1, 0 , "Current Teach Point :                             ");
-    mvprintw(line+2, 0 , "   Next Teach Point :                             ");
+    mvprintw(line, 0 ,   "Previos Teach Point :                                                       ");
+    mvprintw(line+1, 0 , "Current Teach Point :                                                       ");
+    mvprintw(line+2, 0 , "   Next Teach Point :                                                       ");
     
     if (nrows > 0){
       if (nrows != cpt)
@@ -480,26 +394,12 @@ void RenderMAIN_SCREEN()
   }
   line++;line++;
   mvprintw(line,0,"bts: state:%d",active_bts->mode);
-  if(active_bts->btt.dat != NULL)mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
+  if(active_bts->btt.dat != NULL)
+    mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
   entryLine = line + 2;
   refresh();
 }
-/** Draw the main information screen.
-    Dynamically draw the puck information on the screen.
-*/
-void RenderJOINTSPACE_SCREEN()
-{
 
-  refresh();
-}
-/** Draw the main information screen.
-    Dynamically draw the puck information on the screen.
-*/
-void RenderCARTSPACE_SCREEN()
-{
-
-  refresh();
-}
 void clearScreen(void)
 {
   test_and_log(
@@ -516,27 +416,16 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
   int cnt,elapsed = 0;
   double ftmp,tacc,tvel;
   int dtmp;
-  int cMid,Mid;
+
   char fn[250],chr;
   int ret;
   int done1;
 
-  cMid = MotorID_From_ActIdx(cpuck);
   switch (c)
   {
   case 'x':
   case 'X': /* eXit */
     done = 1;
-    break;
-  case '[': /* Select previous puck */
-    cpuck--;
-    if (cpuck < 0)
-      cpuck = npucks - 1;
-    break;
-  case ']': /* Select next puck */
-    cpuck++;
-    if (cpuck >= npucks)
-      cpuck = 0;
     break;
   case 'z': /* Send zero-position to WAM */
     const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
@@ -644,24 +533,6 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       finish_entry();
     }
     break;
-  case 'L':
-    if(getmode_bts(active_bts)==SCMODE_IDLE)
-    {
-      start_entry();
-      addstr("Enter filename for trajectory: ");
-      refresh();
-      scanw("%s", active_file);
-      finish_entry();
-      
-      if (vtb != NULL)
-        destroy_vta(&vtb); //empty out the data if it was full
-
-      vtb = read_file_vta(active_file,0);
-      sim_vta(vtb,0.002,30.0,"sim.csv");
-      
-      
-    }
-    break;
     //  Save trajectory
   case 'w':
     if(getmode_bts(active_bts)==SCMODE_IDLE)
@@ -688,7 +559,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       if (vta != NULL)
         destroy_vta(&vta);
 
-
+      strcpy(active_file,user_def);
       vta = new_vta(len_vn(active_pos),dtmp);
       register_vta(active_bts,vta);
       active_file[0] = 0;
@@ -734,15 +605,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         {
           if (chr == 67) //Right arrow
           {
-            cpuck++;
-            if (cpuck >= npucks)
-              cpuck = 0;
+            
           }
           else if (chr == 68) //Left arrow
           {
-            cpuck--;
-            if (cpuck < 0)
-              cpuck = npucks - 1;
+           
           }
           else
           {
@@ -775,10 +642,9 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
 /*======================================================================*
  *                                                                      *
- *             Copyright (c) 2005 Barrett Technology, Inc.              *
- *                        139 Main Street                               *
- *                       Kendall/MIT Square                             *
- *                  Cambridge, MA  02142-1528  USA                      *
+ *          Copyright (c) 2005 Barrett Technology, Inc.                 *
+ *                        625 Mount Auburn St                           *
+ *                    Cambridge, MA  02138,  USA                        *
  *                                                                      *
  *                        All rights reserved.                          *
  *                                                                      *
@@ -792,10 +658,4 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
  *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
  *  Technology, Inc. be liable for any lost development expenses, lost  *
  *  lost profits, or any incidental, special, or consequential damage.  *
- *  ******************************************************************  *
- *
- * CVS info: $Id$
- * CVS automatic log (prune as desired):
- * $Log$
- *
  *======================================================================*/

@@ -25,7 +25,11 @@ To learn to write software for the WAM, Barrett recommends the following course.
  -# Teach and play: recording and playback of trajectories
 -# A real-time framework for simplifying the process of insuring that control happens consistently and at a high sample rate.
 
-To best utilize the WAM system the programmer will want to develop some familiarity with all of the above functionality. Barrett Technology has provided access to our proprietary code to help the programmer learn about the WAM system and eliminate guesswork at what exactly is happening when you call one of our library functions. If you would like to use or modify any of the code in the library for yourself; please contact Barrett Technology to find out what licensing requirements (if any) we have.
+To best utilize the WAM system the programmer will want to develop some familiarity with all of the above functionality. 
+Barrett Technology has provided access to our proprietary code to help the programmer learn about the WAM system and 
+eliminate guesswork at what exactly is happening when you call one of our library functions. If you would like to use 
+or modify any of the code in the library for yourself; please contact Barrett Technology to find out what licensing 
+requirements (if any) we have.
 
 The following is an overview of the library functionality and what code files provide the functionality. 
 

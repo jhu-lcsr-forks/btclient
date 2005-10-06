@@ -10,6 +10,42 @@
 #include "btos.h"
 
 
+int btmutex_init(btmutex* btm){
+  int ret;
+  pthread_mutexattr_t mattr;
+  pthread_mutexattr_init(&mattr);
+  pthread_mutexattr_settype(&mattr,PTHREAD_MUTEX_TIMED_NP);
+  //pthread_mutexattr_settype(&mattr,PTHREAD_MUTEX_ERRORCHECK_NP);
+
+  ret = test_and_log(
+    pthread_mutex_init(btm,&mattr),
+    "Could not initialize mutex.");
+  return ret;
+}
+
+BTINLINE int btmutex_lock(btmutex* btm)
+{
+  int ret;
+  ret = pthread_mutex_lock(btm);
+  if (ret != 0)
+  {
+    syslog(LOG_ERR, "Mutex lock failed: %d", ret);
+  }
+  return ret;
+}
+int btmutex_lock_msg(btmutex* btm,char *msg);
+BTINLINE int btmutex_unlock(btmutex *btm)
+{
+  int ret;
+  ret = pthread_mutex_unlock(btm);
+  if (ret != 0)
+  {
+    syslog(LOG_ERR, "Mutex unlock failed: %d",  ret);
+  }
+  return ret;
+}
+
+
 /** Null pointer access flag */
 int btptr_ok(void *ptr,char *str)
 {
@@ -25,7 +61,7 @@ BTINLINE int test_and_log(int ret, const char *str)
   if (ret != 0)
   {
     syslog(LOG_ERR, "%s: %d", str, ret);
-    return -1;
+    return ret;
   }
   else 
     return 0;
@@ -43,7 +79,7 @@ BTINLINE void * btmalloc(size_t size)
   if ((vmem = malloc(size)) == NULL) 
   {
     syslog(LOG_ERR,"btMalloc: memory allocation failed, size %d",size);
-    exit(1);
+    exit(-1);
   }
   return vmem;
 }

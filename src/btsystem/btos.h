@@ -31,30 +31,19 @@ extern "C"
 #endif
 
 #include <pthread.h>
-//Callback list
-
-//Bailout function
-/**
-  During initialization files are opened and devices accessed. If something fails
-  during one of the startup steps, we want to rollback; closing files and deallocating
-  memory and shutting down GUI's.
-  
-  \bug Finish this code
-*/
-typedef struct btexit_struct{
-  struct btexit_struct* next;
-  char name[20];
-  void* fp;
-  int num_parms;
-  void** parms;
-}btexit_list;
-void register_btexit_function();
-void deregister_btexit_function();
-void btexit();
-
 
 //mutex & threads
+/**
+The intention of the thread functions is to provide a central point for
+mutex error handling and debugging.
+
+See the gnu_libc backtrace function for debugging output.
+*/
 typedef pthread_mutex_t btmutex;
+int btmutex_init(btmutex* btm);
+int btmutex_lock(btmutex* btm);
+int btmutex_lock_msg(btmutex* btm,char *msg);
+int btmutex_unlock(btmutex *btm);
 
 
 #ifdef NULL_PTR_GUARD
@@ -68,8 +57,8 @@ typedef pthread_mutex_t btmutex;
 int btptr_ok(void *ptr,char *str);
 BTINLINE int test_and_log(int ret,const char *str);
 
+//Memory
 BTINLINE void * btmalloc(size_t size);
-
 BTINLINE void btfree(void **ptr);
 
 

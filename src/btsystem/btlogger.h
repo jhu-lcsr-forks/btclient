@@ -73,7 +73,7 @@ typedef struct
   int Log_File_Open;
   int buffersize;
   FILE *DLfile;
-  pthread_mutex_t mutex; //!< Unused
+  btmutex mutex; //!< Unused
 }btlogger;
 
 // Private functions
