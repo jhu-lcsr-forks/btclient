@@ -17,7 +17,7 @@
  *                                                                      *
  *======================================================================*/
 
-/** \file btcan_esd.c
+/** \file btcan.c
     Handles all communication with the robot over the CAN bus.
     Requires library files "libcan.a" and "libmitop.a".
     
@@ -478,7 +478,7 @@ int getBusStatus(int bus, long *status)
     pthread_mutex_lock(&commMutex);
     //err = canReadMsg(bus, &id_in, &len_in, data, FALSE);
     
-    for(id = 1; id <= 30; id++)
+    for(id = 0; id < MAX_NODES; id++)
     {
         // Compile the packet
         data[0] = (unsigned char)STAT;
@@ -505,7 +505,7 @@ int getBusStatus(int bus, long *status)
     }
     
     pthread_mutex_unlock(&commMutex);
-    for(id=1;id<=30;id++) syslog(LOG_ERR,"status[%d]=%d",id,status[id]);
+    for(id = 0; id < MAX_NODES; id++) syslog(LOG_ERR,"status[%d]=%d", id, status[id]);
 }
 
 /** Parse the data payload received from a Barrett Motor Controller.
