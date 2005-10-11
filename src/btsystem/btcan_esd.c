@@ -33,6 +33,7 @@
 #include <inttypes.h>
 #include <pthread.h>
 #include <syslog.h>
+#include <version.h>
 
 /*==============================*
  * INCLUDES - Project Files     *
@@ -499,13 +500,19 @@ int getBusStatus(int bus, long *status)
         if(!err)
         {
             // Parse the reply
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,0)
             err = parseMessage(id_in, len_in, data, &id_in, &property_in, &status[id]);
+#else
+            err = parseMessage(id_in, len_in, data, &id_in, &property_in, &status[id-1]);
+#endif
         }
         else syslog(LOG_ERR, "getBusStatus(): canReadMsg returned error");
     }
     
     pthread_mutex_unlock(&commMutex);
+#if BTDEBUG
     for(id = 0; id < MAX_NODES; id++) syslog(LOG_ERR,"status[%d]=%d", id, status[id]);
+#endif
 }
 
 /** Parse the data payload received from a Barrett Motor Controller.
