@@ -11,8 +11,9 @@ CC = gcc
 PATH_INCLUDE = -I./include -I/usr/realtime/include
 PATH_INSTALL = ../..
 #Replace -DUSE_FUSION with -DUSE_RTAI31
-CFLAGS +=  -g -DUSE_RTAI31 -static ${PATH_INCLUDE} 
-#CFLAGS +=  -DVECT_N_DEBUG -DVECT_N_BOUNDS
+CFLAGS += -DUSE_RTAI31  ${PATH_INCLUDE} 
+#Debugging - Comment out line below for more speed
+CFLAGS += -g -DBT_NULL_PTR_GUARD -DBT_ARRAY_BOUNDS_CHECK -DBTDEBUG
 #Replace -lrtai with -llxrt
 LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L./lib -lm -lpthread -llxrt -lntcan
 

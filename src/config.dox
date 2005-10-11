@@ -10,7 +10,7 @@ CREATE_SUBDIRS         = NO
 OUTPUT_LANGUAGE        = English
 USE_WINDOWS_ENCODING   = YES
 BRIEF_MEMBER_DESC      = YES
-REPEAT_BRIEF           = YES
+REPEAT_BRIEF           = NO
 ABBREVIATE_BRIEF       = "The $name class" \
                          "The $name widget" \
                          "The $name file" \
@@ -54,19 +54,19 @@ HIDE_IN_BODY_DOCS      = NO
 INTERNAL_DOCS          = NO
 CASE_SENSE_NAMES       = YES
 HIDE_SCOPE_NAMES       = NO
-SHOW_INCLUDE_FILES     = NO
+SHOW_INCLUDE_FILES     = YES
 INLINE_INFO            = YES
 SORT_MEMBER_DOCS       = NO
 SORT_BRIEF_DOCS        = NO
 SORT_BY_SCOPE_NAME     = NO
-GENERATE_TODOLIST      = NO
+GENERATE_TODOLIST      = YES
 GENERATE_TESTLIST      = YES
-GENERATE_BUGLIST       = NO
+GENERATE_BUGLIST       = YES
 GENERATE_DEPRECATEDLIST= YES
 ENABLED_SECTIONS       = 
 MAX_INITIALIZER_LINES  = 30
 SHOW_USED_FILES        = YES
-SHOW_DIRECTORIES       = YES
+SHOW_DIRECTORIES       = NO
 FILE_VERSION_FILTER    = 
 #---------------------------------------------------------------------------
 # configuration options related to warning and progress messages
@@ -87,7 +87,7 @@ FILE_PATTERNS          = *.c \
                          *.C \
                          *.H
 RECURSIVE              = YES
-EXCLUDE                = 
+EXCLUDE                = btsystem/include/
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = 
 EXAMPLE_PATH           = 
@@ -104,7 +104,7 @@ SOURCE_BROWSER         = YES
 INLINE_SOURCES         = NO
 STRIP_CODE_COMMENTS    = YES
 REFERENCED_BY_RELATION = NO
-REFERENCES_RELATION    = YES
+REFERENCES_RELATION    = NO
 USE_HTAGS              = NO
 VERBATIM_HEADERS       = NO
 #---------------------------------------------------------------------------
@@ -151,7 +151,7 @@ LATEX_HIDE_INDICES     = NO
 #---------------------------------------------------------------------------
 # configuration options related to the RTF output
 #---------------------------------------------------------------------------
-GENERATE_RTF           = YES
+GENERATE_RTF           = NO
 RTF_OUTPUT             = rtf
 COMPACT_RTF            = YES
 RTF_HYPERLINKS         = NO
@@ -210,7 +210,7 @@ CLASS_DIAGRAMS         = NO
 HIDE_UNDOC_RELATIONS   = NO
 HAVE_DOT               = YES
 CLASS_GRAPH            = YES
-COLLABORATION_GRAPH    = YES
+COLLABORATION_GRAPH    = NO
 GROUP_GRAPHS           = YES
 UML_LOOK               = NO
 TEMPLATE_RELATIONS     = YES
@@ -226,7 +226,7 @@ MAX_DOT_GRAPH_WIDTH    = 1024
 MAX_DOT_GRAPH_HEIGHT   = 1024
 MAX_DOT_GRAPH_DEPTH    = 0
 DOT_TRANSPARENT        = NO
-DOT_MULTI_TARGETS      = NO
+DOT_MULTI_TARGETS      = YES
 GENERATE_LEGEND        = YES
 DOT_CLEANUP            = YES
 #---------------------------------------------------------------------------

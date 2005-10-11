@@ -88,7 +88,8 @@ via_trj_array *vta = NULL,*vtb = NULL;
 
 extern int isZeroed;
 static RT_TASK *mainTask;
-
+btthread disp_thd,wam_thd;
+double sample_rate;
 /*==============================*
  * PRIVATE Function Prototypes  *
  *==============================*/
@@ -122,12 +123,12 @@ int main(int argc, char **argv)
   struct sched_param mysched;
   wv = new_vn(7);
   /* Initialize the ncurses screen library */
-  init_ncurses(); atexit(endwin);
+  init_ncurses(); atexit((void*)endwin);
   
 
   /* Initialize syslog */
   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
-  atexit(closelog);
+  atexit((void*)closelog);
   /* Initialize the display mutex */
   test_and_log(
     pthread_mutex_init(&(disp_mutex),NULL),
@@ -135,20 +136,20 @@ int main(int argc, char **argv)
 
 
   /* Initialize rtlinux subsystem */
-  mysched.sched_priority = sched_get_priority_max(SCHED_FIFO) - 1;
-  if(sched_setscheduler(0, SCHED_FIFO, &mysched) == -1)
-  {
-    syslog(LOG_ERR, "Error setting up linux (native) scheduler");
-  }
+  //mysched.sched_priority = sched_get_priority_max(SCHED_FIFO) - 1;
+  //if(sched_setscheduler(0, SCHED_FIFO, &mysched) == -1)
+  //{
+  //  syslog(LOG_ERR, "Error setting up linux (native) scheduler");
+  //}
 
-  mainTask = rt_task_init(nam2num("main01"), 0, 0, 0); /* defaults */
+  //mainTask = rt_task_init(nam2num("main01"), 0, 0, 0); /* defaults */
 
   if(test_and_log(
-            InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
+            InitializeSystem("wamConfig.txt"),
             "Failed to initialize system")){
      exit(-1);
   }
-  atexit(CloseSystem);//register CloseSystem for shutdown
+  atexit((void*)CloseSystem);//register CloseSystem for shutdown
 
   /* Check and handle any command line arguments */
   if(argc > 1)
@@ -187,11 +188,12 @@ int main(int argc, char **argv)
   register_vta(active_bts,vta);
   active_file[0] = 0;
 
-
-  start_control_threads(10, 0.002, WAMControlThread, (void *)0);
-  atexit(stop_control_threads);
+  wam_thd.period = 0.002;
+  btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)&wam_thd);
+  //start_control_threads(10, 0.002, WAMControlThread, (void *)0);
+  //atexit((void*)stop_control_threads);
   
-  StartDisplayThread();
+  btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
 
   while (!done)
   {
@@ -204,11 +206,12 @@ int main(int argc, char **argv)
 
     usleep(100000); // Sleep for 0.1s
   }
-  Shutdown();
-
-  DecodeDL("datafile.dat","dat.csv",1);
-  syslog(LOG_ERR, "rt_task_delete");
-  rt_task_delete(mainTask);
+  
+  btthread_stop(&wam_thd);
+  
+  //DecodeDL("datafile.dat","dat.csv",1);
+  //syslog(LOG_ERR, "rt_task_delete");
+  //rt_task_delete(mainTask);
   exit(1);
 }
 
@@ -230,29 +233,7 @@ void sigint_handler()
     exit(1);
 }
 
-/** Starts the display thread.
-    Creates a new thread, sets its priority, and runs it as a display thread.
-*/
-void StartDisplayThread()
-{
-  pthread_t           display_thd_id;
-  pthread_attr_t      display_attr;
-  struct sched_param  display_param;
-  int        err;
 
-  pthread_attr_init(&display_attr);
-  pthread_attr_setschedpolicy(&display_attr, SCHED_FIFO);
-  pthread_attr_getschedparam(&display_attr, &display_param);
-  display_param.sched_priority = 10;
-  pthread_attr_setschedparam(&display_attr, &display_param);
-  pthread_create(&display_thd_id, &display_attr, (void*)DisplayThread, 0);
-
-  if (display_thd_id == -1)
-  {
-    syslog(LOG_ERR, "start_display_thread:Couldn't start display thread!");
-    exit( -1);
-  }
-}
 
 /** Spins in a loop, updating the screen.
     Runs as its own thread, updates the screen.
@@ -260,9 +241,9 @@ void StartDisplayThread()
 void DisplayThread()
 {
   int cnt,err;
-  RT_TASK *displayTask;
+  //RT_TASK *displayTask;
 
-  displayTask = rt_task_init(nam2num("displa"), 0, 0, 0);
+  //displayTask = rt_task_init(nam2num("displa"), 0, 0, 0);
 
   clear();
   refresh();
@@ -277,7 +258,7 @@ void DisplayThread()
     usleep(100000);
   }
 
-  rt_task_delete(displayTask);
+  //rt_task_delete(displayTask);
 }
 
 /** Locks the display mutex.

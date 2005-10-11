@@ -34,7 +34,13 @@ requirements (if any) we have.
 The following is an overview of the library functionality and what code files provide the functionality. 
 
   \section fctly Barrett Module Functionality
+  \dot
+  digraph Structure {
+      node [shape=record, fontname=Helvetica, fontsize=10];
+      vn [label="{{<p1> btwam}|{<p2>btrobot|<p3>btcontrol_virt|<p4>btcontrol|<p5>bthaptics}|{btos|btmath|btcan}}"];
 
+  }
+  \enddot
 Essential:
 - btwam.c: This is the primary file used for controlling the WAM.
 

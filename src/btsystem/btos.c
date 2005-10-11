@@ -2,9 +2,42 @@
  *  Module .............libbtsystem
  *  File ...............btos.c
  *  Author .............Traveler Hauptman
- *  Creation Date ......Mar 28, 2006
+ *  Creation Date ......Mar 28, 2005
  *                                                                      *
  *  ******************************************************************  */
+/** \file btos.c
+\brief Operating system abstractions and helpers
+
+A thin layer between barrett technologies code and the operating system.
+Additionally, global defines can go here also. Virtually every Barrett library
+source file will use this.
+
+The mutex layer allows for ERRORCHECK mutexes to be compiled in if desired for 
+debugging.
+
+btmalloc() and btfree() provide error checking for memory access. Lack of memory 
+is fatal. btfree() sets the calling variable to NULL 
+
+test_and_log() provides a shorthand to replace return variable checks.
+
+Additionally, btos.h has #defines for error checking:
+
+#ifdef BT_NULL_PTR_GUARD //bt*.c functions will check incoming object pointers
+to make sure they are not NULL and error if they are.
+
+#ifdef BT_ARRAY_BOUNDS_CHECK //some sort of index sanity and bounds checking will 
+be done on incoming functions
+
+#ifdef BT_DUMMY_PROOF //extra code will be compiled in to protect the programmer
+from thier own idiocy.
+
+#ifdef BT_BACKTRACE //Dump backtrace info into bterrors.txt
+
+
+
+*/
+ 
+ 
 #include <syslog.h>
 #include <stdlib.h>
 #include "btos.h"
@@ -50,7 +83,22 @@ BTINLINE int btmutex_unlock(btmutex *btm)
 int btptr_ok(void *ptr,char *str)
 {
   if (ptr == NULL){
+#ifdef BT_BACKTRACE 
+/**\bug insert backtrace code here*/
+#endif
     syslog(LOG_ERR,"bt ERROR: you tried to access a null pointer in %s",str);
+    return 0;
+  }
+  return 1;
+}
+/** Prints an error if array index is out of range */
+int idx_bounds_ok(int idx,int max,char *str)
+{
+  if ((idx < 0) || (idx > max)){
+#ifdef BT_BACKTRACE 
+/**\bug insert backtrace code here*/
+#endif
+    syslog(LOG_ERR,"bt ERROR: Your index is %d with limit %d in function %s",idx,max,str);
     return 0;
   }
   return 1;
@@ -90,15 +138,94 @@ BTINLINE void * btmalloc(size_t size)
 
 BTINLINE void btfree(void **ptr)
 {
-#ifdef NULL_PTR_GUARD
-  if(BTPTR_OK(*ptr,"btfree"))
+#ifdef BT_NULL_PTR_GUARD
+  if(btptr_ok(*ptr,"btfree"))
 #endif
   free(*ptr);
   *ptr = NULL;
 }
 
 
+btthread* new_btthread()
+{
+  btthread* mem;
+  mem = (btthread*)btmalloc(sizeof(btthread));
+  return mem;
+}
 
+void free_btthread(btthread **thd)
+{
+  btfree((void**)thd);
+}
+
+int btthread_create(btthread *thd,int priority, void *function,void *args)
+{
+  pthread_attr_init(&(thd->attr));
+  pthread_attr_setschedpolicy(&(thd->attr), SCHED_FIFO);
+  pthread_attr_getschedparam(&(thd->attr),&(thd->param));
+  thd->param.sched_priority = priority;
+  pthread_attr_setschedparam(&(thd->attr), &(thd->param));
+  
+  thd->done = 0;
+  thd->function = function;
+  thd->data = args;
+  thd->priority = priority;
+  thd->periodic = 0;
+  btmutex_init(&(thd->mutex));
+  
+  pthread_create(&(thd->thd_id), &(thd->attr), function, args);
+  
+  if (thd->thd_id == -1)
+  {
+    syslog(LOG_ERR,"btthread_create:Couldn't start control thread!");
+    exit(-1);
+  }
+}
+BTINLINE int btthread_done(btthread *thd)
+{
+  int done;
+  btmutex_lock(&(thd->mutex));
+  done = thd->done;
+  btmutex_unlock(&(thd->mutex));
+  return done;
+}
+BTINLINE void btthread_stop(btthread *thd)
+{
+  btmutex_lock(&(thd->mutex));
+  thd->done = 1;
+  btmutex_unlock(&(thd->mutex));
+}
+
+BTINLINE void btthread_exit(btthread *thd)
+{
+  pthread_exit(NULL);
+}
+
+void btperiodic_proto(void *args)
+{
+  
+  
+  
+}
+/*
+#include <rtai_lxrt.h>
+
+int btperiodic_create(btthread *thd,int priority, double period, void *function,void *args)
+{
+
+  RTIME rtime_period;
+  
+  rtime_period = (RTIME)(period * 1000000000.0);
+  
+  thd->sampleCount = nano2count(rtime_period);
+
+  rt_set_periodic_mode();
+  
+  btthread_create(thd,priority,function,args);
+  
+  start_rt_timer(thd->sampleCount);
+}
+*/
 /*======================================================================*
  *                                                                      *
  *          Copyright (c) 2005 Barrett Technology, Inc.           *

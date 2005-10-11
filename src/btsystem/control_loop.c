@@ -24,6 +24,10 @@
    
 */
 
+
+
+
+
 /*==============================*
  * INCLUDES - System Files      *
  *==============================*/
@@ -119,40 +123,7 @@ void stop_control_threads()
 
 }
 
-/** Example control loop for use with start_control_threads() Do not use this! */
-/*
-void ControlThread(void *data)
-{
-  int num_actuators;
-  actuator_struct *act;
-  SimpleCtl *sc;
-  int torques[5] = {0,0,0,0,0};
-  long int position;
-  
-  num_actuators = ((control_thd_parms *)data)->num_act;
-  act = ((control_thd_parms *)data)->act;
-  sc = ((control_thd_parms *)data)->sc;
 
-  RTIME last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
-  RT_TASK *WAMControlThreadTask;
-
-  WAMControlThreadTask = rt_task_init(nam2num("WAMCon"), 0, 0, 0);
-  rt_make_hard_real_time();
-  rt_task_make_periodic_relative_ns(WAMControlThreadTask, sample_period2, sample_period2);
-
-
-  
-  while (!shutdown_threads)
-  {
-    rt_task_wait_period();
-
-    
-  }
-
-  rt_make_soft_real_time();
-  rt_task_delete(WAMControlThreadTask);
-  pthread_exit(NULL);
-}*/
 /*======================================================================*
  *                                                                      *
  *          Copyright (c) 2003, 2004 Barrett Technology, Inc.           *

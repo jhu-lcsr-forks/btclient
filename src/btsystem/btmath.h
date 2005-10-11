@@ -61,8 +61,6 @@ int btmath_ptr_ok(void *ptr,char *str);
 int vect_size_ok(int idx,int max,char *str);
 /** An N element vector object.
 
-
-
 vect_n is a linear algebra vector object. The elements are of type btreal. Function
 definitions are in btmath.c. This 
 object is optimized for speed and prefix notation. It occupies twice the memory
@@ -105,10 +103,12 @@ add in bounds checking and verbose error reporting
   \code
     /******* Example of bad code *******
     set_vn(b,add_vn(mul_vn(a,b),scale_vn(2.0,mul_vn(a,b))));
+    
     /******* Recursion breakdown ******
     scale_vn(2.0,mul_vn(a,b)); //Return value in a.ret
     mul_vn(a,b); //A different return value is now overwriting a.ret
     add_vn(a.ret,a.ret); //
+    
     /******* Example of good code ******
     set_vn(b,add_vn(mul_vn(b,a),scale_vn(2.0,mul_vn(a,b)))); 
   \endcode
@@ -130,8 +130,8 @@ typedef struct barrett_vect_n{
 }vect_n;
 
 #define STATIC_SIZE_VN(n) (1+(sizeof(vect_n)*2+sizeof(btreal)*2*(n))/sizeof(vect_n))
-/** Create a local vect_n
 
+/** Create a local vect_n
 \param x variable name you want to use locally;
 \param n Number of elements in vector
 
@@ -150,7 +150,9 @@ vect_n* add3()
 }
 \endcode
 */
+
 #define LOCAL_VN(x,n) vect_n x[(1+(sizeof(vect_n)*2+sizeof(btreal)*2*(n))/sizeof(vect_n))]; init_vn((x),(n))
+
 /*================================*/
 vect_n* new_vn(int size); //allocate an n-vector
 vect_n* init_vn(vect_n* v, int size); //Link up a vect_n object
@@ -205,6 +207,7 @@ vect_n * sscan_vn(char *src);
 vect_n * strto_vn(vect_n *dest,char *src,char *delimiters); //Convert a string to a vect_n
 vect_n * csvto_vn(vect_n* dest, char *src); //Convert a string into a vect_n
 int test_vn(btreal error); //test & verification suite
+
 /*       Local vect_n functions */
 
 

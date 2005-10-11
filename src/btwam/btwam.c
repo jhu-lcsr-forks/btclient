@@ -57,6 +57,7 @@ to make it easier to find and maintaind later
 #include "control_loop.h"
 #include "btwam.h"
 #include "btrobot.h"
+#include "btos.h"
 
 //#include "WAMDHKin.h"
 
@@ -196,8 +197,8 @@ int InitWAM(char *wamfile)
   
     
   SetEngrUnits(1);
-  if(test_and_log(
-    EnumerateSystem(),"Failed to enumerate system"))  {return -1;}
+  //if(test_and_log(
+   // EnumerateSystem(),"Failed to enumerate system"))  {return -1;}
 
   //------------------------
   WAM.act = GetActuators(&(WAM.num_actuators));
@@ -380,6 +381,7 @@ The following functionality is in this loop:
 
 void WAMControlThread(void *data)
 {
+  btthread* this_thd;
   int                 cnt;
   int                 idx;
   int                 Mid;
@@ -388,7 +390,17 @@ void WAMControlThread(void *data)
   long unsigned       counter = 0;
   RTIME last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
   RT_TASK *WAMControlThreadTask;
-
+  double period;
+  
+  RTIME rtime_period,sampleCount;
+  /* Set up timer*/
+  this_thd = (btthread*)data;
+  period = this_thd->period;
+  rtime_period = (RTIME)(period * 1000000000.0);
+  sampleCount = nano2count(rtime_period);
+  rt_set_periodic_mode();
+  start_rt_timer(sampleCount);
+  
   WAMControlThreadTask = rt_task_init(nam2num("WAMCon"), 0, 0, 0);
 //#ifdef  BTREALTIME
   rt_make_hard_real_time();
@@ -402,7 +414,7 @@ void WAMControlThread(void *data)
   syslog(LOG_ERR,"WAMControl periodic %d, %f", sample_period2,dt);
   
   last_loop = rt_get_cpu_time_ns();
-  while (!shutdown_threads)
+  while (!btthread_done(this_thd))
   {
     rt_task_wait_period();
     counter++;

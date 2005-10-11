@@ -75,8 +75,8 @@ where to look first.
 //#DEFINE VECT_N_DEBUG
 //#DEFINE VECT_N_BOUNDS  //perform bounds checking
 //#DEFINE MATR_N_DEBUG
-#define NULL_PTR_GUARD
-#define VECT_SIZE_CHK
+//#define BT_NULL_PTR_GUARD
+//#define VECT_SIZE_CHK
 
 
 
@@ -158,7 +158,7 @@ BTINLINE void fill_vn(vect_n* dest, btreal val)
 {
   int cnt;
 
-  BTPTR_OK(*ptr,"btfree")
+  BTPTR_OK(dest,"fill_vn")
 
   for (cnt=0;cnt < dest->n;cnt++)
     dest->q[cnt] = val;
@@ -206,6 +206,17 @@ BTINLINE void fill_vn(vect_n* dest, btreal val)
            | val |
            +-----+
   \endcode
+  
+  \dot
+  digraph vect_n {
+      node [shape=record, fontname=Helvetica, fontsize=10];
+      vn [label="{<p1> *ret|<p2>n|<p3>*q|<p4> *ret|<p5>n|<p6>*q|<p7>data\n[...]|<p8>data\n[...]}"];
+      vn:p1:e -> vn:p4:e
+      vn:p4:e -> vn:p4:e
+      vn:p3:e -> vn:p7:e
+      vn:p6:e -> vn:p8:e
+  }
+  \enddot
 */
 
 vect_n * new_vn(int size) //allocate an n-vector
@@ -213,7 +224,7 @@ vect_n * new_vn(int size) //allocate an n-vector
   void* vmem;
   vect_n *n;
   
-  #ifdef VECT_SIZE_CHK
+  #ifdef BT_ARRAY_BOUNDS_CHECK
    vect_size_ok(size,MAX_VECTOR_SIZE,"new_vn");
   #endif
   
@@ -297,7 +308,7 @@ vect_n* init_local_vn(vect_n* header,btreal* data, int size)
   n->ret->n = size;
   n->ret->q = data + size;
   n->ret->ret = n->ret;
-#ifdef VECT_SIZE_CHK
+#ifdef BT_ARRAY_BOUNDS_CHECK
    vect_size_ok(size,MAX_VECTOR_SIZE,"init_local_vn");
 #endif
   fill_vn(n,0.0);
@@ -350,7 +361,7 @@ BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
   BTPTR_OK(dest,"set_vn dest")
   BTPTR_OK(src,"set_vn src")
 
-#ifdef VECT_SIZE_CHK
+#ifdef BT_ARRAY_BOUNDS_CHECK
    if(!vect_size_ok(dest->n,MAX_VECTOR_SIZE,"set_vn dest"))
    {
      syslog(LOG_ERR,"btmath:set_vn:dest:pointer:%x",dest);
@@ -377,7 +388,7 @@ void setrange_vn(vect_n* dest, vect_n* src, int dest_start, int src_start, int n
   BTPTR_OK(dest,"setrange_vn dest")
   BTPTR_OK(src,"setrange_vn src")
 
-#ifdef VECT_SIZE_CHK
+#ifdef BT_ARRAY_BOUNDS_CHECK
    if(!vect_size_ok(dest_start,dest->n-1,"setrange_vn dest"))
    {
      syslog(LOG_ERR,"btmath:set_vn:dest:pointer:%x",dest);
@@ -432,7 +443,7 @@ BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
 
   BTPTR_OK(dest,"setval_vn")
 
-#ifdef VECT_SIZE_CHK
+#ifdef BT_ARRAY_BOUNDS_CHECK
   if(!vect_size_ok(idx,dest->n,"setval_vn"))
     syslog(LOG_ERR,"btmath ERROR:pointer is %p",dest);
 #endif
@@ -448,7 +459,7 @@ BTINLINE btreal getval_vn(vect_n* dest, int idx)
 {
   BTPTR_OK(dest,"getval_vn")
 
-#ifdef VECT_SIZE_CHK
+#ifdef BT_ARRAY_BOUNDS_CHECK
   if(!vect_size_ok(idx,dest->n,"getval_vn"))
     syslog(LOG_ERR,"btmath ERROR:pointer is %p",dest);
 #endif
@@ -486,7 +497,7 @@ vect_n* subset_vn(vect_n* src,int start,int end)
 {
   int cnt;
   BTPTR_OK(src,"subset_vn")
-  #ifdef VECT_SIZE_CHK
+  #ifdef BT_ARRAY_BOUNDS_CHECK
   if((end-start) < 0 || (end-start)>src->n)
     syslog(LOG_ERR,"btmath ERROR:subset_vn tried to use: start:%d end:%d",start,end);
   #endif

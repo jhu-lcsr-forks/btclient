@@ -60,7 +60,7 @@ int SCinit(SimpleCtl *sc)
     sc->trj.vel = .00000001;
     PIDinit(&(sc->pid),0, 0, 0, 0.002);
     
-    btmutex_init(&(sc->mutex);
+    btmutex_init(&(sc->mutex));
 }
 
 /*! Evaluate the Simple Controller

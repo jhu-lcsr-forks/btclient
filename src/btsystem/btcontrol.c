@@ -36,7 +36,7 @@
 #include "btos.h"
 #include "btcontrol_virt.h"
 
-#define BTDUMMYPROOF
+#define BT_DUMMY_PROOF
 
 
 #define sign(x) (x>=0?1:-1)
@@ -247,13 +247,13 @@ void setinputs_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
 }
 /** Set the gains.
  
-If the library is compiled with BTDUMMYPROOF, we will verify that you only
+If the library is compiled with BT_DUMMY_PROOF, we will verify that you only
 change the gains when tho regulator is in the off state. See btPID object of more info.*/
 void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
 {
   btmutex_lock(&(pid->mutex));
 
-#ifdef BTDUMMYPROOF
+#ifdef BT_DUMMY_PROOF
 
   if (!pid->state)
   {  //Only allow setting gains when the regulator is not active
@@ -263,7 +263,7 @@ void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
     pid->Kd = Kd;
     pid->Ki = Ki;
 
-#ifdef BTDUMMYPROOF
+#ifdef BT_DUMMY_PROOF
 
   }
   else
@@ -958,7 +958,7 @@ void register_vta(btstatecontrol *sc,via_trj_array *vt)
                     bttrajectory_interface_eval_vt,
                     bttrajectory_interface_getstate_vt);
 }
-
+#undef BT_DUMMY_PROOF
 /*======================================================================*
  *                                                                      *
  *          Copyright (c) 2003, 2004 Barrett Technology, Inc.           *
