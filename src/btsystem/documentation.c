@@ -33,7 +33,9 @@ requirements (if any) we have.
 
 The following is an overview of the library functionality and what code files provide the functionality. 
 
-  \section fctly Barrett Module Functionality
+\section fctly Barrett Module Functionality
+  
+  
   \dot
   digraph Structure {
       node [shape=record, fontname=Helvetica, fontsize=10];

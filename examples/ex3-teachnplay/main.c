@@ -136,6 +136,16 @@ int main(int argc, char **argv)
     "Could not initialize mutex for displays.");
 
 
+  mvprintw(1,0,"Make sure the all WAM power and signal cables are securely");
+  mvprintw(2,0,"fastened, then turn on the main power to WAM and press <Enter>");
+  while((chr=getch())==ERR) usleep(5000);
+  mvprintw(4,0,"Make sure all E-STOPs are released, then press Shift-Idle");
+  mvprintw(5,0,"on the control pendant. Then press <Enter>");
+  while((chr=getch())==ERR) usleep(5000);
+
+  mvprintw(7,0,"Place WAM in its home (folded) position, then press <Enter>");
+  while((chr=getch())==ERR) usleep(5000);
+
 
 
   if(test_and_log(
@@ -170,6 +180,7 @@ int main(int argc, char **argv)
 
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
 
+  const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
 
   //prep modes
   active_bts = &(wam->Jsc);

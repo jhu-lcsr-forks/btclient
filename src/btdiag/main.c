@@ -29,36 +29,18 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-//th041217#include <sys/sched.h>
-#ifdef USE_RTAI31
+
 #include <rtai_lxrt.h>
 #include <rtai_sem.h>
-#endif
-#ifdef USE_FUSION
-#include <rtai/mutex.h>
-#include <rtai/task.h>
-#include <rtai/timer.h>
-#endif
+
 
 
 /*==============================*
  * INCLUDES - Project Files     *
  *==============================*/
-
-//#include "btdriver.h"
-
-#include "btjointcontrol.h"
-#include "btsystem.h"
-#include "gimbals.h"
-#include "btwam.h"
-#include "control_loop.h"
-#include "btmath.h"
-#include "btrobot.h"
-#include "btlogger.h"
-#include "bthaptics.h"
 #include "playlist.h"
-#include "btgeometry.h"
-#include "btcontrol.h"
+#include "bthaptics.h"
+#include "btwam.h"
 
 /*==============================*
  * PRIVATE DEFINED constants    *
@@ -85,12 +67,9 @@ char divider[column_offset + (column_width * MAX_NODES)];
 matr_h *myFrame;
 
 
-#ifdef USE_RTAI31
-btmutex disp_mutex;
-#endif
-#ifdef USE_FUSION
-RT_MUTEX disp_mutex;
-#endif
+
+pthread_mutex_t disp_mutex;
+
 
 
 int active = 0;
@@ -142,7 +121,8 @@ vect_3 *p1,*p2,*p3;
 bthaptic_scene bth;
 btgeom_state pstate;
 //btlogger btlog;
-
+btthread disp_thd,wam_thd;
+double sample_rate;
 
 /*==============================*
  * PRIVATE Function Prototypes  *
@@ -192,33 +172,27 @@ int main(int argc, char **argv)
   wv = new_vn(10);
   const_vn(wv, 0.0, -2.017, -0.011, 0.88, 0.0, 0.0, 0.0);
 
-  /* Initialize the ncurses screen library */
-  init_ncurses();
+ /* Initialize the ncurses screen library */
+  init_ncurses(); atexit((void*)endwin);
+  
 
   /* Initialize syslog */
   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
-  syslog(LOG_ERR, "syslog initalized by WAM application");
-  //addstr("syslog initalized\n");
-  //refresh();
-
-  /* Initialize the display mutex */
-  btmutex_init(&disp_mutex);
+  atexit((void*)closelog);
   
-
-  /* Initialize rtlinux subsystem */
-  mysched.sched_priority = sched_get_priority_max(SCHED_FIFO) - 1;
-  if(sched_setscheduler(0, SCHED_FIFO, &mysched) == -1)
-  {
-    syslog(LOG_ERR, "Error setting up linux (native) scheduler");
-  }
-
-  mainTask = rt_task_init(nam2num("main01"), 0, 0, 0); /* defaults */
+  /* Initialize the display mutex */
+  test_and_log(
+    pthread_mutex_init(&(disp_mutex),NULL),
+    "Could not initialize mutex for displays.");
 
   if(test_and_log(   
     InitializeSystem("wamConfig.txt"),
-    "Failed to initialize system"))
-    {return -1;}
-
+    "Failed to initialize system")){
+    exit(-1);
+  }
+    
+  atexit((void*)CloseSystem);//register CloseSystem for shutdown
+  
   /* Check and handle any command line arguments */
   if(argc > 1)
   {
@@ -233,17 +207,15 @@ int main(int argc, char **argv)
   /* Set up the WAM data structure, init kinematics, dynamics, haptics */
   err =  InitWAM("wam.dat");
   if(err)
-    {
-      CloseSystem();
-      closelog();
-      endwin();
-      exit(1);
-
-    }
+  {
+    exit(1);
+  }
+  signal(SIGINT, sigint_handler); //register the interrupt handler
     
   /* Obtain a pointer to the wam state object */
   wam = GetWAM();
-
+  
+  
   /* Initialize our data logging structure */
   wam->logdivider = 1;
   PrepDL(&(wam->log),6);
@@ -261,12 +233,10 @@ int main(int argc, char **argv)
   
   MLconstruct(&ml, wam->sc, 7, 50); //Initialize the playlist
 
-  start_control_threads(10, 0.002, WAMControlThread, (void *)0);
+  wam_thd.period = 0.002;
+  btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)&wam_thd);
 
-  signal(SIGINT, sigint_handler); //register the interrupt handler
-  startup_stage = 1;
-
-  StartDisplayThread();
+  btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
 
   
   while (!done)
@@ -283,13 +253,12 @@ int main(int argc, char **argv)
     
     usleep(100000); // Sleep for 0.1s
   }
-  
-  Shutdown();
-  syslog(LOG_ERR, "CloseSystem");
-  CloseSystem();
+  btthread_stop(&wam_thd); //Kill WAMControlThread 
+  MLdestroy(&ml);
   CloseDL(&(wam->log));
   DecodeDL("datafile.dat","dat.csv",1);
-  freebtptr();
+
+  exit(1);
 }
 
 int WAMcallback(struct btwam_struct *wam)
@@ -350,7 +319,7 @@ void init_haptics(void)
   addobject_bth(&bth,&myobject2);
  */
   const_v3(wam->Cpoint,0.0,-0.0,0.0);
-
+  
   registerWAMcallback(WAMcallback);
 
 }
@@ -360,64 +329,9 @@ void init_haptics(void)
 */
 void sigint_handler()
 {
-  if (!startup_stage)
-  {
-    endwin();
     exit(1);
-  }
-  else
-    done = 1;
 }
 
-/** Shut the application down gracefully.
-    Stops the control threads, ncurses, syslog, and frees the movelist.
-*/
-void Shutdown()
-{
-  syslog(LOG_ERR, "stop_control_threads");
-  stop_control_threads();
-  syslog(LOG_ERR, "closelog");
-  MLdestroy(&ml);
-  closelog();
-  syslog(LOG_ERR, "endwin");
-  endwin();
-  syslog(LOG_ERR, "rt_task_delete");
-  rt_task_delete(mainTask);
-}
-
-/** Starts the display thread.
-    Creates a new thread, sets its priority, and runs it as a display thread.
-*/
-void StartDisplayThread()
-{
-  pthread_t           display_thd_id;
-  pthread_attr_t      display_attr;
-  struct sched_param  display_param;
-  int		      err;
-
-  err = pthread_attr_init(&display_attr);
-  if(err) syslog(LOG_ERR, "StartDisplayThread() pthread_attr_init err = %d", err);
-  
-  err = pthread_attr_setschedpolicy(&display_attr, SCHED_FIFO);
-  if(err) syslog(LOG_ERR, "StartDisplayThread() pthread_attr_setschedpolicy err = %d", err);
- 
-  err = pthread_attr_getschedparam(&display_attr, &display_param);
-  if(err) syslog(LOG_ERR, "StartDisplayThread() pthread_attr_getschedparam err = %d", err);
-
-  display_param.sched_priority = 10;
- 
-  err = pthread_attr_setschedparam(&display_attr, &display_param);
-  if(err) syslog(LOG_ERR, "StartDisplayThread() pthread_attr_setschedparam err = %d", err);
-  
-  err = pthread_create(&display_thd_id, &display_attr, (void*)DisplayThread, 0);
-  if(err) syslog(LOG_ERR, "StartDisplayThread() pthread_create err = %d", err);
-  
-  if (display_thd_id == -1)
-  {
-    syslog(LOG_ERR, "start_display_thread:Couldn't start display thread!");
-    exit( -1);
-  }
-}
 
 /** Spins in a loop, updating the screen.
     Runs as its own thread, updates the screen.
@@ -425,9 +339,6 @@ void StartDisplayThread()
 void DisplayThread()
 {
   int cnt,err;
-  RT_TASK *displayTask;
-
-  displayTask = rt_task_init(nam2num("displa"), 0, 0, 0);
 
   /* Create the divider line */
   divider[0] = '\0';
@@ -454,7 +365,7 @@ void DisplayThread()
     btmutex_unlock(&disp_mutex);
     usleep(100000);
   }
-  rt_task_delete(displayTask);
+
 
 }
 

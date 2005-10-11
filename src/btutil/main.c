@@ -1,4 +1,41 @@
-/* main.c */
+/** \file btutil.c 
+
+Puck utilities:
+
+Bus enumeration - Prints out what is alive
+
+Bus enumeration and puck status - 
+  Prints out all interesting puck values.
+  
+Puck Find motor offsets
+
+Puck - Load WAM enumeration information.
+
+Puck - Load new firmware
+
+*/
+
+/** Usage:
+
+btutil [-c configfile] command [detail]
+
+where command is:
+
+  enum - List what is on the can bus and what their state is.
+  stat - List paramers of interest
+    all - dump all parameters
+    init - dump parameters that are important to initial startup
+    
+  moffst # - Find motor offset for puck id #
+  writefirmware # filename - write the specified firmware file
+  writewaminfo # - write default wam enumeration info to puck id #
+  copyparameters filename - read all parameters and store them to a file
+  writeparameters filename - write all parameters stored in a file  
+  
+
+
+*/
+
 
 #define toupper(c)      ( ((c >= 'a') && (c <= 'z')) ? c - ('a' - 'A') : c )
 #define HOLE            (0x0000)
@@ -97,7 +134,7 @@ void handleMenu(char c){
     case 'F':
         printf("\n\nSet puck MOFST\n");
         printf("\nPuckID: ");
-        scanf("%d", &newID);
+        scanf("%d\n", &newID);
         setProperty(0,newID,STAT,0,STATUS_READY);
         setProperty(0,newID,MODE,0,MODE_TORQUE);
         
@@ -106,8 +143,8 @@ void handleMenu(char c){
         
         setProperty(0,newID,ADDR,0,32971);
         setProperty(0,newID,VALUE,0,1);
-        printf("\nPress enter: ");
-        scanf("%d", &dummy);
+        printf("\nPress enter when the index pulse is found: ");
+        scanf("%d\n", &dummy);
         setProperty(0,newID,ADDR,0,32970);
         getProperty(0,newID,VALUE,&dat);
         printf("\n The MOFST new is:%d\n",dat);
