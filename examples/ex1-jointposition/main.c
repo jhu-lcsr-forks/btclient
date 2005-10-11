@@ -34,30 +34,21 @@ int main(int argc, char **argv)
   char chr;
   int  done = 0;
   int  useGimbals = 0;
-  struct sched_param mysched;
   int  err;
-  static RT_TASK *mainTask;
+  btthread wam_thd;
   wam_struct *wam;
 
+  /* Initialize syslog */
   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
+  atexit((void*)closelog);
 
-  /* Initialize rtlinux subsystem */
-  mysched.sched_priority = sched_get_priority_max(SCHED_FIFO) - 1;
-  if (sched_setscheduler(0, SCHED_FIFO, &mysched) == -1)
-  {
-    syslog(LOG_ERR, "Error setting up linux (native) scheduler");
-  }
-  mainTask = rt_task_init(nam2num("main01"), 0, 0, 0); /* defaults */
 
-  /* Initialize Bussed actuator system */
-  err = InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat");
-  if (err)
-  {
-    syslog(LOG_ERR, "Failed to initialize system");
-    closelog();
-    freebtptr();
-    exit(1);
+  if(test_and_log(
+            InitializeSystem("wamConfig.txt"),
+            "Failed to initialize system")){
+     exit(-1);
   }
+  atexit((void*)CloseSystem);//register CloseSystem for shutdown
 
   /* Check and handle any command line arguments */
   if(argc > 1)
@@ -74,9 +65,6 @@ int main(int argc, char **argv)
   err =  InitWAM("wam.dat");
   if(err)
   {
-    CloseSystem();
-    closelog();
-    freebtptr();
     exit(1);
   }
 
@@ -84,7 +72,8 @@ int main(int argc, char **argv)
   wam = GetWAM();
 
   /* Start up wam control loop */
-  start_control_threads(10, 0.002, WAMControlThread, (void *)0);
+  wam_thd.period = 0.002;
+  btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)&wam_thd);
 
   while (!done)
   {
@@ -93,15 +82,14 @@ int main(int argc, char **argv)
       done = 1;
 
     //print present position
-    printf("Position = %s \n",sprint_vn(buf,(vect_n*)wam->Cpos));
+    printf("Position = %s \n",sprint_vn(buf,(vect_n*)wam->Jpos));
 
     usleep(100000); // Sleep for 0.1s
   }
 
-  stop_control_threads();
-  closelog();
-  rt_task_delete(mainTask);
-  freebtptr();
+  btthread_stop(&wam_thd); //Kill WAMControlThread 
+
+  exit(1);
 }
 
 
