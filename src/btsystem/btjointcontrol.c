@@ -40,7 +40,7 @@
 #include "btcan.h"
 #include "btos.h"
 #include "btmath.h"
-#include "btcontrol_virt.h"
+#include "btstatecontrol.h"
 
 #define sign(x) (x>=0?1:-1)      //Integer sign
 #define Sgn(x) (x>=0.0?1.0:-1.0) //Double sign

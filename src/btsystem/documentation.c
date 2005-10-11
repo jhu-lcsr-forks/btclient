@@ -39,7 +39,7 @@ The following is an overview of the library functionality and what code files pr
   \dot
   digraph Structure {
       node [shape=record, fontname=Helvetica, fontsize=10];
-      vn [label="{{<p1> btwam}|{<p2>btrobot|<p3>btcontrol_virt|<p4>btcontrol|<p5>bthaptics}|{btos|btmath|btcan}}"];
+      vn [label="{{<p1> btwam}|{<p2>btrobot|<p3>btstatecontrol|<p4>btcontrol|<p5>bthaptics}|{btos|btmath|btcan}}"];
 
   }
   \enddot
@@ -52,7 +52,7 @@ Useful funtionality:
 - btlogger.c: realtime data logging
 - btpath.c: space curves for use as trajectories or haptic objects
 - btcontrol.c: Control objects. PID, etc.
-- btcontrol_virt.c: virtualize objects for btcontrol
+- btstatecontrol.c: virtualize objects for btcontrol
 - bthaptics.c: simple haptics library
 - btjointcontrol.c: jointspace state controller
 

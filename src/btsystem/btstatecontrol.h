@@ -1,6 +1,6 @@
 /*======================================================================*
  *  Module .............libbtsystem
- *  File ...............btcontrol_virt.h
+ *  File ...............btstatecontrol.h
  *  Author .............Traveler Hauptman
  *  Creation Date ......Apr 28, 2005 
  *  

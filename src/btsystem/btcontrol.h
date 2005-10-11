@@ -25,7 +25,7 @@ extern "C"
 #include <pthread.h>
 #include "btmath.h"
 #include "btos.h"
-#include "btcontrol_virt.h"
+#include "btstatecontrol.h"
 #ifndef PI
 #define PI 3.141596
 #endif /*PI*/

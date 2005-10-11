@@ -1,6 +1,6 @@
 /*======================================================================*
  *  Module .............libbtsystem
- *  File ...............btcontrol_virt.c
+ *  File ...............btstatecontrol.c
  *  Author .............Traveler Hauptman
  *  Creation Date ......Apr 28, 2005 
  *  
@@ -15,7 +15,7 @@
  *                                                                      
  *======================================================================*/
 
-/*! \file btcontrol_virt.c
+/*! \file btstatecontrol.c
  
     \brief Virtual interfaces for control functions
     
@@ -33,7 +33,7 @@
 #include "btcontrol.h"
 #include "btos.h"
 #include "btmath.h"
-#include "btcontrol_virt.h"
+#include "btstatecontrol.h"
 #include "btjointcontrol.h"
 /************************** universal trajectory functions *****************/
 

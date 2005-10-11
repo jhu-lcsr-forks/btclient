@@ -34,7 +34,7 @@
 #include "btmath.h"
 #include "btcontrol.h"
 #include "btos.h"
-#include "btcontrol_virt.h"
+#include "btstatecontrol.h"
 
 #define BT_DUMMY_PROOF
 
@@ -319,7 +319,7 @@ void getsaturation_btPID(btPID *pid, btreal *saturation)
 }
 /************************* btPID interface functions ***************************/
 /* Repackages the above PID routines for vectors
-   Provides the default function plugins for the btstate controller (in btcontrol_virt)
+   Provides the default function plugins for the btstate controller (in btstatecontrol)
 */
 void btposition_interface_mapf_btPID(btstatecontrol *sc, btPID_array *pid)
 {
