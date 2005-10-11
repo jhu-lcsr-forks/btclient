@@ -45,8 +45,7 @@ BTINLINE int btmutex_lock(btmutex* btm);
 //int btmutex_lock_msg(btmutex* btm,char *msg);
 BTINLINE int btmutex_unlock(btmutex *btm);
 
-#ifdef BT_DEBUG_ON
-  #define BT_DEBUG(x) (x)
+
 
 
 #ifdef BT_NULL_PTR_GUARD

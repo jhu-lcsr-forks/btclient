@@ -33,7 +33,7 @@
 #include <inttypes.h>
 #include <pthread.h>
 #include <syslog.h>
-#include <version.h>
+#include <linux/version.h>
 
 /*==============================*
  * INCLUDES - Project Files     *
@@ -503,7 +503,7 @@ int getBusStatus(int bus, long *status)
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,0)
             err = parseMessage(id_in, len_in, data, &id_in, &property_in, &status[id]);
 #else
-            err = parseMessage(id_in, len_in, data, &id_in, &property_in, &status[id-1]);
+            err = parseMessage(id_in, len_in, data, &id_in, &property_in, &status[id]);
 #endif
         }
         else syslog(LOG_ERR, "getBusStatus(): canReadMsg returned error");

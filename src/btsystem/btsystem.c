@@ -90,7 +90,14 @@ actuator_struct * Load_Actuator_File(int *n_actuators, char * actuator_filename,
 /*==============================*
  * Functions                    *
  *==============================*/
-/** Load information from configuration files, initialize structures, and open CAN device drivers */
+/** Load information from configuration files, initialize structures, and open CAN device drivers 
+
+
+\return - 0 Success
+        - -1 
+        - -2 Error parsing the config file
+        
+*/
 int InitializeSystem(char *fn)
 {
     int err, bus_number, id;
@@ -113,7 +120,8 @@ int InitializeSystem(char *fn)
     */
 
     // Parse config file
-    parseFile(fn);
+    err = parseFile(fn);
+    if (err) return -2;
 
     // For each bus, initialize
     err = parseGetVal(INT, "system.busCount", (void*)&num_buses);
