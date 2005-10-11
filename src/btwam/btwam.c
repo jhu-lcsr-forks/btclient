@@ -392,29 +392,29 @@ void WAMControlThread(void *data)
   long unsigned       counter = 0;
   RTIME last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
   RT_TASK *WAMControlThreadTask;
-  double period;
-  
+  double thisperiod;
   RTIME rtime_period,sampleCount;
+
   /* Set up timer*/
   this_thd = (btthread*)data;
-  period = this_thd->period;
-  rtime_period = (RTIME)(period * 1000000000.0);
+  thisperiod = this_thd->period;
+  rtime_period = (RTIME)(thisperiod * 1000000000.0);
   sampleCount = nano2count(rtime_period);
   rt_set_periodic_mode();
   start_rt_timer(sampleCount);
-  
+
   WAMControlThreadTask = rt_task_init(nam2num("WAMCon"), 0, 0, 0);
+  //mlockall(MCL_CURRENT | MCL_FUTURE);
 //#ifdef  BTREALTIME
   rt_make_hard_real_time();
 //#endif
   syslog(LOG_ERR,"WAMControl initial hard");
   rt_task_make_periodic_relative_ns(WAMControlThreadTask, rtime_period, rtime_period);
-  dt_targ = period;
+  dt_targ = thisperiod;
   skiptarg = 1.5 * dt_targ;
   dt = dt_targ;
   WAM.skipmax = 0.0;
-  syslog(LOG_ERR,"WAMControl periodic %d, %f", rtime_period,dt);
-  
+  syslog(LOG_ERR,"WAMControl period Sec:%f, ns: %d",thisperiod, rtime_period);  
   last_loop = rt_get_cpu_time_ns();
   while (!btthread_done(this_thd))
   {
