@@ -129,20 +129,14 @@ int main(int argc, char **argv)
   /* Initialize syslog */
   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
   atexit((void*)closelog);
+  
   /* Initialize the display mutex */
   test_and_log(
     pthread_mutex_init(&(disp_mutex),NULL),
     "Could not initialize mutex for displays.");
 
 
-  /* Initialize rtlinux subsystem */
-  //mysched.sched_priority = sched_get_priority_max(SCHED_FIFO) - 1;
-  //if(sched_setscheduler(0, SCHED_FIFO, &mysched) == -1)
-  //{
-  //  syslog(LOG_ERR, "Error setting up linux (native) scheduler");
-  //}
 
-  //mainTask = rt_task_init(nam2num("main01"), 0, 0, 0); /* defaults */
 
   if(test_and_log(
             InitializeSystem("wamConfig.txt"),
@@ -190,9 +184,7 @@ int main(int argc, char **argv)
 
   wam_thd.period = 0.002;
   btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)&wam_thd);
-  //start_control_threads(10, 0.002, WAMControlThread, (void *)0);
-  //atexit((void*)stop_control_threads);
-  
+
   btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
 
   while (!done)
@@ -207,11 +199,8 @@ int main(int argc, char **argv)
     usleep(100000); // Sleep for 0.1s
   }
   
-  btthread_stop(&wam_thd);
-  
-  //DecodeDL("datafile.dat","dat.csv",1);
-  //syslog(LOG_ERR, "rt_task_delete");
-  //rt_task_delete(mainTask);
+  btthread_stop(&wam_thd); //Kill WAMControlThread 
+
   exit(1);
 }
 
@@ -241,9 +230,6 @@ void sigint_handler()
 void DisplayThread()
 {
   int cnt,err;
-  //RT_TASK *displayTask;
-
-  //displayTask = rt_task_init(nam2num("displa"), 0, 0, 0);
 
   clear();
   refresh();
@@ -258,7 +244,6 @@ void DisplayThread()
     usleep(100000);
   }
 
-  //rt_task_delete(displayTask);
 }
 
 /** Locks the display mutex.

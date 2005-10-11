@@ -23,9 +23,9 @@ running quickly.
 This is a list of tags for functionality integrated into the InitWAM and WAMControlThread code
 to make it easier to find and maintaind later
 
-  ///cteach = Continuous teach & play
-  ///prof = Loop time profiling
-  ///log = Data logging
+  //&cteach = Continuous teach & play
+  //&prof = Loop time profiling
+  //&log = Data logging
 
 */
 
@@ -54,7 +54,7 @@ to make it easier to find and maintaind later
 #include "btcontrol_virt.h"
 #include "btcan.h"
 #include "btsystem.h"
-#include "control_loop.h"
+//#include "control_loop.h"
 #include "btwam.h"
 #include "btrobot.h"
 #include "btos.h"
@@ -65,8 +65,8 @@ to make it easier to find and maintaind later
  * GLOBAL file-scope variables  *
  *==============================*/
 
-extern int shutdown_threads,sample_period2;
-extern double Sample_Period;
+//extern int shutdown_threads,sample_period2;
+//extern double Sample_Period;
 wam_struct WAM;
 extern int gimbalsInit;
 
@@ -190,7 +190,7 @@ int InitWAM(char *wamfile)
 
   WAM.F = 0.0;
   WAM.isZeroed = FALSE;
-  WAM.cteach.Log_Data = 0; ///cteach
+  WAM.cteach.Log_Data = 0; //&cteach
   WAM.force_callback = BlankWAMcallback;
   WAM.log_time = 0.0;
   WAM.logdivider = 1;
@@ -376,7 +376,9 @@ The following functionality is in this loop:
  - Newton-Euler Recursive kinematics & dynamics
  - Data logging
  - Continuous teach & play
+ 
  \todo Make control loop profiling a compiler switch so it is not normally compiled
+
 */
 
 void WAMControlThread(void *data)
@@ -406,12 +408,12 @@ void WAMControlThread(void *data)
   rt_make_hard_real_time();
 //#endif
   syslog(LOG_ERR,"WAMControl initial hard");
-  rt_task_make_periodic_relative_ns(WAMControlThreadTask, sample_period2, sample_period2);
-  dt_targ = Sample_Period;
+  rt_task_make_periodic_relative_ns(WAMControlThreadTask, rtime_period, rtime_period);
+  dt_targ = period;
   skiptarg = 1.5 * dt_targ;
   dt = dt_targ;
   WAM.skipmax = 0.0;
-  syslog(LOG_ERR,"WAMControl periodic %d, %f", sample_period2,dt);
+  syslog(LOG_ERR,"WAMControl periodic %d, %f", rtime_period,dt);
   
   last_loop = rt_get_cpu_time_ns();
   while (!btthread_done(this_thd))
@@ -419,8 +421,8 @@ void WAMControlThread(void *data)
     rt_task_wait_period();
     counter++;
     
-    loop_start = rt_get_cpu_time_ns(); ///prof
-    WAM.loop_period = loop_start - last_loop; ///prof
+    loop_start = rt_get_cpu_time_ns(); //&prof
+    WAM.loop_period = loop_start - last_loop; //&prof
     dt = (double)WAM.loop_period / 1000000000.0;
     if (dt > skiptarg){
       skipcnt++;
@@ -435,12 +437,12 @@ void WAMControlThread(void *data)
 #ifdef BTREALTIME
     rt_make_soft_real_time();
 #endif
-    pos1_time = rt_get_cpu_time_ns(); ///prof
+    pos1_time = rt_get_cpu_time_ns(); //&prof
     
     GetPositions();
     
-    pos2_time = rt_get_cpu_time_ns(); ///prof
-    WAM.readpos_time = pos2_time - pos1_time; ///prof
+    pos2_time = rt_get_cpu_time_ns(); //&prof
+    WAM.readpos_time = pos2_time - pos1_time; //&prof
 #ifdef BTREALTIME    
     rt_make_hard_real_time();
 #endif
@@ -448,10 +450,10 @@ void WAMControlThread(void *data)
     Mpos2Jpos((WAM.Mpos), (WAM.Jpos)); //Convert from motor angles to joint angles
     
     // Joint space stuff
-    pos1_time = rt_get_cpu_time_ns(); ///prof
+    pos1_time = rt_get_cpu_time_ns(); //&prof
     eval_bts(&(WAM.Jsc));
-    pos2_time = rt_get_cpu_time_ns(); ///prof
-    WAM.Jsc_time = pos2_time - pos1_time; ///prof
+    pos2_time = rt_get_cpu_time_ns(); //&prof
+    WAM.Jsc_time = pos2_time - pos1_time; //&prof
     
     // Cartesian space stuff
     set_vn(WAM.robot.q,WAM.Jpos);
@@ -462,20 +464,20 @@ void WAMControlThread(void *data)
     set_v3(WAM.Cpos,T_to_W_bot(&WAM.robot,WAM.Cpoint));
     set_vn(WAM.R6pos,(vect_n*)WAM.Cpos);
     
-    pos1_time = rt_get_cpu_time_ns(); ///prof
+    pos1_time = rt_get_cpu_time_ns(); //&prof
     eval_bts(&(WAM.Csc));
-    pos2_time = rt_get_cpu_time_ns(); ///prof
-    WAM.user_time = pos2_time - pos1_time; ///prof
+    pos2_time = rt_get_cpu_time_ns(); //&prof
+    WAM.user_time = pos2_time - pos1_time; //&prof
     
     set_v3(WAM.Cforce,(vect_3*)WAM.R6force);
    //setrange_vn((vect_n*)WAM.Ctrq,WAM.R6force,0,2,3);
     //Force application
     apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
     
-    pos1_time = rt_get_cpu_time_ns(); ///prof
+    pos1_time = rt_get_cpu_time_ns(); //&prof
     (*WAM.force_callback)(&WAM);
-    pos2_time = rt_get_cpu_time_ns(); ///prof
-    WAM.user_time = pos2_time - pos1_time; ///prof
+    pos2_time = rt_get_cpu_time_ns(); //&prof
+    WAM.user_time = pos2_time - pos1_time; //&prof
     
     eval_bd_bot(&WAM.robot);
     get_t_bot(&WAM.robot,WAM.Ttrq);
@@ -490,32 +492,32 @@ void WAMControlThread(void *data)
 #ifdef BTREALTIME
     rt_make_soft_real_time();
 #endif
-    trq1_time = rt_get_cpu_time_ns(); ///prof
+    trq1_time = rt_get_cpu_time_ns(); //&prof
     
     SetTorques();
     
-    trq2_time = rt_get_cpu_time_ns(); ///prof
-    WAM.writetrq_time = trq2_time - trq1_time; ///prof
+    trq2_time = rt_get_cpu_time_ns(); //&prof
+    WAM.writetrq_time = trq2_time - trq1_time; //&prof
 #ifdef BTREALTIME
     rt_make_hard_real_time();
 #endif
-    loop_end = rt_get_cpu_time_ns(); ///prof
-    WAM.loop_time = loop_end - loop_start; ///prof
-    last_loop = loop_start; ///prof
+    loop_end = rt_get_cpu_time_ns(); //&prof
+    WAM.loop_time = loop_end - loop_start; //&prof
+    last_loop = loop_start; //&prof
     
     pthread_mutex_unlock(&(WAM.loop_mutex));
     
     WAM.log_time += dt;
     if ((counter % WAM.logdivider) == 0){
-      TriggerDL(&(WAM.log)); ///log
+      TriggerDL(&(WAM.log)); //&log
     }
-    ///cteach {
+    //&cteach {
     if (WAM.cteach.Log_Data){ 
       WAM.counter++;
       WAM.teach_time += dt;
       if ((counter % WAM.divider) == 0)
         TriggerDL(&(WAM.cteach));
-    }///cteach }
+    }//&cteach }
   }
   syslog(LOG_ERR, "WAM Control Thread: exiting");
   syslog(LOG_ERR,"WAMControl Skipped cycles %d, Max dt: %f",skipcnt,skipmax);

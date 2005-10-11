@@ -86,7 +86,7 @@ typedef struct {
 btthread* new_btthread();
 void free_btthread(btthread **thd);
 
-int btthread_create(btthread *thd,int priority, void *function,void *args);
+pthread_t* btthread_create(btthread *thd,int priority, void *function,void *args);
 int btthread_done(btthread *thd); //ret !0 when time to kill
 void btthread_stop(btthread *thd); //set done = 1;
 void btthread_exit(btthread *thd);

@@ -63,5 +63,39 @@ Mostly internal use:
 - playlist.c: point to point playlist funcionality for btjointcontrol
 - serial.c: serial comm library
 
+\section pcv Programming Conventions
+
+Based on our experience with RTAI, Linux, and our code, here are some words of advice.
+\subsection pcv1 GDB
+Learn to use gdb! If you are getting segfaults in your code (our rampant use of 
+objects in C makes that likely) then gdb will help you alot. 
+
+Turn on core dumps
+\code
+#ulimit -c 5000
+\endcode
+Compile your program with the gcc -g option to include debugging info.
+Run your program again and get it to crash.
+Run gdb.
+\code
+#gdb yourprogramname corefilename
+\endcode
+
+The core file stores a snapshot of all program memory when it crashed. 
+"p variablename" will display the values in you variables.
+
+\subsection pcv2 Process/Thread control
+
+Learn to use exit() and atexit(). These are part of gnu libc.
+
+Always put a sleep() or usleep() command inside loops. This gives other threads
+a chance to run....
+
+
+
+
+
+
+
 
 */

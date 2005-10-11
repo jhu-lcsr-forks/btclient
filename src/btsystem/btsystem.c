@@ -43,7 +43,7 @@
 /*==============================*
  * INCLUDES - System Files      *
  *==============================*/
-//th041216#include <sys/neutrino.h>
+
 #include <malloc.h>
 #include <stdio.h>
 #include <math.h>
@@ -52,14 +52,14 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <pthread.h>
-//th041216#include <sys/syspage.h>
+
 
 /*==============================*
  * INCLUDES - Project Files     *
  *==============================*/
 #include "btsystem.h"
 #include "btcan.h"
-#include "control_loop.h"
+//#include "control_loop.h"
 #include "btparser.h"
 #define Border(Value,Min,Max)  (Value<Min)?Min:((Value>Max)?Max:Value)
 #define TWOPI 6.283185
@@ -216,27 +216,7 @@ int InitializeSystem(char *fn)
     
     // Get the cycles per second on this machine
     CPU_cycles_per_second = sysconf(_SC_CLK_TCK);
-/*
-    //Load bus file
-    num_buses = Load_Bus_File(buses,busfile);
-    if (num_buses <= 0) {
-        return -1;
-    }
-    syslog(LOG_ERR,"Read %s",buses[0].device_str);
-
-    //Load actuator file
-    act = Load_Actuator_File(&num_actuators, actuatorfile, motorfile, puckfile);
-    if (act == NULL) {
-        return -2;
-    }
-    syslog(LOG_ERR,"Read actuators");
-    //Initialize actuator file
-
-    if ((act = malloc(sizeof(actuator_struct) * (num_actuators + 1))) == NULL) {
-        syslog(LOG_ERR, "Actuator Memory allocation failed. Tried to get %d actuators.", num_actuators);
-        return -1;
-    }
-*/    
+   
     for (cnt = 0; cnt < num_actuators; cnt++) {
         act[cnt].puck.position = 0;
         act[cnt].puck.torque_cmd = 0;
@@ -299,34 +279,6 @@ int InitializeSystem(char *fn)
             }
         }
     }
-    
-    /*
-    //Initialize CAN bus
-    for (cnt = 0; cnt < num_buses; cnt++) {
-        //initialize comm mutex
-        err = pthread_mutex_init(&commMutex, NULL);
-        if (err) {
-            syslog(LOG_ERR, "Could not initialize can mutex for bus %d.", cnt);
-            free(act);
-            //for (cnt2 = 0; cnt2 < num_buses-1; cnt2++)
-            //  close(buses[cnt2].CANdev.CANfd);
-            return -1;
-        }
-        
-        //initialize can device
-        err = initCAN(cnt);
-        if (err) {
-            syslog(LOG_ERR, "Could not initialize can bus %d.", cnt);
-            free(act);
-            //for (cnt2 = 0; cnt2 <= cnt; cnt2++)
-            //  close(buses[cnt].CANdev.CANfd);
-            return -1;
-        }
-        //initialize channel
-        //buses[cnt].CANdev.channel = 0;
-        
-    }
-    */
     
     // Success!
     act_data_valid = 1;
@@ -485,6 +437,7 @@ void CloseSystem()
         freeCAN(cnt);
     }
 }
+
 /** Dumps partial contents of actuator data to syslog for debuging and
 verification.
     */
@@ -517,6 +470,7 @@ void DumpData2Syslog()
         }
     }
 }
+
 /** Gets a pointer to the actuators data.
 \param Num_actuators A pointer to the int variable you want loaded with the number of actuators.
 \return Returns an acutator_struct pointer.
@@ -852,232 +806,11 @@ int ThereIsTRC(int act_idx)
 
 }
 
-/*============================================== private functions ========================================*/
-/** (internal) Loads data from files into actuator data array
- 
-  \retval Pointer to actuator array that was allocated
-  \retval NULL Unable to allocate actuator array or some other problem occured
- 
-*/
-actuator_struct * Load_Actuator_File(int *n_act, char * actuator_filename, char * motor_filename, char * puck_filename)
-{
-    FILE *in;
-    char fileName[32];
-    FILE *tr;
-    char magic_string[50];
-    int n_actuators, num_trc;
-    actuator_struct *act;
-    int cntsum, asum;
-    int cnt, cnt2, anum, id, ser, bus, offset, enc_counts, group, order, ioffsetb, ioffsetc;
-    int idkey[20];
-    int done;
-    double ipernm;
 
-    //--------------------load actuator data----------
-    if ((in = fopen(actuator_filename, "r")) == NULL) {
-        syslog(LOG_ERR, "Could not open actuator data file: %s", actuator_filename);
-        return NULL;
-    }
-
-    fscanf(in, "%s", magic_string);
-
-    if (strcmp(magic_string, "BarrettTechnologyActuatorFile")) {
-        syslog(LOG_ERR, "Actuator data file has wrong header string: [%s] instead of [BarrettTechnologyActuatorFile]", magic_string);
-        return NULL;
-    }
-
-    fscanf(in, "%d", &n_actuators);
-
-    if ((n_actuators < 1) || (n_actuators > 100)) {
-        syslog(LOG_ERR, "Actuator data file reports %d actuators. Must be between 1 and 100.", n_actuators);
-        return NULL;
-    }
-
-    if ((act = malloc(sizeof(actuator_struct) * (n_actuators + 1))) == NULL) {
-        syslog(LOG_ERR, "Actuator Memory allocation failed. Tried to get %d actuators.", n_actuators);
-        return NULL;
-    }
-
-    for (cnt = 0;cnt < n_actuators;cnt++) {
-        if (fscanf(in, "%d, %d, %d", &bus, &id, &ser) == EOF) {
-            syslog(LOG_ERR, "Load actuators: There are less actuators than you say there are in this file.");
-            syslog(LOG_ERR, "Load actuators: Make sure the number of actuators specified is less than or equal to the number of entries.");
-            free(act);
-            return NULL;
-        }
-
-
-        act[cnt].puck.serial = id;
-        act[cnt].motor.serial = ser;
-        act[cnt].bus = bus;
-
-        //check to make sure there isn't a duplicate of this somewhere.
-        for (cnt2 = 0;cnt2 < cnt;cnt2++)
-            if ((act[cnt].puck.ID == act[cnt2].puck.ID) && (act[cnt].motor.serial == act[cnt2].motor.serial)) {
-                syslog(LOG_ERR, "act[%d] and [%d] appear to be duplicates. Ignoring it", cnt, cnt2);
-                cnt--;
-            }
-    }
-
-    fclose (in); //close the actuator file
-
-    //---------------load motor data----------
-    if ((in = fopen(motor_filename, "r")) == NULL) {
-        syslog(LOG_ERR, "Could not open motor data file: %s", motor_filename);
-        free(act);
-        return NULL;
-    }
-
-    for (cnt = 0;cnt < n_actuators;cnt++) {
-        fseek( in, 0, SEEK_SET );
-        done = 0;
-        while (!done) {
-            if (fscanf(in, "%d, %d, %d, %lf", &ser, &offset, &enc_counts, &ipernm) == EOF) {
-                syslog(LOG_ERR, "Could not find a matching motor serial number in the motor data file.");
-                free(act);
-                return NULL;
-            } else if (ser == act[cnt].motor.serial) {
-                done = 1;
-                act[cnt].motor.commutation_offset = offset;
-                act[cnt].motor.counts_per_rev = enc_counts;
-                act[cnt].motor.puckI_per_Nm = ipernm;
-            }
-        }
-        /*! \bug need to add initialization of othe data in the actuator structure here*/
-    }
-
-    fclose(in);  //close the motor file
-
-    //------------Load puck data-------------------
-    if ((in = fopen(puck_filename, "r")) == NULL) {
-        syslog(LOG_ERR, "Could not open puck data file: %s", puck_filename);
-        free(act);
-        return NULL;
-    }
-
-    for (cnt = 0;cnt < n_actuators;cnt++) {
-        fseek( in, 0, SEEK_SET );
-        done = 0;
-        while (!done) {
-            if (fscanf(in, "%d, %d, %d, %d, %d, %d", &ser, &id, &group, &order, &ioffsetb, &ioffsetc) == EOF) {
-                syslog(LOG_ERR, "Could not find a matching puck ID & bus in the puck data file.");
-                free(act);
-                return NULL;
-            } else if (ser == act[cnt].puck.serial) {
-                done = 1;
-                act[cnt].puck.ID = id;
-                act[cnt].puck.group = group;
-                act[cnt].puck.order = order-1;
-                act[cnt].puck.IoffsetB = ioffsetb;
-                act[cnt].puck.IoffsetC = ioffsetc;
-            }
-        }
-    }
-
-    fclose(in);  //close the motor file
-
-
-    //-----------------Load torque ripple data-------------------
-    for (cnt = 0; cnt < n_actuators; cnt++) {
-        /* Open the *.tr file */
-        sprintf(fileName, "motor%d.tr", act[cnt].motor.serial);
-        if ((tr = fopen(fileName, "r")) != NULL) {
-
-            fscanf(tr, "%d", &num_trc);
-            syslog(LOG_ERR,"Trying to get %d values from file: %s", num_trc, fileName);
-
-            /* Read the tr values */
-            if ((act[cnt].motor.values = (int* )malloc(num_trc * sizeof(int))) == NULL) {
-                syslog(LOG_ERR, "Actuator Memory allocation failed. Tried to get %d torque ripple values.", num_trc);
-            } else {
-                act[cnt].motor.num_values = num_trc;
-                act[cnt].motor.ratio = (double)num_trc / (double)act[cnt].motor.counts_per_rev;
-
-                for (cnt2 = 0; cnt2 < num_trc; cnt2++) {
-                    if(fscanf(tr, "%d", &(act[cnt].motor.values[cnt2])) != 1) {
-                        syslog(LOG_ERR, "Error reading TR data: File = %s, Iteration %d of %d", fileName, cnt2, num_trc);
-                    }
-                }
-            }
-            fclose(tr);
-        } else //Make sure we are not accidentally accessing "bad" memory
-            act[cnt].motor.values = NULL;
-    }
-
-    *n_act = n_actuators;
-    syslog(LOG_ERR,"LoadActuators complete");
-    return act;
-}
-
-/** (internal) Loads information in busses.dat
-        
-    \retval int number of busses found
-    \retval -1 fatal error
-    
-    \bug fscanf(bla bla , magic_string, bla bla) needs to be checked
-*/
-int Load_Bus_File(bus_struct *bus, char * filename)
-{
-    FILE *in;
-    int cnt, cnt2, cnt3, anum, id, ser, offset, enc_counts;
-    int idkey[20];
-    char magic_string[50];
-    int cntsum, asum;
-    int bus_number;
-    char dev_str[100];
-
-    if ((in = fopen(filename, "r")) == NULL) {
-        syslog(LOG_ERR, "Could not open bus data file: %s", filename);
-        return -1;
-    }
-
-    fscanf(in, "%s", magic_string);
-
-    if (strcmp(magic_string, "BarrettTechnologyBusFile")) {
-        syslog(LOG_ERR, "Bus data file has wrong header string: [%s] instead of [BarrettTechnologyBusFile]", magic_string);
-        fclose(in);
-        return -1;
-    }
-
-    cnt = 0;
-    while ((fscanf(in, "%d, %s%s", &bus_number, dev_str, magic_string) != EOF)) {
-        if (bus_number != cnt) {
-            syslog(LOG_ERR, "Illegal Bus file: bus numbers must start with 0 and count up in sequence");
-            fclose(in);
-            return -1;
-        }
-        strcpy(bus[bus_number].device_str , dev_str);
-        //th debug: syslog(LOG_ERR,"Read %s :: %s :: Got %s",dev_str,magic_string,bus[bus_number].device_str);
-        cnt++;
-        if (cnt >= MAX_BUSES) {
-            syslog(LOG_ERR, "Illegal Bus file: Number of buses exceeds %d.", MAX_BUSES);
-            fclose(in);
-            return -1;
-        }
-
-        //zero out actuator index structures.
-        /** \bug need to allocate this dynamically one day.*/
-        bus[bus_number].num_pucks = 0;
-        bus[bus_number].num_groups = 0;
-        for (cnt2 = 0;cnt2 < 65;cnt2++) {
-            bus[bus_number].group[cnt2].group_number = -1;
-            for (cnt3 = 0; cnt3 < 4; cnt3++) {
-                bus[bus_number].group[cnt2].pucks_by_order[cnt3] = -1;
-            }
-        }
-    }
-    if (cnt == 0) {
-        syslog(LOG_ERR, "Bus data file has no information");
-        fclose(in);
-        return -1;
-    }
-    fclose(in);
-    return cnt;
-}
 
 /*======================================================================*
  *                                                                      *
- *          Copyright (c) 2003, 2004 Barrett Technology, Inc.           *
+ *       Copyright (c) 2003, 2004, 2005 Barrett Technology, Inc.        *
  *                        625 Mount Auburn St                           *
  *                    Cambridge, MA  02138,  USA                        *
  *                                                                      *

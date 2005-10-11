@@ -157,8 +157,23 @@ void free_btthread(btthread **thd)
 {
   btfree((void**)thd);
 }
+/**  Create a new thread
 
-int btthread_create(btthread *thd,int priority, void *function,void *args)
+We create a new posix thread with a schedpolicy of SCHED_FIFO. The thread_id
+is returned.
+
+\param
+  thd The barrett thread structure; allocated before calling this function.
+  priority The priority we wish to call this thread with. 0 = linux non-realtime priority. 99 = Max priority
+  function Pointer to the function that represents the thread
+  args Pointer to the arguments you want to pass.
+\internal 
+
+right now we kill the program if a thread create doesn't work. I'm not sure if this 
+is reasonable.
+
+*/
+pthread_t* btthread_create(btthread *thd,int priority, void *function,void *args)
 {
   pthread_attr_init(&(thd->attr));
   pthread_attr_setschedpolicy(&(thd->attr), SCHED_FIFO);
@@ -180,6 +195,7 @@ int btthread_create(btthread *thd,int priority, void *function,void *args)
     syslog(LOG_ERR,"btthread_create:Couldn't start control thread!");
     exit(-1);
   }
+  return &(thd->thd_id);
 }
 BTINLINE int btthread_done(btthread *thd)
 {
@@ -189,11 +205,32 @@ BTINLINE int btthread_done(btthread *thd)
   btmutex_unlock(&(thd->mutex));
   return done;
 }
+
+/** Stop a thread that is using btthread_done()
+
+This function should only be called from outside the thread you want to stop.
+The thread monitors thd->done using btthread_done()
+\code
+void mythread(void* args)
+{
+  btthread *mythd;
+  mythd = (btthread*)args;
+  
+  while(!btthread_done(mythd))
+  {
+    //do something
+  }
+  pthread_exit(NULL);
+}
+\endcode
+
+*/
 BTINLINE void btthread_stop(btthread *thd)
 {
   btmutex_lock(&(thd->mutex));
   thd->done = 1;
   btmutex_unlock(&(thd->mutex));
+  pthread_join(thd->thd_id,NULL);
 }
 
 BTINLINE void btthread_exit(btthread *thd)
