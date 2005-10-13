@@ -1,22 +1,4 @@
-/*======================================================================*
- *                                                                      *
- *          Copyright (c) 2003, 2004 Barrett Technology, Inc.           *
- *                        625 Mount Auburn St                           *
- *                    Cambridge, MA  02138,  USA                        *
- *                                                                      *
- *                        All rights reserved.                          *
- *                                                                      *
- *  ******************************************************************  *
- *                            DISCLAIMER                                *
- *                                                                      *
- *  This software and related documentation are provided to you on      *
- *  an as is basis and without warranty of any kind.  No warranties,    *
- *  express or implied, including, without limitation, any warranties   *
- *  of merchantability or fitness for a particular purpose are being    *
- *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
- *  Technology, Inc. be liable for any lost development expenses, lost  *
- *  lost profits, or any incidental, special, or consequential damage.  *
- *======================================================================*/
+
 
 /*======================================================================*
  *  Module .............libbtwam
@@ -35,20 +17,21 @@
  *      to support this. btwam -> btwamctl, btdriver -> btwam
  *                                                                      *
  *======================================================================*/
-
+/** \file btwam.h
+   \brief Provides functions for controlling a WAM that has a CAN infrastructure.
+ 
+    btwam assumes that you have a 7 DOF or 4 DOF wam that is being controlled
+on a CAN bus. It provides some high-level functions to help people get up and
+running quickly.
+*/
 #ifndef _BTWAM_H
 #define _BTWAM_H
 
-#include <rtai_lxrt.h>
 #include "btsystem.h"
-#include "btjointcontrol.h"
-#include "btmath.h"
 #include "btrobot.h"
 #include "btcontrol.h"
 #include "btpath.h"
 #include "btlogger.h"
-#include "btos.h"
-
 
 #define WAM2004
 
@@ -77,10 +60,6 @@
 #define mN7  14.93
 #define mn6  1
 
-
-typedef struct {
-  double q[10];
-} wam_vector;
 /* Define WAM types for the whereAmI() routine.
     4DOF    = 4-DOF WAM with standard outer link
     4DOF_G  = 4-DOF WAM with gimbals on outer link
@@ -133,15 +112,15 @@ typedef struct btwam_struct{
 //Motion Control
   
   //Jointspace state controller
-  SimpleCtl sc[7];
+  
   btstatecontrol Jsc;
-  btposition_interface Jbtp;
+  
   btPID d_jpos_ctl[7];
   btPID_array d_jpos_array;
   //JointSpace Position control
   vect_n *Kp,*Kd,*Ki,*saturation;
   //JointSpace Moves
-  bttrajectory_interface Jbtt;
+  
   vect_n *vel,*acc;
   
   //CartesianSpace Position control
@@ -160,8 +139,7 @@ typedef struct btwam_struct{
   vect_n *R6pos,*R6vel,*R6acc,*R6ref,*R6force,*R6trq;
   double dt;
   btstatecontrol Csc;
-  btposition_interface Cbtp;
-  bttrajectory_interface Ctrj;
+
   btPID d_pos_ctl[6];
   btPID_array d_pos_array;
   

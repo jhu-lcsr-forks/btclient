@@ -12,33 +12,11 @@
  *  REVISION HISTORY:
  *  16 Dec 2004 - BZ, SC, TH
  *    Initial port to linux + RTAI
+    06 Oct 2005 - BZ Mangled exstensively to support new config file
  *                                                                      *
  *======================================================================*/
 
-/** \file btsystem.c
-    The functions in btsystem.c allow the programmer to keep track of a known
-    set of pucks and simplifies communications with them. The information needed
-    to communicate with each puck is stored in a text file data base along with information 
-    about which motor is attached to the puck and calibration information for the 
-    motor and the puck. Communication with pucks is simplified by assigning each puck an
-    index number.
-    
-    btsystem does not assume any kinematic structure or layout of motors. It also does not assume
-    a particular control method. It maintains a database of motors and
-    motor controllers and information on how to communicate with them.
-    
-    - InitializeSystem() must be called before any other btsystem function is called.
-    Most functions will error gracefully if InitializeSystem() has not yet been called.
-    
-    - EnumerateSystem() should be called immediately after InitializeSystem(). EnumerateSystem()
-    will query the CAN buses to find out what pucks exist and try to initialize them. It 
-    prints useful error messages in syslog.
-    
-    - CloseSystem() should be called at the end of your program to free allocated memory and 
-    close CAN drivers.
-    
-    
- */
+
 
 /*==============================*
  * INCLUDES - System Files      *

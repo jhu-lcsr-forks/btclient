@@ -14,7 +14,15 @@
  *  
  *                                                                      
  *======================================================================*/
-
+/*! \file btstatecontrol.h
+ 
+    \brief Virtual interfaces for control functions
+    
+    Position control is a subset of constraint imposition. With position control 
+    of a single joint we attempt to constrain the actual position to match some 
+    target position. With virtual joint stops we seek to constrian a joint position
+    to remain inside a certain range.
+*/
 #ifndef _BTCONTROL_VIRT_H
 #define _BTCONTROL_VIRT_H
 #ifdef __cplusplus
@@ -69,6 +77,7 @@ btreal rate_eval_btramp(btramp *r,btreal dt,btreal rate);
 
 
 /**
+\internal
 Trajectory States
  - -1 = Off
  - 0 = Stopped
@@ -91,7 +100,6 @@ Trajectory Actions and state changes
  - Pause(t): 5->6->7: Ramp dt down to 0 over t seconds
  - Unpause(t): 7->8->5: Ramp dt up from 0 over t seconds
  - LoadTrj: 1->1,2->2,9->2: Set up trajectory for operation
-
 */
 enum trjstate {BTTRAJ_OFF = -1,BTTRAJ_STOPPED = 0,BTTRAJ_INPREP,BTTRAJ_READY,
                BTTRAJ_RUN,BTTRAJ_DONE,BTTRAJ_PAUSING,BTTRAJ_UNPAUSING,BTTRAJ_PAUSED};
@@ -100,7 +108,7 @@ enum scstate {SCMODE_IDLE=0, SCMODE_TORQUE, SCMODE_POS, SCMODE_TRJ};
 
 
 
-/**
+/*
 State: 
  - 0 = uninitialized
  - 1 = initialized
@@ -113,8 +121,8 @@ State:
 */
 /*! \brief Trajectory generator
 
-  trajectory provides configuration and state information for a set of trapezoidal tragectory
-  generation functions specified in trajectory.c.
+  bttraptrj provides configuration and state information for a set of trapezoidal trajectory
+  generation functions specified in btstatecontrol.c.
   
   Make sure you set acc, and vel. These are the constant acceleration used and the 
   maximum velocity allowed respectively.

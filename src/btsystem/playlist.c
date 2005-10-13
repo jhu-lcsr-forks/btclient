@@ -29,7 +29,6 @@
 /*==============================*
  * INCLUDES - Project Files     *
  *==============================*/
-#include "btjointcontrol.h"
 #include "playlist.h"
 
 /** Allocates memory and initializes the data structures for a playlist.

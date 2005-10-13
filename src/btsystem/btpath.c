@@ -11,8 +11,8 @@
  *  REVISION HISTORY:
  *                                                                      *
  *======================================================================*/
-/** \file btpath.c
-\brief Piecewize space curve geometry
+/** 
+
 
 
 */
@@ -34,7 +34,10 @@ int get_segment_pwl(btpath_pwl *pth,btreal s); //Given an arclength, find what s
 */
 
 
-/** Allocate memory for a pwl data structure. Further allocation is done by init_pwl()*/
+/** Allocate memory for a pwl data structure. Further allocation is done by init_pwl()
+
+and this is some more documentiatin
+*/
 btpath_pwl * new_pwl()
 {
   
@@ -47,7 +50,10 @@ btpath_pwl * new_pwl()
   return vmem;
 }
 
-/** Initialize a piecewize linear path */
+/** Initialize a piecewize linear path 
+
+Even some more
+*/
 int init_pwl(btpath_pwl *pth, int vect_size,int rows)
 {
   void* vmem;

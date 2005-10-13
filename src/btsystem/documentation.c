@@ -19,6 +19,7 @@ To learn to write software for the WAM, Barrett recommends the following course.
 -# Communication with the safety module and motor controllers on the CAN bus using Barrett’s proprietary communications protocol.
 -# Automatic recognition puck+motor pairs (actuators) attached to the CAN bus. Simplified command and control of actuators.
 -# Initialization and control of 4DOF and 7DOF WAM robots
+-# A real-time control loop. (Note: Presently the CAN driver is not hard-realtime.)
 -# Basic control routines and heuristics (decision making routines). 
  -# Control routines include a PID algorithm and Trapezoidal trajectory generator. 
  -# Heuristics  include a set of functions and state variables to enable, disable, and switch between control methods safely.
@@ -51,7 +52,7 @@ Useful funtionality:
 - btrobot.c: robot kinematics & dynamics
 - btlogger.c: realtime data logging
 - btpath.c: space curves for use as trajectories or haptic objects
-- btcontrol.c: Control objects. PID, etc.
+- btcontrol.c: Control objects. PID, Multi-via trajectories.
 - btstatecontrol.c: virtualize objects for btcontrol
 - bthaptics.c: simple haptics library
 - btjointcontrol.c: jointspace state controller

@@ -16,6 +16,8 @@
  *    Initial port to linux + RTAI
  *                                                                      *
  *======================================================================*/
+/** \file btcan.h
+*/
 #ifndef _BTCAN_H
 #define _BTCAN_H
 #ifdef __cplusplus

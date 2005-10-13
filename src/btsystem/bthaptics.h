@@ -11,7 +11,13 @@
  *  REVISION HISTORY:
  *                                                                      *
  *======================================================================*/
-
+ /** \file bthaptics.h
+ 
+ \brief Haptics scene list and object interaction functions
+ 
+ 
+ 
+ */
 #ifndef _BTHAPTICS_H
 #define _BTHAPTICS_H
 

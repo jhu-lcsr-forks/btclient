@@ -11,12 +11,7 @@
  *  REVISION HISTORY:
  *                                                                      *
  *======================================================================*/
-/** \file bthaptics.c
-    \brief Analytic geometry objects
 
- The objects in this file are primarily used by bthaptics.c
-
- */
  
  
 #include <stdlib.h>

@@ -5,37 +5,6 @@
  *  Creation Date ......Mar 28, 2005
  *                                                                      *
  *  ******************************************************************  */
-/** \file btos.c
-\brief Operating system abstractions and helpers
-
-A thin layer between barrett technologies code and the operating system.
-Additionally, global defines can go here also. Virtually every Barrett library
-source file will use this.
-
-The mutex layer allows for ERRORCHECK mutexes to be compiled in if desired for 
-debugging.
-
-btmalloc() and btfree() provide error checking for memory access. Lack of memory 
-is fatal. btfree() sets the calling variable to NULL 
-
-test_and_log() provides a shorthand to replace return variable checks.
-
-Additionally, btos.h has #defines for error checking:
-
-#ifdef BT_NULL_PTR_GUARD //bt*.c functions will check incoming object pointers
-to make sure they are not NULL and error if they are.
-
-#ifdef BT_ARRAY_BOUNDS_CHECK //some sort of index sanity and bounds checking will 
-be done on incoming functions
-
-#ifdef BT_DUMMY_PROOF //extra code will be compiled in to protect the programmer
-from thier own idiocy.
-
-#ifdef BT_BACKTRACE //Dump backtrace info into bterrors.txt
-
-
-
-*/
  
  
 #include <syslog.h>

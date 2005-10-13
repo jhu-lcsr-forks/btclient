@@ -12,10 +12,47 @@
  *                                                                      *
  *======================================================================*/
 
-/** Data logger data structures
-There are two buffers and a pointer to the current one with
-and index and a state variable to determine whether the
-other buffer has been written.
+/** \file btlogger.h
+    Realtime data logging functionality
+
+The btlogger object and member functions implement a double buffer data logger.
+The double buffer mechanism allows data to be recorded at high speed into memory 
+while writes to disk are done as efficient block operations in a low priority 
+thread.
+
+
+Typical usage is shown in the following pseudo code
+
+\code
+btlogger log;
+double a,b,c[3];
+void main()
+{  
+  //allocate fields
+  PrepDL(&log,3);
+  AddDataDL(&log,&a,sizeof(double),BTLOG_DOUBLE,"Arclength");
+  AddDataDL(&log,&b,sizeof(double),BTLOG_DOUBLE,"Normal");
+  AddDataDL(&log,c,sizeof(double)*3,BTLOG_DOUBLE,"Position");
+  //initialize buffers
+  InitDL(&log,1000,"logfile.dat");
+  
+  DLon(&log);
+  while(!done){
+    evalDL(&log);
+  }
+  DLoff(&log);
+  CloseDL(&log);
+}
+void loop()
+{
+  while(1){
+    a = a + b;
+    c[2] = b/2;
+    TriggerDL(&log);
+  }
+}
+\endcode
+
 */
 #ifndef _DOUBLEBUFFER_H
 #define _DOUBLEBUFFER_H
@@ -24,10 +61,8 @@ extern "C"
 {
 #endif/* __cplusplus */
  
-#include <syslog.h>
+
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 enum {BTLOG_INT = 0,BTLOG_LONG,BTLOG_DOUBLE,BTLOG_LONGLONG,BTLOG_BTREAL};
 /** btlogger helper structure

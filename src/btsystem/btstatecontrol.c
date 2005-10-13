@@ -15,28 +15,24 @@
  *                                                                      
  *======================================================================*/
 
-/*! \file btstatecontrol.c
- 
-    \brief Virtual interfaces for control functions
-    
-    Position control is a subset of constraint imposition. With position control 
-    of a single joint we attempt to constrain the actual position to match some 
-    target position. With virtual joint stops we seek to constrian a joint position
-    to remain inside a certain range.
-    
-*/
-#include <math.h>
 
+
+#include <math.h>
 #include <pthread.h>
 #include <errno.h>
 #include <syslog.h>
+
 #include "btcontrol.h"
 #include "btos.h"
 #include "btmath.h"
 #include "btstatecontrol.h"
 #include "btjointcontrol.h"
-/************************** universal trajectory functions *****************/
 
+/************************** universal trajectory functions *****************/
+/** Set max velocity and acceleration.
+
+see #bttraptrj
+*/
 void setprofile_traptrj(bttraptrj *traj, btreal vel, btreal acc)
 {
   traj->vel = fabs(vel);

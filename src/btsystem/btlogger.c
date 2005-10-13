@@ -14,48 +14,14 @@
  *                                                                      
  *======================================================================*/
 
-/** \file btlogger.c
-    Realtime data logging functionality
 
-Typical usage is shown in the following pseudo code
-
-\code
-btlogger log;
-double a,b,c[3];
-void main()
-{  
-  //allocate fields
-  PrepDL(&log,3);
-  AddDataDL(&log,&a,sizeof(double),BTLOG_DOUBLE,"Arclength");
-  AddDataDL(&log,&b,sizeof(double),BTLOG_DOUBLE,"Normal");
-  AddDataDL(&log,c,sizeof(double)*3,BTLOG_DOUBLE,"Position");
-  //initialize buffers
-  InitDL(&log,1000,"logfile.dat");
-  
-  DLon(&log);
-  while(!done){
-    evalDL(&log);
-  }
-  DLoff(&log);
-  CloseDL(&log);
-}
-void loop()
-{
-  while(1){
-    a = a + b;
-    c[2] = b/2;
-    TriggerDL(&log);
-  }
-}
-\endcode
-
-\bug the code demo does not work yet
-*/
 #include <syslog.h>
-#include "btlogger.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "btmath.h"
+#include "btlogger.h"
 /*****************************************************************************/
 /** Allocate a specified number of fields
 You can add fewer fields than specified by PrepDL() but you cannot AddDataDL() 

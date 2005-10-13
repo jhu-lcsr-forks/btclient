@@ -11,34 +11,7 @@
  *  REVISION HISTORY:
  *                                                                      *
  *======================================================================*/
-/** \file btrobot.c
-\brief serial robot kinematics & dynamics
 
-example usage
-\code
-  btrobot robot;
-  new_bot(&robot,2);
-
-  link_geom_bot(&robot,0,0.0,0.0,0.0,-pi/2.0);
-  link_geom_bot(&robot,1,0.0,0.0,0.0,pi/2.0);
-  link_mass_bot(&robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
-  link_mass_bot(&robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
-  tool_geom_bot(&robot,0.0,0.356,0.0,0.0);
-  tool_mass_bot(&robot,C_v3(0.0,0.0,0.025),2.50);
-  
-  while (1){
-    set_q_bot(&robot,Jpos,Jvel,Jacc); 
-    eval_fk_bot(&robot);  //forward kinematics
-    eval_fd_bot(&robot);  //forward dynamics
-  
-    apply_tool_force_bot(&robot, Cpoint, Cforce, Ctrq);
-
-    eval_bd_bot(&robot);  //backward dynamics
-
-    get_t_bot(&robot,Jtrq);
-  }
-\endcode
-*/
 #include <math.h>
 #include <stdarg.h>
 #include <stdlib.h>

@@ -11,15 +11,12 @@
  *  REVISION HISTORY:
  *                                                                      *
  *======================================================================*/
- /** \file bthaptics.c
- \brief Haptics scene list and object interaction functions
- 
- */
+
 #include <stdlib.h>
 #include <stdio.h>
-#include "btmath.h"
-#include "bthaptics.h"
 #include <syslog.h>
+#include "bthaptics.h"
+
 
 int new_bthaptic_scene(bthaptic_scene *bth, int size)
 {

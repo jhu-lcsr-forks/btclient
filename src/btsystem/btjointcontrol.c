@@ -18,20 +18,7 @@
  *
  *======================================================================*/
 
-/*! \file btjointcontrol.c
-    \brief A simple Torque, PID & Trapezoidal velocity trajectory controller
 
-    btjointcontrol provides a set of basic control algorithms that are often useful
-    when controlling robots.
-    The use of these functions is straighforward
-    -# Create a sturcture of type SimpleCtl
-    -# SCinit to get everything in a reasonable state.
-    -# SCevaluate inside your read-position set-torque loop.
-    -# SCsetmode to switch to the mode you want
-
-    - SCstarttrj to move the PID setpoint along a trapezoidal trajectory
-
-*/
 #include <math.h>
 #include <pthread.h>
 #include <errno.h>

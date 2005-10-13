@@ -11,7 +11,12 @@
  *  REVISION HISTORY:
  *                                                                      *
  *======================================================================*/
+/** \file btgeometry.h
+    \brief Analytic geometry objects
 
+ The objects in this file are primarily used by bthaptics.c
+
+ */
 #ifndef _BTGEOMETRY_H
 #define _BTGEOMETRY_H
 

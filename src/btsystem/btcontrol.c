@@ -17,14 +17,7 @@
  *
  *======================================================================*/
 
-/*! \file btcontrol.c
-    \brief Systems controls algorithms and objects. 
- 
- 
--# PID object
--# Via Trajectory object
- 
-*/
+
 #include <math.h>
 #include <pthread.h>
 #include <errno.h>
@@ -38,10 +31,8 @@
 
 #define BT_DUMMY_PROOF
 
-
 #define sign(x) (x>=0?1:-1)
 #define Sgn(x) (x>=0.0?1.0:-1.0)
-
 
 /**************************************************************************/
 

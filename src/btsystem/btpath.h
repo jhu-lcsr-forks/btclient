@@ -11,7 +11,10 @@
  *  REVISION HISTORY:
  *                                                                      *
  *======================================================================*/
+/** \file btpath.h
+\brief Piecewize space curve geometry
 
+*/
 #ifndef _BTPATH_H
 #define _BTPATH_H
 

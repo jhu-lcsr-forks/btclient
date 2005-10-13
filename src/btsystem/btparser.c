@@ -15,18 +15,7 @@
  *                                                                      *
  *======================================================================*/
 
-/** \file btparser.c
-    The functions in btparser.c allow an application to read a structured
-    configuration file and extract values from it.
 
-\verbatim
-# Example config file
-
-...blah
-
-\endverbatim
-
-*/
 
 /*==============================*
  * INCLUDES - System Files      *

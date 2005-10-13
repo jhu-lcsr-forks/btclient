@@ -12,13 +12,7 @@
  *                                                                      *
  *======================================================================*/
 
-/** \file btwam.c
-    Provides functions for controlling a WAM that has a CAN infrastructure.
- 
-    btwam assumes that you have a 7 DOF or 4 DOF wam that is being controlled
-on a CAN bus. It provides some high-level functions to help people get up and
-running quickly.
-*/
+
 /* Tags - 
 This is a list of tags for functionality integrated into the InitWAM and WAMControlThread code
 to make it easier to find and maintaind later
@@ -28,45 +22,25 @@ to make it easier to find and maintaind later
   //&log = Data logging
 
 */
-
+#define TWOPI 6.283185
 /*==============================*
  * INCLUDES - System Files      *
  *==============================*/
-#include <semaphore.h>
 #include <syslog.h>
-//th041217#include <sys/neutrino.h>
-#include <inttypes.h>
+#include <stdio.h>
 #include <math.h>
-#include <errno.h>
-#ifdef USE_RTAI31
-#include <rtai_lxrt.h>
-#endif
-#ifdef USE_FUSION
-#include <rtai/task.h>
-#include <rtai/timer.h>
-#endif
 
-#define TWOPI 6.283185
+
 /*==============================*
  * INCLUDES - Project Files     *
  *==============================*/
-#include "btjointcontrol.h"
-#include "btstatecontrol.h"
-#include "btcan.h"
-#include "btsystem.h"
-//#include "control_loop.h"
 #include "btwam.h"
-#include "btrobot.h"
-#include "btos.h"
-
-//#include "WAMDHKin.h"
 
 /*==============================*
  * GLOBAL file-scope variables  *
  *==============================*/
 
-//extern int shutdown_threads,sample_period2;
-//extern double Sample_Period;
+
 wam_struct WAM;
 extern int gimbalsInit;
 
@@ -815,13 +789,12 @@ void setGcomp(btreal scale)
 */
 void GCompSample(vect_n *trq, double p1, double p2, double p3, double p4)
 {
-    //wam_vector pos[1];
-    //wam_vector t2,t3,t4;
+
 
     const_vn(trq, p1, p2, p3, p4);
     MoveWAM(trq);
-    //MoveWAM(pos, &WAM.vel,&WAM.acc);
     usleep(4000000);
+
     //trq->q[0] = WAM.Jtrq.q[0];
     trq->q[1] = WAM.Jtrq->q[1];
     trq->q[2] = WAM.Jtrq->q[2];
@@ -832,9 +805,9 @@ void GCompSample(vect_n *trq, double p1, double p2, double p3, double p4)
 */
 void getLagrangian4(double *A, double *B, double *C, double *D)
 {
-    //int cnt,cnt2,idx;
-    double t41,t21,t42,t22,t23,t33; //,t24,t44,t25,t35,te,tf,a,b,c,d;
-    //wam_vector pos[1],trq[1];
+
+    double t41,t21,t42,t22,t23,t33; 
+
     vect_n *trq;
     
     trq = new_vn(4);

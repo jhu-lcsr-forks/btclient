@@ -12,54 +12,6 @@
  *                                                                      *
  *======================================================================*/
 
-/** \file btmath.c
-    A common set of mathematical operations. 
-    
-    This code provides objects and methods for:
-    - N Element Vectors
-      - Optimization for 3 Element Vectors
-    - NxM Element Matrices
-      - Optimization for SO(3) (3x3 rotation matrices)
-      - Optimization for SE(3) (4x4 rotation & translation matrices)
-    - Quaternions
-    - Digital Filters
- 
-    The core functionality for vectors, matrices and quaternions are supported 
-    by the *_vn, *_mn, and *_q functions. Use these functions as a starting point in any
-    algorithm you are developing. This is a performance library and so optimized 
-    fuctions are provided for specific cases. *_v3 (3 element vector) *_m3 (3x3 rotation
-    matrix) *_qu (unit length rotation quaternion).  You may call any general functions 
-    on the optimized data types by normal C typecasting. For example, the following is
-    valid code.
-    \code 
-      vect_3 *v,*x;
-      v = new_v3();
-      x = new_v3();
-      const_v3(v,4.4,5.5,6.5);
-      set_v3(x,(vect_3*)bound_vn((vect_n*)v,1.0,5,0));
-    \endcode
-    
-    
-    The vector and matrix functions are written to provide a consistent syntax.
-Prefix notation is used for all operations. See the test_*() functions for
-example of use.
- 
-The only potentially tricky thing about this api is that you should never declare
-a vector or matrix variable. Only declare pointers. The new_xx function expects the
-address of your pointer, and will allocate memory and redirect your pointer for you.
-    
-\todo Add code and compiler switches for counting the number of operations.
-
-Segfaults are a problem with realtime code because we don't necessarily exit on the 
-instruction that is accessing the wrong memory.
-
-Particularly frustrating is when gdb says that we segfaulted on a sleep function.
-The following is a list of instances of when this has happened to give you some ideas
-where to look first.
-
-1. calling sprint_vn() on an uninitialized vect_n *
- 
-*/
 
 #include <math.h>
 #include <stdarg.h>
@@ -127,25 +79,7 @@ void freebtptr()
       free(btptrs[cnt]);
   }
 }
-/** Null pointer access flag */
-int btmath_ptr_ok(void *ptr,char *str)
-{
-  if (ptr == NULL){
-    syslog(LOG_ERR,"btmath ERROR: you tried to access a null pointer in %s",str);
-    return 0;
-  }
-  return 1;
-}
 
-/** Prints an error if array index is out of range */
-int vect_size_ok(int idx,int max,char *str)
-{
-  if ((idx < 0) || (idx > max)){
-    syslog(LOG_ERR,"btmath ERROR: Your index is %d with limit %d in function %s",idx,max,str);
-    return 0;
-  }
-  return 1;
-}
 
 //@}
 /** @name vect_n Initialization and Data Access Functions
@@ -225,7 +159,7 @@ vect_n * new_vn(int size) //allocate an n-vector
   vect_n *n;
   
   #ifdef BT_ARRAY_BOUNDS_CHECK
-   vect_size_ok(size,MAX_VECTOR_SIZE,"new_vn");
+   idx_bounds_ok(size,MAX_VECTOR_SIZE,"new_vn");
   #endif
   
   //allocate mem for vector,return vector, and return structure
@@ -309,7 +243,7 @@ vect_n* init_local_vn(vect_n* header,btreal* data, int size)
   n->ret->q = data + size;
   n->ret->ret = n->ret;
 #ifdef BT_ARRAY_BOUNDS_CHECK
-   vect_size_ok(size,MAX_VECTOR_SIZE,"init_local_vn");
+   idx_bounds_ok(size,MAX_VECTOR_SIZE,"init_local_vn");
 #endif
   fill_vn(n,0.0);
   fill_vn(n->ret,0.0);
@@ -362,12 +296,12 @@ BTINLINE void set_vn(vect_n* dest, vect_n* src) //assignment, copy
   BTPTR_OK(src,"set_vn src")
 
 #ifdef BT_ARRAY_BOUNDS_CHECK
-   if(!vect_size_ok(dest->n,MAX_VECTOR_SIZE,"set_vn dest"))
+   if(!idx_bounds_ok(dest->n,MAX_VECTOR_SIZE,"set_vn dest"))
    {
      syslog(LOG_ERR,"btmath:set_vn:dest:pointer:%x",dest);
      return;
    }
-   if(!vect_size_ok(src->n,MAX_VECTOR_SIZE,"set_vn src"))
+   if(!idx_bounds_ok(src->n,MAX_VECTOR_SIZE,"set_vn src"))
    {
      syslog(LOG_ERR,"btmath:set_vn:src:pointer:%x:dest:pointer:%x",src,dest);
      return;
@@ -389,12 +323,12 @@ void setrange_vn(vect_n* dest, vect_n* src, int dest_start, int src_start, int n
   BTPTR_OK(src,"setrange_vn src")
 
 #ifdef BT_ARRAY_BOUNDS_CHECK
-   if(!vect_size_ok(dest_start,dest->n-1,"setrange_vn dest"))
+   if(!idx_bounds_ok(dest_start,dest->n-1,"setrange_vn dest"))
    {
      syslog(LOG_ERR,"btmath:set_vn:dest:pointer:%x",dest);
      return;
    }
-   if(!vect_size_ok(src_start,dest->n-1,"setrange_vn src"))
+   if(!idx_bounds_ok(src_start,dest->n-1,"setrange_vn src"))
    {
      syslog(LOG_ERR,"btmath:set_vn:src:pointer:%x:dest:pointer:%x",src,dest);
      return;
@@ -444,7 +378,7 @@ BTINLINE void setval_vn(vect_n* dest, int idx, btreal val)
   BTPTR_OK(dest,"setval_vn")
 
 #ifdef BT_ARRAY_BOUNDS_CHECK
-  if(!vect_size_ok(idx,dest->n,"setval_vn"))
+  if(!idx_bounds_ok(idx,dest->n,"setval_vn"))
     syslog(LOG_ERR,"btmath ERROR:pointer is %p",dest);
 #endif
 
@@ -460,7 +394,7 @@ BTINLINE btreal getval_vn(vect_n* dest, int idx)
   BTPTR_OK(dest,"getval_vn")
 
 #ifdef BT_ARRAY_BOUNDS_CHECK
-  if(!vect_size_ok(idx,dest->n,"getval_vn"))
+  if(!idx_bounds_ok(idx,dest->n,"getval_vn"))
     syslog(LOG_ERR,"btmath ERROR:pointer is %p",dest);
 #endif
 
@@ -766,7 +700,7 @@ char* sprint_vn(char *dest,vect_n* src)
 {
   int i,j;
    
-  if (btmath_ptr_ok(src,"sprint_vn"))
+  if (btptr_ok(src,"sprint_vn"))
   {
     dest[0] = '<';
     dest[1] = 0;
@@ -796,7 +730,7 @@ see: sprint_vn()
 char* sprint_csv_vn(char *dest,vect_n* src)
 {
   int i,j;
-  if (btmath_ptr_ok(src,"sprint_cvs_vn"))
+  if (btptr_ok(src,"sprint_cvs_vn"))
   {
     dest[0] = 0;
     for(j = 0;j<src->n;j++)

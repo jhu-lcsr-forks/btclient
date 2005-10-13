@@ -14,7 +14,14 @@
  *  050331 TH - Seeded from SimpleControl code
  *                                                                      
  *======================================================================*/
-
+/*! \file btcontrol.h
+    \brief System control algorithms and objects. 
+ 
+ 
+-# PID object
+-# Via Trajectory object
+ 
+*/
 #ifndef _BTCONTROL_H
 #define _BTCONTROL_H
 #ifdef __cplusplus
@@ -93,6 +100,10 @@ typedef struct
   btPID* pid;
   int elements;
 }btPID_array;
+/** @name PID
+    btpid functions
+ */
+//@{
 //Create-Destroy
 void init_btPID(btPID *pid);
 void init_err_btPID(btPID *pid); //setup for use with eval_err_btPID
@@ -126,7 +137,13 @@ void btposition_interface_pause_btPID(struct btposition_interface_struct* btp);
 void btposition_interface_reset_btPID(struct btposition_interface_struct* btp);
 vect_n* btposition_interface_eval_btPID(struct btposition_interface_struct* btp);
 void btposition_interface_mapf_btPID(btstatecontrol *sc, btPID_array *pid);
+//@} 
+
 /*================================================Trajectory stuff================================*/
+/** @name Linear interpolation trajectory
+   
+ */
+//@{
 /** A piecewize linear interpolating trajectory
 
   ct_traj stores an array of time,position data and 
@@ -153,7 +170,7 @@ vect_n* bttrajectory_interface_reset_ct(struct bttrajectory_interface_struct *bt
 vect_n* bttrajectory_interface_eval_ct(struct bttrajectory_interface_struct *btt);
 void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj);
 
-
+//@}
 
 
 typedef struct {
@@ -203,6 +220,10 @@ double eval_via_trj(via_trj *trj,double dt);
 double start_via_trj(via_trj *trj,int col);
 void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double v_prev, double v_next, double seg_acc, int end);
 
+/** @name Linear trajectory with parabolic blending at via points
+   
+ */
+ //@{
 /** A piecewise linear trajectory with parabolic blending using vect_n data.
 
 A simple edit api is provided to simplify programming user interaction with this 
@@ -296,7 +317,7 @@ int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt
 vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt);
 vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt);
 void register_vta(btstatecontrol *sc,via_trj_array *vt);
-
+//@}
 
 #ifdef __cplusplus
 }
