@@ -49,9 +49,6 @@
 #define TX_TIMEOUT          (50)
 #define RX_TIMEOUT          (50)
 
-#define mbxID               (0)
-#define BASE_ID             (0)
-
 #define MAX_BUS             (4)
 
 /*==============================*
@@ -61,10 +58,7 @@
 #define isSpace(c) ( (c == ' ') ? 1 : 0 )
 #define isDigit(c) ( ((c >= '0') && (c <= '9')) ? 1 : 0 )
 
-#define ADDR2NODE(x) ((((x) >> 5) & 0x001F) - BASE_ID)
-#define NODE2ADDR(x) (((mbxID + BASE_ID) << 5) | ((x) + BASE_ID))
-#define GROUPID(n)   (((mbxID + BASE_ID) << 5) | (0x0400 + (n)))
-#define BROADCAST    (GROUPID(0))
+
 
 #define Border(Value,Min,Max)  (Value<Min)?Min:((Value>Max)?Max:Value)
 

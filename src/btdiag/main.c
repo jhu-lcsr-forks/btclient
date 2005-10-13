@@ -332,7 +332,6 @@ void sigint_handler()
     exit(1);
 }
 
-
 /** Spins in a loop, updating the screen.
     Runs as its own thread, updates the screen.
 */

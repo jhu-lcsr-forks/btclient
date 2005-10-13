@@ -187,15 +187,15 @@ int InitializeSystem(char *fn)
                         // Query for various info
                         getProperty(canAddr, id, ID, &reply);
                         act[num_actuators].puck.ID = reply;
-                        //getProperty(canAddr, id, CPR, &reply);
-                        act[num_actuators].motor.counts_per_rev = 40960;
-                        //getProperty(canAddr, id, IPNM, &reply);
-                        act[num_actuators].motor.puckI_per_Nm = 2700;
+                        getProperty(canAddr, id, CTS, &reply);
+                        act[num_actuators].motor.counts_per_rev = reply;
+                        getProperty(canAddr, id, IPNM, &reply);
+                        act[num_actuators].motor.puckI_per_Nm = reply;
                         getProperty(canAddr, id, PIDX, &reply);
                         act[num_actuators].puck.order = reply-1;
                         getProperty(canAddr, id, GRPB, &reply);
-                        act[num_actuators].puck.group = 1;
-                        
+                        act[num_actuators].puck.group = reply;
+                        syslog(LOG_ERR,"Puck: ID-%d CTS-%d IPNM-%d %d PIDX- %d GRPB-%d",act[num_actuators].puck.ID,act[num_actuators].motor.counts_per_rev,act[num_actuators].motor.puckI_per_Nm,PIDX,act[num_actuators].puck.order,act[num_actuators].puck.group);
                         ++num_actuators; // Update the number of actuators
                         break; 
                     default:

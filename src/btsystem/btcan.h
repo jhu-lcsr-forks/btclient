@@ -44,6 +44,14 @@ extern "C"
 
 #define EE        (0x0008)
 
+#define mbxID               (0)
+#define BASE_ID             (0)
+
+#define ADDR2NODE(x) ((((x) >> 5) & 0x001F) - BASE_ID)
+#define NODE2ADDR(x) (((mbxID + BASE_ID) << 5) | ((x) + BASE_ID))
+#define GROUPID(n)   (((mbxID + BASE_ID) << 5) | (0x0400 + (n)))
+#define BROADCAST    (GROUPID(0))
+
 /* Public Data Structures */
 /** CAN device information data structure
 */
