@@ -174,9 +174,12 @@ int InitializeSystem(char *fn)
                         getProperty(canAddr, id, GRPB, &reply);
                         act[num_actuators].puck.group = reply;
                         syslog(LOG_ERR,"Puck: ID-%d CTS-%d IPNM-%d %d PIDX- %d GRPB-%d",act[num_actuators].puck.ID,act[num_actuators].motor.counts_per_rev,act[num_actuators].motor.puckI_per_Nm,PIDX,act[num_actuators].puck.order,act[num_actuators].puck.group);
+                        // Set MaxTorque to 3.3A
+                        setProperty(canAddr, id, MT, FALSE, 4731);
                         ++num_actuators; // Update the number of actuators
                         break; 
                     default:
+			break;
                     }
                 }
             }

@@ -149,7 +149,7 @@ void handleMenu(char c)
         setProperty(0,newID,ADDR,0,32971);
         setProperty(0,newID,VALUE,0,1);
         printf("\nPress enter when the index pulse is found: ");
-        scanf("%d\n", &dummy);
+        scanf("%d", &dummy);
         setProperty(0,newID,ADDR,0,32970);
         getProperty(0,newID,VALUE,&dat);
         printf("\n The MOFST new is:%d\n",dat);
