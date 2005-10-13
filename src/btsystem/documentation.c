@@ -45,26 +45,26 @@ The following is an overview of the library functionality and what code files pr
   }
   \enddot
 Essential:
-- btwam.c: This is the primary file used for controlling the WAM.
+- btwam.h: This is the primary file used for controlling the WAM.
 
 Useful funtionality:
-- btmath.c: vector and matrix library
-- btrobot.c: robot kinematics & dynamics
-- btlogger.c: realtime data logging
-- btpath.c: space curves for use as trajectories or haptic objects
-- btcontrol.c: Control objects. PID, Multi-via trajectories.
-- btstatecontrol.c: virtualize objects for btcontrol
-- bthaptics.c: simple haptics library
-- btjointcontrol.c: jointspace state controller
+- btmath.h: vector and matrix library
+- btrobot.h: robot kinematics & dynamics
+- btlogger.h: realtime data logging
+- btpath.h: space curves for use as trajectories or haptic objects
+- btcontrol.h: Control objects. PID, Multi-via trajectories.
+- btstatecontrol.h: virtualize objects for btcontrol
+- bthaptics.h: simple haptics library
+- btjointcontrol.h: jointspace state controller
 
 Mostly internal use:
-- btcan.c: CAN bus communication code
-- btos.c: OS abstractions for easier porting
-- btparser.c: Config file parser
-- btsystem.c: Bussed actuators communication & management code
-- control_loop.c: realtime thread initialization
-- playlist.c: point to point playlist funcionality for btjointcontrol
-- serial.c: serial comm library
+- btcan.h: CAN bus communication code
+- btos.h: OS abstractions for easier porting
+- btparser.h: Config file parser
+- btsystem.h: Bussed actuators communication & management code
+
+- playlist.h: point to point playlist funcionality for btjointcontrol
+- serial.h: serial comm library
 
 \section pcv Programming Conventions
 
