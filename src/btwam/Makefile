@@ -5,8 +5,11 @@ SLIB_TARG = ./libbtwam.so
 CC = gcc
 PATH_INCLUDE = -I./include -I/usr/realtime/include -I../btsystem
 PATH_INSTALL = ../..
+
 #Replace -DUSE_FUSION with -DUSE_RTAI31
 CFLAGS += -g -DUSE_RTAI31  ${PATH_INCLUDE}
+#CFLAGS += -g -DUSE_RTAI31  ${PATH_INCLUDE} -DBTOLDCONFIG
+
 #Replace -lrtai with -llxrt
 LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L/usr/local/lib -L./lib -lm -lpthread -llxrt -lntcan
 
@@ -31,4 +34,4 @@ slib: ${LIB_OBJS}
 install:
 	cp $(LIB_TARG) $(PATH_INSTALL)/lib
 	cp $(INCL_FILES) $(PATH_INSTALL)/include  
-#-lm -Llib -lcan -lmitop
+

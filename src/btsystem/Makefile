@@ -14,6 +14,8 @@ PATH_INSTALL = ../..
 CFLAGS += -DUSE_RTAI31  ${PATH_INCLUDE} 
 #Debugging - Comment out line below for more speed
 CFLAGS += -g -DBT_NULL_PTR_GUARD -DBT_ARRAY_BOUNDS_CHECK -DBTDEBUG
+#CFLAGS += -g -DBT_NULL_PTR_GUARD -DBT_ARRAY_BOUNDS_CHECK -DBTDEBUG -DBTOLDCONFIG
+
 #Replace -lrtai with -llxrt
 LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L./lib -lm -lpthread -llxrt -lntcan
 

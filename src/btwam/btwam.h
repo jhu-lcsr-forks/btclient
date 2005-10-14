@@ -30,6 +30,7 @@ running quickly.
 #include "btsystem.h"
 #include "btrobot.h"
 #include "btcontrol.h"
+#include "btjointcontrol.h"
 #include "btpath.h"
 #include "btlogger.h"
 
@@ -124,6 +125,7 @@ typedef struct btwam_struct{
   vect_n *vel,*acc;
   
   //CartesianSpace Position control
+  SimpleCtl sc[7];
   btPID pid[6]; //  x,y,z,quat
   quat *qref,*qact,*qaxis,*forced; //reference and actual orientations for quaternion control
   vect_n *Ttrq;
