@@ -1,12 +1,10 @@
-OBJS = main.o
-OBJS2 = btdiag.o
+OBJS = btdiag.o
 TARG = btdiag
-TARG = btdiag2
 CC = gcc 
 PATH_INCLUDE = -I/usr/realtime/include -I../../include
 
 #Replace -DUSE_FUSION with -DUSE_RTAI31
-CFLAGS =  -g -DUSE_RTAI31  ${PATH_INCLUDE}
+CFLAGS =  -g -DUSE_RTAI31  ${PATH_INCLUDE} -DBTOLDCONFIG
 #Replace -lrtai with -llxrt
 LDFLAGS = -L/usr/realtime/lib -L/usr/lib -L/usr/local/lib -L../../lib -lpthread -llxrt \
           -lncurses -lm -lbtwam -lbtsystem -lntcan
@@ -17,8 +15,6 @@ default: btdiag
 btdiag: ${OBJS}
 	$(CC) -o ${TARG} ${OBJS} ${LDFLAGS}
   
-btdiag2: ${OBJS2}
-	$(CC) -o ${TARG2} ${OBJS2} ${LDFLAGS}
 
 clean: 
 	rm *.o ${TARG} 

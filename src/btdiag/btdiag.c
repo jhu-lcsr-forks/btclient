@@ -209,6 +209,7 @@ int main(int argc, char **argv)
   //new trajectory
   vta = new_vta(len_vn(active_pos),50);
   register_vta(active_bts,vta);
+
   active_file[0] = 0;
 
   wam_thd.period = 0.002;
@@ -333,9 +334,7 @@ void RenderMAIN_SCREEN()
     mvprintw(line , 0, "Mode: Undefined!!!   ");
   }
   
-  ++line;
-  mvprintw(line+1 , 0, "Vel: %+8.4f Acc: %+8.4f  Dest:%s ",vel,acc,sprint_vn(vect_buf1,active_dest));
-  
+    
   if (cteach)
     mvprintw(line , 50, "Teaching continuous trajectoy");
   else if (vta == NULL)
@@ -352,11 +351,16 @@ void RenderMAIN_SCREEN()
   else
     mvprintw(line , 24, "Constraint: UNDEFINED!");
 
+  ++line;
+  mvprintw(line , 0, "Vel: %+8.4f Acc: %+8.4f  Dest:%s ",active_bts->vel,active_bts->acc,sprint_vn(vect_buf1,active_dest));
+
   
   ++line;
   ++line;
 
   mvprintw(line, 0 , "Position :%s ", sprint_vn(vect_buf1,active_pos));
+  ++line;
+  mvprintw(line, 0 , "Target :%s ", sprint_vn(vect_buf1,active_bts->qref));
   ++line;
   mvprintw(line, 0 , "Force :%s ", sprint_vn(vect_buf1,active_trq));
   ++line;
@@ -403,7 +407,7 @@ void RenderMAIN_SCREEN()
   line++;
   line++;
   mvprintw(line,0,"bts: state:%d",active_bts->mode);
-  if(active_bts->btt.dat != NULL)
+  //if(active_bts->btt.dat != NULL)
     mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
   entryLine = line + 2;
   refresh();
@@ -461,6 +465,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     if (active_bts == &(wam->Jsc))
     { //switch to cartesian space mode.
       setmode_bts(&(wam->Jsc),SCMODE_IDLE);
+      setmode_bts(&(wam->Csc),SCMODE_IDLE);
       active_bts = &(wam->Csc);
       active_pos = wam->R6pos;
       active_trq = wam->R6force;
@@ -472,6 +477,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     }
     else
     {
+      setmode_bts(&(wam->Jsc),SCMODE_IDLE);
       setmode_bts(&(wam->Csc),SCMODE_IDLE);
       active_bts = &(wam->Jsc);
       active_pos = wam->Jpos;
@@ -563,6 +569,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       }
       finish_entry();
     }
+    else {
+       start_entry();
+      addstr("You must be in idle mode!: ");
+      refresh();
+      sleep(1);
+      finish_entry();
+    }
     break;
   case 'n': //New vta
     if(getmode_bts(active_bts)==SCMODE_IDLE)
@@ -585,14 +598,19 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
      start_entry();
       addstr("Enter comma seperated destination \".2,.4,...\": ");
       refresh();
-      scanw("%s", fn);
+      getstr( fn);
+      strcat(fn,"\n");
+      syslog(LOG_ERR,"Moveto:%s",fn);
       finish_entry();
       if (getmode_bts(active_bts)!=SCMODE_TRJ){
+        
         setmode_bts(active_bts,SCMODE_TRJ);
         fill_vn(active_dest,0.25);
         csvto_vn(active_dest,fn);
         moveparm_bts(active_bts,vel,acc);
-        moveto_bts(active_bts,active_dest);
+        stop_trj_bts(active_bts);
+        if(moveto_bts(active_bts,active_dest))
+          syslog(LOG_ERR,"Moveto Died",fn);
       }
       break;
     

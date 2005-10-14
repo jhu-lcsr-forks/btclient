@@ -237,8 +237,10 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
   {
     if (sc->trj.state == BTTRAJ_STOPPED)
     {
-      if (sc->prep_only)
+      if (sc->prep_only){
         sc->btt.state = BTTRAJ_DONE;
+        sc->mode = SCMODE_POS;
+      }
       else
         sc->btt.state = BTTRAJ_READY;
     }
@@ -400,6 +402,7 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
 {
   char vect_buf1[200];
   int ret;
+  btreal arclen;
   BTPTR_OK(sc,"moveparm_bts")
   
   btmutex_lock(&(sc->mutex));
@@ -411,10 +414,15 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
     add_arclen_point_pwl(&(sc->pth),dest);
 
     setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
-    start_traptrj(&(sc->trj), arclength_pwl(&(sc->pth)));
+    arclen = arclength_pwl(&(sc->pth));
+    start_traptrj(&(sc->trj), arclen);
     sc->btt.state = BTTRAJ_INPREP;
     sc->prep_only = 1;
+    sc->mode = SCMODE_TRJ;
     ret = 0;
+#ifdef BTDEBUG
+    syslog(LOG_ERR,"moveto_bts: vel:%f, acc:%f,len:%f",sc->vel,sc->acc,arclen);
+#endif
   }
   else{
     ret = -1;

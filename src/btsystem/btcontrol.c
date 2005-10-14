@@ -725,8 +725,8 @@ vect_n* sim_vta(via_trj_array* vt,double dt,double duration,char*filename)
   FILE *out;
   char buff[250];
   double t = dt;
-  LOCAL_VN(qref,7);
-  
+  local_vn(qref,7);
+  init_vn(qref,7);
   
   out = fopen(filename,"w");
   reset_vta(vt,dt,qref);
@@ -814,9 +814,11 @@ int ins_point_vta(via_trj_array* vt, vect_n *pt)
   int i;
   vectray *vr;
   btreal t,d;
-  LOCAL_VN(tmp,len_vn(pt)+1);
-  LOCAL_VN(last,len_vn(pt));
+  local_vn(tmp,10);
+  local_vn(last,10);
 
+  init_vn(tmp,len_vn(pt)+1);
+  init_vn(last,len_vn(pt));
   
   if (vt == NULL) return -1;
   else {

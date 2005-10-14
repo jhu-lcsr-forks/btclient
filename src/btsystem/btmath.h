@@ -176,8 +176,11 @@ typedef struct barrett_vect_n{
 vect_n* add3()
 {
    vect_n ret;
-   LOCAL_VN(x,6);
-   LOCAL_VN(y,6);
+   local_vn(x,6);
+   local_vn(y,7);
+   
+   init_vn(x,6);
+   init_vn(y,6);
    
    ret = new_vn(6);
    fill_vn(x,1.0);
@@ -188,7 +191,12 @@ vect_n* add3()
 \endcode
 */
 
-#define LOCAL_VN(x,n) vect_n x[(1+(sizeof(vect_n)*2+sizeof(btreal)*2*(n))/sizeof(vect_n))]; init_vn((x),(n))
+/** #local_vn(x,n) 
+x = variable name
+n = max number of elements
+
+*/
+#define local_vn(x,n) vect_n x[(1+(sizeof(vect_n)*2+sizeof(btreal)*2*(n))/sizeof(vect_n))]
 
 /*================================*/
 /** @name vect_n Initialization and Data Access Functions
