@@ -147,11 +147,14 @@ int main(int argc, char **argv)
   while((chr=getch())==ERR) usleep(5000);
 
 
-
-  if(test_and_log(
-            InitializeSystem("wamConfig.txt"),
-            "Failed to initialize system")){
-     exit(-1);
+  if(test_and_log(   
+#ifdef BTOLDCONFIG
+    InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
+#else //BTOLDCONFIG
+    InitializeSystem("wamConfig.txt"),
+#endif //BTOLDCONFIG
+    "Failed to initialize system")){
+    exit(-1);
   }
   atexit((void*)CloseSystem);//register CloseSystem for shutdown
 
