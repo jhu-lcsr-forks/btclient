@@ -171,9 +171,10 @@ int InitWAM(char *wamfile)
   
     
   SetEngrUnits(1);
-  //if(test_and_log(
-   // EnumerateSystem(),"Failed to enumerate system"))  {return -1;}
-
+#ifdef BTOLDCONFIG
+  if(test_and_log(
+    EnumerateSystem(),"Failed to enumerate system"))  {return -1;}
+#endif //BTOLDCONFIG
   //------------------------
   WAM.act = GetActuators(&(WAM.num_actuators));
 
