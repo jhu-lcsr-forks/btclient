@@ -11,33 +11,13 @@
  *  REVISION HISTORY:
  *                                                                      *
  *======================================================================*/
- /** \file btsystem.h
-   \brief puck interaction library
- 
-    The functions in btsystem.c allow the programmer to keep track of a known
-    set of pucks and simplifies communications with them. The information needed
-    to communicate with each puck is stored in a text file data base along with information 
-    about which motor is attached to the puck and calibration information for the 
-    motor and the puck. Communication with pucks is simplified by assigning each puck an
-    index number.
-    
-    btsystem does not assume any kinematic structure or layout of motors. It also does not assume
-    a particular control method. It maintains a database of motors and
-    motor controllers and information on how to communicate with them.
-    
-    - InitializeSystem() must be called before any other btsystem function is called.
-    Most functions will error gracefully if InitializeSystem() has not yet been called.
-    
-    - EnumerateSystem() should be called immediately after InitializeSystem(). EnumerateSystem()
-    will query the CAN buses to find out what pucks exist and try to initialize them. It 
-    prints useful error messages in syslog.
-    
-    - CloseSystem() should be called at the end of your program to free allocated memory and 
-    close CAN drivers.
-    
-    
- */
-
+/** 
+  \bug much of the bus information should be re-written to be dynamically 
+  allocated.
+  
+  btsystem is meant to give an api to a random set of pucks and motors on multiple busses.
+  these are abstracted as "actuators"
+*/
  
 #ifndef _BTSYSTEM_H
 #define _BTSYSTEM_H
@@ -180,7 +160,12 @@ extern "C"
 {
 #endif/* __cplusplus */
 //Top level functions-----------------------------
+#ifdef BTOLDCONFIG
+int InitializeSystem(char *actuatorfile,char *busfile,char *motorfile,char *puckfile); //Global bus variables, global actuator variable, load data from files, open can bus
+#else
 int InitializeSystem(char *fn);
+#endif
+
 void CloseSystem(); //
   //private 
 void DumpData2Syslog();  

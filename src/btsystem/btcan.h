@@ -17,6 +17,8 @@
  *                                                                      *
  *======================================================================*/
 /** \file btcan.h
+Handles all communication with the robot over the CAN bus.
+    Requires library files "libcan.a" and "libmitop.a".
 */
 #ifndef _BTCAN_H
 #define _BTCAN_H
@@ -114,7 +116,70 @@ enum {
     IS_ACTIVE
     
 };
+#ifdef BTOLDCONFIG
+enum {
+    VERS, ROLE, SN, ID, ERROR, STAT, ADDR, VALUE, MODE, D, TORQ, P, V, E, B,
+    MD, MT, MV, MCV, MOV, MOFST, IOFST, PTEMP, UPSECS, OD, MDS,
 
+    AP, AP2, MECH, MECH2, CTS, CTS2, DP, DP2, OT, OT2, CT, CT2,
+
+    BAUD, TEMP, 
+    OTEMP, 
+    _LOCK, 
+    DIG0, 
+    DIG1, 
+    ANA0, ANA1, THERM, VBUS, IMOTOR,
+    VLOGIC, ILOGIC,
+    
+    GRPA, GRPB, GRPC, PIDX, ZERO,
+    
+    SG, 
+    HSG, 
+    LSG, 
+    _DS, 
+    IVEL, 
+    IOFF, 
+    MPE, EN, TSTOP, KP, KD, KI, SAMPLE, ACCEL,
+    TENSION,
+    
+    UNITS,
+    RATIO,
+    
+    LOG,
+    DUMP,
+    LOG1,
+    LOG2,
+    LOG3,
+    LOG4,
+    
+    GAIN1,
+    GAIN2,
+    GAIN3,
+    OFFSET1,
+    OFFSET2,
+    OFFSET3,
+    
+    PEN,
+    SAFE,
+    SAVE,
+    LOAD,
+    DEF,
+    
+    VL1,
+    VL2,
+    TL1,
+    TL2,
+    VOLTL1,
+    VOLTL2,
+    VOLTH1,
+    VOLTH2,
+    MAXPWR,
+    PWR,
+    IFAULT,
+    
+    PROP_END
+};
+#else //BTOLDCONFIG
 enum {
 	VERS,
 	ROLE,
@@ -228,7 +293,7 @@ enum {
 	
 	PROP_END
 };
-
+#endif
 
 enum bus_status_enum{
     BUS_ERROR = -1,

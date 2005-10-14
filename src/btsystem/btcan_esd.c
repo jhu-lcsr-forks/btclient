@@ -17,13 +17,6 @@
  *                                                                      *
  *======================================================================*/
 
-/** \file btcan.c
-    Handles all communication with the robot over the CAN bus.
-    Requires library files "libcan.a" and "libmitop.a".
-    
- */
-
-
 /*==============================*
  * INCLUDES - System Files      *
  *==============================*/
@@ -76,6 +69,122 @@ HANDLE              canDev[MAX_BUS];
 pthread_mutex_t     commMutex;
 
 /* keyword, index, readFunction, writeFunction, defaultVal, type */
+#ifdef BTOLDCONFIG
+const int dataType[]={
+     /* "VERS",    VERS,*/     L16 ,
+     /* "ROLE",    ROLE,*/     L16 | EE ,
+     /* "SN",      SN, */      L16 | EE ,
+     /* "ID",      ID,*/       L16 | EE ,
+     /* "ERR",     ERR,*/      L16 ,
+     /* "STAT",    STAT,*/     L16 ,
+     /* "ADDR",    ADDR,*/     L16 ,
+     /* "VALUE",   VALUE,*/    L16 ,
+     /* "MODE",    MODE,*/     L16 ,
+     /* "D",       D,*/        L16 ,
+     /* "TORQ",    TORQ,*/     L16 ,
+     /* "P",       P,*/        L16 ,
+     /* "V",       V,*/        L16 ,
+     /* "E",       E,*/        L16 ,
+     /* "B",       B,*/        L16 ,
+     /* "MD",      MD,*/       L16 ,
+     /* "MT",      MT, */      L16 | EE ,
+     /* "MV",      MV, */      L16 | EE ,
+     /* "MCV",     MCV,*/      L16 | EE ,
+     /* "MOV",     MOV,*/      L16 | EE ,
+     /* "MOFST",   MOFST,*/    L16 | EE ,
+     /* "IOFST",   IOFST,*/    L16 | EE ,
+     /* "PTEMP",   PTEMP,*/    L16 | EE ,
+     /* "UPSECS",  UPSECS,*/   L16 | EE ,
+     /* "OD",      OD, */      L16 | EE ,
+     /* "MDS",     MDS,*/      L16 | EE ,
+    
+     /* "AP",      AP, */      L32 | EE ,
+     /* "AP2",     AP2  */     L16 ,
+     /* "MECH",    MECH,*/     L32 ,
+     /* "MECH2",   MECH2,*/    L16 ,
+     /* "CTS",     CTS,*/      L32 | EE ,
+     /* "CTS2",    CTS2,*/     L16 ,
+     /* "DP",      DP, */      L32 | EE ,
+     /* "DP2",     DP2  */     L16 ,
+     /* "OT",      OT, */      L32 | EE ,
+     /* "OT2",     OT2  */     L16 ,
+     /* "CT",      CT, */      L32 | EE ,
+     /* "CT2",     CT2  */     L16 ,
+    
+     /* "BAUD",    BAUD,*/     L16 ,
+     /* "TEMP",    TEMP,*/     L16 ,
+     /* "OTEMP",   OTEMP,*/    L16 ,
+     /* "LOCK",    LOCK,*/     L16 ,
+     /* "DIG0",    DIG0,*/     L16 ,
+     /* "DIG1",    DIG1,*/     L16 ,
+     /* "ANA0",    ANA0,*/     L16 ,
+     /* "ANA1",    ANA1,*/     L16 ,
+     /* "THERM",   THERM,*/    L16 ,
+     /* "VBUS",    VBUS,*/     L16 ,
+     /* "IMOTOR",  IMOTOR,*/   L16 ,
+     /* "VLOGIC",  VLOGIC,*/   L16 ,
+     /* "ILOGIC",  ILOGIC,*/   L16 ,
+    
+     /* "GRPA",    GRPA,*/     L16 | EE ,
+     /* "GRPB",    GRPB,*/     L16 | EE ,
+     /* "GRPC",    GRPC,*/     L16 | EE ,
+     /* "PIDX",    PIDX,*/     L16 | EE ,
+     /* "ZERO",    ZERO,*/     L16 ,
+    
+     /* "SG",      SG,*/       L16 ,
+     /* "HSG",     HSG,*/      L16 | EE ,
+     /* "LSG",     LSG,*/      L16 | EE ,
+     /* "DS",      DS,*/       L16 | EE ,
+     /* "IVEL",    IVEL,*/     L16 | EE ,
+     /* "IOFF",    IOFF,*/     L16 | EE ,
+     /* "MPE",     MPE,*/      L16 | EE ,
+     /* "EN",      EN, */      L16 ,
+     /* "TSTOP",   TSTOP,*/    L16 | EE ,
+     /* "KP",      KP,*/       L16 | EE ,
+     /* "KD",      KD,*/       L16 | EE ,
+     /* "KI",      KI, */      L16 | EE ,
+     /* "SAMPLE",  SAMPLE,*/   L16 | EE ,
+     /* "ACCEL",   ACCEL,*/    L16 | EE ,
+     /* "TENSION", TENSION,*/  L16 ,
+     
+     /* "UNITS",   UNITS,*/    L16 | EE ,
+     /* "RATIO",   RATIO,*/    L16 | EE ,
+    
+     /* "LOG",     LOG,*/      L16 ,
+     /* "DUMP",    DUMP,*/     L16 ,
+     /* "LOG1",    LOG1,*/     L16 ,
+     /* "LOG2",    LOG2,*/     L16 ,
+     /* "LOG3",    LOG3,*/     L16 ,
+     /* "LOG4",    LOG4,*/     L16 ,
+    
+     /* "GAIN1",   GAIN1,*/    L16 | EE ,
+     /* "GAIN2",   GAIN2,*/    L16 | EE ,
+     /* "GAIN3",   GAIN3,*/    L16 | EE ,
+     /* "OFFSET1", OFFSET1,*/  L16 | EE ,
+     /* "OFFSET2", OFFSET2,*/  L16 | EE ,
+     /* "OFFSET3", OFFSET3,*/  L16 | EE ,
+    
+     /* "PEN",     PEN,*/      L16 ,
+     /* "SAFE",    SAFE,*/     L16 ,
+     /* "SAVE",    SAVE,*/     L16 ,
+     /* "LOAD",    LOAD,*/     L16 ,
+     /* "DEF",     DEF,*/      L16 ,
+    
+     /* "VL1",     VL1,*/      L16 ,
+     /* "VL2",     VL2,*/      L16 ,
+     /* "TL1",     TL1,*/      L16 ,
+     /* "TL2",     TL2,*/      L16 ,
+     /* "VOLTL1",  VOLTL1,*/   L16 ,
+     /* "VOLTL2",  VOLTL2,*/   L16 ,
+     /* "VOLTH1",  VOLTH1,*/   L16 ,
+     /* "VOLTH2",  VOLTH2,*/   L16 ,
+     /* "MAXPWR",  MAXPWR,*/   L16 ,
+     /* "PWR",     PWR,*/      L16 ,
+     /* "IFAULT",  IFAULT,*/   L16 
+};
+#else //BTOLDCONFIG
+
+
 const int dataType[]={
      /* VERS */ L16 ,
      /* ROLE */ L16 | EE ,
@@ -103,6 +212,7 @@ const int dataType[]={
      /* UPSECS */ L16 | EE ,
      /* OD */ L16 | EE ,
      /* MDS */ L16 | EE ,
+     
      /* AP */ L32 | EE ,
      /* AP2 */ L16 ,
      /* MECH */ L32 ,
@@ -115,6 +225,7 @@ const int dataType[]={
      /* OT2 */ L16 ,
      /* CT */ L32 | EE ,
      /* CT2 */ L16 ,
+     
      /* BAUD */ L16 ,
      /* TEMP */ L16 ,
      /* OTEMP */ L16 ,
@@ -128,12 +239,14 @@ const int dataType[]={
      /* IMOTOR */ L16 ,
      /* VLOGIC */ L16 ,
      /* ILOGIC */ L16 ,
+     
      /* GRPA */ L16 | EE ,
      /* GRPB */ L16 | EE ,
      /* GRPC */ L16 | EE ,
      /* PIDX */ L16 | EE ,
      /* JIDX */ L16 | EE ,
      /* ZERO */ L16 ,
+     
      /* IPNM */ L16 | EE ,
      /* SG */ L16 ,
      /* HSG */ L16 | EE ,
@@ -187,7 +300,7 @@ const int dataType[]={
      /* TENST */ L16 | EE ,
      /* TENSO */ L16 | EE 
 };
-
+#endif //BTOLDCONFIG
 /*==============================*
  * PRIVATE Function Prototypes  *
  *==============================*/
@@ -639,7 +752,7 @@ int compile(
 
 /*======================================================================*
  *                                                                      *
- *          Copyright (c) 2003, 2004 Barrett Technology, Inc.           *
+ *      Copyright (c) 2003, 2004, 2005 Barrett Technology, Inc.         *
  *                        625 Mount Auburn St                           *
  *                    Cambridge, MA  02138,  USA                        *
  *                                                                      *
