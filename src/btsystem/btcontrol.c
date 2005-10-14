@@ -613,9 +613,10 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
 
   dt = t2 - t1;
   dq = q2 - q1;
-
+#if 0
   syslog(LOG_ERR, "CalcSeg: in: q1: %f q2: %f  t1: %f t2: %f",q1,q2,t1,t2);
   syslog(LOG_ERR, "CalcSeg: in: vprev: %f vnext: %f  acc: %f end: %d",v_prev,v_next,seg_acc,end);
+#endif
   use_acc = fabs(seg_acc); //Force to positive
   
   if (end == 0) //Starting segment (Accelerate to the next point)
@@ -636,6 +637,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
     dt_vel = dt - dt_acc1 - dt_acc2/2.0;
     if (dt_vel < 0.0){
       dt_vel = 0.0; 
+      
       syslog(LOG_ERR, "CalcSegment: Init Acc: Not enough acceleration!");
       syslog(LOG_ERR, "CalcSegment: Init Acc: dt:%f dt_acc1:%f 0.5*dt_acc2:%f",dt,dt_acc1,dt_acc2/2.0);
     }
@@ -667,8 +669,10 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
     dt_vel = dt - dt_acc2 - dt_acc1/2;
      if (dt_vel < 0.0){
       dt_vel = 0.0; 
+
       syslog(LOG_ERR, "CalcSegment: Final Acc: Not enough acceleration!");
       syslog(LOG_ERR, "CalcSegment: Final Acc: dt:%f dt_acc1:%f 0.5*dt_acc2:%f",dt,dt_acc1,dt_acc2/2.0);
+
     }
   }
 
@@ -757,6 +761,7 @@ via_trj_array* new_vta(int num_columns,int max_rows)
     SetAcc_vt(&(vt->trj[cnt]),1.0);
     vt->trj[cnt].vr = vr;
   }
+  vt->vel = 0.5;
   return vt;
 }
 /** Free memory allocated during new_vr()
@@ -806,10 +811,30 @@ may move the edit point to the end.
 */
 int ins_point_vta(via_trj_array* vt, vect_n *pt)
 {
+  int i;
+  vectray *vr;
+  btreal t,d;
   LOCAL_VN(tmp,len_vn(pt)+1);
-  setrange_vn(tmp,pt,1,0,len_vn(pt));
+  LOCAL_VN(last,len_vn(pt));
+
+  
   if (vt == NULL) return -1;
-  else return insert_vr(vt->trj[0].vr,tmp);
+  else {
+    vr = vt->trj[0].vr;
+    setrange_vn(tmp,pt,1,0,len_vn(pt));
+    setval_vn(tmp,0,0.0);
+    i = edit_point_vr(vr);
+    if (i > 0){
+      setrange_vn(last,idx_vr(vr,i-1),0,1,len_vn(pt));
+      d = norm_vn(sub_vn(pt,last));
+      t = getval_vn(idx_vr(vr,i-1),0);
+      if (vt->vel > 0.0)
+        setval_vn(tmp,0,t + d/vt->vel);
+      else
+        setval_vn(tmp,0,t + d/0.1);
+    }
+    return insert_vr(vt->trj[0].vr,tmp);
+  }
 }
 /** Delete the location at the edit point from the
 teach & play list.
@@ -840,8 +865,12 @@ vectray* get_vr_vta(via_trj_array* vt)
   else return vt->trj[0].vr;
 }
 
-/** Adjust all the time points in a via point trajectory array
-based on input velocity.
+/** Set the time values in a trajectory.
+
+Adjust all the time points in a via point trajectory array
+based on input velocity. Also sets the corner acceleration
+
+
 \bug Need to include acceleration in the calculation.
 */
 int scale_vta(via_trj_array* vt,double vel,double acc)

@@ -274,6 +274,7 @@ typedef struct
   int mode; //!< 0:idle, 1:torque, 2:pos 3:pos + trj
   vect_n* t; //!< Internal buffer for torques
   vect_n* q,*dq,*ddq,*qref; //!< Internal buffer for position and reference position
+
   double *dt;
   double local_dt; //for time warping...
   double dt_scale;

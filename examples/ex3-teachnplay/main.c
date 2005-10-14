@@ -12,9 +12,11 @@
  *                                                                      *
  *======================================================================*/
 
-/** \file main.c
-    An interactive teach and play demo.
+/** \file ex3.c
+    \brief An interactive teach and play demo.
 
+    Read the code to see what you can do with it.
+    
 This program allows a user to test and interact with the teach and play
 features of the WAM library.
 
@@ -85,7 +87,7 @@ wam_struct *wam;
 
 vectray *vr;
 via_trj_array *vta = NULL,*vtb = NULL;
-
+int cteach = 0;
 extern int isZeroed;
 static RT_TASK *mainTask;
 btthread disp_thd,wam_thd;
@@ -184,7 +186,7 @@ int main(int argc, char **argv)
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
 
   const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
-
+  SetWAMpos(wv);
   //prep modes
   active_bts = &(wam->Jsc);
   setmode_bts(active_bts,SCMODE_IDLE);
@@ -309,25 +311,27 @@ void RenderMAIN_SCREEN()
 
 
   if (active_bts == &(wam->Jsc))
-    mvprintw(line , 0, "Mode: Joint Space");
+    mvprintw(line , 0, "Mode: Joint Space    ");
   else if (active_bts == &(wam->Csc))
     mvprintw(line , 0, "Mode: Cartesian Space");
   else
-    mvprintw(line , 0, "Mode: Undefined!!!");
+    mvprintw(line , 0, "Mode: Undefined!!!   ");
 
-  if (vta == NULL)
-    mvprintw(line , 50, "Trajectory: NONE");
+  if (cteach)
+    mvprintw(line , 50, "Teaching continuous trajectoy");
+  else if (vta == NULL)
+    mvprintw(line , 50, "Trajectory: NONE             ");
   else
     mvprintw(line , 50, "Trajectory: %s",active_file);
   
   if (getmode_bts(active_bts)==SCMODE_IDLE)
-    mvprintw(line , 24, "Constraint: IDLE");
+    mvprintw(line , 24, "Constraint: IDLE      ");
   else if (getmode_bts(active_bts)==SCMODE_POS)
-    mvprintw(line , 24, "Constraint: POSITION");
+    mvprintw(line , 24, "Constraint: POSITION  ");
   else if (getmode_bts(active_bts)==SCMODE_TRJ)
     mvprintw(line , 24, "Constraint: TRAJECTORY");
   else
-    mvprintw(line , 24, "Constraint: UNDEFINED!!!");
+    mvprintw(line , 24, "Constraint: UNDEFINED!");
 
   ++line;++line;
 
@@ -477,7 +481,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       
     }
     syslog(LOG_ERR,"Done with prep");
-    //wam->Jsc.trj->state = BTTRAJ_READY;
+    
     if (elapsed < 100)
       start_trj_bts(active_bts);
     else {
@@ -491,11 +495,17 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
   case 'Y': //Start continuos teach
     StartContinuousTeach(1,50,"teachpath");
+    cteach = 1;
     break;
   case 'y': //Stop continuos teach
     StopContinuousTeach();
     DecodeDL("teachpath","teach.csv",0);
-
+    cteach = 0;
+    if (vta != NULL)
+        destroy_vta(&vta); //empty out the data if it was full
+    strcpy(active_file,"teach.csv");
+    vta = read_file_vta(active_file,20);
+    register_vta(active_bts,vta);
     break;
     //Free mode:
   case 'l':

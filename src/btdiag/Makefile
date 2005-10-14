@@ -1,5 +1,7 @@
 OBJS = main.o
+OBJS2 = btdiag.o
 TARG = btdiag
+TARG = btdiag2
 CC = gcc 
 PATH_INCLUDE = -I/usr/realtime/include -I../../include
 
@@ -14,6 +16,9 @@ default: btdiag
 
 btdiag: ${OBJS}
 	$(CC) -o ${TARG} ${OBJS} ${LDFLAGS}
+  
+btdiag2: ${OBJS2}
+	$(CC) -o ${TARG2} ${OBJS2} ${LDFLAGS}
 
 clean: 
 	rm *.o ${TARG} 
