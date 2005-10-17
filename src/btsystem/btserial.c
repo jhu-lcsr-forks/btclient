@@ -5,7 +5,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <string.h>
-#include "serial.h"
+#include "btserial.h"
 
 /** Open serial port */
 int serialOpen(PORT *port,char *portlocation)
