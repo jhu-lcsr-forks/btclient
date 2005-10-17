@@ -31,16 +31,25 @@ test_and_log() provides a shorthand to replace return variable checks.
 
 Additionally, btos.h has #defines for error checking:
 
-#ifdef BT_NULL_PTR_GUARD //bt*.c functions will check incoming object pointers
+- #if BTDEBUG (proposal for multiple levels)
+  - 1 Sanity warnings
+  - 3 Sanity checks
+  - 7 Communications layer
+  - 8 Realtime stuff
+  - 9 Math stuff (NAN, div zero)
+  - 10 Pointers & bounds
+  - 20 Rediculous verbosity
+  
+- #ifdef BT_NULL_PTR_GUARD //bt*.c functions will check incoming object pointers
 to make sure they are not NULL and error if they are.
 
-#ifdef BT_ARRAY_BOUNDS_CHECK //some sort of index sanity and bounds checking will 
+- #ifdef BT_ARRAY_BOUNDS_CHECK //some sort of index sanity and bounds checking will 
 be done on incoming functions
 
-#ifdef BT_DUMMY_PROOF //extra code will be compiled in to protect the programmer
+- #ifdef BT_DUMMY_PROOF //extra code will be compiled in to protect the programmer
 from thier own idiocy.
 
-#ifdef BT_BACKTRACE //Dump backtrace info into bterrors.txt
+- #ifdef BT_BACKTRACE //Dump backtrace info into bterrors.txt
 
     
 */ 

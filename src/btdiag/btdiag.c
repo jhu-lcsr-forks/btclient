@@ -436,16 +436,16 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
   switch (c)
   {
-  case 'x':
-  case 'X': /* eXit */
+  case 'x':  /* eXit */
+  case 'X':  /* eXit */
     done = 1;
     break;
-  case 'z': /* Send zero-position to WAM */
+  case 'z':  /* Send home-position to WAM */
     const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
     //const_vn(wv, 0.0, -2.017, 0.0, 3.14, 0.0, 0.0, 0.0); //blanklink
     SetWAMpos(wv);
     break;
-  case 'g': /* Toggle gravity compensation */
+  case 'g':  /* Set gravity compensation */
     start_entry();
     addstr("Enter scale value for gravity (1.0 = 9.8m/s^2): ");
     refresh();
@@ -454,11 +454,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     finish_entry();
     break;
 
-  case '_': /* Refresh display */
+  case '_':  /* Refresh display */
     clearScreen();
     break;
 
-  case '\t':  //Switch between jointspace and cartesian space trajectories
+  case '\t': /* Switch between jointspace and cartesian space trajectories*/
     if (vta != NULL)
       destroy_vta(&vta); //empty out the data if it was full
 
@@ -489,14 +489,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       pthread_mutex_unlock(&(disp_mutex));
     }
     break;
-  case 'p':  //Constrain / free
+  case 'p':  /* Turn on/off Constraint */
     if (getmode_bts(active_bts)!=SCMODE_IDLE)
       setmode_bts(active_bts,SCMODE_IDLE);
     else
       setmode_bts(active_bts,SCMODE_POS);
     break;
 
-  case '?':
+  case '?':  /* Play presontly loaded trajectory */
     setmode_bts(active_bts,SCMODE_TRJ);
     moveparm_bts(active_bts,vel,acc);
     prep_trj_bts(active_bts);
@@ -520,15 +520,15 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       stop_trj_bts(active_bts);
     }
     break;
-  case '/':
+  case '/':  /* Stop presontly loaded trajectory */
     stop_trj_bts(active_bts);
     break;
 
-  case '|': //Start continuos teach
+  case '|':  /* Start continuos teach */
     StartContinuousTeach(1,50,"teachpath");
     cteach = 1;
     break;
-  case '\\': //Stop continuos teach
+  case '\\': /*Stop continuos teach */
     StopContinuousTeach();
     DecodeDL("teachpath","teach.csv",0);
     cteach = 0;
@@ -539,7 +539,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     register_vta(active_bts,vta);
     break;
     //Free mode:
-  case 'l':
+  case 'l':  /* Load trajectory file */
     if(getmode_bts(active_bts)==SCMODE_IDLE)
     {
       start_entry();
@@ -554,8 +554,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       finish_entry();
     }
     break;
-    //  Save trajectory
-  case 'w':
+    
+  case 'w':  /*  Save trajectory to a file */
     if(getmode_bts(active_bts)==SCMODE_IDLE)
     {
       start_entry();
@@ -577,7 +577,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       finish_entry();
     }
     break;
-  case 'n': //New vta
+  case 'n': /* Create a new trajectory*/
     if(getmode_bts(active_bts)==SCMODE_IDLE)
     {
       start_entry();
@@ -594,13 +594,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       finish_entry();
     }
     break;
-  case 'M': //Moveto
+  case 'M':  /* Move to a location */
      start_entry();
       addstr("Enter comma seperated destination \".2,.4,...\": ");
       refresh();
       getstr( fn);
       strcat(fn,"\n");
-      syslog(LOG_ERR,"Moveto:%s",fn);
+      //syslog(LOG_ERR,"Moveto:%s",fn);
       finish_entry();
       if (getmode_bts(active_bts)!=SCMODE_TRJ){
         
@@ -613,26 +613,26 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
           syslog(LOG_ERR,"Moveto Died",fn);
       }
       break;
-    
-  case '<':
+  case 'm':  /* Move to the presently selected trajectory point*/
+  case '<':  /* Select next point in the trajectory */
     prev_point_vta(vta);
     break;
-  case '>':
+  case '>':  /* Select previous point in the trajectory */
     next_point_vta(vta);
     break;
-  case '+': //Insert point
+  case '+':  /* Insert a point in the trajectory */
     if(getmode_bts(active_bts)==SCMODE_IDLE)
     {
       ins_point_vta(vta,active_pos);
     }
     break;
-  case '-':
+  case '-':  /* Remove a point in the trajectory */
     if(getmode_bts(active_bts)==SCMODE_IDLE)
     {
       del_point_vta(vta);
     }
     break;
-  case 's': //Scale vta
+  case 's':  /* Scale the present trajectory */
     if(getmode_bts(active_bts)==SCMODE_IDLE)
     {
       start_entry();
@@ -644,7 +644,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       finish_entry();
     }
     break;
-  case 'S': //Set corner acceleration
+  case 'S':  /* Set the corner acceleration */
     if(getmode_bts(active_bts)==SCMODE_IDLE)
     {
       start_entry();

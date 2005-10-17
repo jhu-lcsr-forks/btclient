@@ -431,7 +431,10 @@ int InitializeSystem(char *fn)
 
 #endif //BTNEWCONFIG
 
-/** Figure out who is online and error gracefully if it's something other that what our config files tell us. */
+/** Figure out who is online and error gracefully if it's something other that what our config files tell us. 
+
+\todo EnumerateSystem -> btsystemSanityCheck() run if not everything is perfect
+*/
 int EnumerateSystem()
 {
   int busidx;
@@ -474,7 +477,8 @@ int EnumerateSystem()
     status_cnt = 0;
     for (cnt = 0;cnt < MAX_NODES;cnt++)
     {
-      syslog(LOG_ERR, "Status %d = %d", cnt, status[cnt]);
+      if (status[cnt] != -1)
+        syslog(LOG_ERR, "Status %d = %d", cnt, status[cnt]);
       if ((status[cnt] != STATUS_OFFLINE) && (cnt != SAFETY_MODULE))
         status_cnt++;
     }

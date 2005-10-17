@@ -377,14 +377,14 @@ int prep_trj_bts(btstatecontrol *sc)
   {
     clear_pwl(&(sc->pth));
     add_arclen_point_pwl(&(sc->pth),sc->q);
-    syslog_vn("prep start:",sc->q);
+    //syslog_vn("prep start:",sc->q);
     add_arclen_point_pwl(&(sc->pth),(*(sc->btt.reset))(&(sc->btt)));
-    syslog_vn("prep end:",idx_vr(sc->pth.vr,1));
+    //syslog_vn("prep end:",idx_vr(sc->pth.vr,1));
     
     setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
-    syslog(LOG_ERR,"prep Acc: %f Vel:%f",sc->vel, sc->acc);
+    //syslog(LOG_ERR,"prep Acc: %f Vel:%f",sc->vel, sc->acc);
     start_traptrj(&(sc->trj), arclength_pwl(&(sc->pth)));
-    syslog(LOG_ERR,"prep Arclen:%f",arclength_pwl(&(sc->pth)));
+    //syslog(LOG_ERR,"prep Arclen:%f",arclength_pwl(&(sc->pth)));
     sc->btt.state = BTTRAJ_INPREP;
     sc->prep_only = 0;
     ret = 0;
@@ -421,7 +421,7 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
     sc->mode = SCMODE_TRJ;
     ret = 0;
 #ifdef BTDEBUG
-    syslog(LOG_ERR,"moveto_bts: vel:%f, acc:%f,len:%f",sc->vel,sc->acc,arclen);
+    //syslog(LOG_ERR,"moveto_bts: vel:%f, acc:%f,len:%f",sc->vel,sc->acc,arclen);
 #endif
   }
   else{

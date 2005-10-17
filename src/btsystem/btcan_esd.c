@@ -616,8 +616,12 @@ int getBusStatus(int bus, long *status)
     }
     
     pthread_mutex_unlock(&commMutex);
-#if BTDEBUG
-    for(id = 0; id < MAX_NODES; id++) syslog(LOG_ERR,"status[%d]=%d", id, status[id]);
+#if BTDEBUG <= 8
+    syslog(LOG_ERR,"getBusStatus: Only status != -1 is shown.);
+    for(id = 0; id < MAX_NODES; id++) {
+      if (status[id] != -1)
+        syslog(LOG_ERR,"getBusStatus: status[%d] = %d", id, status[id]);
+    }
 #endif
 }
 
