@@ -11,6 +11,7 @@
 int serialOpen(PORT *port,char *portlocation)
 { 
     // Open port for reading
+//	port->ifd = open(port, 0_RDRW | 0_NOCTTY | 0_NONBLOCK);
     if ( ( port->isp=fopen(portlocation,"r") ) != NULL ) 
     { 
         port->ifd=fileno(port->isp); 
@@ -74,12 +75,12 @@ int serialReadLine(PORT *port, char *buf, int *lineLen, int term, long ms)
     //printf("term:%d\n",term);
     while(1)
     {
-        err = serialRead(port, buf, 255, &bytesRead);
+        err = serialRead(port, buf, 1, &bytesRead);
         //printf("bytesRead:%d\n", bytesRead);
         *lineLen += bytesRead;
         buf[bytesRead] = '\0'; // Null terminate
         //printf("serialRead:%s\n", buf);
-        if(strchr(buf,term)) // If termination character is found
+        if(*buf == term) // If termination character is found
             return(0);
         //printf(".");    
         buf += bytesRead;
@@ -170,20 +171,11 @@ int serialSetBaud(PORT *port, long baud)
             cfsetospeed(&options, B9600);
         break;
     }
-
-    /*
-     * Enable the receiver and set local mode...
-     */
-
-    options.c_cflag |= (CLOCAL | CREAD);
-    options.c_lflag &= (~ECHO);
-
-    /*
-     * Set the new options for the port...
-     */
-
-    tcsetattr(port->ifd, TCSANOW, &options);
-    tcsetattr(port->ofd, TCSANOW, &options);
+    /* * Enable the receiver and set local mode...  */ 
+    options.c_cflag |= (CLOCAL | CREAD); 
+    options.c_lflag = 0; 
     
-    return 0;
+    /* * Set the new options for the port...  */ 
+    tcsetattr(port->ifd, TCSANOW, &options); 
+    tcsetattr(port->ofd, TCSANOW, &options); return 0; 
 }
