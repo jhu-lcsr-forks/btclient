@@ -678,7 +678,7 @@ cancelation value will be added if it is available.
 */
 void GetPositions()
 {
-  int cnt, cnt2, idx;
+  int cnt, cnt2, idx, err;
   double tmp;
   long int data[MAX_NODES];
 
@@ -697,8 +697,10 @@ void GetPositions()
   //for each bus do a broadcast get position...
   for (cnt = 0; cnt < num_buses; cnt++)
   {
-    getPositions(cnt, 0, buses[cnt].num_pucks, data);
-
+    err = getPositions(cnt, 0, buses[cnt].num_pucks, data);
+    if(err){ // Problem reading positions
+	    syslog(LOG_ERR, "getPositions err = %d", err);
+    }
     //for each puck on this bus, get your position from the return array
     for (cnt2 = 0; cnt2 < buses[cnt].num_pucks; cnt2++)
     {

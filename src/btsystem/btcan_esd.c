@@ -489,7 +489,8 @@ int getPositions(int bus, int group, int howMany, long *pos)
             }
         }
         else // Timeout or other error
-        {
+        { 
+            pthread_mutex_unlock(&commMutex);
             return(err);   
         }
     }
@@ -516,9 +517,10 @@ int setProperty(int bus, int id, int property, int verify, long value)
 
     // Send the packet
     pthread_mutex_lock(&commMutex);
-    err = canSendMsg(bus, NODE2ADDR(id), len, data, TRUE);
+    err = canSendMsg(bus, (id & 0x0400) ? id : NODE2ADDR(id), len, data, TRUE);
     pthread_mutex_unlock(&commMutex);
     
+    // BUG: This will not verify properties from groups of pucks
     if(verify)
     {
         // Get the new value of the property
