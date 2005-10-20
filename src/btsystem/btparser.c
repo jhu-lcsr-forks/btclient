@@ -261,7 +261,7 @@ int parseGetVal(int type, char *find, void *loc)
 			*s = '\0'; // Terminate the string
 		break;
 		case VECTOR:
-		
+		    strto_vn((vect_n *)loc, val, "<>")
 		break;
 		default:
 			return(1);
