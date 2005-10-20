@@ -289,7 +289,7 @@ typedef struct
   btpath_pwl pth;
   bttraptrj trj;
   btreal vel,acc;
-  int prep_only;
+  int prep_only,loop_trj;
   btmutex mutex;
 }btstatecontrol;
 void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq, 

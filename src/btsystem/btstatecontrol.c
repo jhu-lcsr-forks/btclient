@@ -217,6 +217,7 @@ int init_bts(btstatecontrol *sc)
   sc->btt.dat = NULL;
   sc->btp.dat = NULL;
   sc->prep_only = 0;
+  sc->loop_trj = 0;
   sc->vel = 0.25; //Safe value for units of radians and meters
   sc->acc = 0.25;
   sc->local_dt = 0.0;
@@ -246,7 +247,22 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
     }
     set_vn(sc->qref, getval_pwl(&(sc->pth),evaluate_traptrj(&(sc->trj),*(sc->dt))));
   }
-
+  else if (state == BTTRAJ_DONE && sc->loop_trj)
+  {
+    
+    clear_pwl(&(sc->pth));
+    add_arclen_point_pwl(&(sc->pth),sc->q);
+    //syslog_vn("prep start:",sc->q);
+    add_arclen_point_pwl(&(sc->pth),(*(sc->btt.reset))(&(sc->btt)));
+    //syslog_vn("prep end:",idx_vr(sc->pth.vr,1));
+    
+    setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
+    //syslog(LOG_ERR,"prep Acc: %f Vel:%f",sc->vel, sc->acc);
+    start_traptrj(&(sc->trj), arclength_pwl(&(sc->pth)));
+    //syslog(LOG_ERR,"prep Arclen:%f",arclength_pwl(&(sc->pth)));
+    sc->btt.state = BTTRAJ_INPREP;
+    sc->prep_only = 0;
+  }
   else if (state == BTTRAJ_RUN || state == BTTRAJ_PAUSING || state == BTTRAJ_UNPAUSING || state == BTTRAJ_PAUSED){
     if (state == BTTRAJ_PAUSING && getstate_btramp(&(sc->ramp)) == BTRAMP_MIN) sc->btt.state = BTTRAJ_PAUSED;
     else if (state == BTTRAJ_UNPAUSING && getstate_btramp(&(sc->ramp)) == BTRAMP_MAX) sc->btt.state = BTTRAJ_RUN;
