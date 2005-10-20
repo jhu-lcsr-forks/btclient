@@ -5,7 +5,22 @@
  *  Creation Date ......29 Apr 2005
  *                                                                      *
  *  ******************************************************************  *
- *                                                                      *
+ *
+ * Copyright (C) 2005   Barrett Technology <support@barrett.com>
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation (version 2).
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA. 
+ *
  *  NOTES:
  *
  *  REVISION HISTORY:
@@ -1009,29 +1024,3 @@ void WACKYeval()
     }
 }
 
-/*======================================================================*
- *                                                                      *
- *             Copyright (c) 2003 Barrett Technology, Inc.              *
- *                        139 Main Street                               *
- *                       Kendall/MIT Square                             *
- *                  Cambridge, MA  02142-1528  USA                      *
- *                                                                      *
- *                        All rights reserved.                          *
- *                                                                      *
- *  ******************************************************************  *
- *                            DISCLAIMER                                *
- *                                                                      *
- *  This software and related documentation are provided to you on      *
- *  an as is basis and without warranty of any kind.  No warranties,    *
- *  express or implied, including, without limitation, any warranties   *
- *  of merchantability or fitness for a particular purpose are being    *
- *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
- *  Technology, Inc. be liable for any lost development expenses, lost  *
- *  lost profits, or any incidental, special, or consequential damage.  *
- *  ******************************************************************  *
- *
- * CVS info: $Id$
- * CVS automatic log (prune as desired):
- * $Log$
- *
- *======================================================================*/

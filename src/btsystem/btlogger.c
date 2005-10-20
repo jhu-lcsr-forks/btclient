@@ -6,6 +6,21 @@
  *                                                                      *
  *  ******************************************************************  *
  *                                                                      
+ * Copyright (C) 2005   Barrett Technology <support@barrett.com>
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation (version 2).
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA. 
+ *
  *  NOTES:                                                              
  *   Uses some code & concepts developed at Nortwestern University 
  *   by Traveler Hauptman                                                                      
@@ -450,22 +465,5 @@ int DecodeDL(char *infile, char *outfile, int header)
   fclose(inf);
   fclose(outf);
 }
-/*======================================================================*
- *                                                                      *
- *          Copyright (c) 2003, 2004 Barrett Technology, Inc.           *
- *                        625 Mount Auburn St                           *
- *                    Cambridge, MA  02138,  USA                        *
- *                                                                      *
- *                        All rights reserved.                          *
- *                                                                      *
- *  ******************************************************************  *
- *                            DISCLAIMER                                *
- *                                                                      *
- *  This software and related documentation are provided to you on      *
- *  an as is basis and without warranty of any kind.  No warranties,    *
- *  express or implied, including, without limitation, any warranties   *
- *  of merchantability or fitness for a particular purpose are being    *
- *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
- *  Technology, Inc. be liable for any lost development expenses, lost  *
- *  lost profits, or any incidental, special, or consequential damage.  *
- *======================================================================*/
+
+
