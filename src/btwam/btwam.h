@@ -175,45 +175,64 @@ typedef struct btwam_struct{
   btreal teach_time;
 }wam_struct;
 
+
+
 /**  Final API **/
 
-btreal getGcomp();
-void setGcomp(btreal scale);
+btreal GetGravityComp(wam_struct* wam);
+void SetGravityComp(wam_struct* wam,btreal scale);
 int BlankWAMcallback(struct btwam_struct *wam);
-void registerWAMcallback(void *func);
+void registerWAMcallback(wam_struct* wam,void *func);
 
-/** Old API **/
+/**************************************/
+bus_struct* bs ReadSystemFromConfig(char *wamfile);
+int DiscoverWAM(bus_struct* bs);
+/**  */
+wam_struct* OpenWAM(char *wamfile,bus_struct* bs); //NULL -> wamConfig.txt
+void CloseWAM(wam_struct* wam); //Cleanup
 
-int MotorID_From_ActIdx(int idx);
+void DefineWAMpos(vect_n *wv);/**\bug Change to DefineWAMpos()*/
+SetCartesianSpace(wam_struct* wam);
+SetJointSpace(wam_struct* wam);
 
-wam_struct * GetWAM(void);
-
-int InitWAM(char *wamfile);
-void CloseWAM();
-void SetWAMpos(vect_n *wv);/**\bug Change to DefineWAMpos()*/
-
-void WAMControlThread(void *data);
-
-
-
-
-void getLagrangian4(double *A, double *B, double *C, double *D);
+SetPositionConstraint(wam_struct* wam,int onoff);
 
 
-void MoveWAM(vect_n *pos); /** \bug depreciated: use moveto_bts() */
-void MovePropsWAM(vect_n *vel, vect_n *acc);/** \bug depreciated: use moveprops_bts() */
-void CartesianMoveWAM(vect_n *pos); /** \bug depreciated: use moveto_bts() */
-void CartesianMovePropsWAM(btreal vel, btreal acc); /** \bug depreciated: use moveprops_bts() */
+/**
+  Return immediadely
+  
+  1. Save constraint state
+  2. Enable position/trajectory constraint
+  3. Begin move 
+  return
 
+  Monitor move state
+    When move is done, or aborted, restore constraint state
+
+  
+*/
+int MoveWAM(wam_struct* wam,vect_n * dest);
+MoveSetup(wam_struct* wam,btreal vel,btreal acc);
+int MoveIsDone(wam_struct* wam);
+MoveStop(wam_struct* wam);
+
+//MovePause(wam_struct* wam);
+//MoveContinue(wam_struct* wam);
+
+GetTime(); //Wrapper for rt_get_cpu_time_ns()
+GetElapsedTime(); //Static time variable
+
+AddEndpointForce(wam_struct* wam,vect_n *force); //Cartesian only
+
+void WAMControlThread(void *data); //data points to wam_struct* wam
 
 // Continuous Teach & Play Recording
 void StartContinuousTeach(int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
 void StopContinuousTeach(); 
-
 void ServiceContinuousTeach();
-
 ct_traj* LoadContinuousTeach(char* filename); //allocate and return vectray if successful
 
+/******************************************/
 
 
 #endif /*_BTWAM_H*/
