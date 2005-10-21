@@ -518,6 +518,9 @@ BTINLINE btreal  dot_vn(vect_n* a, vect_n* b)
     res += a->q[cnt] * b->q[cnt];
   return res;
 }
+
+
+
 /** Vector Norm
  
 ret = sqrt(dot_vn(a,b));
@@ -531,6 +534,22 @@ BTINLINE btreal  norm_vn(vect_n* a) //euclidian norm
     res += a->q[cnt] * a->q[cnt];
   return sqrt(res);
 }
+
+/** Angle between vectors 
+
+Cos(theta) = a dot b / (norm(a)*norm(b)
+*/
+BTINLINE btreal  angle_vn(vect_n* a,vect_n* b)
+{
+  btreal den;
+  
+  den = norm_vn(a) * norm_vn(b);
+  if (den > PRACTICALLY_ZERO){
+    return acos(dot_vn(a,b)/den);
+  }
+  else return acos(0.0);
+}
+
 /** Unit Vector
  
 ret = a/norm_vn(a);
@@ -742,7 +761,26 @@ char* sprint_csv_vn(char *dest,vect_n* src)
   }
   return dest;
 }
+/** Print vect_n to a string buffer suitable for insertion into gnu plot
+ 
+\code
+ 1.2 2.4 5.3
+\endcode
 
+see: sprint_vn()
+*/
+char* sprint_plt_vn(char *dest,vect_n* src)
+{
+  int i,j;
+  if (btptr_ok(src,"sprint_cvs_vn"))
+  {
+    dest[0] = 0;
+    for(j = 0;j<src->n;j++)
+      sprintf(dest+strlen(dest)," %8.4f",src->q[j]);
+    dest[strlen(dest)-1] = 0;
+  }
+  return dest;
+}
 
 /** Counts number of double values in string to be parsed.
 The string must be in comma delimited format. It ends with the
@@ -3067,6 +3105,37 @@ void test_filter_vn()
   }
 
 }
+btreal max_bt(btreal x,btreal y)
+{
+  if (x > y) return x;
+  else return y;
+  
+}
+btreal min_bt(btreal x,btreal y)
+{
+  if (x < y) return x;
+  else return y;
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,5 +1,11 @@
 
 #include "btseg.h"
+#include <stdio.h>
+
+void dump_para(parabolic *p,FILE *out)
+{
+  fprintf(out,"tf: %f, sf: %f, spf: %f, sppf: %f\n",p->tf,p->sf,p->spf,p->sppf);
+}
 
 btreal sp_of_t_para(parabolic *p, btreal t)
 {
@@ -118,7 +124,9 @@ btreal add_bseg_pa(pararray* pa,btreal t0,btreal s0,btreal sf,btreal sp0,btreal 
     }
     pa->pa[pa->cnt].next = NULL;
   }
+  dump_para(&(pa->pa[pa->cnt]),stdout);
   pa->cnt++;
+  
   return ret;
 }
 
@@ -143,41 +151,41 @@ pararray_vn* new_pavn(int max,int elements)
   mem = btmalloc(sizeof(pararray_vn) + sizeof(pararray*) * elements);
   pavn = (pararray_vn*)mem;
   pavn->pa = (pararray**)(mem + sizeof(pararray_vn));
-  pavn->element = elements;
+  pavn->elements = elements;
   for (cnt = 0; cnt < elements; cnt ++)
     pavn->pa[cnt] = new_pa(max);
   pavn->result = new_vn(elements);
   return pavn;
 }
-void clear_pavn(pararray* pavn)
+void clear_pavn(pararray_vn* pavn)
 {
   int cnt;
   for (cnt = 0;cnt< pavn->elements; cnt ++)
     clear_pa(pavn->pa[cnt]);
   
 }
-vect_n*  add_bseg_pavn(pararray* pavn,vect_n* t0,vect_n* s0,vect_n* sf,vect_n* sp0,vect_n* spf)
+vect_n*  add_bseg_pavn(pararray_vn* pavn,vect_n* t0,vect_n* s0,vect_n* sf,vect_n* sp0,vect_n* spf)
 {
   int cnt;
   btreal ret;
   for (cnt = 0;cnt< pavn->elements; cnt ++)
-    setval(pavn->result,cnt,add_bseg_pa(pavn->pa[cnt],getval_vn(t0,cnt),getval_vn(s0,cnt),getval_vn(sf,cnt),getval_vn(sp0,cnt),getval_vn(spf,cnt)));
+    setval_vn(pavn->result,cnt,add_bseg_pa(pavn->pa[cnt],getval_vn(t0,cnt),getval_vn(s0,cnt),getval_vn(sf,cnt),getval_vn(sp0,cnt),getval_vn(spf,cnt)));
   return pavn->result;
 }
-vect_n*  reset_pavn(pararray* pavn)
+vect_n*  reset_pavn(pararray_vn* pavn)
 {
   int cnt;
   btreal ret;
   for (cnt = 0;cnt< pavn->elements; cnt ++)
-    setval(pavn->result,cnt,reset_pa(pavn->pa[cnt]));
+    setval_vn(pavn->result,cnt,reset_pa(pavn->pa[cnt]));
   return pavn->result;
 }
-vect_n* eval_pavn(pararray* pavn,btreal t)
+vect_n* eval_pavn(pararray_vn* pavn,btreal t)
 {
   int cnt;
   btreal ret;
   for (cnt = 0;cnt< pavn->elements; cnt ++)
-    setval(pavn->result,cnt,reset_pa(pavn->pa[cnt],t));
+    setval_vn(pavn->result,cnt,eval_pa(pavn->pa[cnt],t));
   return pavn->result;
 }
 /**
@@ -191,7 +199,7 @@ pararray_vn* vr2pararray(vectray* vr,btreal acc)
   pararray_vn* pavn;
   int cnt,idx;
   btreal t1,t2,t3,x1,x2,x3;
-  btreal v1,v3,tacc,t1p2,t2p3,tmax;
+  btreal v1,v2,v3,tacc,t1p2,t2p3,tmax;
   btreal tf,a,s0,sf;
   btreal sv0,svf,sa0,saf;
   btreal s0_prev,tf_prev;
@@ -201,14 +209,16 @@ pararray_vn* vr2pararray(vectray* vr,btreal acc)
   //new pararray of size (Viapoints - 1)*2 + 1
   pavn = new_pavn(2*numrows_vr(vr)-1+5,numelements_vr(vr)-1);
   
-  for (cnt = 1;cnt < pavn->elements;cnt ++){
-    t = 0.0;
+  
+  tmax = 0;
+  for (cnt = 0;cnt < pavn->elements;cnt ++){
+
     /* First acceleration segment */
-    t1 = getval(idx_vr(vr,0),0);
-    t2 = getval(idx_vr(vr,1),0);
-    x1 = getval(idx_vr(vr,0),cnt);
-    x2 = getval(idx_vr(vr,1),cnt);    
-    
+    t1 = getval_vn(idx_vr(vr,0),0);
+    t2 = getval_vn(idx_vr(vr,1),0);
+    x1 = getval_vn(idx_vr(vr,0),cnt+1);
+    x2 = getval_vn(idx_vr(vr,1),cnt+1);    
+    printf("cnt %d, t1: %f, t2: %f, x1: %f, x2: %f\n",cnt,t1,t2,x1,x2);
     dt = t2-t1;
     dx = x2-x1;
     v1 = 0.0;
@@ -218,40 +228,43 @@ pararray_vn* vr2pararray(vectray* vr,btreal acc)
     sa0 = x1;
     saf = x1 + v2*tacc;
     tf_prev = add_bseg_pa(pavn->pa[cnt],0.0,sa0,saf,v1,v2);  //acc seg starting at time 0.0
-    
+    printf(" tf_prev: %f\n",tf_prev);
     for(idx = 1; idx < numrows_vr(vr)-1; idx++){
       /* Extract info */
-      t1 = getval(idx_vr(vr,idx-1),0);
-      t2 = getval(idx_vr(vr,idx),0);
-      t3 = getval(idx_vr(vr,idx+1),0);
-      x1 = getval(idx_vr(vr,idx-1),cnt);
-      x2 = getval(idx_vr(vr,idx),cnt);
-      x3 = getval(idx_vr(vr,idx+1),cnt);
-      
+      t1 = getval_vn(idx_vr(vr,idx-1),0);
+      t2 = getval_vn(idx_vr(vr,idx),0);
+      t3 = getval_vn(idx_vr(vr,idx+1),0);
+      x1 = getval_vn(idx_vr(vr,idx-1),cnt+1);
+      x2 = getval_vn(idx_vr(vr,idx),cnt+1);
+      x3 = getval_vn(idx_vr(vr,idx+1),cnt+1);
+      printf("idx: %d, t1: %f, t2: %f, x1: %f, x2: %f\n",idx,t1,t2,x1,x2);
       /* Calc some useful values */
       v1 = (x2-x1)/(t2-t1);
       v2 = (x3-x2)/(t3-t2);
       t1p2 = (t1 + t2)/2;
       t2p3 = (t2 + t3)/2;
-      
       /* Shrink acceleration if necessary */
       tmax = min_bt(t2-t1p2,t2p3-t2);
       //vf = v0 + at => t = (vf-v0)/a
-      tacc = (v2-v1)/acc;
+      tacc = fabs(v2-v1)/acc;
       tacc = min_bt(tacc,tmax); //
       
       /* Calc : tf_prev & saf carry history from prev loops */
-      sa0 = x2 - v1*(tacc/2); //acc start pos
+      sa0 = x2 - v1*(tacc/2); //acc start pos 
+      printf(" tf_prev: %f, saf: %f, sa0: %f, v1: %f, tacc: %f\n",tf_prev,saf,sa0,v1,tacc);
       tf_prev = add_bseg_pa(pavn->pa[cnt],tf_prev,saf,sa0,v1,v1); //velocity seg
+     
       saf = x2 + v2*(tacc/2); //acc end pos
+      printf(" tf_prev: %f, saf: %f, sa0: %f, v1: %f, v2: %f\n",tf_prev,saf,sa0,v1,v2);
       tf_prev = add_bseg_pa(pavn->pa[cnt],tf_prev,sa0,saf,v1,v2);  //acc seg
+      
     }
     printf("vr%d idx %d\n",numrows_vr(vr),idx);
     /* First acceleration segment */
-    t1 = getval(idx_vr(vr,idx),0);
-    t2 = getval(idx_vr(vr,idx+1),0);
-    x1 = getval(idx_vr(vr,idx),cnt);
-    x2 = getval(idx_vr(vr,idx+1),cnt);    
+    t1 = getval_vn(idx_vr(vr,idx-1),0);
+    t2 = getval_vn(idx_vr(vr,idx),0);
+    x1 = getval_vn(idx_vr(vr,idx-1),cnt+1);
+    x2 = getval_vn(idx_vr(vr,idx),cnt+1);    
     
     dt = t2-t1;
     dx = x2-x1;
@@ -270,7 +283,7 @@ pararray_vn* vr2pararray(vectray* vr,btreal acc)
   
   
   
-  
+  return pavn;
 }
 
 int main()
@@ -279,10 +292,15 @@ int main()
   char buf[250];
   int cnt;
   pararray *pb;
+  pararray_vn *pvn;
+  vectray *vr;
   btreal t,s;
   pb = new_pa(10);
   s = 0.0;
 
+  read_csv_file_vr("t2",&vr);
+  write_csv_file_vr("t3",vr);
+  pvn = vr2pararray(vr,1);
   out = fopen("curve.csv","w");
   s = 0;
 
@@ -293,11 +311,14 @@ int main()
   t = add_bseg_pa(pb,t,20.0,0.0,-5.0,2.0);
   printf("Tf: %f  \n",t);
   reset_pa(pb);
+  reset_pavn(pvn);
+  t = 12;
   for(cnt = 0;cnt < 51;cnt++){
     
     //set_vn(res,calc_cseg(&t,s));
     s+=t/50;
-    fprintf(out,"%f %f\n",s,eval_pa(pb,s));
+    fprintf(out,"%f %s\n",s,sprint_plt_vn(buf,eval_pavn(pvn,s)));
+    //fprintf(out,"%f %f\n",s,eval_pa(pb,s));
     //fprintf(out,"%f, %f\n",s,calc_tseg(&ms,s));
   }
   

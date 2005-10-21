@@ -231,7 +231,7 @@ void reset_vn(vect_n* src);
 //@}
 /** @name vect_n Operator Functions
     N element vector operation functions.
- */
+*/
 //@{
 vect_n* neg_vn(vect_n* a); //negate a vector
 vect_n* scale_vn(btreal a, vect_n* v);
@@ -243,6 +243,7 @@ vect_n* sub_vn(vect_n* a, vect_n* b);
 
 //vect_n* wedge_vn(vect_n* a, vect_n*b); 
 btreal  dot_vn(vect_n* a, vect_n* b);
+btreal  angle_vn(vect_n* a,vect_n* b);
 btreal  norm_vn(vect_n* a); //euclidian norm
 vect_n* unit_vn(vect_n* a); //unit vector
 vect_n* unit_interp_vn(vect_n* a, vect_n* b,btreal s); //linear interpolation, if s is greater than available, it is exstrapolated
@@ -269,6 +270,7 @@ vect_n* e_sqr_vn(vect_n* a);
 void print_vn(vect_n* src);
 char* sprint_vn(char *dest,vect_n* src);
 char* sprint_csv_vn(char *dest,vect_n* src);
+char* sprint_plt_vn(char *dest,vect_n* src);//gnu plot format
 void syslog_vn(char* header,vect_n* src);
 
 int strcount_vn(char **src_string,char *delimiter); //Count the number of double values in a string
@@ -672,8 +674,8 @@ void test_filter_vn();
 
 BTINLINE btreal atan2_bt(btreal arg1, btreal arg2); 
 BTINLINE btreal interp_bt(btreal x1, btreal y1, btreal x2, btreal y2, btreal x); //linear interpolation
-
-
+BTINLINE btreal max_bt(btreal x,btreal y);
+BTINLINE btreal min_bt(btreal x,btreal y);
 
 #ifdef __cplusplus
 }

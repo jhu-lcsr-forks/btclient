@@ -13,6 +13,7 @@ typedef struct parabolic_s{
   struct parabolic_s *next;
 }parabolic;
 
+void dump_para(parabolic *p,FILE *out);
 btreal sp_of_t_para(parabolic *p, btreal t);
 btreal s_of_t_para(parabolic *p, btreal t);
 btreal s_of_t_paral(parabolic **pin, btreal t);
@@ -62,11 +63,11 @@ typedef struct pararray_vns{
 }pararray_vn;
 
 pararray_vn* new_pavn(int max,int elements);
-void clear_pavn(pararray* pavn);
-vect_n*  add_bseg_pavn(pararray* pavn,vect_n* t0,vect_n* s0,vect_n* sf,vect_n* sp0,vect_n* spf);
-vect_n*  reset_pavn(pararray* pavn);
-vect_n* eval_pavn(pararray* pavn,btreal t);
+void clear_pavn(pararray_vn* pavn);
+vect_n*  add_bseg_pavn(pararray_vn* pavn,vect_n* t0,vect_n* s0,vect_n* sf,vect_n* sp0,vect_n* spf);
+vect_n*  reset_pavn(pararray_vn* pavn);
+vect_n* eval_pavn(pararray_vn* pavn,btreal t);
 
-pararray_vn* vr2pararray(vectray* vr);
+pararray_vn* vr2pararray(vectray* vr,btreal acc);
 
 
