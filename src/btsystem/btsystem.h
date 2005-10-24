@@ -143,14 +143,22 @@ typedef struct
 */
 typedef struct
 {
+  int type; //enum = {CAN = 0,ETHERNET}
   char device_str[100]; /*!< A text string that describes this bus for users*/
-//  CANdev_t CANdev; /*!< Information on the can device used for this bus */
+  unsigned long address; // CAN id or dotted quad of safety system
+  char device_name[50];
+  
+  //  CANdev_t CANdev; /*!< Information on the can device used for this bus */
   int pucks_by_id[65]; /*!< Indexes of actuators sorted by puck ID */
   int num_pucks; /*!< Number of indexes contained in pucks_by_id */
   int total_pucks; /*!< Number of pucks on the bus (may be more than were specified in the data files)*/
   group_struct group[65]; /*!< Each group has an index. See group_struct */
   int num_groups; /*!< Number of groups in the group array*/
 }bus_struct;
+
+
+
+
 
 typedef struct{
   int num_actuators; 
