@@ -90,6 +90,7 @@ typedef struct btwam_struct{
   int use_new;
   int type; //enum {WAM_4DOF, WAM_4DOF_G, WAM_7DOF, Wrist_3DOF} 
   int isZeroed;
+  int space; // 0 = Joint; 1 = Cartesian;
   
 //user callback
   int (*force_callback)(struct btwam_struct *wam);
@@ -169,17 +170,21 @@ typedef struct btwam_struct{
 /*************  Final API  ******************/
 
 wam_struct* OpenWAM(char *wamfile); //NULL -> wamConfig.txt
-
 int BlankWAMcallback(struct btwam_struct *wam);
 void registerWAMcallback(wam_struct* wam,void *func);
 void WAMControlThread(void *data); //data points to wam_struct* wam
 
-void DefineWAMpos(vect_n *wv);
+void DefineWAMpos(wam_struct *w,vect_n *wv);
+
+btreal GetGravityComp(wam_struct *w);
+void SetGravityComp(wam_struct *w,btreal scale);
+
+
+
+/******************************************/
+
 void SetCartesianSpace(wam_struct* wam);
 void SetJointSpace(wam_struct* wam);
-
-btreal GetGravityComp(wam_struct* wam);
-void SetGravityComp(wam_struct* wam,btreal scale);
 
 int AddEndpointForce(wam_struct* wam,vect_n *force); //Cartesian only
 

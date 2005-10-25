@@ -579,11 +579,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       break;
     case 'Z': /* Zero WAM */
       const_vn(wv, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-      SetWAMpos(wv);
+      DefineWAMpos(wam,wv);
       break;
     case 'z': /* Send zero-position to WAM */
       const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
-      SetWAMpos(wv);
+      DefineWAMpos(wam,wv);
       break;
     case '[': /* Select previous puck */
       cpuck--;

@@ -180,9 +180,15 @@ wam_struct* OpenWAM(char *fn)
   SetEngrUnits(1);
 #ifdef BTOLDCONFIG
   if(test_and_log(
-    EnumerateSystem(),"Failed to enumerate system"))  {return -1;}
-  
-  WAM.act = GetActuators(&(WAM.num_actuators));
+       InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
+       "Failed to initialize system"))
+  {
+    exit(-1);
+  }
+  atexit((void*)CloseSystem);//register CloseSystem for shutdown
+  if(test_and_log(
+    EnumerateSystem(),"Failed to enumerate system"))  {exit(-1);}
+
 #else //BTOLDCONFIG
   //------------------------
   err = InitializeSystem();
@@ -190,6 +196,7 @@ wam_struct* OpenWAM(char *fn)
       syslog(LOG_ERR, "OpenWAM: InitializeSystem returned err = %d", err);
       return(NULL);
   }
+#endif
   WAM.act = GetActuators(&(WAM.num_actuators));
 
   new_bot(&WAM.robot,WAM.num_actuators);
@@ -202,7 +209,7 @@ wam_struct* OpenWAM(char *fn)
   long reply;
   int link;
   com = new_v3(); 
-  strcpy(robotType, buses[0].device_name);
+  
   
   // Parse config file
   err = parseFile(fn);
@@ -210,6 +217,11 @@ wam_struct* OpenWAM(char *fn)
       syslog(LOG_ERR, "OpenWAM: Error parsing config file- %s", fn);
       return(NULL);
   }
+  //strcpy(robotType, buses[0].device_name);
+  sprintf(key, "system.bus[0].name");
+  parseGetVal(STRING, key, (void*)robotType);
+  
+  
   // Read park_location
   sprintf(key, "%s.home", robotType, link);
   parseGetVal(VECTOR, key, (void*)WAM.park_location);
@@ -233,9 +245,12 @@ wam_struct* OpenWAM(char *fn)
 
       if(link != WAM.num_actuators){
           // Query for motor_position (JIDX)
+#ifdef BTOLDCONFIG 
+          WAM.motor_position[link] = link;
+#else
           getProperty(WAM.act[0].bus, WAM.act[link].puck.ID, JIDX, &reply);
-          WAM.motor_position[link] = link;//reply;
-      
+          WAM.motor_position[link] = link;/** \bug Finish this *///reply; 
+#endif
           // Read joint PID constants
           sprintf(key, "%s.link[%d].pid.kp", robotType, link);
           parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.Kp)[link]));
@@ -277,8 +292,6 @@ wam_struct* OpenWAM(char *fn)
   // Joint PID constants Kp, Kd, Ki - file
   // Joint saturation limits - file
   // Joint vel/acc defaults - file
-#endif //BTOLDCONFIG
-
 
   /* WAM tipped forward hack */
   /*
@@ -288,110 +301,7 @@ wam_struct* OpenWAM(char *fn)
   */
   /* end WAM tipped forward hack */
   
-#ifdef BTOLDCONFIG  
-  link_geom_bot(&WAM.robot,0,0.0,0.0,0.0,-pi/2.0);
-  link_geom_bot(&WAM.robot,1,0.0,0.0,0.0,pi/2.0);
-  link_geom_bot(&WAM.robot,2,0.0,0.550,0.045,-pi/2.0);
-  
-  link_mass_bot(&WAM.robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
-  link_mass_bot(&WAM.robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
-  link_mass_bot(&WAM.robot,2,C_v3(-0.0443,0.2549,0.0),2.08);
-  
-  /* end WAM tipped forward hack */
-  
-  link_geom_bot(&WAM.robot,0,0.0,0.0,0.0,-pi/2.0);
-  link_geom_bot(&WAM.robot,1,0.0,0.0,0.0,pi/2.0);
-  link_geom_bot(&WAM.robot,2,0.0,0.550,0.045,-pi/2.0);
-  
-  link_mass_bot(&WAM.robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
-  link_mass_bot(&WAM.robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
-  link_mass_bot(&WAM.robot,2,C_v3(-0.0443,0.2549,0.0),2.08);
-  
-  //init_wam_btrobot(&(WAM.robot));
-   if (WAM.num_actuators == 4){
-     link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
-     link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
 
-  //   tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
-   //  tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.05),0.346); //Ball grip
-     
-     /*2 links in series*/
-     //link_mass_bot(&WAM.robot,3,C_v3(0.027,0.0,0.283),1.891);
-     //tool_geom_bot(&WAM.robot,0.0,0.639,0.0,0.0);
-          
-     /*Blank link end mass*/
-     //tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
-     //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.025),2.50);
-     
-     /*Hand end mass*/
-    tool_geom_bot(&WAM.robot,0.0,0.371,0.0,0.0);
-    tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),1.13);
-     
-     /*
-     link_geom_bot(&WAM.robot,3,-pi/2.0,0.0,0.4,-pi/2.0);
-     link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
-     
-     tool_geom_bot(&WAM.robot,0.0,0.3574,0.0,0.0);
-     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.03),2.000);*/
-   }
-  else if (WAM.num_actuators == 7){
-	  
-    link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
-    link_geom_bot(&WAM.robot,4,0.0,0.3,0.0,-pi/2.0);
-    link_geom_bot(&WAM.robot,5,0.0,0.0,0.0,pi/2.0);
-    link_geom_bot(&WAM.robot,6,0.0,0.06091,0.0,0.0);
-    
-    link_mass_bot(&WAM.robot,3,C_v3(0.0,0.0,0.17),2.765);
-    link_mass_bot(&WAM.robot,4,C_v3(0.0,0.0,0.0),0.0);
-    link_mass_bot(&WAM.robot,5,C_v3(0.0,0.0,0.0),0.0);
-    link_mass_bot(&WAM.robot,6,C_v3(0.0,0.0,0.0),0.0);
-    
-    //tool_geom_bot(&WAM.robot,0.0,0.0,0.0,0.0);
-    //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.025),2.150);
-    
-    tool_geom_bot(&WAM.robot,0.0,0.0,0.0,0.0);
-    tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.000);
-  }  else if (WAM.num_actuators == 6){
-	  
-    link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
-    link_geom_bot(&WAM.robot,4,0.0,0.3,0.0,-pi/2.0);
-    link_geom_bot(&WAM.robot,5,0.0,0.0,0.0,pi/2.0);
-    //link_geom_bot(&WAM.robot,6,0.0,0.06091,0.0,0.0);
-    
-    link_mass_bot(&WAM.robot,3,C_v3(0.0,0.0,0.17),2.765);
-    link_mass_bot(&WAM.robot,4,C_v3(0.0,0.0,0.0),0.0);
-    link_mass_bot(&WAM.robot,5,C_v3(0.0,0.0,0.0),0.0);
-    //link_mass_bot(&WAM.robot,6,C_v3(0.0,0.0,0.0),0.0);
-    
-    //tool_geom_bot(&WAM.robot,0.0,0.0,0.0,0.0);
-    //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.025),2.150);
-    
-    tool_geom_bot(&WAM.robot,0.0,0.0,0.0,0.0);
-    tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.000);
-  }/* Gimbals
-  else if (WAM.num_actuators == 7){
-    link_geom_bot(&WAM.robot,4,-pi/2.0,0.1547,0.0,pi/2.0);
-    link_geom_bot(&WAM.robot,5,0.0,0.0,0.0,-pi/2.0);
-    link_geom_bot(&WAM.robot,6,0.0,0.0,0.0,0.0);
-    
-    link_mass_bot(&WAM.robot,3,C_v3(-0.2346,0.0,0.029),1.34);
-    link_mass_bot(&WAM.robot,4,C_v3(0.0,-0.1196,0.0405),0.98);
-    link_mass_bot(&WAM.robot,5,C_v3(0.0,-0.0776,-0.0657),0.384);
-    link_mass_bot(&WAM.robot,6,C_v3(0.0,-0.0022,-0.0747),0.378);
-    
-    tool_geom_bot(&WAM.robot,0.0,0.0,0.0,0.0);
-    //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.001);
-    tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),0.000);
-  }*/
-
-  else {
-    syslog(LOG_ERR,"Unknown robot type");
-    return -1;
-  }
-  
-  if(test_and_log(
-    LoadWAM(wamfile),"Failed to load wam config file")) {return -1;}
-  #endif //BTOLDCONFIG
   
   fill_vn(WAM.robot.dq,0.0);
   fill_vn(WAM.robot.ddq,0.0);
@@ -692,7 +602,7 @@ void Jtrq2Mtrq(vect_n * Jtrq, vect_n * Mtrq) //conbert joint torque to motor tor
 
 /** Reset the position sensors on the pucks to the passed in position in units of joint-space radians
 */
-void SetWAMpos(vect_n *wv)
+void DefineWAMpos(wam_struct *w,vect_n *wv)
 {
   int cnt;
   long tmp;
@@ -873,21 +783,21 @@ void getWAMjoints(vect_n *Mpos,vect_n *Mtrq,vect_n *Jpos,vect_n *Jtrq)
   set_vn(Jtrq,WAM.Jtrq);
 }
 /**  */
-btreal getGcomp()
+btreal GetGravityComp(wam_struct *w)
 {
-  return get_gravity_bot(&WAM.robot);
+  return get_gravity_bot(&w->robot);
 }
 /** Enable or disable the gravity compensation calculation
  */
-void setGcomp(btreal scale)
+void SetGravityComp(wam_struct *w,btreal scale)
 {
   if (scale == 0.0){
-    WAM.Gcomp = 0;
-    set_gravity_bot(&WAM.robot, 0.0);
+    w->Gcomp = 0;
+    set_gravity_bot(&w->robot, 0.0);
   }
   else{
-    WAM.Gcomp = 1;
-    set_gravity_bot(&WAM.robot, scale);
+    w->Gcomp = 1;
+    set_gravity_bot(&w->robot, scale);
   }
 }
 

@@ -735,7 +735,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       break;
     case 'Z': /* Zero WAM */
       const_vn(wv, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-      SetWAMpos(wv);
+      DefineWAMpos(wam,wv);
       //ZeroWAM();
       //useTRC = 1;
       //SetTRC(useTRC);
@@ -744,7 +744,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       // set_wam_vector(&wv, 0, 0, 0, 0, 0, 0, 0);
       const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
       //const_vn(wv, 0.0, -2.017, 0.0, 3.14, 0.0, 0.0, 0.0); //blanklink
-      SetWAMpos(wv);
+      DefineWAMpos(wam,wv);
       break;
     case '[': /* Select previous puck */
       cpuck--;

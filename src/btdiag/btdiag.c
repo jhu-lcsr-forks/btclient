@@ -179,12 +179,6 @@ int main(int argc, char **argv)
   {
     exit(-1);
   }
-#else //BTOLDCONFIG
-    err = ReadSystemFromConfig("wamConfig.txt");
-    wam = OpenWAM("wamConfig.txt");
-//InitializeSystem("wamConfig.txt"),
-#endif //BTOLDCONFIG
-            
   atexit((void*)CloseSystem);//register CloseSystem for shutdown
 
   /* Check and handle any command line arguments */
@@ -198,13 +192,37 @@ int main(int argc, char **argv)
     }
   }
 
-  /* Set up the WAM data structure, init kinematics, dynamics, haptics 
-  err =  InitWAM("wam.dat");
-  if(err)
+  // Set up the WAM data structure, init kinematics, dynamics, haptics 
+  //err =  InitWAM("wam.dat");
+  wam = OpenWAM("wamConfig.txt");
+  if(!wam)
   {
     exit(1);
+  }  
+  
+  
+  
+  
+#else //BTOLDCONFIG
+    err = ReadSystemFromConfig("wamConfig.txt");
+    wam = OpenWAM("wamConfig.txt");
+//InitializeSystem("wamConfig.txt"),
+
+            
+  atexit((void*)CloseSystem);//register CloseSystem for shutdown
+
+  /* Check and handle any command line arguments */
+  if(argc > 1)
+  {
+    if(!strcmp(argv[1],"-g")) // If gimbals are being used
+    {
+      initGimbals();
+      useGimbals = 1;
+      syslog(LOG_ERR, "Gimbals expected.");
+    }
   }
-*/
+#endif //BTOLDCONFIG
+
   /* Obtain a pointer to the wam state object */
   //wam = GetWAM();
 
@@ -214,7 +232,7 @@ int main(int argc, char **argv)
 
   const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
   // const_vn(wv, 0.0,  0.0, 0.0,  0.0, 0.0, 0.0, 0.0); //Blank link home pos
-  SetWAMpos(wv);
+  DefineWAMpos(wam,wv);
   //prep modes
   jdest = new_vn(len_vn(wam->Jpos));
   cdest = new_vn(len_vn(wam->R6pos));
@@ -513,14 +531,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     break;
   //case 'z':  /* Send home-position to WAM */
   //  const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
-  //  SetWAMpos(wv);
+  //  DefineWAMpos(wam,wv);
   //  break;
   case 'g':  /* Set gravity compensation */
     start_entry();
     addstr("Enter scale value for gravity (1.0 = 9.8m/s^2): ");
     refresh();
     scanw("%lf\n",  &tvel);
-    setGcomp(tvel);
+    SetGravityComp(wam,tvel);
     finish_entry();
     break;
 

@@ -721,23 +721,23 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     case 'g': /* Toggle gravity compensation */
       if(gcompToggle){
         gcompToggle = 0;
-        setGcomp(0.0);
+        SetGravityComp(wam,0.0);
       }
       else {
         gcompToggle = 1;
-        setGcomp(1.0);
+        SetGravityComp(wam,1.0);
       }
 
       refresh();
       break;
     case 'Z': /* Zero WAM */
       const_vn(wv, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-      SetWAMpos(wv);
+      DefineWAMpos(wam,wv);
       break;
     case 'z': /* Send zero-position to WAM */
       const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
       //const_vn(wv, 0.0, -2.017, 0.0, 3.14, 0.0, 0.0, 0.0); //blanklink
-      SetWAMpos(wv);
+      DefineWAMpos(wam,wv);
       break;
     case '[': /* Select previous puck */
       cpuck--;
