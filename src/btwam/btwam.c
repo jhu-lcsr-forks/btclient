@@ -598,7 +598,9 @@ void WAMControlThread(void *data)
     }//&cteach }
   }
   syslog(LOG_ERR, "WAM Control Thread: exiting");
+  syslog(LOG_ERR, "----------WAM Control Thread Statistics:--------------");
   syslog(LOG_ERR,"WAMControl Skipped cycles %d, Max dt: %f",skipcnt,skipmax);
+  syslog(LOG_ERR,"WAMControl Times: Readpos: %f, Calcs: %f, SendTrq: %f",WAM.readpos_time,WAM.loop_time-WAM.writetrq_time-WAM.readpos_time,WAM.writetrq_time);
   rt_make_soft_real_time();
   rt_task_delete(WAMControlThreadTask);
   pthread_exit(NULL);
