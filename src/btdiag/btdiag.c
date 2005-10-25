@@ -164,7 +164,7 @@ int main(int argc, char **argv)
     exit(-1);
   }
 #else //BTOLDCONFIG
-    err = ReadSystemFromConfig("wamConfig.txt")
+    err = ReadSystemFromConfig("wamConfig.txt");
     wam = OpenWAM("wamConfig.txt");
 //InitializeSystem("wamConfig.txt"),
 #endif //BTOLDCONFIG
