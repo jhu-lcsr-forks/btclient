@@ -187,10 +187,8 @@ int main(int argc, char **argv)
     pthread_mutex_init(&(disp_mutex),NULL),
     "Could not initialize mutex for displays.");
 
-    ReadSystemFromConfig("wamConfig.txt");
-    
   if(test_and_log(   
-    wam = OpenWAM("wamConfig.txt"),
+    InitializeSystem("wamConfig.txt"),
     "Failed to initialize system")){
     exit(-1);
   }
@@ -209,15 +207,15 @@ int main(int argc, char **argv)
   }
 
   /* Set up the WAM data structure, init kinematics, dynamics, haptics */
-  //err =  InitWAM("wam.dat");
-  //if(err)
-  //{
-  //  exit(1);
-  //}
+  err =  InitWAM("wam.dat");
+  if(err)
+  {
+    exit(1);
+  }
   signal(SIGINT, sigint_handler); //register the interrupt handler
     
   /* Obtain a pointer to the wam state object */
-  //wam = GetWAM();
+  wam = GetWAM();
   
   
   /* Initialize our data logging structure */

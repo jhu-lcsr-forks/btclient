@@ -195,12 +195,13 @@ wam_struct* OpenWAM(char *fn)
   new_bot(&WAM.robot,WAM.num_actuators);
   
   btreal theta, d, a, alpha, mass, tmpdbl;
-  vect_n com;
+  vect_3 *com;
+  
   char robotType[256];
   char key[256];
   long reply;
   int link;
-  
+  com = new_v3(); 
   strcpy(robotType, buses[0].device_name);
   
   // Parse config file
@@ -210,7 +211,7 @@ wam_struct* OpenWAM(char *fn)
       return(NULL);
   }
   // Read park_location
-  sprintf(key, "%s.link[%d].home", robotType, link);
+  sprintf(key, "%s.home", robotType, link);
   parseGetVal(VECTOR, key, (void*)WAM.park_location);
       
   for(link = 0; link <= WAM.num_actuators; link++){
@@ -226,24 +227,27 @@ wam_struct* OpenWAM(char *fn)
       
       // Get the mass parameters
       sprintf(key, "%s.link[%d].com", robotType, link);
-      parseGetVal(VECTOR, key, (void*)&com);
+      parseGetVal(VECTOR, key, (void*)com);
       sprintf(key, "%s.link[%d].mass", robotType, link);
       parseGetVal(DOUBLE, key, (void*)&mass);
 
       if(link != WAM.num_actuators){
           // Query for motor_position (JIDX)
           getProperty(WAM.act[0].bus, WAM.act[link].puck.ID, JIDX, &reply);
-          WAM.motor_position[link] = reply;
+          WAM.motor_position[link] = link;//reply;
       
           // Read joint PID constants
           sprintf(key, "%s.link[%d].pid.kp", robotType, link);
-          parseGetVal(DOUBLE, key, (void*)&WAM.Kp);
+          parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.Kp)[link]));
           sprintf(key, "%s.link[%d].pid.kd", robotType, link);
-          parseGetVal(DOUBLE, key, (void*)&WAM.Kd);
+          parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.Kd)[link]));
+          //parseGetVal(DOUBLE, key, (void*)&WAM.Kd);
           sprintf(key, "%s.link[%d].pid.ki", robotType, link);
-          parseGetVal(DOUBLE, key, (void*)&WAM.Ki);
+          parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.Ki)[link]));
+          //parseGetVal(DOUBLE, key, (void*)&WAM.Ki);
           sprintf(key, "%s.link[%d].pid.max", robotType, link);
-          parseGetVal(DOUBLE, key, (void*)&WAM.saturation);
+          parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.saturation)[link]));
+          //parseGetVal(DOUBLE, key, (void*)&WAM.saturation);
           
           // Read joint vel/acc defaults
           sprintf(key, "%s.link[%d].vel", robotType, link);
@@ -254,9 +258,9 @@ wam_struct* OpenWAM(char *fn)
           setval_vn(WAM.acc, link, tmpdbl);
       
           link_geom_bot(&WAM.robot, link, theta * pi, d, a, alpha * pi);
-          link_mass_bot(&WAM.robot, link, (vect_3*)&com, mass);
+          link_mass_bot(&WAM.robot, link, com, mass);
       }else{
-          tool_mass_bot(&WAM.robot, (vect_3*)&com, mass);
+          tool_mass_bot(&WAM.robot, com, mass);
           tool_geom_bot(&WAM.robot, theta * pi, d, a, alpha * pi);
       }
       
@@ -308,8 +312,8 @@ wam_struct* OpenWAM(char *fn)
      link_geom_bot(&WAM.robot,3,0.0,0.0,-0.045,pi/2.0);
      link_mass_bot(&WAM.robot,3,C_v3(0.01465,0.0,0.1308),1.135);
 
-     tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
-     tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.05),0.346); //Ball grip
+  //   tool_geom_bot(&WAM.robot,0.0,0.356,0.0,0.0);
+   //  tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.05),0.346); //Ball grip
      
      /*2 links in series*/
      //link_mass_bot(&WAM.robot,3,C_v3(0.027,0.0,0.283),1.891);
@@ -320,8 +324,8 @@ wam_struct* OpenWAM(char *fn)
      //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.025),2.50);
      
      /*Hand end mass*/
-     //tool_geom_bot(&WAM.robot,0.0,0.371,0.0,0.0);
-     //tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),1.13);
+    tool_geom_bot(&WAM.robot,0.0,0.371,0.0,0.0);
+    tool_mass_bot(&WAM.robot,C_v3(0.0,0.0,0.0),1.13);
      
      /*
      link_geom_bot(&WAM.robot,3,-pi/2.0,0.0,0.4,-pi/2.0);

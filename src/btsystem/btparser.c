@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <syslog.h>
 
 /*==============================*
  * INCLUDES - Project Files     *
@@ -235,7 +236,10 @@ int parseGetVal(int type, char *find, void *loc)
     	}
     }
     fclose(inFile);
-	if(!val) return -1; // If key not found, return err
+	if(!val){
+	       syslog(LOG_ERR, "parseGetVal: key not found [%s]",find);
+       	       return -1; // If key not found, return err
+	}
 	switch(type){
 		case INT:
 			intVal = atoi(val); // Convert
@@ -265,6 +269,9 @@ int parseGetVal(int type, char *find, void *loc)
 			*s = '\0'; // Terminate the string
 		break;
 		case VECTOR:
+#ifdef BTDEBUG
+		syslog(LOG_ERR, "parseGetVal: find [%s]", find);
+#endif
 		    strto_vn((vect_n *)loc, val, "<>");
 		break;
 		default:

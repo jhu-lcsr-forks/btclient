@@ -4,7 +4,7 @@ CC = gcc
 PATH_INCLUDE = -I/usr/realtime/include -I../../include
 
 #Replace -DUSE_FUSION with -DUSE_RTAI31
-CFLAGS =  -g -DUSE_RTAI31  ${PATH_INCLUDE} -DBTOLDCONFIG
+CFLAGS =  -g -DUSE_RTAI31  ${PATH_INCLUDE} -DBTNEWCONFIG
 #Replace -lrtai with -llxrt
 LDFLAGS = -L/usr/realtime/lib -L/usr/lib -L/usr/local/lib -L../../lib -lpthread -llxrt \
           -lncurses -lm -lbtwam -lbtsystem -lntcan

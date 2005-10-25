@@ -895,6 +895,10 @@ vect_n * strto_vn(vect_n *dest,char *src,char *delimiters)
   //while !done, vect.q[cnt] = strtod()
   for (cnt = 0; cnt < num; cnt++)
   {
+    if (cnt > dest->n){
+        syslog(LOG_ERR,"strto_vn: cnt (%d) > dest->n (%d), num=%d, dest=%x",cnt, dest->n, num, dest);
+	    break;
+    }
     setval_vn(dest,cnt,strtod(scan,&second));
     scan = strpbrk(second,",");
     if (scan != NULL)

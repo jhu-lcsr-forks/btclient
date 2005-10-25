@@ -40,7 +40,7 @@ WAM4{
     link[]{
         name = "Base"
         
-        m = 12.044                      # Mass of link (kg)
+        mass = 12.044                      # Mass of link (kg)
         com = <0.0, 0.1405, -0.0061>    # Center of mass (m)
         vel = 0.5                       # Default velocity
         acc = 0.5                       # Default acceleration
@@ -62,7 +62,7 @@ WAM4{
     link[]{
         name = "Pitch"
         
-        m = 5.903                       # Mass of link (kg)
+        mass = 5.903                       # Mass of link (kg)
         com = <0.0, -0.0166, 0.0096>    # Center of mass (m)
         vel = 0.5                       # Default velocity
         acc = 0.5                       # Default acceleration
@@ -84,7 +84,7 @@ WAM4{
     link[]{
         name = "Twist"
         
-        m = 2.08                        # Mass of link (kg)
+        mass = 2.08                        # Mass of link (kg)
         com = <-0.0443, 0.2549, 0.0>    # Center of mass (m)
         vel = 0.5                       # Default velocity
         acc = 0.5                       # Default acceleration
@@ -106,7 +106,7 @@ WAM4{
     link[]{
         name = "Elbow"
         
-        m = 1.135                       # Mass of link (kg)
+        mass = 1.135                       # Mass of link (kg)
         com = <0.01465, 0.0, 0.1308>    # Center of mass (m)
         vel = 0.5                       # Default velocity
         acc = 0.5                       # Default acceleration
@@ -128,7 +128,7 @@ WAM4{
     link[]{
         name = "Tool"
         
-        m = 2.0
+        mass = 2.0
         com = <0.0, 0.0, 0.03>
         
         dh{

@@ -1,5 +1,5 @@
 OBJS = main.o
-TARG = sysutil
+TARG = btutil
 CC = gcc 
 PATH_INCLUDE = -I/usr/realtime/include -I../../include
 
@@ -10,9 +10,9 @@ LDFLAGS = -L/usr/realtime/lib -L/usr/lib -L../../lib -lpthread -llxrt \
           -lncurses -lm -lbtwam -lbtsystem -lntcan
 
 
-default: btdiag
+default: btutil
 
-btdiag: ${OBJS}
+btutil: ${OBJS}
 	$(CC) -o ${TARG} ${OBJS} ${LDFLAGS}
 
 clean: 
@@ -24,4 +24,4 @@ system:
 wam:
 	$(MAKE) -C ../btwam
 
-all: system wam btdiag
+all: system wam btutil
