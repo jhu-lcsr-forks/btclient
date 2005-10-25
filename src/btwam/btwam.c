@@ -199,6 +199,7 @@ wam_struct* OpenWAM(char *fn)
   char robotType[256];
   char key[256];
   long reply;
+  int link;
   
   strcpy(robotType, buses[0].device_name);
   
