@@ -28,16 +28,15 @@
 #include "stdio.h"
 #include "syslog.h"
 #include "btwam.h"
+
 #define TWOPI 6.283185
 int gimbalsInit = 0;
 double gimbalsOffset[3];
 double gimbalsGain[3];
 
-int getGimbalsAngles(double *gimbals)
+int getGimbalsAngles(wam_struct *WAM,double *gimbals)
 {
-    wam_struct *WAM;
-    
-    WAM = GetWAM();
+
 #if 0    
     /* Read the gimbles puck for its three positions (A/D readings) */
     getPositions(
@@ -57,13 +56,13 @@ int getGimbalsAngles(double *gimbals)
     return(0); /* Return success */
 }
 
-int initGimbals(void)
+int initGimbals(wam_struct *WAM)
 {
     FILE *inFile;
     int i;
-    wam_struct *WAM;
+
     
-    WAM = GetWAM();
+
     if(!gimbalsInit)
     {
         /* Wake the gimbals puck */

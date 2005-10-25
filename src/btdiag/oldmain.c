@@ -200,7 +200,7 @@ int main(int argc, char **argv)
   {
     if(!strcmp(argv[1],"-g")) // If gimbals are being used
     {
-      initGimbals();
+      initGimbals(wam);
       useGimbals = 1;
       syslog(LOG_ERR, "Gimbals expected.");
     }
@@ -470,7 +470,7 @@ void RenderScreen() //{{{
 
   if(useGimbals) // Convert the gimbals Q4.12 position data into radians
   {
-    getGimbalsAngles(gimb);
+    getGimbalsAngles(wam,gimb);
     setval_vn(Jpos,4,gimb[0]);
     setval_vn(Jpos,5,gimb[1]);
     setval_vn(Jpos,6,gimb[2]);

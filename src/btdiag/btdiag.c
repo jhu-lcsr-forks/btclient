@@ -186,7 +186,7 @@ int main(int argc, char **argv)
   {
     if(!strcmp(argv[1],"-g")) // If gimbals are being used
     {
-      initGimbals();
+      initGimbals(wam);
       useGimbals = 1;
       syslog(LOG_ERR, "Gimbals expected.");
     }
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
   {
     if(!strcmp(argv[1],"-g")) // If gimbals are being used
     {
-      initGimbals();
+      initGimbals(wam);
       useGimbals = 1;
       syslog(LOG_ERR, "Gimbals expected.");
     }
@@ -325,7 +325,7 @@ void init_haptics(void)
  */
   const_v3(wam->Cpoint,0.0,-0.0,0.0);
   
-  registerWAMcallback(WAMcallback);
+  registerWAMcallback(wam,WAMcallback);
 
 }
 

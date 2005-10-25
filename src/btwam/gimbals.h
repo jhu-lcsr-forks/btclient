@@ -22,7 +22,7 @@
 #ifndef _GIMBALS_H
 #define _GIMBALS_H
 
-int getGimbalsAngles(double *gimbals);
-int initGimbals(void);
+int getGimbalsAngles(wam_struct *WAM,double *gimbals);
+int initGimbals(wam_struct *WAM);
 
 #endif /* _GIMBALS_H*/
