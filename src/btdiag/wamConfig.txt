@@ -104,7 +104,7 @@ WAM4{
         }
     }
     link[]{
-        name = "Elbow"
+	    q;
         
         mass = 1.135                       # Mass of link (kg)
         com = <0.01465, 0.0, 0.1308>    # Center of mass (m)
@@ -119,17 +119,17 @@ WAM4{
         }
         
         dh{ # Denavit-Hartenberg parameters (Spong)
-            theta = -0.5 # (multiplied by pi)
+            theta = 0.0 # (multiplied by pi)
             d = 0.0
-            a = 0.40
-            alpha = -0.5 # (multiplied by pi)
+            a = -0.045
+            alpha = 0.5 # (multiplied by pi)
         }
     }
     link[]{
         name = "Tool"
         
-        mass = 2.0
-        com = <0.0, 0.0, 0.03>
+        mass = 0.3460
+        com = <0.0, 0.0, 0.05>
         
         dh{
             theta = 0.0 # (multiplied by pi)

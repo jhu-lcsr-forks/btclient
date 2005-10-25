@@ -172,44 +172,16 @@ int main(int argc, char **argv)
   while((chr=getch())==ERR)
     usleep(5000);
 
-#ifdef BTOLDCONFIG
-  if(test_and_log(
-       InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
-       "Failed to initialize system"))
-  {
-    exit(-1);
-  }
-  atexit((void*)CloseSystem);//register CloseSystem for shutdown
-
-  /* Check and handle any command line arguments */
-  if(argc > 1)
-  {
-    if(!strcmp(argv[1],"-g")) // If gimbals are being used
-    {
-      initGimbals(wam);
-      useGimbals = 1;
-      syslog(LOG_ERR, "Gimbals expected.");
-    }
-  }
-
-  // Set up the WAM data structure, init kinematics, dynamics, haptics 
-  //err =  InitWAM("wam.dat");
+#ifndef BTOLDCONFIG
+  err = ReadSystemFromConfig("wamConfig.txt"); 
+#else //BTOLDCONFIG
+#endif //BTOLDCONFIG    
   wam = OpenWAM("wamConfig.txt");
   if(!wam)
   {
     exit(1);
-  }  
-  
-  
-  
-  
-#else //BTOLDCONFIG
-    err = ReadSystemFromConfig("wamConfig.txt");
-    wam = OpenWAM("wamConfig.txt");
-//InitializeSystem("wamConfig.txt"),
+  }            
 
-            
-  atexit((void*)CloseSystem);//register CloseSystem for shutdown
 
   /* Check and handle any command line arguments */
   if(argc > 1)
@@ -221,7 +193,7 @@ int main(int argc, char **argv)
       syslog(LOG_ERR, "Gimbals expected.");
     }
   }
-#endif //BTOLDCONFIG
+
 
   /* Obtain a pointer to the wam state object */
   //wam = GetWAM();
@@ -229,9 +201,10 @@ int main(int argc, char **argv)
   signal(SIGINT, sigint_handler); //register the interrupt handler
 
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
+  setProperty(0,10,TL2,FALSE,8200);
 
-  const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
-  // const_vn(wv, 0.0,  0.0, 0.0,  0.0, 0.0, 0.0, 0.0); //Blank link home pos
+  //const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
+   const_vn(wv, 0.0,  0.0, 0.0,  0.0, 0.0, 0.0, 0.0); //Blank link home pos
   DefineWAMpos(wam,wv);
   //prep modes
   jdest = new_vn(len_vn(wam->Jpos));
