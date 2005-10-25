@@ -37,6 +37,7 @@
 /*==============================*
  * INCLUDES - Project Files     *
  *==============================*/
+#include "btos.h"
 #include "btsystem.h"
 #include "btcan.h"
 #include "btparser.h"
@@ -136,6 +137,7 @@ int InitializeSystem(char *actuatorfile,char *busfile,char *motorfile,char *puck
   int group_cnt[65];
 
   CPU_cycles_per_second = sysconf(_SC_CLK_TCK);
+  buses = (bus_struct*)btmalloc(MAX_BUSES * sizeof(bus_struct));
 
   //Load bus file
   num_buses = Load_Bus_File(buses,busfile);
