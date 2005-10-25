@@ -611,7 +611,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
 {
   double dt,dq;
   double vel,acc1,acc2,dt_vel,dt_acc1,dt_acc2;
-  double min_acc,use_acc;
+  double min_acc,use_acc,q_acc1,q_vel,q_acc2;
 
 
   dt = t2 - t1;
@@ -634,7 +634,8 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
     
     dt_acc1 = dt - sqrt(dt*dt - 2*fabs(dq)/use_acc);
     acc1 = Sgn(dq)*use_acc;
-    vel = (dq - 0.5*acc1*dt_acc1*dt_acc1)/(dt - dt_acc1);
+    q_acc1 = q1 + 0.5*acc1*dt_acc1*dt_acc1;
+    vel = q_acc1/(dt - dt_acc1);
     acc2 = Sgn(v_next - vel)*seg_acc;
     dt_acc2 = (v_next - vel)/acc2;
     dt_vel = dt - dt_acc1 - dt_acc2/2.0;
@@ -650,6 +651,8 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
     vel = dq/dt;
     acc1 = Sgn(vel - v_prev)*use_acc;
     dt_acc1 = (vel - v_prev)/acc1;
+    q_acc1 = q1 + 0.5*acc1*dt_acc1*dt_acc1;
+    
     acc2 = Sgn(v_next - vel)*use_acc;
     dt_acc2 = (v_next - vel)/acc2;
     dt_vel = dt - dt_acc1/2 - dt_acc2/2;
@@ -685,8 +688,8 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
   seg->dt_vel = dt_vel;
   seg->dt_acc1 = dt_acc1;
   seg->dt_acc2 = dt_acc2;
-  syslog(LOG_ERR, "CalcSegment: Time: dt_acc1: %f dt_vel: %f dt_acc2: %f",dt_acc1,dt_vel,dt_acc2);
-  syslog(LOG_ERR, "CalcSegment: val: acc1: %f vel: %f  acc2: %f",acc1,vel,acc2);
+  //syslog(LOG_ERR, "CalcSegment: Time: dt_acc1: %f dt_vel: %f dt_acc2: %f",dt_acc1,dt_vel,dt_acc2);
+  //syslog(LOG_ERR, "CalcSegment: val: acc1: %f vel: %f  acc2: %f",acc1,vel,acc2);
 }
 /** Internal function to allocate memory for a vta object*/
 via_trj_array* malloc_new_vta(int num_columns)

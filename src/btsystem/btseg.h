@@ -19,9 +19,7 @@ btreal s_of_t_para(parabolic *p, btreal t);
 btreal s_of_t_paral(parabolic **pin, btreal t);
 btreal boundary_para(parabolic *b,btreal t0, btreal s0,btreal sf,btreal sp0,btreal spf);
 btreal blend_para(parabolic *b,btreal t0, btreal st,btreal sp0,btreal spf,btreal t);
-void velocity_para(parabolic *p,btreal s0,btreal sf,btreal t0,btreal tf); //Constant velocity
-void velocity2_para(parabolic *p,btreal s0,btreal v0,btreal t0,btreal tf); //Constant velocity
-//void acc_para(parabolic *p,btreal s0,btreal sf,btreal spf,btreal a,btreal t0); //trapezoidal trajectory
+btreal s0sfspftf_para(parabolic *b,btreal t0, btreal s0,btreal sf,btreal spf,btreal tf);
 
 /** Parabolic segment trajectory controller Ideas:
 Circular buffer.
@@ -49,8 +47,7 @@ pararray* new_pa(int max);
 
 
 void clear_pa(pararray* pa);
-btreal add_bseg_pa(pararray* pa,btreal t0,btreal s0,btreal sf,btreal sp0,btreal spf);
-
+btreal add_bseg_pa(pararray* pa,parabolic* p);
 
 btreal  reset_pa(pararray* pa);
 btreal eval_pa(pararray* pa,btreal t);

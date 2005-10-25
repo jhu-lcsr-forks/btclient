@@ -175,11 +175,31 @@ void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj);
 
 //@}
 
+/** Segment calculation object.
 
+*/
 typedef struct {
-  double vel,acc1,acc2,dt_vel,dt_acc1,dt_acc2;
+  btreal vel;
+  btreal acc1;
+  btreal acc2;
+  btreal dt_vel,dt_acc1,dt_acc2;
+  btreal q_acc1;
+  btreal q_vel;
+  btreal q_acc2;
 }Seg_int;
+void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, 
+double v_prev, double v_next, double seg_acc, int end);
 
+                   
+                   
+                   
+                   
+
+
+
+
+
+                   
 /** A piecewise linear trajectory with parabolic blending.
 
 
@@ -221,7 +241,6 @@ typedef struct
 void SetAcc_vt(via_trj *trj,double acc);
 double eval_via_trj(via_trj *trj,double dt);
 double start_via_trj(via_trj *trj,int col);
-void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double v_prev, double v_next, double seg_acc, int end);
 
 /** @name Linear trajectory with parabolic blending at via points
    
