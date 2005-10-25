@@ -226,7 +226,7 @@ wam_struct* OpenWAM(char *fn)
       
       // Get the mass parameters
       sprintf(key, "%s.link[%d].com", robotType, link);
-      parseGetVal(VECTOR, key, (void*)com);
+      parseGetVal(VECTOR, key, (void*)&com);
       sprintf(key, "%s.link[%d].mass", robotType, link);
       parseGetVal(DOUBLE, key, (void*)&mass);
 
@@ -254,10 +254,10 @@ wam_struct* OpenWAM(char *fn)
           setval_vn(WAM.acc, link, tmpdbl);
       
           link_geom_bot(&WAM.robot, link, theta * pi, d, a, alpha * pi);
-          link_mass_bot(&WAM.robot, link, com, mass);
+          link_mass_bot(&WAM.robot, link, (vect_3*)&com, mass);
       }else{
-          tool_mass_bot(&WAM.robot, link, com, mass);
-          tool_geom_bot(&WAM.robot, link, theta * pi, d, a, alpha * pi);
+          tool_mass_bot(&WAM.robot, (vect_3*)&com, mass);
+          tool_geom_bot(&WAM.robot, theta * pi, d, a, alpha * pi);
       }
       
   }
@@ -412,7 +412,7 @@ wam_struct* OpenWAM(char *fn)
   return(&WAM);
 }
 
-void CloseWAM()
+void CloseWAM(wam_struct* wam)
 {
   CloseSystem();
 }
@@ -721,25 +721,25 @@ void SetWAMpos(vect_n *wv)
 }
 /** Perform a coordinated move of the wam
 */
-void MoveWAM(vect_n *pos)
+void MoveWAM(wam_struct* wam, vect_n *pos)
 {
   int cnt,ctr,idx,done = 0,count =0,Mid;
   
 
   syslog(LOG_ERR,"MoveWAM start");
-  for (cnt = 0;cnt < WAM.num_actuators;cnt++)
+  for (cnt = 0;cnt < wam->num_actuators;cnt++)
   {
     Mid = MotorID_From_ActIdx(cnt);
-       SCstarttrj(&(WAM.sc[Mid]),getval_vn(pos,Mid));
+       SCstarttrj(&(wam->sc[Mid]),getval_vn(pos,Mid));
   }
   syslog(LOG_ERR,"MoveWAM:Trajectory initialized");
   while (!done)
   {
     count++;
     ctr = 0;
-    for (cnt = 0;cnt < WAM.num_actuators;cnt++)
+    for (cnt = 0;cnt < wam->num_actuators;cnt++)
     {
-      if (WAM.sc[Mid].trj.state != BTTRAJ_STOPPED)
+      if (wam->sc[Mid].trj.state != BTTRAJ_STOPPED)
         ctr++;
     }
     if (ctr == 0)
@@ -1093,11 +1093,12 @@ void ServiceContinuousTeach()
   evalDL(&(WAM.cteach));
 }
 
-void registerWAMcallback(void *func)
+void registerWAMcallback(wam_struct* wam, void *func)
 {
   if (func != NULL)
-    WAM.force_callback = func;
-  else func = BlankWAMcallback;
+    wam->force_callback = func;
+  else 
+      wam->force_callback = BlankWAMcallback;
 }
 
 int BlankWAMcallback(struct btwam_struct *wam)
