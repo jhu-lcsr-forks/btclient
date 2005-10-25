@@ -486,9 +486,10 @@ double start_via_trj(via_trj *trj,int col)
   trj->v_next = Dq_next/Dt_next;
   CalcSegment(&(trj->seg),getval_vn(idx_vr(trj->vr,trj->idx),trj->col), getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col),
               getval_vn(idx_vr(trj->vr,trj->idx),0), getval_vn(idx_vr(trj->vr,trj->idx+1),0),trj->v_prev,trj->v_next,trj->trj_acc, 0);
-
+  
   trj->acc = trj->seg.acc1;
   trj->dt_acc = trj->seg.dt_acc1;
+  trj->v_prev = trj->seg.vel;
   trj->t=0;
   trj->t0=0;
   trj->t_acc = trj->dt_acc;
@@ -524,8 +525,8 @@ double eval_via_trj(via_trj *trj,double dt)
         trj->t0 = trj->t_acc;
         trj->dt_vel = trj->seg.dt_vel;
         trj->t_vel = trj->dt_vel + trj->t0;
-        
-        
+        trj->v0 = trj->vel;
+        trj->acc = 0.0;
         trj->segment = VTS_IN_VEL;
       }
 
@@ -551,7 +552,7 @@ double eval_via_trj(via_trj *trj,double dt)
         qp = getval_vn(idx_vr(trj->vr,trj->idx-1),trj->col);
         Dt = tn - tp;
         Dq = qn - qp;
-        trj->v_prev = Dq/Dt;
+        //trj->v_prev = Dq/Dt;
 
         if (trj->idx >= trj->n-2)
         {
@@ -565,8 +566,11 @@ double eval_via_trj(via_trj *trj,double dt)
           Dq_next = getval_vn(idx_vr(trj->vr,trj->idx+2),trj->col) - getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col);
           trj->v_next = Dq_next/Dt_next;
         }
+        syslog(LOG_ERR, "CalcSegment: Col %d",trj->col);
         CalcSegment(&(trj->seg),getval_vn(idx_vr(trj->vr,trj->idx),trj->col), getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col),
                     tn,getval_vn(idx_vr(trj->vr,trj->idx+1),0),trj->v_prev,trj->v_next,trj->trj_acc, end);
+        
+                    
         trj->segment = 0;//acc first
         trj->acc = trj->seg.acc1;
         trj->dt_acc = trj->seg.dt_acc1;
@@ -574,6 +578,7 @@ double eval_via_trj(via_trj *trj,double dt)
         trj->t_acc = trj->dt_acc + trj->t0;
         trj->q0 = trj->q0 + trj->vel*trj->dt_vel;
         trj->v0 = trj->vel;
+        trj->v_prev = trj->seg.vel;
       }
 
 
@@ -589,7 +594,8 @@ double eval_via_trj(via_trj *trj,double dt)
     else
     {
       et = trj->t - trj->t0; //elapsed time
-      cmd = trj->q0 + trj->vel*et;
+      //cmd = trj->q0 + trj->vel*et;
+      cmd = trj->q0 + trj->v0*et + 0.5*et*et*trj->acc;
     }
     trj->last_et = et;
     trj->last_cmd = cmd;
@@ -629,13 +635,16 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
     if (use_acc < min_acc)
     { //accelleration must get us to vel_mode at halfway point
       use_acc = min_acc;
-      syslog(LOG_ERR, "CalcSegment: Boosted acceleration to %f to match velocity change",acc1);
+      syslog(LOG_ERR, "CalcSegment: Boosted acceleration to %f to match velocity change",use_acc);
     }
-    
-    dt_acc1 = dt - sqrt(dt*dt - 2*fabs(dq)/use_acc);
+    if (use_acc != 0.0)
+      dt_acc1 = dt - sqrt(dt*dt - 2*fabs(dq)/use_acc);
+    else
+      dt_acc1 = 0.0;
     acc1 = Sgn(dq)*use_acc;
     q_acc1 = q1 + 0.5*acc1*dt_acc1*dt_acc1;
-    vel = q_acc1/(dt - dt_acc1);
+    //vel = (q2 - q_acc1)/(dt - dt_acc1);
+    vel = acc1*dt_acc1;
     acc2 = Sgn(v_next - vel)*seg_acc;
     dt_acc2 = (v_next - vel)/acc2;
     dt_vel = dt - dt_acc1 - dt_acc2/2.0;
@@ -650,12 +659,27 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
   {
     vel = dq/dt;
     acc1 = Sgn(vel - v_prev)*use_acc;
-    dt_acc1 = (vel - v_prev)/acc1;
+    if (fabs(vel - v_prev) > dt*fabs(acc1)/2){
+      acc1 = (vel - v_prev)*2/dt;
+      syslog(LOG_ERR, "CalcSegment: Boosted mid segment acceleration to %f to match velocity change",acc1);
+
+    }
+    if (acc1 != 0.0){
+      dt_acc1 = (vel - v_prev)/acc1;
+    }
+    else {
+      dt_acc1 = 0.0;
+    }
     q_acc1 = q1 + 0.5*acc1*dt_acc1*dt_acc1;
     
     acc2 = Sgn(v_next - vel)*use_acc;
     dt_acc2 = (v_next - vel)/acc2;
     dt_vel = dt - dt_acc1/2 - dt_acc2/2;
+    if (dt_vel < 0.0){
+      dt_vel = 0.0; 
+
+      syslog(LOG_ERR, "CalcSegment: Mid segment: Not enough acceleration!");
+    }
   }
   else //Ending segment (decelerate)
   {
@@ -665,13 +689,29 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
     { //accelleration must get us to vel_mode at halfway point
       use_acc = min_acc;
       syslog(LOG_ERR, "CalcSegment: Boosted acc:%f to match end velocity change %f %f",acc1,dq,dt);
-      syslog(LOG_ERR, "CalcSegment:  %f %f %f %f",q1,q2,t1,t2);
+      //syslog(LOG_ERR, "CalcSegment:  %f %f %f %f",q1,q2,t1,t2);
     }
-    dt_acc2 = dt - sqrt(dt*dt - 2*fabs(dq)/use_acc);
+    if (use_acc != 0.0){
+      dt_acc2 = dt - sqrt(dt*dt - 2*fabs(dq)/use_acc);
+    }
+    else {
+      dt_acc1 = 0.0;
+    }
     acc2 = -1.0*Sgn(dq)*use_acc;
-    vel = (dq - 0.5*acc2*dt_acc2*dt_acc2)/(dt - dt_acc2);
+    //vel = (dq - 0.5*acc2*dt_acc2*dt_acc2)/(dt - dt_acc2);
+    vel = -1.0*acc2*dt_acc2;
     acc1 = Sgn((vel - v_prev))*use_acc;
-    dt_acc1 = ((vel - v_prev))/acc1;
+    if (fabs(vel - v_prev) > dt*fabs(acc1)/2){
+      acc1 = (vel - v_prev)*2/dt;
+      syslog(LOG_ERR, "CalcSegment: Boosted mid segment acceleration to %f to match velocity change",acc1);
+    }
+    if (acc1 != 0.0){
+      dt_acc1 = (vel - v_prev)/acc1;
+    }
+    else {
+      dt_acc1 = 0.0;
+    }
+    
     dt_vel = dt - dt_acc2 - dt_acc1/2;
      if (dt_vel < 0.0){
       dt_vel = 0.0; 
@@ -688,8 +728,11 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
   seg->dt_vel = dt_vel;
   seg->dt_acc1 = dt_acc1;
   seg->dt_acc2 = dt_acc2;
-  //syslog(LOG_ERR, "CalcSegment: Time: dt_acc1: %f dt_vel: %f dt_acc2: %f",dt_acc1,dt_vel,dt_acc2);
-  //syslog(LOG_ERR, "CalcSegment: val: acc1: %f vel: %f  acc2: %f",acc1,vel,acc2);
+#if 0
+  syslog(LOG_ERR, "CalcSeg: Time: dt_acc1: %f dt_vel: %f dt_acc2: %f",dt_acc1,dt_vel,dt_acc2);
+  syslog(LOG_ERR, "CalcSeg: val: acc1: %f vel: %f  acc2: %f",acc1,vel,acc2);
+  syslog(LOG_ERR, "CalcSeg: ");
+#endif
 }
 /** Internal function to allocate memory for a vta object*/
 via_trj_array* malloc_new_vta(int num_columns)

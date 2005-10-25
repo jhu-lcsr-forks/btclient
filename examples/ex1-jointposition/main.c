@@ -43,12 +43,17 @@ int main(int argc, char **argv)
   atexit((void*)closelog);
 
 
-  if(test_and_log(
-            InitializeSystem("wamConfig.txt"),
-            "Failed to initialize system")){
-     exit(-1);
-  }
-  atexit((void*)CloseSystem);//register CloseSystem for shutdown
+
+#ifndef BTOLDCONFIG
+  err = ReadSystemFromConfig("wamConfig.txt"); 
+#else //BTOLDCONFIG
+#endif //BTOLDCONFIG    
+  wam = OpenWAM("wamConfig.txt");
+  if(!wam)
+  {
+    exit(1);
+  }            
+
 
   /* Check and handle any command line arguments */
   if(argc > 1)
@@ -61,15 +66,6 @@ int main(int argc, char **argv)
     }
   }
 
-  /* Set up the WAM data structure, init kinematics, dynamics, haptics */
-  err =  InitWAM("wam.dat");
-  if(err)
-  {
-    exit(1);
-  }
-
-  /* Retrieve pointer to WAM data structure */
-  wam = GetWAM();
 
   /* Start up wam control loop */
   wam_thd.period = 0.002;

@@ -588,6 +588,10 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       stop_trj_bts(active_bts);
     }
     break;
+    
+    case ',':  /* Simulate presontly loaded trajectory */
+      sim_vta(vta,0.002,getval_vn(idx_vr(get_vr_vta(vta),numrows_vr(get_vr_vta(vta))-1),0),"sim.csv");
+    break;
     case '?':  /* Play presontly loaded trajectory */
     setmode_bts(active_bts,SCMODE_TRJ);
     moveparm_bts(active_bts,vel,acc);

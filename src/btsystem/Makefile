@@ -10,13 +10,13 @@ SLIB_TARG = ./libbtsystem.so
 CC = gcc
 PATH_INCLUDE = -I./include -I/usr/realtime/include
 PATH_INSTALL = ../..
-#Replace -DUSE_FUSION with -DUSE_RTAI31
-CFLAGS += -DUSE_RTAI31  ${PATH_INCLUDE} 
-#Debugging - Comment out line below for more speed
-CFLAGS += -g -DBT_NULL_PTR_GUARD -DBT_ARRAY_BOUNDS_CHECK -DBTDEBUG
-#CFLAGS += -g -DBT_NULL_PTR_GUARD -DBT_ARRAY_BOUNDS_CHECK -DBTDEBUG -DBTOLDCONFIG
 
-#Replace -lrtai with -llxrt
+#set BTOLDCFG to -DBTOLDCONFIG for RIC,MIT,Ualberta,BPW
+#ex: #export BTOLDCFG=-DBTOLDCONFIG
+CFLAGS += -DUSE_RTAI31  ${PATH_INCLUDE} ${BTOLDCFG}
+#Debugging - Comment out line below for more speed
+CFLAGS += -g -DBT_NULL_PTR_GUARD -DBT_ARRAY_BOUNDS_CHECK -DBTDEBUG  
+
 LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L./lib -lm -lpthread -llxrt -lntcan
 
 $(LIB_OBJS) : $(INCL_FILES)

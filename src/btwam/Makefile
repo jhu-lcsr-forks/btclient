@@ -6,8 +6,9 @@ CC = gcc
 PATH_INCLUDE = -I./include -I/usr/realtime/include -I../btsystem
 PATH_INSTALL = ../..
 
-#Replace -DUSE_FUSION with -DUSE_RTAI31
-CFLAGS += -g -DUSE_RTAI31  ${PATH_INCLUDE}
+#set BTOLDCFG to -DBTOLDCONFIG for RIC,MIT,Ualberta,BPW
+#ex: #export BTOLDCFG=-DBTOLDCONFIG
+CFLAGS += -DUSE_RTAI31  ${PATH_INCLUDE} ${BTOLDCFG}
 #CFLAGS += -g -DUSE_RTAI31  ${PATH_INCLUDE} -DBTOLDCONFIG
 
 #Replace -lrtai with -llxrt
