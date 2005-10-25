@@ -43,6 +43,7 @@ to make it easier to find and maintaind later
 
 wam_struct WAM;
 extern int gimbalsInit;
+extern bus_struct *buses;
 
 #define LOW_TRQ_COEFFICIENT (0.75)
 //#define BTDOUBLETIME
@@ -124,7 +125,7 @@ void InitVectors(void){
 */
 wam_struct* OpenWAM(char *fn)
 {
-  int cnt,ret;
+  int cnt,ret,err;
   const double pi = 3.14159;
   
   // Allocate memory for the WAM vectors
@@ -193,9 +194,11 @@ wam_struct* OpenWAM(char *fn)
 
   new_bot(&WAM.robot,WAM.num_actuators);
   
-  btreal theta, d, a, alpha, tmpdbl;
+  btreal theta, d, a, alpha, mass, tmpdbl;
   vect_n com;
-  char robotType[32];
+  char robotType[256];
+  char key[256];
+  long reply;
   
   strcpy(robotType, buses[0].device_name);
   
@@ -228,8 +231,8 @@ wam_struct* OpenWAM(char *fn)
 
       if(link != WAM.num_actuators){
           // Query for motor_position (JIDX)
-          getProperty(WAM.bus, WAM.act[link].puck.ID, JIDX, &reply);
-          motor_position[link] = reply;
+          getProperty(WAM.act[0].bus, WAM.act[link].puck.ID, JIDX, &reply);
+          WAM.motor_position[link] = reply;
       
           // Read joint PID constants
           sprintf(key, "%s.link[%d].pid.kp", robotType, link);

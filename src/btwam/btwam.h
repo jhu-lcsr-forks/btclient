@@ -34,6 +34,8 @@ running quickly.
 #include "btjointcontrol.h"
 #include "btpath.h"
 #include "btlogger.h"
+#include "btparser.h"
+#include "btmath.h"
 
 #define WAM2004
 
@@ -179,7 +181,7 @@ void SetJointSpace(wam_struct* wam);
 btreal GetGravityComp(wam_struct* wam);
 void SetGravityComp(wam_struct* wam,btreal scale);
 
-AddEndpointForce(wam_struct* wam,vect_n *force); //Cartesian only
+int AddEndpointForce(wam_struct* wam,vect_n *force); //Cartesian only
 
 /** Turns position constraint on/off. 
     If the robot is being controlled in JointSpace (SetJointSpace), it will apply a PD loop to each joint.
@@ -201,9 +203,9 @@ void SetPositionConstraint(wam_struct* wam, int onoff);
   
 */
 int MoveWAM(wam_struct* wam,vect_n * dest);
-MoveSetup(wam_struct* wam,btreal vel,btreal acc);
+int MoveSetup(wam_struct* wam,btreal vel,btreal acc);
 int MoveIsDone(wam_struct* wam);
-MoveStop(wam_struct* wam);
+int MoveStop(wam_struct* wam);
 //MovePause(wam_struct* wam);
 //MoveContinue(wam_struct* wam);
 
@@ -213,8 +215,8 @@ void StopContinuousTeach();
 void ServiceContinuousTeach();
 ct_traj* LoadContinuousTeach(char* filename); //allocate and return vectray if successful
 
-GetTime(); //Wrapper for rt_get_cpu_time_ns()
-GetElapsedTime(); //Static time variable
+long GetTime(); //Wrapper for rt_get_cpu_time_ns()
+long GetElapsedTime(); //Static time variable
 
 void CloseWAM(wam_struct* wam); //Cleanup
 

@@ -156,17 +156,19 @@ int main(int argc, char **argv)
   while((chr=getch())==ERR)
     usleep(5000);
 
-
-  if(test_and_log(
 #ifdef BTOLDCONFIG
-            InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
-#else //BTOLDCONFIG
-            InitializeSystem("wamConfig.txt"),
-#endif //BTOLDCONFIG
-            "Failed to initialize system"))
+  if(test_and_log(
+       InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
+       "Failed to initialize system"))
   {
     exit(-1);
   }
+#else //BTOLDCONFIG
+    err = ReadSystemFromConfig("wamConfig.txt")
+    wam = OpenWAM("wamConfig.txt");
+//InitializeSystem("wamConfig.txt"),
+#endif //BTOLDCONFIG
+            
   atexit((void*)CloseSystem);//register CloseSystem for shutdown
 
   /* Check and handle any command line arguments */
@@ -180,15 +182,15 @@ int main(int argc, char **argv)
     }
   }
 
-  /* Set up the WAM data structure, init kinematics, dynamics, haptics */
+  /* Set up the WAM data structure, init kinematics, dynamics, haptics 
   err =  InitWAM("wam.dat");
   if(err)
   {
     exit(1);
   }
-
+*/
   /* Obtain a pointer to the wam state object */
-  wam = GetWAM();
+  //wam = GetWAM();
 
   signal(SIGINT, sigint_handler); //register the interrupt handler
 

@@ -86,21 +86,21 @@ int ReadSystemFromConfig(char *fn){
   err = parseFile(fn);
   if (err){
       syslog(LOG_ERR, "ReadSystemFromConfig- Unable to parse file: %s", fn);
-      return(NULL);
+      return(-1);
   }
   err = parseGetVal(INT, "system.busCount", &busCount);
   if(err){
       syslog(LOG_ERR, "ReadSystemFromConfig- Could not find 'system.busCount' in %s", fn);
-      return(NULL);
+      return(-1);
   }
   if(busCount > MAX_BUSES){
       syslog(LOG_ERR, "ReadSystemFromConfig- Error: busCount (%d) > MAX_BUSES (%d)", busCount, MAX_BUSES);
-      return(NULL);
+      return(-1);
   }
   buses = (bus_struct*)malloc(busCount * sizeof(bus_struct));
   if(buses == NULL){
       syslog(LOG_ERR, "ReadSystemFromConfig- Could not malloc() space for %d buses", busCount);
-      return(NULL);
+      return(-1);
   }
   for(i = 0; i < busCount; i++){
       sprintf(key, "system.bus[%d].type", i);
@@ -120,7 +120,7 @@ int ReadSystemFromConfig(char *fn){
           // buses[i].address = addrtol(tmpstr)
       }else{
           syslog(LOG_ERR, "ReadSystemFromConfig- Unknown bus type (%s) for bus %d in file %s", tmpstr, i, fn);
-          return(NULL);
+          return(-1);
       }
   }
   num_buses = busCount;
@@ -401,7 +401,7 @@ int InitializeSystem(void)
     // Else, bus type not valid
     else
     {
-      syslog(LOG_ERR, "Invalid bus type (%d) found in config file \"%s\"", valStr, fn);
+      syslog(LOG_ERR, "InitializeSystem: Invalid bus type (%d)", buses[bus_number].type);
     }
   }
 

@@ -177,7 +177,7 @@ int ReadSystemFromConfig(char *fn); // Use a config file to determine the roboti
 #ifdef BTOLDCONFIG
 int InitializeSystem(char *actuatorfile,char *busfile,char *motorfile,char *puckfile); //Global bus variables, global actuator variable, load data from files, open can bus
 #else
-int InitializeSystem(char *fn);
+int InitializeSystem(void);
 #endif
 
 void CloseSystem(); //
