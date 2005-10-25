@@ -185,7 +185,7 @@ wam_struct* OpenWAM(char *fn)
   WAM.act = GetActuators(&(WAM.num_actuators));
 #else //BTOLDCONFIG
   //------------------------
-  err = InitializeSystem(void);
+  err = InitializeSystem();
   if(err){
       syslog(LOG_ERR, "OpenWAM: InitializeSystem returned err = %d", err);
       return(NULL);
