@@ -820,7 +820,7 @@ know whether we have to zero or not...
 void ParkWAM()
 {
   MovePropsWAM(scale_vn(0.2,WAM.vel),scale_vn(0.2,WAM.acc));
-  MoveWAM(WAM.park_location);
+  MoveWAM(&WAM, WAM.park_location);
 }
 
 
@@ -892,7 +892,7 @@ void GCompSample(vect_n *trq, double p1, double p2, double p3, double p4)
 
 
     const_vn(trq, p1, p2, p3, p4);
-    MoveWAM(trq);
+    MoveWAM(&WAM, trq);
     usleep(4000000);
 
     //trq->q[0] = WAM.Jtrq.q[0];

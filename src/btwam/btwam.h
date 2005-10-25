@@ -202,7 +202,7 @@ void SetPositionConstraint(wam_struct* wam, int onoff);
 
   
 */
-int MoveWAM(wam_struct* wam,vect_n * dest);
+void MoveWAM(wam_struct* wam,vect_n * dest);
 int MoveSetup(wam_struct* wam,btreal vel,btreal acc);
 int MoveIsDone(wam_struct* wam);
 int MoveStop(wam_struct* wam);
