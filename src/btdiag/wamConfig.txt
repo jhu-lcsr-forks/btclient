@@ -6,11 +6,13 @@ system{
         type = "CAN"                # Type of bus
         device = "/dev/can0"        # Communication device
         address = 0                 # Address of robot
+        name = "WAM4"               # Name of the robot
     }
     bus[]{
         type = "Ethernet"           # Type of bus
         device = "eth0"             # Communication device
         address = "192.168.139.65"  # Address of robot
+        name = "EtherWAM"           # Name of the robot
     }
 }
 
@@ -40,6 +42,8 @@ WAM4{
         
         m = 12.044                      # Mass of link (kg)
         com = <0.0, 0.1405, -0.0061>    # Center of mass (m)
+        vel = 0.5                       # Default velocity
+        acc = 0.5                       # Default acceleration
         
         pid{ # PID control parameters
             kp = 1800
@@ -60,6 +64,8 @@ WAM4{
         
         m = 5.903                       # Mass of link (kg)
         com = <0.0, -0.0166, 0.0096>    # Center of mass (m)
+        vel = 0.5                       # Default velocity
+        acc = 0.5                       # Default acceleration
         
         pid{ # PID control parameters
             kp = 5500
@@ -80,6 +86,8 @@ WAM4{
         
         m = 2.08                        # Mass of link (kg)
         com = <-0.0443, 0.2549, 0.0>    # Center of mass (m)
+        vel = 0.5                       # Default velocity
+        acc = 0.5                       # Default acceleration
         
         pid{ # PID control parameters
             kp = 1200
@@ -100,6 +108,8 @@ WAM4{
         
         m = 1.135                       # Mass of link (kg)
         com = <0.01465, 0.0, 0.1308>    # Center of mass (m)
+        vel = 0.5                       # Default velocity
+        acc = 0.5                       # Default acceleration
         
         pid{ # PID control parameters
             kp = 1000

@@ -40,6 +40,7 @@
  *==============================*/
 #define MAX_BUSES (2) 
 
+enum{CAN,ETHERNET};
 
 /** Information related to motor controllers (pucks).
 This structure contains information that is specific to each puck. This is seperated from motor information 
@@ -171,6 +172,8 @@ extern "C"
 {
 #endif/* __cplusplus */
 //Top level functions-----------------------------
+int DiscoverSystem(void); // Automatically discover the robotic systems connected to this computer
+int ReadSystemFromConfig(char *fn); // Use a config file to determine the robotic systems connected to this computer
 #ifdef BTOLDCONFIG
 int InitializeSystem(char *actuatorfile,char *busfile,char *motorfile,char *puckfile); //Global bus variables, global actuator variable, load data from files, open can bus
 #else

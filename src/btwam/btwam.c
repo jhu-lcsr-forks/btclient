@@ -45,7 +45,7 @@ wam_struct WAM;
 extern int gimbalsInit;
 
 #define LOW_TRQ_COEFFICIENT (0.75)
-//#define BTREALTIME
+//#define BTDOUBLETIME
 
 /*==============================*
  * Internal use Functions       *
@@ -73,19 +73,8 @@ void DumpWAM2Syslog();
 /*==============================*
  * Functions                    *
  *==============================*/
-/** Initialize a WAM
- 
-  This function calls the necessary lower-level libbt functions to set
-    up the pucks, enumerate them and scan in the wam configuration information.
- 
-  \retval 0 Completed successfully
-  \retval -1 Some error occured, Check syslog.
-*/
-int InitWAM(char *wamfile)
-{
-  int cnt,ret;
-  const double pi = 3.14159;
-  
+
+void InitVectors(void){
   WAM.zero_offsets = new_vn(7);
   WAM.stop_torque = new_vn(7);
   WAM.park_location = new_vn(7);
@@ -123,6 +112,23 @@ int InitWAM(char *wamfile)
   WAM.R6acc = new_vn(6);
   WAM.R6trq = new_vn(6);
   WAM.R6force = new_vn(6);
+}
+ 
+/** Initialize a WAM
+ 
+  This function calls the necessary lower-level libbt functions to set
+    up the pucks, enumerate them and scan in the wam configuration information.
+ 
+  \retval 0 Completed successfully
+  \retval -1 Some error occured, Check syslog.
+*/
+wam_struct* OpenWAM(char *fn)
+{
+  int cnt,ret;
+  const double pi = 3.14159;
+  
+  // Allocate memory for the WAM vectors
+  InitVectors();
   
   /* Joint Control plugin initialization */
   for (cnt = 0; cnt < 7; cnt ++){
@@ -174,11 +180,98 @@ int InitWAM(char *wamfile)
 #ifdef BTOLDCONFIG
   if(test_and_log(
     EnumerateSystem(),"Failed to enumerate system"))  {return -1;}
-#endif //BTOLDCONFIG
+  
+  WAM.act = GetActuators(&(WAM.num_actuators));
+#else //BTOLDCONFIG
   //------------------------
+  err = InitializeSystem(void);
+  if(err){
+      syslog(LOG_ERR, "OpenWAM: InitializeSystem returned err = %d", err);
+      return(NULL);
+  }
   WAM.act = GetActuators(&(WAM.num_actuators));
 
   new_bot(&WAM.robot,WAM.num_actuators);
+  
+  btreal theta, d, a, alpha, tmpdbl;
+  vect_n com;
+  char robotType[32];
+  
+  strcpy(robotType, buses[0].device_name);
+  
+  // Parse config file
+  err = parseFile(fn);
+  if(err){
+      syslog(LOG_ERR, "OpenWAM: Error parsing config file- %s", fn);
+      return(NULL);
+  }
+  // Read park_location
+  sprintf(key, "%s.link[%d].home", robotType, link);
+  parseGetVal(VECTOR, key, (void*)WAM.park_location);
+      
+  for(link = 0; link <= WAM.num_actuators; link++){
+      // Get the DH parameters
+      sprintf(key, "%s.link[%d].dh.theta", robotType, link);
+      parseGetVal(DOUBLE, key, (void*)&theta);
+      sprintf(key, "%s.link[%d].dh.d", robotType, link);
+      parseGetVal(DOUBLE, key, (void*)&d);
+      sprintf(key, "%s.link[%d].dh.a", robotType, link);
+      parseGetVal(DOUBLE, key, (void*)&a);
+      sprintf(key, "%s.link[%d].dh.alpha", robotType, link);
+      parseGetVal(DOUBLE, key, (void*)&alpha);
+      
+      // Get the mass parameters
+      sprintf(key, "%s.link[%d].com", robotType, link);
+      parseGetVal(VECTOR, key, (void*)com);
+      sprintf(key, "%s.link[%d].mass", robotType, link);
+      parseGetVal(DOUBLE, key, (void*)&mass);
+
+      if(link != WAM.num_actuators){
+          // Query for motor_position (JIDX)
+          getProperty(WAM.bus, WAM.act[link].puck.ID, JIDX, &reply);
+          motor_position[link] = reply;
+      
+          // Read joint PID constants
+          sprintf(key, "%s.link[%d].pid.kp", robotType, link);
+          parseGetVal(DOUBLE, key, (void*)&WAM.Kp);
+          sprintf(key, "%s.link[%d].pid.kd", robotType, link);
+          parseGetVal(DOUBLE, key, (void*)&WAM.Kd);
+          sprintf(key, "%s.link[%d].pid.ki", robotType, link);
+          parseGetVal(DOUBLE, key, (void*)&WAM.Ki);
+          sprintf(key, "%s.link[%d].pid.max", robotType, link);
+          parseGetVal(DOUBLE, key, (void*)&WAM.saturation);
+          
+          // Read joint vel/acc defaults
+          sprintf(key, "%s.link[%d].vel", robotType, link);
+          parseGetVal(DOUBLE, key, (void*)&tmpdbl);
+          setval_vn(WAM.vel, link, tmpdbl);
+          sprintf(key, "%s.link[%d].acc", robotType, link);
+          parseGetVal(DOUBLE, key, (void*)&tmpdbl);
+          setval_vn(WAM.acc, link, tmpdbl);
+      
+          link_geom_bot(&WAM.robot, link, theta * pi, d, a, alpha * pi);
+          link_mass_bot(&WAM.robot, link, com, mass);
+      }else{
+          tool_mass_bot(&WAM.robot, link, com, mass);
+          tool_geom_bot(&WAM.robot, link, theta * pi, d, a, alpha * pi);
+      }
+      
+  }
+  
+      
+  // Link geometry - file
+  // Link mass - file
+  // motor_position - enum
+  // zero_offsets - unused
+  // stop_torque - unused
+  // park_location - file
+  // zero_order - unused
+  // Joint PID constants Kp, Kd, Ki - file
+  // Joint saturation limits - file
+  // Joint vel/acc defaults - file
+#endif //BTOLDCONFIG
+
+
   /* WAM tipped forward hack */
   /*
   setrow_m3(WAM.robot.world->origin,0,0.0,0.0,1.0);
@@ -187,6 +280,7 @@ int InitWAM(char *wamfile)
   */
   /* end WAM tipped forward hack */
   
+#ifdef BTOLDCONFIG  
   link_geom_bot(&WAM.robot,0,0.0,0.0,0.0,-pi/2.0);
   link_geom_bot(&WAM.robot,1,0.0,0.0,0.0,pi/2.0);
   link_geom_bot(&WAM.robot,2,0.0,0.550,0.045,-pi/2.0);
@@ -287,11 +381,12 @@ int InitWAM(char *wamfile)
     return -1;
   }
   
-  fill_vn(WAM.robot.dq,0.0);
-  fill_vn(WAM.robot.ddq,0.0);
-
   if(test_and_log(
     LoadWAM(wamfile),"Failed to load wam config file")) {return -1;}
+  #endif //BTOLDCONFIG
+  
+  fill_vn(WAM.robot.dq,0.0);
+  fill_vn(WAM.robot.ddq,0.0);
 
   WAM.Gcomp = 0;
   set_gravity_bot(&WAM.robot, 0.0);
@@ -310,7 +405,7 @@ int InitWAM(char *wamfile)
       pthread_mutex_init(&(WAM.loop_mutex),NULL),
       "Could not initialize mutex for WAM control loop.");
       
-  return 0;
+  return(&WAM);
 }
 
 void CloseWAM()
@@ -409,7 +504,7 @@ void WAMControlThread(void *data)
     test_and_log(
       pthread_mutex_lock(&(WAM.loop_mutex)),"WAMControlThread lock mutex failed");
     
-#ifdef BTREALTIME
+#ifdef BTDOUBLETIME
     rt_make_soft_real_time();
 #endif
     pos1_time = rt_get_cpu_time_ns(); //&prof
@@ -418,7 +513,7 @@ void WAMControlThread(void *data)
     
     pos2_time = rt_get_cpu_time_ns(); //&prof
     WAM.readpos_time = pos2_time - pos1_time; //&prof
-#ifdef BTREALTIME    
+#ifdef BTDOUBLETIME    
     rt_make_hard_real_time();
 #endif
     ActAngle2Mpos((WAM.Mpos)); //Move motor angles into a wam_vector variable
@@ -464,7 +559,7 @@ void WAMControlThread(void *data)
     
     Jtrq2Mtrq((WAM.Jtrq), (WAM.Mtrq));  //Convert from joint torques to motor torques
     Mtrq2ActTrq(WAM.Mtrq); //Move motor torques from wam_vector variable into actuator database
-#ifdef BTREALTIME
+#ifdef BTDOUBLETIME
     rt_make_soft_real_time();
 #endif
     trq1_time = rt_get_cpu_time_ns(); //&prof
@@ -473,7 +568,7 @@ void WAMControlThread(void *data)
     
     trq2_time = rt_get_cpu_time_ns(); //&prof
     WAM.writetrq_time = trq2_time - trq1_time; //&prof
-#ifdef BTREALTIME
+#ifdef BTDOUBLETIME
     rt_make_hard_real_time();
 #endif
     loop_end = rt_get_cpu_time_ns(); //&prof

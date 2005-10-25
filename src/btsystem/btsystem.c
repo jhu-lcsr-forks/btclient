@@ -53,8 +53,8 @@ int num_actuators;    //**< Number of actuators
 int act_data_valid = 0; //**< Used to make sure programmer did things right
 int extra_pucks=0; //**< If there are more pucks on the bus than we expect we may have problems getting broadcast positions.
 
-bus_struct buses[MAX_BUSES]; //**< Array of bus data
-int num_buses; //**< Number of buses.
+bus_struct *buses = NULL; //**< Array of bus data
+int num_buses = 0; //**< Number of buses.
 int bus_data_valid = 0; //**< Used to make sure programmer did things right
 extern int gimbalsInit;
 
@@ -69,6 +69,63 @@ actuator_struct * Load_Actuator_File(int *n_actuators, char * actuator_filename,
 /*==============================*
  * Functions                    *
  *==============================*/
+/** Automatically discover the robotic systems connected to this computer */
+int DiscoverSystem(void){
+    
+}
+
+/** Use a config file to determine the robotic systems connected to this computer */
+int ReadSystemFromConfig(char *fn){ 
+  int err;
+  int busCount;
+  char key[256];
+  char tmpstr[256];
+  int i;
+  
+  // Parse config file
+  err = parseFile(fn);
+  if (err){
+      syslog(LOG_ERR, "ReadSystemFromConfig- Unable to parse file: %s", fn);
+      return(NULL);
+  }
+  err = parseGetVal(INT, "system.busCount", &busCount);
+  if(err){
+      syslog(LOG_ERR, "ReadSystemFromConfig- Could not find 'system.busCount' in %s", fn);
+      return(NULL);
+  }
+  if(busCount > MAX_BUSES){
+      syslog(LOG_ERR, "ReadSystemFromConfig- Error: busCount (%d) > MAX_BUSES (%d)", busCount, MAX_BUSES);
+      return(NULL);
+  }
+  buses = (bus_struct*)malloc(busCount * sizeof(bus_struct));
+  if(buses == NULL){
+      syslog(LOG_ERR, "ReadSystemFromConfig- Could not malloc() space for %d buses", busCount);
+      return(NULL);
+  }
+  for(i = 0; i < busCount; i++){
+      sprintf(key, "system.bus[%d].type", i);
+      parseGetVal(STRING, key, tmpstr);
+      sprintf(key, "system.bus[%d].device", i);
+      parseGetVal(STRING, key, buses[i].device_str);
+      sprintf(key, "system.bus[%d].name", i);
+      parseGetVal(STRING, key, buses[i].device_name);
+      sprintf(key, "system.bus[%d].address", i);
+      if(!strcmp(tmpstr,"CAN")){
+          buses[i].type = CAN;
+          parseGetVal(LONG, key, &buses[i].address);
+      }else if(!strcmp(tmpstr,"Ethernet")){
+          buses[i].type = ETHERNET;
+          parseGetVal(STRING, key, tmpstr);
+          // Convert "192.168.0.10" into a long int
+          // buses[i].address = addrtol(tmpstr)
+      }else{
+          syslog(LOG_ERR, "ReadSystemFromConfig- Unknown bus type (%s) for bus %d in file %s", tmpstr, i, fn);
+          return(NULL);
+      }
+  }
+  num_buses = busCount;
+}
+
 #ifdef BTOLDCONFIG
 /** Load information from configuration files, initialize structures, and open CAN device drivers
 */
@@ -214,7 +271,7 @@ int InitializeSystem(char *actuatorfile,char *busfile,char *motorfile,char *puck
         - -2 Error parsing the config file
         
 */
-int InitializeSystem(char *fn)
+int InitializeSystem(void)
 {
   int err, bus_number, id;
   char key[256], valStr[256];
@@ -231,18 +288,18 @@ int InitializeSystem(char *fn)
   int group_cnt[65];
 
   /* Goals:
-      Initialize and enumerate each bus. 
-      Fill in bus/actuator/motor/puck data structures 
+      Initialize and enumerate each bus (bus_struct buses should already be filled in). 
+      Fill in actuator/motor/puck data structures 
   */
 
   // Parse config file
-  err = parseFile(fn);
-  if (err)
-    return -2;
+  //err = parseFile(fn);
+  //if (err)
+  //  return -2;
 
   // For each bus, initialize
-  err = parseGetVal(INT, "system.busCount", (void*)&num_buses);
-  syslog(LOG_ERR, "Bus count = %d", num_buses);
+  //err = parseGetVal(INT, "system.busCount", (void*)&num_buses);
+  //syslog(LOG_ERR, "Bus count = %d", num_buses);
   num_actuators = 0;
   for(bus_number = 0; bus_number < num_buses; bus_number++)
   {
@@ -258,17 +315,18 @@ int InitializeSystem(char *fn)
       }
     }
     // Get bus device string
-    sprintf(key, "system.bus[%d].device", bus_number);
-    err = parseGetVal(STRING, key, (void*)(buses[bus_number].device_str));
+    //sprintf(key, "system.bus[%d].device", bus_number);
+    //err = parseGetVal(STRING, key, (void*)(buses[bus_number].device_str));
     // Get bus type
-    sprintf(key, "system.bus[%d].type", bus_number);
-    err = parseGetVal(STRING, key, (void*)valStr);
+    //sprintf(key, "system.bus[%d].type", bus_number);
+    //err = parseGetVal(STRING, key, (void*)valStr);
     // Get bus address
-    sprintf(key, "system.bus[%d].address", bus_number);
+    //sprintf(key, "system.bus[%d].address", bus_number);
     // If this is a CANbus
-    if(!strcmp(valStr, "CAN"))
+    if(buses[bus_number].type == CAN)//!strcmp(valStr, "CAN"))
     {
-      err = parseGetVal(INT, key, (void*)&canAddr);
+      //err = parseGetVal(INT, key, (void*)&canAddr);
+      canAddr = buses[bus_number].address;
       // Initialize the hardware channel
       /** \bug Should have a commMutex for each device.*/
       if(err = pthread_mutex_init(&commMutex, NULL))
@@ -335,15 +393,15 @@ int InitializeSystem(char *fn)
       }
     }
     // If this is an Ethernet bus
-    else if(!strcmp(valStr, "Ethernet"))
+    else if(buses[bus_number].type == ETHERNET)//!strcmp(valStr, "Ethernet"))
     {
-      err = parseGetVal(STRING, key, (void*)ethAddr);
-      syslog(LOG_ERR, "Robot at %s not initialized, Ethernet not supported", ethAddr);
+      //err = parseGetVal(STRING, key, (void*)ethAddr);
+      syslog(LOG_ERR, "Robot on bus %d not initialized, Ethernet not supported", bus_number);
     }
     // Else, bus type not valid
     else
     {
-      syslog(LOG_ERR, "Invalid bus type \"%s\" found in config file \"%s\"", valStr, fn);
+      syslog(LOG_ERR, "Invalid bus type (%d) found in config file \"%s\"", valStr, fn);
     }
   }
 
@@ -656,15 +714,15 @@ actuator_struct * GetActuators(int *Num_actuators)
   *Num_actuators = num_actuators;
   return act;
 }
-/** Gets a pointer to the busses data
+/** Gets a pointer to the buses data
 \param Num_buses A pointer to the int variable you want loaded with the number of buses.
 \return Returns an bus_struct pointer.
 */
 bus_struct * GetBuses(int *Num_buses)
 {
-  if(!act_data_valid)
+  if(!buses)
   {
-    syslog(LOG_ERR,"GetBusses: Tried to do stuff with actuators before you initialized them with InitializeActuators()");
+    syslog(LOG_ERR,"GetBuses: buses data structure is NULL");
     return NULL;
   }
   *Num_buses = num_buses;

@@ -164,30 +164,31 @@ typedef struct btwam_struct{
 }wam_struct;
 
 
+/*************  Final API  ******************/
 
-/**  Final API **/
+wam_struct* OpenWAM(char *wamfile); //NULL -> wamConfig.txt
+
+int BlankWAMcallback(struct btwam_struct *wam);
+void registerWAMcallback(wam_struct* wam,void *func);
+void WAMControlThread(void *data); //data points to wam_struct* wam
+
+void DefineWAMpos(vect_n *wv);
+void SetCartesianSpace(wam_struct* wam);
+void SetJointSpace(wam_struct* wam);
 
 btreal GetGravityComp(wam_struct* wam);
 void SetGravityComp(wam_struct* wam,btreal scale);
-int BlankWAMcallback(struct btwam_struct *wam);
-void registerWAMcallback(wam_struct* wam,void *func);
 
-/**************************************/
-bus_struct* bs ReadSystemFromConfig(char *wamfile);
-int DiscoverWAM(bus_struct* bs);
-/**  */
-wam_struct* OpenWAM(char *wamfile,bus_struct* bs); //NULL -> wamConfig.txt
-void CloseWAM(wam_struct* wam); //Cleanup
+AddEndpointForce(wam_struct* wam,vect_n *force); //Cartesian only
 
-void DefineWAMpos(vect_n *wv);/**\bug Change to DefineWAMpos()*/
-SetCartesianSpace(wam_struct* wam);
-SetJointSpace(wam_struct* wam);
-
-SetPositionConstraint(wam_struct* wam,int onoff);
-
+/** Turns position constraint on/off. 
+    If the robot is being controlled in JointSpace (SetJointSpace), it will apply a PD loop to each joint.
+    If the robot is being controlled in CartesianSpace (SetCartesianSpace), it will apply a PD loop to the robot endpoint.
+*/
+void SetPositionConstraint(wam_struct* wam, int onoff);
 
 /**
-  Return immediadely
+  Return immediately
   
   1. Save constraint state
   2. Enable position/trajectory constraint
@@ -203,22 +204,19 @@ int MoveWAM(wam_struct* wam,vect_n * dest);
 MoveSetup(wam_struct* wam,btreal vel,btreal acc);
 int MoveIsDone(wam_struct* wam);
 MoveStop(wam_struct* wam);
-
 //MovePause(wam_struct* wam);
 //MoveContinue(wam_struct* wam);
-
-GetTime(); //Wrapper for rt_get_cpu_time_ns()
-GetElapsedTime(); //Static time variable
-
-AddEndpointForce(wam_struct* wam,vect_n *force); //Cartesian only
-
-void WAMControlThread(void *data); //data points to wam_struct* wam
 
 // Continuous Teach & Play Recording
 void StartContinuousTeach(int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
 void StopContinuousTeach(); 
 void ServiceContinuousTeach();
 ct_traj* LoadContinuousTeach(char* filename); //allocate and return vectray if successful
+
+GetTime(); //Wrapper for rt_get_cpu_time_ns()
+GetElapsedTime(); //Static time variable
+
+void CloseWAM(wam_struct* wam); //Cleanup
 
 /******************************************/
 
