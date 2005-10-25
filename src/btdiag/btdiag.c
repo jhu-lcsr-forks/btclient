@@ -47,7 +47,7 @@ it to properly establish the time values.
  *==============================*/
 
 #include "btwam.h"
-
+#include "bthaptics.h"
 
 /*==============================*
  * PRIVATE DEFINED constants    *
@@ -96,6 +96,22 @@ extern int isZeroed;
 static RT_TASK *mainTask;
 btthread disp_thd,wam_thd;
 double sample_rate;
+/******* Haptics *******/
+
+
+btgeom_plane myplane,plane2,planes[10];
+bteffect_wall mywall,wall[10];
+bteffect_wickedwall mywickedwall,mywickedwall2,wickedwalls[10];
+bthaptic_object myobject,myobject2,objects[20];
+btgeom_sphere mysphere,mysphere2,spheres[10];
+bteffect_bulletproofwall mybpwall,bpwall[10];
+btgeom_box boxs[10];
+bteffect_global myglobal;
+vect_3 *p1,*p2,*p3,*zero_v3;
+bthaptic_scene bth;
+btgeom_state pstate;
+
+
 /*==============================*
  * PRIVATE Function Prototypes  *
  *==============================*/
@@ -111,7 +127,7 @@ void clearScreen(void);
 void finish_entry(void);
 void start_entry(void);
 void init_ncurses(void);
-
+void init_haptics(void);
 /*==============================*
  * Functions                    *
  *==============================*/
@@ -197,7 +213,7 @@ int main(int argc, char **argv)
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
 
   const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
-//  const_vn(wv, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0); //Blank link home pos
+  // const_vn(wv, 0.0,  0.0, 0.0,  0.0, 0.0, 0.0, 0.0); //Blank link home pos
   SetWAMpos(wv);
   //prep modes
   jdest = new_vn(len_vn(wam->Jpos));
@@ -215,6 +231,8 @@ int main(int argc, char **argv)
 
   active_file[0] = 0;
 
+  init_haptics(); 
+  
   wam_thd.period = 0.002;
   btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)&wam_thd);
 
@@ -235,6 +253,62 @@ int main(int argc, char **argv)
   btthread_stop(&wam_thd); //Kill WAMControlThread
 
   exit(1);
+}
+int WAMcallback(struct btwam_struct *wam)
+{
+  eval_state_btg(&(pstate),wam->Cpos);
+  eval_bthaptics(&bth,(vect_n*)wam->Cpos,(vect_n*)pstate.vel,(vect_n*)zero_v3,(vect_n*)wam->Cforce);
+  apply_tool_force_bot(&(wam->robot), wam->Cpoint, wam->Cforce, wam->Ctrq);
+  return 0;
+}
+void init_haptics(void)
+{
+  int cnt;
+  p1 = new_v3();
+  p2 = new_v3();
+  p3 = new_v3();
+  zero_v3 = new_v3();
+  new_bthaptic_scene(&bth,10);
+  init_state_btg(&pstate,0.002,30.0);
+
+  init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.4,0.0,0.0),0);
+  init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.42,0.0,0.0),1);
+  init_sp_btg( &spheres[2],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.3,0.0,0.0),0);
+  init_sp_btg( &spheres[3],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.32,0.0,0.0),1);
+  //init_wall(&mywall,0.0,10.0);
+  for(cnt = 0;cnt < 6;cnt++){
+    init_wickedwall(&wickedwalls[cnt],3000.0, 10.0,5.0,0.020,0.01);
+  }
+  init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
+  init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,0.0),const_v3(p2,0.7,0.01,0.0),const_v3(p3,0.7,0.0,0.01),0.4,0.6,0.4,1);
+
+  for(cnt = 0;cnt < 6;cnt++){
+    init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&bpwall[0],bulletproofwall_nf);
+    //init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
+    addobject_bth(&bth,&objects[cnt]);
+  }
+  
+  for(cnt = 0;cnt < 4;cnt++){
+    init_normal_sphere_bth(&objects[cnt+6],&spheres[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
+    addobject_bth(&bth,&objects[cnt+6]);
+  }
+  /*
+//for box demo
+  init_bx_btg(&boxs[1],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.5,0.01,0.0),const_v3(p3,0.5,0.0,0.01),0.2,0.2,0.2,1);
+ 
+  for(cnt = 0;cnt < 6;cnt++){
+    init_bulletproofwall(&bpwall[cnt],0.002,3000.0,0.002,3000.0,50.0,20.0);
+    //init_wall(&wall[cnt],6000.0,50.0);
+    init_normal_plane_bth(&objects[cnt+10],&boxs[1].side[cnt],(void*)&bpwall[cnt],bulletproofwall_nf);
+    addobject_bth(&bth,&objects[cnt+10]);
+  }
+  init_global_bth(&myobject2, &myglobal,60.0,C_v3(-0.0,0.0,0.0));
+  addobject_bth(&bth,&myobject2);
+ */
+  const_v3(wam->Cpoint,0.0,-0.0,0.0);
+  
+  registerWAMcallback(WAMcallback);
+
 }
 
 /* Initialize the ncurses screen library */
@@ -321,22 +395,20 @@ void RenderMAIN_SCREEN()
   //clear();
   /***** Display the interface text *****/
   line = 0;
-  //mvprintw(line , 0, "012345678 1 2345678 2 2345678 3 2345678 4 2345678 5 2345678 6 2345678 7 2345678-8");++line;
+//mvprintw(line , 0, "012345678 1 2345678 2 2345678 3 2345678 4 2345678 5 2345678 6 2345678 7 2345678-8");++line;
 
-  mvprintw(line , 0, "Barrett Technology Teach & Play Example");
-  ++line;
-
+  mvprintw(line , 0, "Barrett Technology - BTdiag");
 
   if (active_bts == &(wam->Jsc)){
-    mvprintw(line , 0, "Mode: Joint Space    ");
+    mvprintw(line , 30, "Mode: Joint Space    ");
   }
   else if (active_bts == &(wam->Csc)){
-    mvprintw(line , 0, "Mode: Cartesian Space");
+    mvprintw(line , 30, "Mode: Cartesian Space");
   }
   else{
-    mvprintw(line , 0, "Mode: Undefined!!!   ");
+    mvprintw(line , 30, "Mode: Undefined!!!   ");
   }
-  
+  line+=2;
     
   if (cteach)
     mvprintw(line , 50, "Teaching continuous trajectoy");
@@ -357,17 +429,13 @@ void RenderMAIN_SCREEN()
   ++line;
   mvprintw(line , 0, "Vel: %+8.4f Acc: %+8.4f  Dest:%s ",active_bts->vel,active_bts->acc,sprint_vn(vect_buf1,active_dest));
 
-  
-  ++line;
-  ++line;
-
+  line+=3;
   mvprintw(line, 0 , "Position :%s ", sprint_vn(vect_buf1,active_pos));
   ++line;
   mvprintw(line, 0 , "Target :%s ", sprint_vn(vect_buf1,active_bts->qref));
   ++line;
   mvprintw(line, 0 , "Force :%s ", sprint_vn(vect_buf1,active_trq));
-  ++line;
-  ++line;
+  line+=3;
   if (vta != NULL)
   {//print current point
     vr = get_vr_vta(vta);
@@ -407,11 +475,11 @@ void RenderMAIN_SCREEN()
     mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
     line +=2;
   }
-  line++;
-  line++;
+  line+=3;
+
   mvprintw(line,0,"bts: state:%d",active_bts->mode);
   //if(active_bts->btt.dat != NULL)
-    mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
+  mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
   entryLine = line + 2;
   refresh();
 }
@@ -443,11 +511,10 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
   case 'X':  /* eXit */
     done = 1;
     break;
-  case 'z':  /* Send home-position to WAM */
-    const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
-    //const_vn(wv, 0.0, -2.017, 0.0, 3.14, 0.0, 0.0, 0.0); //blanklink
-    SetWAMpos(wv);
-    break;
+  //case 'z':  /* Send home-position to WAM */
+  //  const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
+  //  SetWAMpos(wv);
+  //  break;
   case 'g':  /* Set gravity compensation */
     start_entry();
     addstr("Enter scale value for gravity (1.0 = 9.8m/s^2): ");
@@ -492,6 +559,12 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       pthread_mutex_unlock(&(disp_mutex));
     }
     break;
+  case 'D': //Haptics on
+      bth.state = 1;
+      break;
+  case 'd': //Haptics off
+      bth.state = 0;
+      break;    
   case 'p':  /* Turn on/off Constraint */
     if (getmode_bts(active_bts)!=SCMODE_IDLE)
       setmode_bts(active_bts,SCMODE_IDLE);
@@ -499,9 +572,35 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       setmode_bts(active_bts,SCMODE_POS);
     break;
 
-  case '?':  /* Play presontly loaded trajectory */
+  case '.':  /* Play presontly loaded trajectory */
     setmode_bts(active_bts,SCMODE_TRJ);
     moveparm_bts(active_bts,vel,acc);
+    active_bts->loop_trj = 0;
+    prep_trj_bts(active_bts);
+    elapsed = 0;
+    done1 = 0;
+    while (movestatus_bts(active_bts) == BTTRAJ_INPREP && !done1)
+    {
+      usleep(100000);
+      elapsed ++;
+      if (elapsed > 100)
+        done1 = 1;
+
+    }
+    syslog(LOG_ERR,"Done with prep");
+
+    if (elapsed < 100)
+      start_trj_bts(active_bts);
+    else
+    {
+      setmode_bts(active_bts,SCMODE_IDLE);
+      stop_trj_bts(active_bts);
+    }
+    break;
+    case '?':  /* Play presontly loaded trajectory */
+    setmode_bts(active_bts,SCMODE_TRJ);
+    moveparm_bts(active_bts,vel,acc);
+    active_bts->loop_trj = 1;
     prep_trj_bts(active_bts);
     elapsed = 0;
     done1 = 0;
