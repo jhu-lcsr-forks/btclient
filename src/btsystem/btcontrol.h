@@ -318,9 +318,9 @@ void first_point_vta(via_trj_array* vt);
 void last_point_vta(via_trj_array* vt);
 int ins_point_vta(via_trj_array* vt, vect_n *pt);
 int del_point_vta(via_trj_array* vt);
-int get_current_point_vta(via_trj_array* vt);
-int set_current_point_vta(via_trj_array* vt,int idx);
-
+int get_current_idx_vta(via_trj_array* vt);
+int set_current_idx_vta(via_trj_array* vt,int idx);
+void get_current_point_vta(via_trj_array* vt, vect_n *dest);
 
 int scale_vta(via_trj_array* vt,double vel,double acc);
 void set_acc_vta(via_trj_array* vt,btreal acc);

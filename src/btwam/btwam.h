@@ -27,7 +27,7 @@ running quickly.
 */
 #ifndef _BTWAM_H
 #define _BTWAM_H
-
+#include <rtai_lxrt.h>
 #include "btsystem.h"
 #include "btrobot.h"
 #include "btcontrol.h"

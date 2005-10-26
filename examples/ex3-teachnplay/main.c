@@ -343,7 +343,7 @@ void RenderMAIN_SCREEN()
   if (vta != NULL)
   {//print current point
     vr = get_vr_vta(vta);
-    cpt = get_current_point_vta(vta);
+    cpt = get_current_idx_vta(vta);
     nrows = numrows_vr(vr);
     mvprintw(line,0,"Current Index:%d of %d    ",cpt,nrows-1);
     line++;

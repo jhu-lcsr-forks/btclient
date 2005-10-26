@@ -315,6 +315,7 @@ vect_n* eval_bts(btstatecontrol *sc);
 
 int setmode_bts(btstatecontrol *sc, int mode);
 int getmode_bts(btstatecontrol *sc);
+int get_trjstate_bts(btstatecontrol *sc);
 //int prep_trj_bts(btstatecontrol *sc); Depreciated
 int moveto_bts(btstatecontrol *sc,vect_n* dest);
 void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc);

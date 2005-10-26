@@ -57,7 +57,11 @@ BTINLINE int btmutex_unlock(btmutex *btm)
 }
 
 
-/** Null pointer access flag */
+/** Null pointer access flag 
+
+\todo Eventually we should check for pointers outside of program heap instead of
+just null pointers
+*/
 int btptr_ok(void *ptr,char *str)
 {
   if (ptr == NULL){
@@ -69,6 +73,23 @@ int btptr_ok(void *ptr,char *str)
   }
   return 1;
 }
+
+/** Pointer out of range check 
+
+Presently only checks for NULL
+Has same (backwards) return values as btptr_ok()
+*/
+int btptr_chk(void *ptr)
+{
+  if (ptr == NULL){
+#ifdef BT_BACKTRACE 
+/**\bug insert backtrace code here*/
+#endif
+    return 0;
+  }
+  return 1;
+}
+
 /** Prints an error if array index is out of range */
 int idx_bounds_ok(int idx,int max,char *str)
 {

@@ -91,6 +91,7 @@ BTINLINE int btmutex_unlock(btmutex *btm);
   #define BTPTR_OK(x,y) 
 #endif
 int btptr_ok(void *ptr,char *str);
+int btptr_chk(void *ptr); //like btptr_ok but no syslog
 int idx_bounds_ok(int idx,int max,char *str);
 
 //void dump_backtrace_to_syslog();

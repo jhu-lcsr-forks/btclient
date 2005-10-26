@@ -897,17 +897,25 @@ int del_point_vta(via_trj_array* vt)
   else return delete_vr(vt->trj[0].vr);
 }
 /** Return the index of the present edit point*/
-int get_current_point_vta(via_trj_array* vt)
+int get_current_idx_vta(via_trj_array* vt)
 {
   if (vt == NULL) return -1;
   else return edit_point_vr(vt->trj[0].vr);
 }
 /** Set the index of the present edit point */
-int set_current_point_vta(via_trj_array* vt,int idx)
+int set_current_idx_vta(via_trj_array* vt,int idx)
 {
   if (vt == NULL) return -1;
   else return edit_at_vr(vt->trj[0].vr,idx);
 }
+void get_current_point_vta(via_trj_array* vt, vect_n *dest)
+{
+  vectray *vr;
+  vr = vt->trj[0].vr;
+  set_vn(dest,edit_vr(vr));
+}
+
+
 /** Get a pointer to the vectray object being used by this via trajectory
 object */
 vectray* get_vr_vta(via_trj_array* vt)
@@ -984,7 +992,7 @@ int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt
   vt = (via_trj_array*)btt->dat;
 #ifdef BT_NULL_PTR_GUARD
   if(!btptr_ok(vt,"bttrajectory_interface_getstate_vt")) 
-    return = BTTRAJ_OFF;
+    return  BTTRAJ_OFF;
 #endif  
   ret = BTTRAJ_DONE;
   for (cnt = 0;cnt<vt->elements;cnt++)

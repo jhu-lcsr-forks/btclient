@@ -164,7 +164,7 @@ void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq,
   sc->dt = dt;
   sc->t = t;
   mapdata_bttrj(&sc->btt,qref,dt);
-  mapdata_btpos(&sc->btt,q,dq,ddq,qref,t,dt);
+  mapdata_btpos(&sc->btp,q,dq,ddq,qref,t,dt);
 
 
   //threm
@@ -351,6 +351,18 @@ int getmode_bts(btstatecontrol *sc)
   if (!btptr_ok(sc,"getmode_bts")) exit(1);
 #endif 
   return sc->mode;
+}
+
+int get_trjstate_bts(btstatecontrol *sc)
+{
+#ifdef BT_NULL_PTR_GUARD
+  if (!btptr_ok(sc,"getmode_bts")) exit(1);
+#endif 
+  if (!btptr_chk(sc->btt.dat)){
+    return BTTRAJ_OFF;
+  }
+  else
+    return sc->btt.state;
 }
 /*! \brief Request a state controller mode
  
