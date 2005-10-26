@@ -5,7 +5,8 @@ ncurses to provide a simple interactive user interface. The main() and ProcessIn
 functions do all the interesting work.
 
 To compile & run
-
+0. #grep case main.c > keymap.txt
+Review/print keymap.
 1. #make
 2. Switch on WAM
 3. Idle WAM (press SHIFT and IDLE buttons on pendant. The yellow light should come on)
