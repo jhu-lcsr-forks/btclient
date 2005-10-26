@@ -127,7 +127,13 @@ wam_struct* OpenWAM(char *fn)
 {
   int cnt,ret,err;
   const double pi = 3.14159;
+  btreal theta, d, a, alpha, mass, tmpdbl;
+  vect_3 *com;
   
+  char robotType[256];
+  char key[256];
+  long reply;
+  int link;
   // Allocate memory for the WAM vectors
   InitVectors();
   
@@ -201,13 +207,7 @@ wam_struct* OpenWAM(char *fn)
 
   new_bot(&WAM.robot,WAM.num_actuators);
   
-  btreal theta, d, a, alpha, mass, tmpdbl;
-  vect_3 *com;
   
-  char robotType[256];
-  char key[256];
-  long reply;
-  int link;
   com = new_v3(); 
   
   
