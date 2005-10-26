@@ -275,8 +275,10 @@ wam_struct* OpenWAM(char *fn)
           link_geom_bot(&WAM.robot, link, theta * pi, d, a, alpha * pi);
           link_mass_bot(&WAM.robot, link, com, mass);
       }else{
-          tool_mass_bot(&WAM.robot, com, mass);
           tool_geom_bot(&WAM.robot, theta * pi, d, a, alpha * pi);
+          tool_mass_bot(&WAM.robot, com, mass);
+          
+         
       }
       
   }

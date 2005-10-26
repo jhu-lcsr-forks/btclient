@@ -203,10 +203,10 @@ int main(int argc, char **argv)
   signal(SIGINT, sigint_handler); //register the interrupt handler
 
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
-  setProperty(0,10,TL2,FALSE,8200);
+  //setProperty(0,10,TL2,FALSE,8200);
 
-  //const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
-  const_vn(wv, 0.0,  0.0, 0.0,  0.0, 0.0, 0.0, 0.0); //Blank link home pos
+  const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
+  //const_vn(wv, 0.0,  0.0, 0.0,  0.0, 0.0, 0.0, 0.0); //Blank link home pos
   DefineWAMpos(wam,wv);
   //prep modes
   jdest = new_vn(len_vn(wam->Jpos));
@@ -261,50 +261,52 @@ int WAMcallback(struct btwam_struct *wam)
 void init_haptics(void)
 {
   int cnt;
+  btreal xorig,yorig,zorig;
   p1 = new_v3();
   p2 = new_v3();
   p3 = new_v3();
-  zero_v3 = new_v3();
+  xorig = 0.0;
+  yorig = 0.0;
+  zorig = 0.10;
+
   new_bthaptic_scene(&bth,10);
   init_state_btg(&pstate,0.002,30.0);
 
-  init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.4,0.0,0.0),0);
-  init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.42,0.0,0.0),1);
-  init_sp_btg( &spheres[2],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.3,0.0,0.0),0);
-  init_sp_btg( &spheres[3],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.32,0.0,0.0),1);
+  init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.4,0.0,zorig+0.0),0);
+  init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.42,0.0,zorig+0.0),1);
+  init_sp_btg( &spheres[2],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.3,0.0,zorig+0.0),0);
+  init_sp_btg( &spheres[3],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.32,0.0,zorig+0.0),1);
+
   //init_wall(&mywall,0.0,10.0);
-  for(cnt = 0;cnt < 6;cnt++)
-  {
+  for(cnt = 0;cnt < 6;cnt++){
     init_wickedwall(&wickedwalls[cnt],3000.0, 10.0,5.0,0.020,0.01);
   }
   init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
-  init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,0.0),const_v3(p2,0.7,0.01,0.0),const_v3(p3,0.7,0.0,0.01),0.4,0.6,0.4,1);
+  init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,zorig+0.0),const_v3(p2,0.7,0.01,zorig+0.0),const_v3(p3,0.7,0.0,zorig+0.01),1.0,0.6,0.4,1);
 
-  for(cnt = 0;cnt < 6;cnt++)
-  {
+  for(cnt = 0;cnt < 6;cnt++){
     init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&bpwall[0],bulletproofwall_nf);
     //init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
     addobject_bth(&bth,&objects[cnt]);
   }
-
-  for(cnt = 0;cnt < 4;cnt++)
-  {
+  
+  for(cnt = 0;cnt < 4;cnt++){
     init_normal_sphere_bth(&objects[cnt+6],&spheres[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
     addobject_bth(&bth,&objects[cnt+6]);
   }
   /*
-  //for box demo
+//for box demo
   init_bx_btg(&boxs[1],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.5,0.01,0.0),const_v3(p3,0.5,0.0,0.01),0.2,0.2,0.2,1);
-
+ 
   for(cnt = 0;cnt < 6;cnt++){
     init_bulletproofwall(&bpwall[cnt],0.002,3000.0,0.002,3000.0,50.0,20.0);
     //init_wall(&wall[cnt],6000.0,50.0);
     init_normal_plane_bth(&objects[cnt+10],&boxs[1].side[cnt],(void*)&bpwall[cnt],bulletproofwall_nf);
     addobject_bth(&bth,&objects[cnt+10]);
-}
+  }
   init_global_bth(&myobject2, &myglobal,60.0,C_v3(-0.0,0.0,0.0));
   addobject_bth(&bth,&myobject2);
-  */
+ */
   const_v3(wam->Cpoint,0.0,-0.0,0.0);
 
   registerWAMcallback(wam,WAMcallback);
@@ -438,6 +440,7 @@ void RenderMAIN_SCREEN()
   mvprintw(line, 0 , "Target :%s ", sprint_vn(vect_buf1,active_bts->qref));
   ++line;
   mvprintw(line, 0 , "Force :%s ", sprint_vn(vect_buf1,active_trq));
+
   line+=3;
   if (vta != NULL)
   {//print current point
@@ -600,19 +603,21 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     setmode_bts(active_bts,prev_mode);
     break;
 
-  case '|':  /* Start continuos teach */
-    StartContinuousTeach(1,50,"teachpath");
+  case 'Y':  /* Start continuos teach */
+     if (active_bts == &(wam->Jsc))
+      StartContinuousTeach(1,25,"teachpath");
+     else
+      StartContinuousTeach(0,25,"teachpath");
     cteach = 1;
     break;
-  case '\\': /*Stop continuos teach */
+  case 'y': /*Stop continuos teach */
     StopContinuousTeach();
     DecodeDL("teachpath","teach.csv",0);
     cteach = 0;
     stop_trj_bts(active_bts);
     /** \bug sleeps that are necessary might be forgotten. Can we eliminate the need?*/
     usleep(10000); //needed to give the command a chance to work.
-    if (vta != NULL)
-      destroy_vta(&vta); //empty out the data if it was full
+    destroy_vta(&vta); //empty out the data if it was full
     strcpy(active_file,"teach.csv");
     vta = read_file_vta(active_file,20);
     register_vta(active_bts,vta);
@@ -625,8 +630,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       addstr("Enter filename for trajectory: ");
       refresh();
       scanw("%s", active_file);
-      if (vta != NULL)
-        destroy_vta(&vta); //empty out the data if it was full
+      destroy_vta(&vta); //empty out the data if it was full
 
       vta = read_file_vta(active_file,20);
       register_vta(active_bts,vta);
@@ -672,8 +676,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       addstr("Enter the max number of points that will be in your trajectory: ");
       refresh();
       ret = scanw("%d", &dtmp);
-      if (vta != NULL)
-        destroy_vta(&vta);
+      destroy_vta(&vta);
 
       strcpy(active_file,user_def);
       vta = new_vta(len_vn(active_pos),dtmp);

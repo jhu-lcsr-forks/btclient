@@ -184,7 +184,7 @@ enum {
 };
 #else //BTOLDCONFIG
 enum {
-	VERS,
+	VERS=0,
 	ROLE,
 	SN,
 	ID,
@@ -194,7 +194,7 @@ enum {
 	VALUE,
 	MODE,
 	D,
-	TORQ,
+	TORQ = 10,
 	P,
 	V,
 	E,

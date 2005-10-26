@@ -95,7 +95,8 @@ typedef struct {
   btlinkforce eforce,lastforce,tmpforce;
   
   //link envelope info
-  
+  //Sanity check
+  int has_geom;
 }btlink;
 /** Main robot description and interaction object
 

@@ -63,6 +63,7 @@ int new_btlink(btlink* link,int type)
   link->Gscale = 1;
   if (type) {link->type = 1; link->R = 0.0; link->P = 1.0;}
   else { link->type = 0; link->R = 1.0; link->P = 0.0;}
+  link->has_geom = 0;
 }
 /** Allocate and initialize a new robot object.
 \param nlinks Number of links the robot has not including the base link. (nlinks = number of joints)
@@ -116,6 +117,7 @@ void link_geom_bot(btrobot* robot, int link, double theta, double d, double a, d
   make_transform_btlink(&(robot->links[link]),0.0);
   getcol_mh(robot->links[link].Rl,robot->links[link].trans,3); 
   set_v3(robot->links[link].Rl,matTXvec_m3(robot->links[link].trans,robot->links[link].Rl));
+  robot->links[link].has_geom = 1;
 }
 /** Define the DH parameters of the tool
   the value passed for the joint parameter (theta or d depending on revolute or prismatic joint)
@@ -136,6 +138,7 @@ void tool_geom_bot(btrobot* robot,double theta, double d, double a, double alpha
   make_transform_btlink(robot->tool,0.0);
   getcol_mh(robot->tool->Rl,robot->tool->trans,3); 
   set_v3(robot->tool->Rl,matTXvec_m3(robot->tool->trans,robot->tool->Rl));
+  robot->tool->has_geom = 1;
 }
 /** get the transform from the base to the tool
 */
@@ -156,6 +159,8 @@ WARNING: you must call link_geom_bot() for this link first!
 */
 void link_mass_bot(btrobot* robot, int link, vect_3 *cog,double m)
 {
+  if (!robot->links[link].has_geom)
+    syslog(LOG_ERR,"WARNING: you must call link_geom_bot() for this link first! (link %d)",link); 
   robot->links[link].m = m;
   set_v3(robot->links[link].cog,cog);
   set_v3(robot->links[link].Rm,add_v3(robot->links[link].Rl,robot->links[link].cog));
@@ -169,6 +174,8 @@ WARNING: you must call tool_geom_bot() for this link first!
 */
 void tool_mass_bot(btrobot* robot, vect_3 *cog,double m)
 {
+  if (!robot->tool->has_geom)
+    syslog(LOG_ERR,"WARNING: you must call tool_geom_bot() for this link first!"); 
   robot->tool->m = m;
   set_v3(robot->tool->cog,cog);
   set_v3(robot->tool->Rm,add_v3(robot->tool->Rl,robot->tool->cog));
