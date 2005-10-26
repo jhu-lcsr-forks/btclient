@@ -265,11 +265,19 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
     //syslog(LOG_ERR,"prep Arclen:%f",arclength_pwl(&(sc->pth)));
     sc->btt.state = BTTRAJ_INPREP;
     sc->prep_only = 0;
+    set_vn(sc->qref, getval_pwl(&(sc->pth),evaluate_traptrj(&(sc->trj),*(sc->dt))));
+  }
+  else if (state == BTTRAJ_READY && sc->loop_trj)
+  {
+    sc->btt.state = BTTRAJ_RUN;
+
   }
   else if (state == BTTRAJ_RUN || state == BTTRAJ_PAUSING || state == BTTRAJ_UNPAUSING || state == BTTRAJ_PAUSED){
     if (state == BTTRAJ_PAUSING && getstate_btramp(&(sc->ramp)) == BTRAMP_MIN) sc->btt.state = BTTRAJ_PAUSED;
     else if (state == BTTRAJ_UNPAUSING && getstate_btramp(&(sc->ramp)) == BTRAMP_MAX) sc->btt.state = BTTRAJ_RUN;
     set_vn(sc->btt.qref, (*(sc->btt.eval))(&(sc->btt)));//evaluate path
+    if ((*(sc->btt.getstate))(&(sc->btt)) == BTTRAJ_DONE)
+	    sc->btt.state = BTTRAJ_DONE;
   }
   
   return sc->btt.qref;
