@@ -168,7 +168,7 @@ vect_n * new_vn(int size) //allocate an n-vector
   //allocate mem for vector,return vector, and return structure
   vmem = btmalloc(2*size*sizeof(btreal)+2*sizeof(vect_n));
   
-  addbtptr(vmem);
+  //addbtptr(vmem);
   n = init_vn((vect_n*)vmem, size);
   fill_vn(n,0.0);
   fill_vn(n->ret,0.0);
@@ -1505,7 +1505,7 @@ vect_3 * new_v3() //allocate an n-vector
   //allocate mem for vector,return vector, and return structure
   vmem = btmalloc(2*sizeof(vect_3));
   
-  addbtptr(vmem);
+  //addbtptr(vmem);
   n = (vect_3*)vmem;
   n->n = 3;
   n->ret = (vect_3*)(vmem + sizeof(vect_3));
@@ -1765,7 +1765,7 @@ quat * new_q() //allocate an n-vector
   //allocate mem for vector,return vector, and return structure
   vmem = btmalloc(2*sizeof(quat));
   
-  addbtptr(vmem);
+  //addbtptr(vmem);
   n = (quat*)vmem;
   n->n = 4;
   n->ret = (quat*)(vmem + sizeof(quat));
@@ -2154,7 +2154,7 @@ matr_h * new_mh() //allocate an n-vector
   //allocate mem for return structure
   ptr = btmalloc(2*sizeof(matr_h));
 
-  addbtptr(ptr);
+  //addbtptr(ptr);
   n = (matr_h*)ptr;
   n->ret = (matr_h*)(ptr + sizeof(matr_h));
   n->ret->ret = n->ret;
@@ -2689,7 +2689,7 @@ btfilter * new_btfilter(int size)
   
   vmem = btmalloc(sizeof(btfilter)+size_*4*sizeof(btreal));
   
-  addbtptr(vmem);
+  //addbtptr(vmem);
   ptr = (btfilter*)vmem;
   ptr->d = (btreal*)(vmem + sizeof(btfilter));
   ptr->n = (btreal*)(vmem + sizeof(btfilter) + size_*sizeof(btreal));
@@ -2922,7 +2922,7 @@ btfilter_vn * new_btfilter_vn(int size,int vsize)
   
   vmem = btmalloc(sizeof(btfilter_vn));
   
-  addbtptr(vmem);
+  //addbtptr(vmem);
   ptr = (btfilter_vn*)vmem;
 
   ptr->d = new_vr(vsize,size_);

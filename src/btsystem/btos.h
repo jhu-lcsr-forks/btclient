@@ -68,7 +68,7 @@ extern "C"
 #endif
 
 #include <pthread.h>
-#include <rtai_lxrt.h>
+//#include <rtai_lxrt.h>
 /*mutex & threads*/
 /**
 The intention of the thread functions is to provide a central point for
@@ -117,7 +117,7 @@ typedef struct {
   void* data;
   btmutex mutex;
   
-  RTIME sampleCount;
+  //RTIME sampleCount;
 }btthread;
 
 btthread* new_btthread();
