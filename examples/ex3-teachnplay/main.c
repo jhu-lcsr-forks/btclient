@@ -78,9 +78,11 @@ int gcompToggle = 0;
 btstatecontrol *active_bts;
 
 vect_n* active_pos;
+vect_n* active_dest;
+vect_n* jdest,*cdest;
 vect_n* active_trq;
 vect_n *wv;
-
+double vel = 0.5,acc = 0.5;
 char active_file[250];
 char *user_def = "User edited point list";
 wam_struct *wam;
@@ -178,10 +180,13 @@ int main(int argc, char **argv)
   const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
   DefineWAMpos(wam,wv);
   //prep modes
+  jdest = new_vn(len_vn(wam->Jpos));
+  cdest = new_vn(len_vn(wam->R6pos));
   active_bts = &(wam->Jsc);
   setmode_bts(active_bts,SCMODE_IDLE);
   active_pos = wam->Jpos;
   active_trq = wam->Jtrq;
+  active_dest = jdest;
   
   //new trajectory
   vta = new_vta(len_vn(active_pos),50);

@@ -589,7 +589,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     }
     break;
     
-    case ',':  /* Simulate presontly loaded trajectory */
+    case ',':  /* Simulate presently loaded trajectory */
       sim_vta(vta,0.002,getval_vn(idx_vr(get_vr_vta(vta),numrows_vr(get_vr_vta(vta))-1),0),"sim.csv");
     break;
     case '?':  /* Play presontly loaded trajectory */
