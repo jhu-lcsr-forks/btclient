@@ -163,6 +163,8 @@ void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq,
   sc->ddq = ddq;
   sc->dt = dt;
   sc->t = t;
+  mapdata_bttrj(&sc->btt,qref,dt);
+  mapdata_btpos(&sc->btt,q,dq,ddq,qref,t,dt);
 
 
   //threm
@@ -233,7 +235,7 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
 { 
   int state,rampstate;
 #ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"moveparm_bts")) exit(1);
+  if (!btptr_ok(sc,"eval_trj_bts")) exit(1);
   
   if (sc->btt.dat == NULL){
     syslog(LOG_ERR,"eval_trj_bts: Pointer to btt.dat is NULL");
@@ -307,7 +309,7 @@ vect_n* eval_bts(btstatecontrol *sc)
   double cmptorque;
   int err;
 #ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"moveparm_bts")) exit(1);
+  if (!btptr_ok(sc,"eval_bts")) exit(1);
 #endif 
 
   btmutex_lock(&(sc->mutex));
@@ -345,7 +347,7 @@ vect_n* eval_bts(btstatecontrol *sc)
 int getmode_bts(btstatecontrol *sc)
 {
 #ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"moveparm_bts")) exit(1);
+  if (!btptr_ok(sc,"getmode_bts")) exit(1);
 #endif 
   return sc->mode;
 }
@@ -363,7 +365,7 @@ int setmode_bts(btstatecontrol *sc, int mode)
   int err;
   double tmp;
 #ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"moveparm_bts")) exit(1);
+  if (!btptr_ok(sc,"setmode_bts")) exit(1);
 #endif 
 
   btmutex_lock(&(sc->mutex));
@@ -415,7 +417,7 @@ int prep_trj_bts(btstatecontrol *sc)
   char vect_buf1[200];
   int ret;
 #ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"moveparm_bts")) exit(1);
+  if (!btptr_ok(sc,"prep_trj_bts")) exit(1);
 #endif 
   
   if(sc->mode != SCMODE_TRJ) return -2;
@@ -450,7 +452,7 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
   int ret;
   btreal arclen;
 #ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"moveparm_bts")) exit(1);
+  if (!btptr_ok(sc,"moveto_bts")) exit(1);
 #endif 
   
   btmutex_lock(&(sc->mutex));
@@ -497,7 +499,7 @@ void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc)
 int movestatus_bts(btstatecontrol *sc)
 {
 #ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"moveparm_bts")) exit(1);
+  if (!btptr_ok(sc,"movestatus_bts")) exit(1);
 #endif  
   return sc->btt.state;
 }
@@ -510,7 +512,7 @@ int start_trj_bts(btstatecontrol *sc)
 {
   int ret = 0;
 #ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"moveparm_bts")) exit(1);
+  if (!btptr_ok(sc,"start_trj_bts")) exit(1);
 #endif  
   
   btmutex_lock(&(sc->mutex));
@@ -532,7 +534,7 @@ ANY => BTTRAJ_STOPPED
 int stop_trj_bts(btstatecontrol *sc)
 {
 #ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"moveparm_bts")) exit(1);
+  if (!btptr_ok(sc,"stop_trj_bts")) exit(1);
 #endif  
   
   btmutex_lock(&(sc->mutex));
@@ -556,7 +558,7 @@ int pause_trj_bts(btstatecontrol *sc,btreal period)
 {
   int state;
 #ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"moveparm_bts")) exit(1);
+  if (!btptr_ok(sc,"pause_trj_bts")) exit(1);
 #endif  
   state = sc->btt.state;
   if (state == BTTRAJ_RUN || state == BTTRAJ_PAUSING || state == BTTRAJ_UNPAUSING || state == BTTRAJ_PAUSED){
@@ -588,7 +590,7 @@ int unpause_trj_bts(btstatecontrol *sc,btreal period)
 {
   int state;
 #ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"moveparm_bts")) exit(1);
+  if (!btptr_ok(sc,"unpause_trj_bts")) exit(1);
 #endif  
   state = sc->btt.state;
   if (state == BTTRAJ_RUN || state == BTTRAJ_PAUSING || state == BTTRAJ_UNPAUSING || state == BTTRAJ_PAUSED){

@@ -982,6 +982,10 @@ int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt
   int ret;
   via_trj_array* vt;
   vt = (via_trj_array*)btt->dat;
+#ifdef BT_NULL_PTR_GUARD
+  if(!btptr_ok(vt,"bttrajectory_interface_getstate_vt")) 
+    return = BTTRAJ_OFF;
+#endif  
   ret = BTTRAJ_DONE;
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
@@ -998,6 +1002,10 @@ See bttrajectory_interface_struct
   int cnt;
   via_trj_array* vt;
   vt = (via_trj_array*)btt->dat;
+#ifdef BT_NULL_PTR_GUARD
+  if(!btptr_ok(vt,"bttrajectory_interface_reset_vt")) 
+    return btt->qref;
+#endif  
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
     setval_vn(btt->qref,cnt,start_via_trj(&(vt->trj[cnt]),cnt));
@@ -1014,6 +1022,12 @@ vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt
   int cnt;
   via_trj_array* vt;
   vt = (via_trj_array*)btt->dat;
+#ifdef BT_NULL_PTR_GUARD
+  if(!btptr_ok(vt,"bttrajectory_interface_eval_vt")) 
+    return btt->qref;
+#endif   
+
+ 
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
     setval_vn(btt->qref,cnt,eval_via_trj(&(vt->trj[cnt]),*(btt->dt)));
@@ -1024,6 +1038,10 @@ vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt
 btstatecontrol object */
 void register_vta(btstatecontrol *sc,via_trj_array *vt)
 { 
+#ifdef BT_NULL_PTR_GUARD
+  if (!btptr_ok(sc,"register_vta")) exit(1);
+  if (!btptr_ok(vt,"register_vta")) syslog(LOG_ERR,"register_vta: Setting btt.dat to NULL");
+#endif   
   maptrajectory_bts(sc,(void*) vt,
                     bttrajectory_interface_reset_vt,
                     bttrajectory_interface_eval_vt,
