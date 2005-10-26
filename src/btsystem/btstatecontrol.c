@@ -230,7 +230,7 @@ int init_bts(btstatecontrol *sc)
   set_btramp(&(sc->ramp),BTRAMP_MAX);
   btmutex_init(&(sc->mutex));
 }
-
+/* Internal function: evaluation portion of case sc.mode */
 inline vect_n* eval_trj_bts(btstatecontrol *sc)
 { 
   int state,rampstate;
@@ -254,7 +254,7 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
         sc->mode = SCMODE_POS;
       }
       else
-        sc->btt.state = BTTRAJ_READY;
+        sc->btt.state = BTTRAJ_RUN;
     }
     set_vn(sc->qref, getval_pwl(&(sc->pth),evaluate_traptrj(&(sc->trj),*(sc->dt))));
   }
@@ -275,7 +275,6 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
   else if (state == BTTRAJ_READY && sc->loop_trj)
   {
     sc->btt.state = BTTRAJ_RUN;
-
   }
   else if (state == BTTRAJ_RUN || state == BTTRAJ_PAUSING || state == BTTRAJ_UNPAUSING || state == BTTRAJ_PAUSED){
     rampstate = getstate_btramp(&(sc->ramp));
@@ -284,8 +283,10 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
     else if (state == BTTRAJ_UNPAUSING && rampstate == BTRAMP_MAX) 
       sc->btt.state = BTTRAJ_RUN;
     set_vn(sc->btt.qref, (*(sc->btt.eval))(&(sc->btt)));//evaluate path
-    if ((*(sc->btt.getstate))(&(sc->btt)) == BTTRAJ_DONE)
+    if ((*(sc->btt.getstate))(&(sc->btt)) == BTTRAJ_DONE){
 	    sc->btt.state = BTTRAJ_DONE;
+      sc->mode = SCMODE_POS;
+    }
   }
   
   return sc->btt.qref;
@@ -351,14 +352,18 @@ int getmode_bts(btstatecontrol *sc)
 #endif 
   return sc->mode;
 }
-/*! \brief Set the state controller mode
+/*! \brief Request a state controller mode
  
   Sets the controller mode. To keep anything from "jumping" unexpectedly, we reset our
   pid controller whenever we switch into pidmode.
   
   We expect that the position state variable q is being continuously updated by 
   calling eval_bts() in a control loop.
+
+\param sc Pointer to an sc object
+       mode SCMODE_IDLE (eval_bts returns 0.0) or SCMODE_POS (eval_bts returns pos ctl torque)
  
+\return Returns what new mode is. (
 */
 int setmode_bts(btstatecontrol *sc, int mode)
 {
@@ -385,34 +390,28 @@ int setmode_bts(btstatecontrol *sc, int mode)
       sc->mode = SCMODE_POS;
     }
     break;
-  case SCMODE_TRJ:
-    if (sc->btp.dat == NULL )
-      sc->mode = SCMODE_IDLE;
-    else if (sc->btt.dat != NULL)
-    {
-      if (sc->btt.state != BTTRAJ_STOPPED)
-        sc->btt.state = BTTRAJ_STOPPED;
-
-      set_vn(sc->btp.qref,sc->btp.q);
-      (*(sc->btp.reset))(&sc->btp);
-      sc->mode = SCMODE_TRJ;
-    }
-    break;
+  case SCMODE_TRJ: //TRJ mode is set by movement commands only
   default:
     sc->mode = SCMODE_IDLE;
     break;
   }
   btmutex_unlock(&(sc->mutex));
-  return 0;
+  return sc->mode;
 }
+
 /** Move the wam from its present position to the starting position of the
 loaded trajectory. 
 
 \return 0 = success
        -1 = Trajectory not in a stopped state. (Prerequisite)
-       -2 = Statecontroller not in TRJ state. (prerequisite)
+       -2 = Statecontroller not in POS state. (prerequisite)
+
+Start the trajectory generator. You must have first moved to
+the start of the trajectory with prep_trj_bts() 
+State transitions:
+BTTRAJ_READY => BTTRAJ_RUN
 */
-int prep_trj_bts(btstatecontrol *sc)
+int start_trj_bts(btstatecontrol *sc)
 {
   char vect_buf1[200];
   int ret;
@@ -420,12 +419,13 @@ int prep_trj_bts(btstatecontrol *sc)
   if (!btptr_ok(sc,"prep_trj_bts")) exit(1);
 #endif 
   
-  if(sc->mode != SCMODE_TRJ) return -2;
+  if(sc->mode != SCMODE_POS) return -2;
   
   btmutex_lock(&(sc->mutex));
   
-  if(sc->btt.state == BTTRAJ_STOPPED)
+  if(sc->btt.state == BTTRAJ_STOPPED || sc->btt.state == BTTRAJ_DONE)
   {
+    sc->mode = SCMODE_TRJ;
     clear_pwl(&(sc->pth));
     add_arclen_point_pwl(&(sc->pth),sc->q);
     add_arclen_point_pwl(&(sc->pth),(*(sc->btt.reset))(&(sc->btt)));
@@ -445,6 +445,7 @@ int prep_trj_bts(btstatecontrol *sc)
   return ret;
   //return prep_bttrj(&sc->btt,sc->q,vel,acc);
 }
+
 /** Move the wam along the loaded trajectory. */
 int moveto_bts(btstatecontrol *sc,vect_n* dest)
 {
@@ -454,10 +455,10 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
 #ifdef BT_NULL_PTR_GUARD
   if (!btptr_ok(sc,"moveto_bts")) exit(1);
 #endif 
-  
+  if(sc->mode != SCMODE_POS) return -2;
   btmutex_lock(&(sc->mutex));
   
-  if(sc->btt.state == BTTRAJ_STOPPED)
+  if(sc->btt.state == BTTRAJ_STOPPED || sc->btt.state == BTTRAJ_DONE)
   {
     clear_pwl(&(sc->pth));
     add_arclen_point_pwl(&(sc->pth),sc->q);
@@ -493,7 +494,6 @@ void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc)
   sc->vel = vel; 
   sc->acc = acc;
   btmutex_unlock(&(sc->mutex));
-
 }
 /** Return the state of the present trajectory generator */
 int movestatus_bts(btstatecontrol *sc)
@@ -503,29 +503,7 @@ int movestatus_bts(btstatecontrol *sc)
 #endif  
   return sc->btt.state;
 }
-/** Start the trajectory generator. You must have first moved to
-the start of the trajectory with prep_trj_bts() 
-State transitions:
-BTTRAJ_READY => BTTRAJ_RUN
-*/
-int start_trj_bts(btstatecontrol *sc)
-{
-  int ret = 0;
-#ifdef BT_NULL_PTR_GUARD
-  if (!btptr_ok(sc,"start_trj_bts")) exit(1);
-#endif  
-  
-  btmutex_lock(&(sc->mutex));
-  
-  if(sc->btt.state == BTTRAJ_READY)
-  {
-    sc->btt.state = BTTRAJ_RUN;
-    ret = -1;
-  }
-  btmutex_unlock(&(sc->mutex));
 
-  return ret;
-}
 
 /** Stop the trajectory generator 
 State transitions:

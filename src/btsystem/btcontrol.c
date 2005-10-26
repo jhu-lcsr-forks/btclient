@@ -511,7 +511,7 @@ double eval_via_trj(via_trj *trj,double dt)
   {
     trj->t += dt;  //increment time
 
-    if ((trj->segment == VTS_IN_ACC) && (trj->t > trj->t_acc))
+    if (/*(trj->segment == VTS_IN_ACC) && */(trj->t > trj->t_acc))
     { //done with acc, set up vel
       if (trj->idx >= trj->n-1)
       {
@@ -531,7 +531,7 @@ double eval_via_trj(via_trj *trj,double dt)
       }
 
     }
-    else if((trj->segment == VTS_IN_VEL) && (trj->t > trj->t_vel))
+    else if(/*(trj->segment == VTS_IN_VEL) && */(trj->t > trj->t_vel))
     { //setup acc segment
       trj->idx++;
       if (trj->idx >= trj->n-1) //Setup final deceleration

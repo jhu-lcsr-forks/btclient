@@ -214,6 +214,13 @@ control, moving trajectory control, and no control (idle)
 
 If the position control is off, a zero torque is returned.
 
+Interlocks:
+SCMODE is set to POS or IDLE by user. SCMODE is automatically escalated to TRJ from POS by movement commands
+
+
+
+
+
 Typical use:
 Initialization:
 \code
@@ -270,6 +277,11 @@ void register_vta(btstatecontrol *sc,via_trj_array *vt)
                     bttrajectory_interface_getstate_vt);
 }
 \endcode
+
+\todo btstatecontrol trajectory looping is a kludge. We really should handle 
+this at the trajectory level
+
+
 */
 
 typedef struct
@@ -296,14 +308,14 @@ typedef struct
   btmutex mutex;
 }btstatecontrol;
 void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq, 
-                   vect_n* qref, vect_n* t, double *dt);
+                                           vect_n* qref, vect_n* t, double *dt);
 int init_bts(btstatecontrol *sc);
 //int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory_interface *trj);
 vect_n* eval_bts(btstatecontrol *sc);
-vect_n* eval_trj_bts(btstatecontrol *sc);
+
 int setmode_bts(btstatecontrol *sc, int mode);
 int getmode_bts(btstatecontrol *sc);
-int prep_trj_bts(btstatecontrol *sc);
+//int prep_trj_bts(btstatecontrol *sc); Depreciated
 int moveto_bts(btstatecontrol *sc,vect_n* dest);
 void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc);
 int movestatus_bts(btstatecontrol *sc);

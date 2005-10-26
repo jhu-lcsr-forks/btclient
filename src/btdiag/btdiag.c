@@ -622,6 +622,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     break;
 
   case '|':  /* Start continuos teach */
+    setmode_bts(active_bts,SCMODE_IDLE);
+    stop_trj_bts(active_bts);
     StartContinuousTeach(1,50,"teachpath");
     cteach = 1;
     break;
