@@ -90,10 +90,15 @@ RECURSIVE              = YES
 EXCLUDE                = btsystem/include/ \
                          btdiag \
                          experimental \
-                         btutil
+                         btutil \
+                         btsystem/playlist.c \
+                         btsystem/playlist.h \
+                         btsystem/btjointcontrol.c \
+                         btsystem/btjointcontrol.h \
+                         btsystem/btseg.*
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = 
-EXAMPLE_PATH           = 
+EXAMPLE_PATH           = ../examples
 EXAMPLE_PATTERNS       = 
 EXAMPLE_RECURSIVE      = NO
 IMAGE_PATH             = 

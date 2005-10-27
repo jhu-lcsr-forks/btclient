@@ -615,7 +615,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     DecodeDL("teachpath","teach.csv",0);
     cteach = 0;
     stop_trj_bts(active_bts);
-    /** \bug sleeps that are necessary might be forgotten. Can we eliminate the need?*/
+    /** \internal \todo sleeps that are necessary might be forgotten. Can we eliminate the need?*/
     usleep(10000); //needed to give the command a chance to work.
     destroy_vta(&vta); //empty out the data if it was full
     strcpy(active_file,"teach.csv");

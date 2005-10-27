@@ -17,7 +17,7 @@
  *                                                                      
  *======================================================================*/
 
-/** \file playlist.c
+/** 
     playlist.c provides functions for teach and play of a WAM being controlled
     using Barrett Technologies WAMControlThread.
     

@@ -87,13 +87,15 @@ to disk in a low speed thread. btlogger uses two buffers. It records data to one
 while the other is being written. The buffers need to be big enough that a buffer 
 is completely written before the other is filled up. 
 
-\bug Add checks to make sure buffer size is large enough.
+
 
 Terminology:
  - Field: One piece of data. Per field info is stored in a btdata_info structure
  - Record: One set of Fields. This represents all the data that needs to be recorded.
  
 Function definitions are in btlogger.c.
+\internal
+\bug Add checks to make sure buffer size is large enough.
 */
 typedef struct
 {

@@ -284,7 +284,7 @@ vect_3* T_to_W_bot(btrobot* robot, vect_3 *position) //find world position of lo
 
 /** Returns a pointer to the transform matrix between the world frame and the
 specified link frame
-\bug It is not safe to perform calculations on this data structure that write 
+\warning It is not safe to perform calculations on this data structure that write 
 any data to it. In most conditions it should be used in the form: 
   set_mh(mytrans,Ln_to_W_trans_bot(robot,2));
 However, it is ok to perform read operations on it

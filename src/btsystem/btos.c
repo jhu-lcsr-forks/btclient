@@ -66,7 +66,7 @@ int btptr_ok(void *ptr,char *str)
 {
   if (ptr == NULL){
 #ifdef BT_BACKTRACE 
-/**\bug insert backtrace code here*/
+/**\todo insert backtrace code here*/
 #endif
     syslog(LOG_ERR,"bt ERROR: you tried to access a null pointer in %s",str);
     return 0;
@@ -83,7 +83,7 @@ int btptr_chk(void *ptr)
 {
   if (ptr == NULL){
 #ifdef BT_BACKTRACE 
-/**\bug insert backtrace code here*/
+/**\todo insert backtrace code here*/
 #endif
     return 0;
   }
@@ -95,7 +95,7 @@ int idx_bounds_ok(int idx,int max,char *str)
 {
   if ((idx < 0) || (idx > max)){
 #ifdef BT_BACKTRACE 
-/**\bug insert backtrace code here*/
+/**\todo insert backtrace code here*/
 #endif
     syslog(LOG_ERR,"bt ERROR: Your index is %d with limit %d in function %s",idx,max,str);
     return 0;
@@ -144,14 +144,14 @@ BTINLINE void btfree(void **ptr)
   *ptr = NULL;
 }
 
-
+/** Allocate memory for a btthread object */
 btthread* new_btthread()
 {
   btthread* mem;
   mem = (btthread*)btmalloc(sizeof(btthread));
   return mem;
 }
-
+/** Free memory for a btthread object */
 void free_btthread(btthread **thd)
 {
   btfree((void**)thd);
@@ -167,7 +167,6 @@ is returned.
   function Pointer to the function that represents the thread
   args Pointer to the arguments you want to pass.
 \internal 
-
 right now we kill the program if a thread create doesn't work. I'm not sure if this 
 is reasonable.
 

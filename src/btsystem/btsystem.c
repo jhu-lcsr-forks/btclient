@@ -871,7 +871,7 @@ void SetTorques()
   
   \retval value
   
-  \bug No way out if the bus is dead and doesn't return a value
+  \warning No way out if the bus is dead and doesn't return a value
 */
 long GetProp(int act_idx, int property)
 {
@@ -1180,7 +1180,7 @@ actuator_struct * Load_Actuator_File(int *n_act, char * actuator_filename, char 
         act[cnt].motor.puckI_per_Nm = ipernm;
       }
     }
-    /*! \bug need to add initialization of othe data in the actuator structure here*/
+    /*! \todo need to add initialization of other data in the actuator structure here*/
   }
 
   fclose(in);  //close the motor file
@@ -1265,7 +1265,7 @@ actuator_struct * Load_Actuator_File(int *n_act, char * actuator_filename, char 
     \retval int number of busses found
     \retval -1 fatal error
     
-    \bug fscanf(bla bla , magic_string, bla bla) needs to be checked
+    \todo fscanf(bla bla , magic_string, bla bla) needs to be checked
 */
 int Load_Bus_File(bus_struct *bus, char * filename)
 {
@@ -1312,7 +1312,7 @@ int Load_Bus_File(bus_struct *bus, char * filename)
     }
 
     //zero out actuator index structures.
-    /** \bug need to allocate this dynamically one day.*/
+    /** \todo need to allocate this dynamically one day.*/
     bus[bus_number].num_pucks = 0;
     bus[bus_number].num_groups = 0;
     for (cnt2 = 0;cnt2 < 65;cnt2++)

@@ -269,8 +269,8 @@ void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
   btmutex_unlock(&(pid->mutex));
 }
 /** Set saturation of the regulator. If set anti-windup will kick in above this value. See btPID object of more info.
- 
-\bug verif anti-windup functionality
+\internal 
+\todo verif anti-windup functionality
 */
 void setsaturation_btPID(btPID *pid, btreal saturation)
 {
@@ -458,8 +458,6 @@ void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj)
                     bttrajectory_interface_getstate_ct);
 
 }
-/** \bug No error checking or error return*/
-
 
 /******************************************************************************/
 
@@ -930,7 +928,7 @@ Adjust all the time points in a via point trajectory array
 based on input velocity. Also sets the corner acceleration
 
 
-\bug Need to include acceleration in the calculation.
+\todo Need to include acceleration in the calculation.
 */
 int scale_vta(via_trj_array* vt,double vel,double acc)
 {
@@ -952,7 +950,7 @@ int scale_vta(via_trj_array* vt,double vel,double acc)
     rval = rval_vr(vr,cnt);
     arclen += norm_vn(sub_vn(subset_vn(lval,1,lval->n),subset_vn(rval,1,rval->n)));
     reset_vn(lval);
-    reset_vn(rval); /** \bug the reset_vn() function is a bit of a hack, is there a better way?*/
+    reset_vn(rval); /**\internal \todo the reset_vn() function is a bit of a hack, is there a better way?*/
     setval_vn(idx_vr(vr,cnt),0,arclen/vel);
   }
   return 0; 

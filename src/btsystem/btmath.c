@@ -102,9 +102,7 @@ BTINLINE void fill_vn(vect_n* dest, btreal val)
 }
 /** Allocate memory for a vect_n object
  
-  \bug depending on how data is allocated, this library will behave differently. I am 
-  starting with lots of data allocation, however, *r of each vector can probably 
-  point to the same data structure. *u is not necessarily needed 
+
   
   \todo Add file/string buffer read and write functions
   
@@ -154,7 +152,11 @@ BTINLINE void fill_vn(vect_n* dest, btreal val)
       vn:p6:e -> vn:p8:e
   }
   \enddot
-*/
+  \internal
+  \bug depending on how data is allocated, this library will behave differently. I am 
+  starting with lots of data allocation, however, *r of each vector can probably 
+  point to the same data structure. *u is not necessarily needed 
+  */
 
 vect_n * new_vn(int size) //allocate an n-vector
 {
@@ -207,7 +209,6 @@ vect_n* init_vn(vect_n* v, int size)
   it is easier to call freebtptr() at the end of your program to free all the btmath
   objects.
   
-  \bug depreciated because freeing a pointer twice is bad and freebtptr supercedes
 */
 void free_vn(vect_n **p)
 {
@@ -268,7 +269,7 @@ int sizeof_vn(vect_n *src) //return sizeof info for whole vector
 }
 
 /** Allocate a group of pointers
-\bug This should just allocate one chunk of memory instead of calling new_vn 
+\todo This should just allocate one chunk of memory instead of calling new_vn 
 multiple times
 */
 int new_vn_group(int num, int size, ...) //allocate a group of n-vectors
@@ -422,7 +423,7 @@ vect_n* const_vn(vect_n* a, ...) //set vector to a constant array of btreals
   return a;
 }
 /** Initialize a single element of dest to 1.0
-\bug No bounds checking for i
+\warning No bounds checking for i
 */
 BTINLINE void einit_vn(vect_n* dest,int i) // einit_vn(&a,3) = <0,0,0,1,0>
 {
@@ -797,7 +798,7 @@ delimiter character
  - -2 = Too many starting delimiters found
  - -3 = No ending delimiter found
  - -4 = Invalid characters found in string
-\bug If there are no valid values ("e,e+-" for example) this returns a  1, which 
+\warning If there are no valid values ("e,e+-" for example) this returns a  1, which 
 is false.
 */
 int strcount_vn(char **src_string,char *delimiter)
@@ -974,7 +975,7 @@ vect_n * csvto_vn(vect_n* dest, char *src)
   return dest;
 }
 
-/** \bug unfinished
+/** \todo unfinished
 */
 int test_vn(btreal error)
 {
@@ -1205,7 +1206,7 @@ int edit_at_vr(vectray *ray,int idx)
 /** Get the present edit point for a vector array.
 
 The vectray object maintains an internal index for editing called
-the edit point. \bug not yet threadsafe
+the edit point. \warning not yet threadsafe
 
 Moving the edit point is accomplished using the following functions:
  - next_vr()
@@ -1229,7 +1230,7 @@ int edit_point_vr(vectray *ray)
 /** 
  Insert a point to the vectray if room is available.
  
- \bug The array does NOT automatically grow!
+ \todo The array does NOT automatically grow!
  
  blank spot is inserted
  num_rows is incremented
@@ -1557,7 +1558,7 @@ BTINLINE vect_3* const_v3(vect_3* dest, btreal v1, btreal v2, btreal v3)
 
 /**
   returns a pointer to a vect_3 filled by constant values
-  \bug This is NOT theadsafe. Maybe allocate memory each time
+  \warning This is NOT theadsafe. Maybe allocate memory each time
 */
 BTINLINE vect_3* C_v3(btreal v1, btreal v2, btreal v3)
 {
@@ -1693,7 +1694,7 @@ char* sprint_v3(char *dest,vect_3* src)
     strcat(dest," >");
   }
 }
-/** \bug unfinished
+/** \todo unfinished
 */
 int test_v3(btreal error)
 {
@@ -1797,7 +1798,7 @@ BTINLINE quat* const_q(quat* dest, btreal v1, btreal v2, btreal v3, btreal v4)
 
 /**
   returns a pointer to a quat filled by constant values
-  \bug This is NOT theadsafe. Maybe allocate memory each time
+  \warning This is NOT theadsafe. Maybe allocate memory each time
 */
 BTINLINE quat* C_q(btreal v1, btreal v2, btreal v3, btreal v4)
 {
@@ -2012,7 +2013,7 @@ quat* R_to_q(quat* dest, matr_3* src)
 }
 
 /** Convert quaternion to rotation matrix
-\bug This could be optimized further, reducing the multiplies by half.
+\todo This could be optimized further, reducing the multiplies by half.
 */
 matr_3* q_to_R(matr_3* dest, quat* src)
 {
@@ -2464,7 +2465,7 @@ BTINLINE btreal getval_m3(matr_3* src, int row, int col)
   return src->q[row*4 + col];
 }
 
-/**
+/** Multiply two matr_3 matrices
 \bug This can be further optimized by assuming an orthonormal matrix and calculating
 the third column as a cross product of the first two
 */

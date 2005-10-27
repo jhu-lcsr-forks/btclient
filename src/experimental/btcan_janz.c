@@ -393,7 +393,7 @@ int initCAN(int bus)
     \return 0 for no error
     \return non-zero in the event of an error
 
-    \bug Sometimes the read() call indicates a FAST_MESSAGE has been received,
+    \warning Sometimes the read() call indicates a FAST_MESSAGE has been received,
          but can_recv_fast() fails to read a message.
 
 */

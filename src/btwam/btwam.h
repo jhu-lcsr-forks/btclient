@@ -19,11 +19,15 @@
  *                                                                      *
  *======================================================================*/
 /** \file btwam.h
-   \brief Provides functions for controlling a WAM that has a CAN infrastructure.
+   \brief Provides functions for controlling a WAM.
  
     btwam assumes that you have a 7 DOF or 4 DOF wam that is being controlled
 on a CAN bus. It provides some high-level functions to help people get up and
 running quickly.
+
+See #btwam_struct
+
+
 */
 #ifndef _BTWAM_H
 #define _BTWAM_H
@@ -79,8 +83,34 @@ about the state of the wam and to maintain the control and calculation data stru
 
 One (and only one) instance of this structure is created for each process. It is 
 available to users to get information about the wam and to get pointers to the 
-control objects.
+control objects. This structure is not protected with mutexes so you should not 
+write to it after starting the control loop thread. 
 
+It may be read from at any time but keep in mind that some of the data structures
+may be in mid-update.
+
+  \code
+  
+  btthread wam_thd;
+  wam_struct *wam;
+  
+  err = ReadSystemFromConfig("wamConfig.txt"); //Prep btsystem
+  wam = OpenWAM("wamConfig.txt");
+  if(!wam)
+  {
+    exit(1);
+  }
+  wam_thd.period = 0.002;
+  btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)&wam_thd);
+  while(!done){
+    //If this was your program you'd be done now!
+  }
+  btthread_stop(&wam_thd); //Kill WAMControlThread
+    
+  \endcode
+
+\todo Remove unused sub-structures.
+\todo Document items of interest.
 */
 typedef struct btwam_struct{
   int id;
@@ -152,7 +182,13 @@ typedef struct btwam_struct{
   btreal F;
   
   //Loop timing info
-  RTIME loop_time,loop_period,readpos_time,writetrq_time,user_time,Jsc_time,Csc_time;
+  RTIME loop_time; //!< Time in nanoseconds from start to end of control loop processing.
+  RTIME loop_period; //!< Sample rate.
+  RTIME readpos_time; //!< Total Time to read positions
+  RTIME writetrq_time; //!< Total Time to send torques
+  RTIME user_time; //!< Time spent in user callback
+  RTIME Jsc_time; //!< Time spent in joint control
+  RTIME Csc_time; //!< Time spent in Cartesian control
   double skipmax;
   pthread_mutex_t loop_mutex; //This mutex is set while the wam control loop is in operation. It is to help slow loops access control loop data
   
@@ -182,6 +218,7 @@ void SetGravityComp(wam_struct *w,btreal scale);
 
 
 /******************************************/
+/** \internal Below this line all functions need work */
 
 void SetCartesianSpace(wam_struct* wam);
 void SetJointSpace(wam_struct* wam);

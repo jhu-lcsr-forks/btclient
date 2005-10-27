@@ -14,12 +14,15 @@
  *  REVISION HISTORY:
  *                                                                      *
  *======================================================================*/
-/** 
-  \bug much of the bus information should be re-written to be dynamically 
-  allocated.
+/** \file btsystem.h
+  \brief Access and use a collection of pucks
   
   btsystem is meant to give an api to a random set of pucks and motors on multiple busses.
   these are abstracted as "actuators"
+  
+  \internal !ToDo! much of the bus information should be re-written to be dynamically 
+  allocated.
+  
 */
  
 #ifndef _BTSYSTEM_H

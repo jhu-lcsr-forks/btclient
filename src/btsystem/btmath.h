@@ -130,8 +130,7 @@ See new_vn(), and set_vn() for more information. A typical block of code using v
 \endcode
 
 
-\bug We should add a compiler define switched set of code to each function to
-add in bounds checking and verbose error reporting
+
 
   Rules: The output of any function can be used as the input of another. The leftmost
   argument will hold the results;
@@ -154,7 +153,8 @@ add in bounds checking and verbose error reporting
     set_vn(b,add_vn(mul_vn(b,a),scale_vn(2.0,mul_vn(a,b)))); 
   \endcode
    
-  
+  \todo We should add a compiler define switched set of code to each function to
+add in bounds checking and verbose error reporting
 */
 
 /*================================*/
@@ -376,7 +376,7 @@ int test_vr(btreal error);
 is allocated dynamically. The vect_n data type is used to 
 access it.
 
-\bug This code is not yet implemented (and not yet necessary)
+\todo This code is not yet implemented (and not yet necessary)
 */
 typedef struct barrett_vectlist_n{
   vect_n *head,*tail;

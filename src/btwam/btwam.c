@@ -17,9 +17,9 @@
 This is a list of tags for functionality integrated into the InitWAM and WAMControlThread code
 to make it easier to find and maintaind later
 
-  //&cteach = Continuous teach & play
-  //&prof = Loop time profiling
-  //&log = Data logging
+  //th cteach = Continuous teach & play
+  //th prof = Loop time profiling
+  //th log = Data logging
 
 */
 #define TWOPI 6.283185
@@ -118,10 +118,15 @@ void InitVectors(void){
 /** Initialize a WAM
  
   This function calls the necessary lower-level libbt functions to set
-    up the pucks, enumerate them and scan in the wam configuration information.
- 
-  \retval 0 Completed successfully
-  \retval -1 Some error occured, Check syslog.
+  up the pucks, enumerate them and scan in the wam configuration information.
+
+  This function may kill the process using exit() if it runs into problems.
+  
+  \param fn wam configuration filename
+  \retval NULL - Some error occured during initialization. Check /var/log/syslog.
+  \retval wam_struct* - Pointer to wam data structure.
+  
+  See #btwam_struct
 */
 wam_struct* OpenWAM(char *fn)
 {
@@ -177,7 +182,7 @@ wam_struct* OpenWAM(char *fn)
 
   WAM.F = 0.0;
   WAM.isZeroed = FALSE;
-  WAM.cteach.Log_Data = 0; //&cteach
+  WAM.cteach.Log_Data = 0; //th cteach
   WAM.force_callback = BlankWAMcallback;
   WAM.log_time = 0.0;
   WAM.logdivider = 1;
@@ -191,7 +196,7 @@ wam_struct* OpenWAM(char *fn)
   {
     exit(-1);
   }
-  atexit((void*)CloseSystem);//register CloseSystem for shutdown
+  
   if(test_and_log(
     EnumerateSystem(),"Failed to enumerate system"))  {exit(-1);}
 
@@ -249,7 +254,7 @@ wam_struct* OpenWAM(char *fn)
           WAM.motor_position[link] = link;
 #else
           getProperty(WAM.act[0].bus, WAM.act[link].puck.ID, JIDX, &reply);
-          WAM.motor_position[link] = link;/** \bug Finish this *///reply; 
+          WAM.motor_position[link] = link;/** \todo Finish this *///reply; 
 #endif
           // Read joint PID constants
           sprintf(key, "%s.link[%d].pid.kp", robotType, link);
@@ -327,7 +332,7 @@ wam_struct* OpenWAM(char *fn)
       
   return(&WAM);
 }
-
+/** Free memory and close files opened by OpenWAM() */
 void CloseWAM(wam_struct* wam)
 {
   CloseSystem();
@@ -360,12 +365,15 @@ wam_struct * GetWAM()
 
 /** This function closes the control loop on the WAM using a PID regulator in joint space.
 
+It is worth the programmers time to read through the code of this function and 
+understand exactly what it is doing!
+
 The following functionality is in this loop:
  - Joint Space Controller (pid, point-to-point trapezoidal trajectories)
  - Loop profiling - Period time, Read pos time, Write trq time, Calc time
  - Newton-Euler Recursive kinematics & dynamics
  - Data logging
- - Continuous teach & play
+ - Continuous teach & play recording
  
  \todo Make control loop profiling a compiler switch so it is not normally compiled
 
@@ -411,8 +419,8 @@ void WAMControlThread(void *data)
     rt_task_wait_period();
     counter++;
     
-    loop_start = rt_get_cpu_time_ns(); //&prof
-    WAM.loop_period = loop_start - last_loop; //&prof
+    loop_start = rt_get_cpu_time_ns(); //th prof
+    WAM.loop_period = loop_start - last_loop; //th prof
     dt = (double)WAM.loop_period / 1000000000.0;
     if (dt > skiptarg){
       skipcnt++;
@@ -427,12 +435,12 @@ void WAMControlThread(void *data)
 #ifdef BTDOUBLETIME
     rt_make_soft_real_time();
 #endif
-    pos1_time = rt_get_cpu_time_ns(); //&prof
+    pos1_time = rt_get_cpu_time_ns(); //th prof
     
     GetPositions();
     
-    pos2_time = rt_get_cpu_time_ns(); //&prof
-    WAM.readpos_time = pos2_time - pos1_time; //&prof
+    pos2_time = rt_get_cpu_time_ns(); //th prof
+    WAM.readpos_time = pos2_time - pos1_time; //th prof
 #ifdef BTDOUBLETIME    
     rt_make_hard_real_time();
 #endif
@@ -440,10 +448,10 @@ void WAMControlThread(void *data)
     Mpos2Jpos((WAM.Mpos), (WAM.Jpos)); //Convert from motor angles to joint angles
     
     // Joint space stuff
-    pos1_time = rt_get_cpu_time_ns(); //&prof
+    pos1_time = rt_get_cpu_time_ns(); //th prof
     eval_bts(&(WAM.Jsc));
-    pos2_time = rt_get_cpu_time_ns(); //&prof
-    WAM.Jsc_time = pos2_time - pos1_time; //&prof
+    pos2_time = rt_get_cpu_time_ns(); //th prof
+    WAM.Jsc_time = pos2_time - pos1_time; //th prof
     
     // Cartesian space stuff
     set_vn(WAM.robot.q,WAM.Jpos);
@@ -454,20 +462,20 @@ void WAMControlThread(void *data)
     set_v3(WAM.Cpos,T_to_W_bot(&WAM.robot,WAM.Cpoint));
     set_vn(WAM.R6pos,(vect_n*)WAM.Cpos);
     
-    pos1_time = rt_get_cpu_time_ns(); //&prof
+    pos1_time = rt_get_cpu_time_ns(); //th prof
     eval_bts(&(WAM.Csc));
-    pos2_time = rt_get_cpu_time_ns(); //&prof
-    WAM.user_time = pos2_time - pos1_time; //&prof
+    pos2_time = rt_get_cpu_time_ns(); //th prof
+    WAM.user_time = pos2_time - pos1_time; //th prof
     
     set_v3(WAM.Cforce,(vect_3*)WAM.R6force);
    //setrange_vn((vect_n*)WAM.Ctrq,WAM.R6force,0,2,3);
     //Force application
     apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
     
-    pos1_time = rt_get_cpu_time_ns(); //&prof
+    pos1_time = rt_get_cpu_time_ns(); //th prof
     (*WAM.force_callback)(&WAM);
-    pos2_time = rt_get_cpu_time_ns(); //&prof
-    WAM.user_time = pos2_time - pos1_time; //&prof
+    pos2_time = rt_get_cpu_time_ns(); //th prof
+    WAM.user_time = pos2_time - pos1_time; //th prof
     
     eval_bd_bot(&WAM.robot);
     get_t_bot(&WAM.robot,WAM.Ttrq);
@@ -482,32 +490,32 @@ void WAMControlThread(void *data)
 #ifdef BTDOUBLETIME
     rt_make_soft_real_time();
 #endif
-    trq1_time = rt_get_cpu_time_ns(); //&prof
+    trq1_time = rt_get_cpu_time_ns(); //th prof
     
     SetTorques();
     
-    trq2_time = rt_get_cpu_time_ns(); //&prof
-    WAM.writetrq_time = trq2_time - trq1_time; //&prof
+    trq2_time = rt_get_cpu_time_ns(); //th prof
+    WAM.writetrq_time = trq2_time - trq1_time; //th prof
 #ifdef BTDOUBLETIME
     rt_make_hard_real_time();
 #endif
-    loop_end = rt_get_cpu_time_ns(); //&prof
-    WAM.loop_time = loop_end - loop_start; //&prof
-    last_loop = loop_start; //&prof
+    loop_end = rt_get_cpu_time_ns(); //th prof
+    WAM.loop_time = loop_end - loop_start; //th prof
+    last_loop = loop_start; //th prof
     
     pthread_mutex_unlock(&(WAM.loop_mutex));
     
     WAM.log_time += dt;
     if ((counter % WAM.logdivider) == 0){
-      TriggerDL(&(WAM.log)); //&log
+      TriggerDL(&(WAM.log)); //th log
     }
-    //&cteach {
+    //th cteach {
     if (WAM.cteach.Log_Data){ 
       WAM.counter++;
       WAM.teach_time += dt;
       if ((counter % WAM.divider) == 0)
         TriggerDL(&(WAM.cteach));
-    }//&cteach }
+    }//th cteach }
   }
   syslog(LOG_ERR, "WAM Control Thread: exiting");
   syslog(LOG_ERR, "----------WAM Control Thread Statistics:--------------");
@@ -603,6 +611,9 @@ void Jtrq2Mtrq(vect_n * Jtrq, vect_n * Mtrq) //conbert joint torque to motor tor
 
 
 /** Reset the position sensors on the pucks to the passed in position in units of joint-space radians
+
+Reset the position sensors on the pucks to the passed in position in units of joint-space radians
+The wam must be in idle mode.
 */
 void DefineWAMpos(wam_struct *w,vect_n *wv)
 {
@@ -729,7 +740,7 @@ void ToolCartesianMoveWAM(vect_n *pos, btreal vel, btreal acc)
 }
 /** Find the center of a joint range and move to the zero_offsets position relative to the center
  
-\bug Add code to check the puck for IsZerod so that we
+\todo Add code to check the puck for IsZerod so that we
 know whether we have to zero or not...
 */
 
@@ -999,6 +1010,7 @@ void StartContinuousTeach(int Joint,int Div,char *filename) //joint: 0 = Cartesi
     DLon(&(WAM.cteach));    
   }
 }  
+/** Stop recording positions to the continuous teach file */
 void StopContinuousTeach()
 {
   

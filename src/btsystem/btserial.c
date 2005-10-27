@@ -25,7 +25,11 @@
 #include <string.h>
 #include "btserial.h"
 
-/** Open serial port */
+/** Open serial port 
+
+\param port A PORT* object.
+\param portlocation The serial device you wish to open.
+*/
 int serialOpen(PORT *port,char *portlocation)
 { 
     // Open port for reading
@@ -36,7 +40,7 @@ int serialOpen(PORT *port,char *portlocation)
     }else
     {
         //printf("\nUnable to open port %s for input!\n", portlocation); 
-        return(1); 
+        return(1); /**\retval 1 Unable to open the port for input*/
     }
     
     // Open port for writing
@@ -46,13 +50,13 @@ int serialOpen(PORT *port,char *portlocation)
     }else
     {
         //printf("\nUnable to open port %s for output!\n", portlocation);
-        return(2); 
+        return(2); /**\retval 2 Unable to open the port for output*/
     }
     
     // Set port to no delay on read
     fcntl(port->ifd, F_SETFL, FNDELAY);
     
-    return 0; 
+    return 0; /**\retval 0 Success */
 }
 
 /** Close serial port */
