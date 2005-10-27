@@ -126,7 +126,7 @@ void showMenu(void)
     printf("\nD)ownload firmware");
     //printf("\nC)hange puck ID");
     printf("\nT)ension cable");
-    printf("\nB)arrettHand firmware download");
+    //printf("\nB)arrettHand firmware download");
 
     printf("\n\nYour Choice: ");
 }
@@ -290,7 +290,11 @@ int firmwareDL(void)
     printf("]: ");
     scanf("%s", which);
     if(!(strcmp(which, "all"))) {
-        msgID = GROUPID(0); 
+	    // FlashErase takes a varying amount of time
+	    // Puck's download timeout is only 0.1s
+	    printf("\n'All' download not yet supported\n");
+	    exit(0);
+        //msgID = GROUPID(0); 
     } else {
         msgID = atoi(which);
         cnt = 1;
@@ -372,8 +376,10 @@ int ReadSerial(char *buf, int bytesToRead){
             break;
         usleep(20000);
         msec += 20;
-        if(msec == 1000)
+        if(msec == 1000){
+		printf("ReadSerial timeout!\n");
             return(1);
+	}
     }while(1);
     
     return(0);
@@ -418,11 +424,11 @@ int EchoWrite(char ch)
     int err;
 
     err = Write( ch );
-    
+   printf("i");fflush(stdout); 
     do{
         test = Read();
     }while( ch != test );
-
+   printf("o");fflush(stdout);
     return(err);
 }
 
@@ -459,7 +465,7 @@ int BHFirmwareDL(char *fname){
     
     Write('X'); //Write to MC68HC811 e<X>ternal EEPROM
 
-    printf( "\nPower up the hand to begin download..." );
+    printf( "\nPower up the hand to begin download...\n" );
     int errcnt=0;
     while ( Read() != ':' && errcnt<50) errcnt++; //Wait for RESET
 
@@ -473,7 +479,7 @@ int BHFirmwareDL(char *fname){
     strcpy(stype,"");
     first=1;
     printf("\nProgress: 0%");
-
+    fflush(stdout);
     //Download the *.S19 file
     if((fhook=fopen(fname,"r")) == NULL)
         return(1);
@@ -484,6 +490,8 @@ int BHFirmwareDL(char *fname){
 
         // basic line format, scan into variables 
         sscanf(line,"%2s%2x%2x%2x%76s",stype,&num,&temp_high,&temp_lo,shex);
+	printf("%s %x %x %x %s\n", stype, num, temp_high, temp_lo,
+			shex);
         lobyte=temp_lo; hibyte=temp_high;
         if (strstr(stype,"S1")) {  //If this is a DATA S-Record 
             //Update progress                   
@@ -493,7 +501,7 @@ int BHFirmwareDL(char *fname){
             if ( per < 0.0) per = 0.0; 
             count += num;
             printf("\rProgress: %3.0lf%%", per);
-            
+            fflush(stdout);
             for (i=0;i<num; i+=1){  // read pairs into ramarray 
                 sscanf(shex+i*2,"%2x",&opcode);
                 ramarray[i]=opcode;
@@ -533,6 +541,10 @@ int BHandDL(void){
     
     /** Open serial port */
     err =  serialOpen(&p, portlocation);
+    if(err){
+	    printf("\nError opening port!\n");
+	    exit(0);
+    }
 
     /** Set the baud rate */
     serialSetBaud(&p, 9600);
