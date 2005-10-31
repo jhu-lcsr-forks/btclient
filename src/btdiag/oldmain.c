@@ -188,7 +188,7 @@ int main(int argc, char **argv)
     "Could not initialize mutex for displays.");
 
   if(test_and_log(   
-    InitializeSystem("wamConfig.txt"),
+    InitializeSystem("wam.conf"),
     "Failed to initialize system")){
     exit(-1);
   }
