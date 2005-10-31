@@ -90,7 +90,7 @@ char *user_def = "User edited point list";
 wam_struct *wam;
 
 vectray *vr;
-via_trj_array *vta = NULL,*vtb = NULL;
+via_trj_array **vta = NULL,*vt_j = NULL,*vt_c = NULL;
 int cteach = 0;
 extern int isZeroed;
 static RT_TASK *mainTask;
@@ -174,11 +174,11 @@ int main(int argc, char **argv)
 
 #ifndef BTOLDCONFIG
 
-  err = ReadSystemFromConfig("wamConfig.txt");
+  err = ReadSystemFromConfig("wam.conf");
 #else //BTOLDCONFIG
 #endif //BTOLDCONFIG
 
-  wam = OpenWAM("wamConfig.txt");
+  wam = OpenWAM("wam.conf");
   if(!wam)
   {
     exit(1);
@@ -205,9 +205,8 @@ int main(int argc, char **argv)
   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
   //setProperty(0,10,TL2,FALSE,8200);
 
-  const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
-  //const_vn(wv, 0.0,  0.0, 0.0,  0.0, 0.0, 0.0, 0.0); //Blank link home pos
-  DefineWAMpos(wam,wv);
+  DefineWAMpos(wam,wam->park_location);
+
   //prep modes
   jdest = new_vn(len_vn(wam->Jpos));
   cdest = new_vn(len_vn(wam->R6pos));
@@ -220,8 +219,9 @@ int main(int argc, char **argv)
   prev_mode = SCMODE_IDLE;
 
   //new trajectory
-  vta = new_vta(len_vn(active_pos),50);
-  register_vta(active_bts,vta);
+  vt_j = new_vta(len_vn(active_pos),50);
+  vta = &vt_j;
+  register_vta(active_bts,*vta);
 
   active_file[0] = 0;
 
@@ -444,8 +444,8 @@ void RenderMAIN_SCREEN()
   line+=3;
   if (vta != NULL)
   {//print current point
-    vr = get_vr_vta(vta);
-    cpt = get_current_idx_vta(vta);
+    vr = get_vr_vta(*vta);
+    cpt = get_current_idx_vta(*vta);
     nrows = numrows_vr(vr);
     mvprintw(line,0,"Current Index:%d of %d    ",cpt,nrows-1);
     line++;
@@ -535,8 +535,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     break;
 
   case '\t': /* Switch between jointspace and cartesian space trajectories*/
-    if (vta != NULL)
-      destroy_vta(&vta); //empty out the data if it was full
+    destroy_vta(vta); //empty out the data if it was full
 
     if (active_bts == &(wam->Jsc))
     { //switch to cartesian space mode.
@@ -546,6 +545,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       active_pos = wam->R6pos;
       active_trq = wam->R6force;
       active_dest = cdest;
+      vta = vt_c;
       clearScreen();
       test_and_log(pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
       //present_screen = CARTSPACE_SCREEN;
@@ -559,6 +559,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       active_pos = wam->Jpos;
       active_trq = wam->Jtrq;
       active_dest = jdest;
+      vta = vt_j;
       clearScreen();
       test_and_log(pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
       //present_screen = JOINTSPACE_SCREEN;
@@ -588,7 +589,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     break;
 
   case ',':  /* Simulate presently loaded trajectory */
-    sim_vta(vta,0.002,getval_vn(idx_vr(get_vr_vta(vta),numrows_vr(get_vr_vta(vta))-1),0),"sim.csv");
+    sim_vta(*vta,0.002,getval_vn(idx_vr(get_vr_vta(*vta),numrows_vr(get_vr_vta(*vta))-1),0),"sim.csv");
     break;
   case '?':  /* Play presontly loaded trajectory */
     moveparm_bts(active_bts,vel,acc);
@@ -617,10 +618,10 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     stop_trj_bts(active_bts);
     /** \internal \todo sleeps that are necessary might be forgotten. Can we eliminate the need?*/
     usleep(10000); //needed to give the command a chance to work.
-    destroy_vta(&vta); //empty out the data if it was full
+    destroy_vta(vta); //empty out the data if it was full
     strcpy(active_file,"teach.csv");
-    vta = read_file_vta(active_file,20);
-    register_vta(active_bts,vta);
+    *vta = read_file_vta(active_file,20);
+    register_vta(active_bts,*vta);
     break;
     //Free mode:
   case 'l':  /* Load trajectory file */
@@ -630,10 +631,10 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       addstr("Enter filename for trajectory: ");
       refresh();
       scanw("%s", active_file);
-      destroy_vta(&vta); //empty out the data if it was full
+      destroy_vta(vta); //empty out the data if it was full
 
-      vta = read_file_vta(active_file,20);
-      register_vta(active_bts,vta);
+      *vta = read_file_vta(active_file,20);
+      register_vta(active_bts,*vta);
       finish_entry();
     }
     else
@@ -653,9 +654,9 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       addstr("Enter filename for trajectory: ");
       refresh();
       scanw("%s", fn);
-      if (vta != NULL)
+      if (*vta != NULL)
       {
-        write_file_vta(vta,fn);
+        write_file_vta(*vta,fn);
         strcpy(active_file,fn);
       }
       finish_entry();
@@ -676,11 +677,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       addstr("Enter the max number of points that will be in your trajectory: ");
       refresh();
       ret = scanw("%d", &dtmp);
-      destroy_vta(&vta);
+      destroy_vta(vta);
 
       strcpy(active_file,user_def);
-      vta = new_vta(len_vn(active_pos),dtmp);
-      register_vta(active_bts,vta);
+      *vta = new_vta(len_vn(active_pos),dtmp);
+      register_vta(active_bts,*vta);
       active_file[0] = 0;
       finish_entry();
     }
@@ -726,21 +727,21 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
   case 'm':  /* Move to the presently selected trajectory point*/
     break;
   case '<':  /* Select next point in the trajectory */
-    prev_point_vta(vta);
+    prev_point_vta(*vta);
     break;
   case '>':  /* Select previous point in the trajectory */
-    next_point_vta(vta);
+    next_point_vta(*vta);
     break;
   case '+':  /* Insert a point in the trajectory */
     if(getmode_bts(active_bts)==SCMODE_IDLE)
     {
-      ins_point_vta(vta,active_pos);
+      ins_point_vta(*vta,active_pos);
     }
     break;
   case '-':  /* Remove a point in the trajectory */
     if(getmode_bts(active_bts)==SCMODE_IDLE)
     {
-      del_point_vta(vta);
+      del_point_vta(*vta);
     }
     break;
   case 's':  /* Scale the present trajectory */
@@ -751,7 +752,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       refresh();
       ret = scanw("%lf\n", &vel);
       if(vta != NULL)
-        scale_vta(vta,vel,acc);
+        scale_vta(*vta,vel,acc);
       finish_entry();
     }
     break;
@@ -762,8 +763,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       addstr("Enter Corner Acceleration: ");
       refresh();
       ret = scanw("%lf\n", &acc);
-      if(vta != NULL)
-        set_acc_vta(vta,acc);
+      if(*vta != NULL)
+        set_acc_vta(*vta,acc);
       finish_entry();
     }
     break;

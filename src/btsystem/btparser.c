@@ -2,19 +2,18 @@
  *  Module .............libbtsystem
  *  File ...............btparser.c
  *  Author .............Brian Zenowich
- *  Creation Date ......15 Feb 2003
+ *  Creation Date ......15 Feb 2005
  *  Addtl Authors ......
  *                                                                      *
  *  ******************************************************************  *
  *                                                                      *
- * Copyright (C) 2005   Barrett Technology <support@barrett.com>
+ * Copyright (C) 2005   Barrett Technology <support@barrett.com>        *
  *
  *
  *  NOTES:
  *
  *  REVISION HISTORY:
- *  16 Dec 2004 - BZ, SC, TH
- *    Initial port to linux + RTAI
+ *  051031:TH:Finalized for WAM library.
  *                                                                      *
  *======================================================================*/
 
@@ -31,20 +30,22 @@
 /*==============================*
  * INCLUDES - Project Files     *
  *==============================*/
-#include "btparser.h"
 #include "btmath.h"
+#include "btparser.h"
 
 /*==============================*
  * PRIVATE Function Prototypes  *
  *==============================*/
-int parseFile(char *fn);
-int parseGetVal(int type, char *str, void *loc);
 
 /*==============================*
  * GLOBAL file-scope variables  *
  *==============================*/
 char 	hdr[255];
 FILE	*outFile;
+btparser btparser_default = BTPARSE_INIT;
+/*==============================*
+ * Defines                      *
+ *==============================*/
 
 /*==============================*
  * Functions                    *
@@ -123,21 +124,37 @@ void killLine(char *line)
     *h = '\0'; // Terminate the hdr   
 }
 
-/** Create a value-lookup file from a structured configuration file */
+/** Create a value-lookup file from a structured configuration file 
+
+*/
 int parseFile(char *fn)
+{
+  return btparseFile(&btparser_default,fn);
+}
+
+/** Initialize the btparser object and scan the file to be parsed.
+
+Creates a value-lookup file from a structured configuration file.
+Use btParseClose() to delete these files.
+
+*/
+int btParseFile(btparser *parse_obj,char *filename)
 {
     FILE    *inFile;
     char    line[255], srch[255], key1[255], key2[255];
     int		addBrace, index;
     long	stepPos, srchPos;
+    char  buf[512];
     
-    if((outFile=fopen("temp.dat","w"))==NULL){
+    strcpy(parse_obj->tempfile,parse_obj->filename);
+    strcat(parse_obj->tempfile,".tmp");
+    if((outFile=fopen(parse_obj->tempfile,"w"))==NULL){
     	return(1);
     }
     	
-    if((inFile=fopen(fn,"r"))==NULL)
+    if((inFile=fopen(filename,"r"))==NULL)
     {
-        fprintf(outFile, "Cannot open %s for reading\n", fn);
+        fprintf(outFile, "Cannot open %s for reading\n", filename);
         fclose(outFile);
         return(1);
     }
@@ -158,8 +175,10 @@ int parseFile(char *fn)
     fclose(inFile);
     
     // Pass 2 = Add braces to non-brace duplicates, apply indices
-    inFile = fopen("temp.dat", "r+");
-    outFile = fopen("config.dat","w");
+    inFile = fopen(parse_obj->tempfile, "r+");
+    strcpy(parse_obj->flatfile,parse_obj->filename);
+    strcat(parse_obj->flatfile,".flt");
+    outFile = fopen(parse_obj->flatfile,"w");
     while(1)
     {
     	index = 0;
@@ -212,19 +231,47 @@ int parseFile(char *fn)
     
     return(0);
 }
+/** Look up the value of a configuration key. 
 
-/** Look up the value of a configuration key. parseFile() must be called prior to this function. */
+parseFile() must be called prior to this function. 
+If it is not the default btparse_obj is used. ("wam.conf")
+
+see btParseGetVal()
+*/
 int parseGetVal(int type, char *find, void *loc)
+{
+  return btParseGetVal(&btparser_default,type,str,loc);
+}
+
+/** Look up the value of a configuration key. 
+
+parse_obj->filename must have the filename. btparsefile() will be called
+automatically if it has not yet been called.
+
+\param parse_obj Pointer to a btparser object.
+\param type Variable type. See #parsetypes.
+\param str The key found in the config file.
+\param loc Void pointer where you want the value to be stuffed.
+
+\retval 0 Success.
+\retval -1 Key not found.
+\retval 1 specified type is unknown.
+*/
+int btParseGetVal(btparser *parse_obj,int type, char *str, void *loc)
 {
 	int intVal;
 	long longVal;
 	double doubleVal;
 	char key[255];
 	char str[255];
+  char buf[255];
 	char *val = NULL, *s;
 	FILE *inFile;
 	
-	inFile = fopen("config.dat","r");
+  if (parse_obj->filename[0] && !parse_obj->flatfile[0])
+    btparseFile(parse_obj,parse_obj->filename);
+  
+	inFile = fopen(parse_obj->flatfile,"r");
 	while(1)
     {
     	if(fgets(str, 255, inFile) == NULL) break;
@@ -244,14 +291,23 @@ int parseGetVal(int type, char *find, void *loc)
 		case INT:
 			intVal = atoi(val); // Convert
 			*(int*)loc = intVal; // Assign
+      #if BTDEBUG & BTDEBUG_PARSER
+		    syslog(LOG_ERR, "btParseGetVal:Key[%s]=%d",find,*(int*)loc);
+      #endif       
 		break;
 		case LONG:
 			longVal = atol(val); // Convert
 			*(long*)loc = longVal; // Assign
+      #if BTDEBUG & BTDEBUG_PARSER
+		    syslog(LOG_ERR, "btParseGetVal:Key[%s]=%d",find,*(long*)loc);
+      #endif           
 		break;
 		case DOUBLE:
 			doubleVal = strtod(val,NULL); // Convert
 			*(double*)loc = doubleVal; // Assign
+      #if BTDEBUG & BTDEBUG_PARSER
+		    syslog(LOG_ERR, "btParseGetVal:Key[%s]=%f",find,*(double*)loc);
+      #endif       
 		break;
 		case STRING:
 			val = strchr(val,0x22)+1; // Move beyond first dbl quote
@@ -267,12 +323,15 @@ int parseGetVal(int type, char *find, void *loc)
 				*s++ = *val++; // Copy the string
 			}
 			*s = '\0'; // Terminate the string
+      #if BTDEBUG & BTDEBUG_PARSER
+		    syslog(LOG_ERR, "btParseGetVal:Key[%s]=%s",find,(char*)loc);
+      #endif 
 		break;
 		case VECTOR:
-#ifdef BTDEBUG
-		syslog(LOG_ERR, "parseGetVal: find [%s]", find);
-#endif
-		    strto_vn((vect_n *)loc, val, "<>");
+		  strto_vn((vect_n *)loc, val, "<>");
+      #if BTDEBUG & BTDEBUG_PARSER
+		    syslog(LOG_ERR, "btParseGetVal:Key[%s]=%s",find,sprint_vn(buf,(vect_n*)loc));
+      #endif 
 		break;
 		default:
 			return(1);
@@ -280,4 +339,16 @@ int parseGetVal(int type, char *find, void *loc)
 	}
 	return(0);
 }
+/** Delete temporary files and reset parse_obj object */
 
+void btParseClose(btparser *parse_obj)
+{
+  if (parse_obj->flatfile[0]){
+    remove(parse_obj->flatfile);
+    parse_obj->flatfile[0] = 0;
+  }
+  if (parse_obj->tempfile[0]){
+    remove(parse_obj->flatfile);
+    parse_obj->tempfile[0] = 0;
+  }
+}

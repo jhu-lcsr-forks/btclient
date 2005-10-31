@@ -151,10 +151,10 @@ int main(int argc, char **argv)
   while((chr=getch())==ERR) usleep(5000);
 
 #ifndef BTOLDCONFIG
-  err = ReadSystemFromConfig("wamConfig.txt"); 
+  err = ReadSystemFromConfig("wam.conf"); 
 #else //BTOLDCONFIG
 #endif //BTOLDCONFIG    
-  wam = OpenWAM("wamConfig.txt");
+  wam = OpenWAM("wam.conf");
   if(!wam)
   {
     exit(1);

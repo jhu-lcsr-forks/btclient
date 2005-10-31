@@ -464,35 +464,49 @@ void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj)
 enum VT_SEG {VTS_IN_ACC = 0, VTS_IN_VEL};
 /** Assumes trj->vr has been loaded with a valid vectray
  
- 
+ Forces state to BTTRAJ_RUN
 */
 double start_via_trj(via_trj *trj,int col)
 {
   double Dt,Dq,Dv,Dt_next,Dq_next,Dv_next,ret;
+  int end;
 
   trj->idx = 0;
   trj->n = numrows_vr(trj->vr);
   trj->col = col+1;
-  ret = getval_vn(idx_vr(trj->vr,0),trj->col); //force starting point to be our current point
+  ret = getval_vn(idx_vr(trj->vr,0),trj->col); //force starting point to be our starting point
 
-  trj->last_cmd = 0.0;
+  trj->last_cmd = ret;
   trj->segment = VTS_IN_ACC;//acc first
 
   Dt_next = getval_vn(idx_vr(trj->vr,trj->idx+2),0) - getval_vn(idx_vr(trj->vr,trj->idx+1),0);
   Dq_next = getval_vn(idx_vr(trj->vr,trj->idx+2),trj->col) - getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col);
   trj->v_prev = 0;
-  trj->v_next = Dq_next/Dt_next;
+  if (trj->n <= 1) {
+    trj->state = BTTRAJ_DONE;
+    return ret;
+  }
+  else if (trj->n == 2) {
+    end = 3;
+    trj->v_next = 0.0;
+  }
+  else {
+    end = 0;
+    trj->v_next = Dq_next/Dt_next;
+  }
   CalcSegment(&(trj->seg),getval_vn(idx_vr(trj->vr,trj->idx),trj->col), getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col),
-              getval_vn(idx_vr(trj->vr,trj->idx),0), getval_vn(idx_vr(trj->vr,trj->idx+1),0),trj->v_prev,trj->v_next,trj->trj_acc, 0);
+              getval_vn(idx_vr(trj->vr,trj->idx),0), getval_vn(idx_vr(trj->vr,trj->idx+1),0),trj->v_prev,trj->v_next,trj->trj_acc, end);
   
   trj->acc = trj->seg.acc1;
   trj->dt_acc = trj->seg.dt_acc1;
   trj->v_prev = trj->seg.vel;
-  trj->t=0;
-  trj->t0=0;
   trj->t_acc = trj->dt_acc;
+
+  trj->t=0.0;
+  trj->t0=0.0;
   trj->q0 = getval_vn(idx_vr(trj->vr,trj->idx),trj->col);
-  trj->v0 = 0;
+  trj->v0 = 0.0;
+  
   trj->state = BTTRAJ_RUN;
   return ret;
 }
@@ -501,6 +515,7 @@ void SetAcc_vt(via_trj *trj,double acc)
 {
   trj->trj_acc = acc;
 }
+
 double eval_via_trj(via_trj *trj,double dt)
 {
   double Dt,Dq,Dv,Dt_next,Dq_next,Dv_next,acc_next,t_acc_next,end,et,cmd;
@@ -511,7 +526,8 @@ double eval_via_trj(via_trj *trj,double dt)
 
     if ((trj->segment == VTS_IN_ACC) && (trj->t > trj->t_acc))
     { //done with acc, set up vel
-      if (trj->idx >= trj->n-1)
+
+      if (trj->idx >= trj->n-1 && trj->idx != 0)
       {
         trj->state = BTTRAJ_STOPPED;
       }
@@ -616,7 +632,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
   double dt,dq;
   double vel,acc1,acc2,dt_vel,dt_acc1,dt_acc2;
   double min_acc,use_acc,q_acc1,q_vel,q_acc2;
-
+  double max_acc,ac4,sqrtb;
 
   dt = t2 - t1;
   dq = q2 - q1;
@@ -679,7 +695,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
       syslog(LOG_ERR, "CalcSegment: Mid segment: Not enough acceleration!");
     }
   }
-  else //Ending segment (decelerate)
+  else if (end == 2)//Ending segment (decelerate)
   {
     min_acc = 8.0*fabs(dq)/(3.0*dt*dt);
 
@@ -719,7 +735,43 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
 
     }
   }
+ else //Short Segment (accelerate and decellerate with bang bang
+  {
+    
+    
+    max_acc = fabs(dq)/(0.25*dt*dt);
+    if (use_acc > max_acc)
+    { //accelleration must get us to vel_mode at halfway point
+      use_acc = max_acc;
+      syslog(LOG_ERR, "CalcSegment: Boosted acc:%f to match end velocity change %f %f",acc1,dq,dt);
+      //syslog(LOG_ERR, "CalcSegment:  %f %f %f %f",q1,q2,t1,t2);
+    }
+    acc2 = -1.0*Sgn(dq)*use_acc;
+    if (use_acc != 0.0){
+      ac4 = acc2*dq*4;
+      if (acc2*acc2*dt*dt < ac4)
+        sqrtb = 0.0;
+      else
+        sqrtb = sqrt(acc2*acc2*dt*dt - ac4);
+      
+      dt_acc1 = acc2*dt/(2.0*acc2)+sqrtb;
+    }
+    else {
+      dt_acc1 = 0.0;
+    }
+    
+    //vel = (dq - 0.5*acc2*dt_acc2*dt_acc2)/(dt - dt_acc2);
+    vel = acc2*dt_acc1;
+    acc1 = -1.0 * acc2;
+    dt_acc2 = dt_acc1;
+    dt_vel = dt - dt_acc2 - dt_acc1;
+     if (dt_vel < 0.0){
+      dt_vel = 0.0; 
+      syslog(LOG_ERR, "CalcSegment: Final Acc: Not enough acceleration!");
+      syslog(LOG_ERR, "CalcSegment: Final Acc: dt:%f dt_acc1:%f 0.5*dt_acc2:%f",dt,dt_acc1,dt_acc2/2.0);
 
+    }
+  }
   seg->vel = vel;
   seg->acc1 = acc1;
   seg->acc2 = acc2;

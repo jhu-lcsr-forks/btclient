@@ -94,8 +94,8 @@ may be in mid-update.
   btthread wam_thd;
   wam_struct *wam;
   
-  err = ReadSystemFromConfig("wamConfig.txt"); //Prep btsystem
-  wam = OpenWAM("wamConfig.txt");
+  err = ReadSystemFromConfig("wam.conf"); //Prep btsystem
+  wam = OpenWAM("wam.conf");
   if(!wam)
   {
     exit(1);
@@ -134,7 +134,7 @@ typedef struct btwam_struct{
   int zero_order[7];
   vect_n *zero_offsets;
   vect_n *stop_torque;
-  vect_n * park_location;  
+  vect_n *park_location;  
 
 //Motor <-> Joint State
   vect_n *Mpos,*Mtrq,*Jpos,*Jvel,*Jacc,*Jref,*Jtrq;
@@ -199,13 +199,16 @@ typedef struct btwam_struct{
   //Continuous path record
   btlogger cteach;
   int divider,counter;
-  btreal teach_time;
+  btreal teach_time
+  
+  
+  btthread maint;
 }wam_struct;
 
 
 /*************  Final API  ******************/
 
-wam_struct* OpenWAM(char *wamfile); //NULL -> wamConfig.txt
+wam_struct* OpenWAM(char *wamfile); //NULL -> wam.conf
 int BlankWAMcallback(struct btwam_struct *wam);
 void registerWAMcallback(wam_struct* wam,void *func);
 void WAMControlThread(void *data); //data points to wam_struct* wam

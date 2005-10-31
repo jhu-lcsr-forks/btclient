@@ -45,10 +45,10 @@ int main(int argc, char **argv)
 
 
 #ifndef BTOLDCONFIG
-  err = ReadSystemFromConfig("wamConfig.txt"); 
+  err = ReadSystemFromConfig("wam.conf"); 
 #else //BTOLDCONFIG
 #endif //BTOLDCONFIG    
-  wam = OpenWAM("wamConfig.txt");
+  wam = OpenWAM("wam.conf");
   if(!wam)
   {
     exit(1);

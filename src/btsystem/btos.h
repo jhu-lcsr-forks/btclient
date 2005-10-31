@@ -34,15 +34,30 @@ test_and_log() provides a shorthand to replace return variable checks.
 
 Additionally, btos.h has #defines for error checking:
 
--BTDEBUG (proposal for multiple levels)
+-BTDEBUG (This is a long bitfield)
+Global Values 0-32
+  - 0 No debugging code compiled in
   - 1 Sanity warnings
-  - 3 Sanity checks
+  - 3 Sanity checks (fix on the fly if we can)
   - 7 Communications layer
   - 8 Realtime stuff
   - 9 Math stuff (NAN, div zero)
   - 10 Pointers & bounds
   - 20 Rediculous verbosity
-  
+Bits (by position starting with 0
+  - 
+*/
+#define BTDEBUG_RANGE         0xff
+// if (BTDEBUG & BTDEBUG_RANGE) > 3 ->sanity checks
+#define BTDEBUG_PARSER        0x10
+#define BTDEBUG_SYSTEM        0x20
+#define BTDEBUG_MATH_VECT     0x40
+#define BTDEBUG_MATH_MATR     0x80
+#define BTDEBUG_MATH          0x100
+#define BTDEBUG_STATECONTROL  0x200
+#define BTDEBUG_CONTROL       0x400
+
+/**  
 -BT_NULL_PTR_GUARD //bt*.c functions will check incoming object pointers
 to make sure they are not NULL and error if they are.
 
@@ -54,7 +69,6 @@ from thier own idiocy.
 
 -BT_BACKTRACE //Dump backtrace info into bterrors.txt
 
-    
 */ 
 #ifndef _BTOS_H
 #define _BTOS_H
@@ -117,7 +131,6 @@ typedef struct {
   int periodic;
   double period;
   int done;
-  
   void* function;
   void* data;
   btmutex mutex;
