@@ -18,7 +18,7 @@
  *======================================================================*/
 
 /** \file btos.h
-    \brief Operating system abstractions and helpers
+    \brief Operating system abstractions and helpers.
 
 The btos module is a thin layer between barrett technologies code and the operating system.
 Additionally, global defines can go here also. Virtually every Barrett library
@@ -57,7 +57,7 @@ Global Values 0-32
   - 8 Realtime stuff
   - 9 Math stuff (NAN, div zero)
   - 10 Pointers & bounds
-  - 20 Rediculous verbosity
+  - 11 Rediculous verbosity
 Bits (by position starting with 0
   - 
 */
@@ -93,7 +93,10 @@ extern "C"
 #endif
 
 #include <pthread.h>
-//#include <rtai_lxrt.h>
+/** \todo Move periodic thread api to another include file to remove dependancy on rtai in this file */
+#include <rtai_lxrt.h>
+
+
 /*mutex & threads*/
 /** @name Mutex API */
 //@{
@@ -151,15 +154,15 @@ typedef struct {
   pthread_attr_t attr;
   struct sched_param param;
   
-  int priority;
-  int periodic;
-  double period;
-  int done;
-  void* function;
-  void* data;
+  int priority; //Priority this thread was created at
+  int periodic; //!0 = This thread is a periodic one
+  double period; // The period we want this thread to be
+  int done; //!< See btthread_done()
+  void* function; //Pointer to the function this thread is running
+  void* data; 
   btmutex mutex;
   
-  //RTIME sampleCount;
+  RTIME actual_period,proc_time;
 }btthread;
 
 btthread* new_btthread();

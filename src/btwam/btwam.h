@@ -235,9 +235,9 @@ void MoveStop(wam_struct* wam);
 
 void ParkWAM(wam_struct* wam);
 // Continuous Teach & Play Recording
-void StartContinuousTeach(int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
-void StopContinuousTeach(); 
-void ServiceContinuousTeach();
+void StartContinuousTeach(wam_struct* wam,int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
+void StopContinuousTeach(wam_struct* wam); 
+void ServiceContinuousTeach(wam_struct* wam);
 
 
 /******************************************/

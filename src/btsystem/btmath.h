@@ -16,7 +16,7 @@
  *======================================================================*/
 
 /** \file btmath.h
-    A common set of mathematical operations. 
+    \brief A common set of mathematical operations. 
     
     This code provides objects and methods for:
     - N Element Vectors
@@ -51,7 +51,7 @@ The only potentially tricky thing about this api is that you should never declar
 a vector or matrix variable. Only declare pointers. The new_xx function expects the
 address of your pointer, and will allocate memory and redirect your pointer for you.
     
-\todo Add code and compiler switches for counting the number of operations.
+
 
 Segfaults are a problem with realtime code because we don't necessarily exit on the 
 instruction that is accessing the wrong memory.
@@ -61,7 +61,12 @@ The following is a list of instances of when this has happened to give you some 
 where to look first.
 
 1. calling sprint_vn() on an uninitialized vect_n *
- 
+\internal 
+\todo Add code and compiler switches for counting the number of operations.
+*/
+/** @addtogroup btmath Extended Math Library
+
+This is a general description so that I can see the output.
 */
 #ifndef _BTMATH_H
 #define _BTMATH_H
@@ -89,7 +94,8 @@ typedef double btreal; //<! Typedef floating point type
   details. freebtptr() should be called at the end of every program
   that uses the btsystem library.
   
-  
+  \deprecated 
+  \internal chk'd TH 051101
 */
 typedef struct {
   int n,max;      //size of vector
@@ -100,6 +106,11 @@ int addbtptr(void *ptr);
 int rembtptr(int idx);
 void freebtptr();
 //@}
+
+/** @addtogroup vect_n N element vectors.
+    @ingroup btmath
+ */
+//@{
 /** An N element vector object.
 
 vect_n is a linear algebra vector object. The elements are of type btreal. Function
@@ -133,13 +144,13 @@ See new_vn(), and set_vn() for more information. A typical block of code using v
 
 
   Rules: The output of any function can be used as the input of another. The leftmost
-  argument will hold the results;
+  argument will hold the results in it's scratch data space;
   
-  WARNING! There is no bounds checking in the code. All vect_n objects must be created 
+  \warning There is no bounds checking in the code. All vect_n objects must be created 
   with new_vn() and if you are mixing vectors of different sizes be careful to read the
   btmath.c code so that you understand the dangers of doing so. 
   
-  WARNING! This code uses preallocated memory associated with the left parameter to pass return values. 
+  \warning This code uses preallocated memory associated with the left parameter to pass return values. 
   \code
     /******* Example of bad code *******
     set_vn(b,add_vn(mul_vn(a,b),scale_vn(2.0,mul_vn(a,b))));
@@ -152,7 +163,7 @@ See new_vn(), and set_vn() for more information. A typical block of code using v
     /******* Example of good code ******
     set_vn(b,add_vn(mul_vn(b,a),scale_vn(2.0,mul_vn(a,b)))); 
   \endcode
-   
+   \internal chk'd TH 051101
   \todo We should add a compiler define switched set of code to each function to
 add in bounds checking and verbose error reporting
 */
@@ -202,20 +213,22 @@ n = max number of elements
 #define local_vn(x,n) vect_n x[(1+(sizeof(vect_n)*2+sizeof(btreal)*2*(n))/sizeof(vect_n))]
 
 /*================================*/
-/** @name vect_n Initialization and Data Access Functions
-    N element vector functions.
- */
+//@}
+
+
+/** @addtogroup vect_n_if Initialization & Data Access Functions
+    @ingroup vect_n
+    N element vector operation functions.
+*/
 //@{
 vect_n* new_vn(int size); //allocate an n-vector
 vect_n* init_vn(vect_n* v, int size); //Link up a vect_n object
-//void free_vn(vect_n *p);
+void free_vn(vect_n *p);
 int len_vn(vect_n *src); //number of elements in the vector
 int sizeof_vn(vect_n *src); //return sizeof info for whole vector
 
 vect_n* init_local_vn(vect_n* header,btreal* data, int size);
 int new_vn_group(int num, int size, ...); //allocate a group of n-vectors
-#define mov_vn set_vn
-#define cpy_vn set_vn
 void set_vn(vect_n* dest, vect_n* src); //assignment, copy
 void setrange_vn(vect_n* dest, vect_n* src, int dest_start, int src_start, int num);
 void extract_vn(btreal* dest, vect_n* src); //copy vector to a btreal array
@@ -229,7 +242,10 @@ void fill_vn(vect_n* dest, btreal val);
 vect_n* subset_vn(vect_n* src,int start,int end);
 void reset_vn(vect_n* src);
 //@}
-/** @name vect_n Operator Functions
+
+
+/** @addtogroup vect_n_of Operator Functions
+    @ingroup vect_n
     N element vector operation functions.
 */
 //@{
@@ -253,8 +269,9 @@ vect_n* bound_vn(vect_n* a, btreal min, btreal max);
 //int zero_vn(vect_n* a, vect_n* b); //zero vector test
 
 //@}
-/** @name vect_n per element operator Functions
-    Vector math functions that treat vectors as arrays of btreals
+/** @addtogroup vect_n_pe Per element operator Functions
+    @ingroup vect_n 
+    Vector math functions that treat vectors as arrays of btreals.
  */
 //@{
 vect_n* e_mul_vn(vect_n* a, vect_n* b); // Per Element multiply
@@ -263,8 +280,9 @@ vect_n* e_sqrt_vn(vect_n* a);
 vect_n* e_sqr_vn(vect_n* a);
 
 //@}
-/** @name vect_n Input/Output Functions
-    Functions for vect_n screen and file IO
+/** @addtogroup vect_n_io Input/Output Functions.
+    @ingroup vect_n 
+    Functions for vect_n screen and file IO.
  */
 //@{
 void print_vn(vect_n* src);
@@ -279,17 +297,19 @@ vect_n * strto_vn(vect_n *dest,char *src,char *delimiters); //Convert a string t
 vect_n * csvto_vn(vect_n* dest, char *src); //Convert a string into a vect_n
 int test_vn(btreal error); //test & verification suite
 //@}
-/** @name Vector Array Functions
+
+
+
+
+
+
+
+
+/** @addtogroup vectray Vector Array Functions.
+    @ingroup btmath
     These functions are for manipulating arrays of vectors.
  */
 //@{
-/*       Local vect_n functions */
-
-
-
-
-
-
 /*===================== Vector Arrays=============================*/
 /** A vector array object, each vector has the same number of elements.
 
@@ -371,27 +391,9 @@ int read_csv_file_vr(char *fileName, vectray **vr);
 int write_csv_file_vr(char *filename, vectray *vr);
 
 int test_vr(btreal error);
-/*===================== Vector List=============================*/
-/** this deals with arrays of vectors of the same size. A block of data 
-is allocated dynamically. The vect_n data type is used to 
-access it.
-
-\todo This code is not yet implemented (and not yet necessary)
-*/
-typedef struct barrett_vectlist_n{
-  vect_n *head,*tail;
-  int n;      //max size of vector
-  int rows;
-}vectlist;
-
-void init_vl(vectlist *vl);
-void free_vl(vectlist *vl);
-//Access
-
-//Add & Remove data
-void append_vl(vectlist *vl, vect_n* v);
 //@}
-/** @name 3 Element Vector Optimized Functions
+/** @addtogroup vect_3 3 Element Vector Optimized Functions
+    @ingroup vect_n
     These functions are optimized for 3 element vectors.
  */
 //@{
@@ -460,11 +462,13 @@ void print_v3(vect_3* src);
 
 /*=======================================================================*/
 //@}
-/** @name Quaternion Functions
+
+/*=======================Quaternion===========================================*/
+/** @addtogroup quat Quaternion Functions
+    @ingroup btmath
     These functions operate on 4 element vectors (quaternions).
  */
 //@{
-/*=======================Quaternion===========================================*/
 /** Quaternion object
 
 The quat object is a quaternion; a 4 element imaginary number.
@@ -529,6 +533,13 @@ void print_q(quat* src);
 //int zero_v3(vect_3* a, vect_3* b); //zero vector test
 
 /*=======================================================================*/
+/** @addtogroup matr_h SE(3) Optimized Matrix Functions
+    @ingroup matr_n
+    These functions are optimized to operate on the subset of SE(3) that applies 
+    to physical systems. In particular, Rotation and Translation are supported, 
+    skewing and reflecting are not.
+ */
+//@{
 /** homogeneous 4x4 matrix optimized for robots. 4th row is not computed or stored.
 */
 typedef struct barrett_matr_h{
@@ -538,12 +549,6 @@ typedef struct barrett_matr_h{
   int m,n; //m rows, n cols
 }matr_h;
 
-/** @name matr_h - SE(3) Optimized Matrix Functions
-    These functions are optimized to operate on the subset of SE(3) that applies 
-    to physical systems. In particular, Rotation and Translation are supported, 
-    skewing and reflecting are not.
- */
-//@{
 matr_h * new_mh();
 BTINLINE void set_mh(matr_h* dest, matr_h* src);
 BTINLINE void ident_mh(matr_h* dest); // identity matrix
@@ -561,9 +566,14 @@ void print_mh(matr_h* src);
 int test_mh(btreal error);
 //@}
 /*=======================================================================*/
+/** @addtogroup matr_3 so(3) Optimized Matrix Functions
+    @ingroup matr_n
+    
+ */
+//@{
 /** 3x3 rotation matrix
 
-Function definitions are in btmath.c.
+Function definitions are in btmath.h.
 */
 typedef struct barrett_matr_h matr_3;
 
@@ -592,7 +602,13 @@ quat* R_to_q(quat* dest, matr_3* src);
 matr_3* q_to_R(matr_3* dest, quat* src);
 //vect_3* EUL_m3(matr_3* src); //return Euler angles
 //vect_3* RPY_m3(matr_3* src); //return Roll pitch yaw
+//@}
 /*=======================================================================*/
+/** @addtogroup matr_n General Matrix Functions
+    @ingroup btmath
+    
+ */
+//@{
 /** general matrix.
 
 Function definitions are in btmath.c.
@@ -616,8 +632,13 @@ BTINLINE void setmul_mn(matr_mn* a,matr_mn* b); //multiply and store in a
 BTINLINE vect_n* matXvec_mn(matr_mn* a, vect_n* b);
 void print_mn(matr_mn* src);
 int test_mn(btreal error);
-
+//@}
 /*=======================================================================*/
+/** @addtogroup filt Digital Filters
+    @ingroup btmath
+    
+ */
+//@{
 /** A digital filter object
 
 btfilter is a digital filter object. new_btfilter() allocates memory for a new object.
@@ -669,7 +690,12 @@ void  init_btfilter_vn_diff(btfilter_vn *filt, int order, btreal sample_time, bt
 
 void test_filter_vn();
 
-
+//@}
+/** @addtogroup gen_math General Math Functions
+    @ingroup btmath
+    
+ */
+//@{
 
 
 BTINLINE btreal atan2_bt(btreal arg1, btreal arg2); 
@@ -677,7 +703,7 @@ BTINLINE btreal interp_bt(btreal x1, btreal y1, btreal x2, btreal y2, btreal x);
 BTINLINE btreal max_bt(btreal x,btreal y);
 BTINLINE btreal min_bt(btreal x,btreal y);
 #define Sgn(x) (x>=0.0?1.0:-1.0)
-
+//@}
 #ifdef __cplusplus
 }
 #endif/* __cplusplus */

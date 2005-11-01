@@ -13,7 +13,7 @@
  *   Uses some code & concepts developed at Nortwestern University 
  *   by Traveler Hauptman                                                                      
  *  REVISION HISTORY:                                                   
- *                                           
+ *  chk'd TH 051101
  *                                                                      
  *======================================================================*/
 
@@ -25,31 +25,83 @@
 
 #include "btmath.h"
 #include "btlogger.h"
+/*==============================*
+ * Internal use Functions       *
+ *==============================*/
+void InitDataFileDL(btlogger *db);
+int DataSizeDL(btlogger *db);
+void UpdateDL(btlogger *db);
+void flushDL(btlogger *db);
+void DLwrite(btlogger *db);
+
+/*==============================*
+ * Functions                    *
+ *==============================*/
 /*****************************************************************************/
-/** Allocate a specified number of fields
+/** Allocate a specified number of fields.
+
+
 You can add fewer fields than specified by PrepDL() but you cannot AddDataDL() 
 after calling InitDL().
  
+Typical usage:
+\code
+  PrepDL(&log,3);
+  AddDataDL(&log,&a,sizeof(double),BTLOG_DOUBLE,"Arclength");
+  //...more AddDataDL()
+  //initialize buffers
+  InitDL(&log,1000,"logfile.dat");
+\endcode
+
 \param db Pointer to the btlogger structure
 \param fields The number of fields you want to record
+
+\internal chk'd TH 051101
 */
-int PrepDL(btlogger *db, int fields)
+int PrepDL(btlogger *db, unsigned int fields)
 {
+#ifdef BT_NULL_PTR_GUARD
+  if (!btptr_ok(db,"PrepDL"))
+    return -2;
+#endif
   db->data = btmalloc(fields * sizeof(btdata_info));
   
   db->fields = 0;
   db->maxfields = fields;
   return 0;
 }
-/** Adds a field to the list of data to log
+/** Adds a field to the list of data to log.
+
+You must call PrepDL() first. Fields are
+added in the order that this function is called.
+
 \param size Size of data = Array_length * sizeof(type)
-\return 0 = Success, -1 = no more fields available
-\internal
+\param data Pointer to data you want to log.
+\param type See #btlog_enum
+\param name Data name to be printed in the column heading
+\retval 0 Success
+\retval -1 No more fields available
+\retval -2 db was invalid 
+
+\internal chk'd TH 051101
 \bug Check to see if we have already initialized with InitDL()
 */
 int AddDataDL(btlogger *db,void *data, int size, int type,char *name)
 {
-  int idx;
+  int idx,ret;
+
+#ifdef BT_NULL_PTR_GUARD
+  if (!btptr_ok(db,"AddDataDL"))
+    return -2;
+#endif
+//Sanity check
+#if (BTDEBUG & BTDEBUG_RANGE) > 3 
+  if (db->maxfields < 0){
+    syslog(LOG_ERR,"AddDataDL: db->maxfields = %d. Something in wrong...",db->maxfields);
+    return -3;
+  }
+#endif 
+
   idx = db->fields;
   if (idx <= db->maxfields)
   {
@@ -58,11 +110,21 @@ int AddDataDL(btlogger *db,void *data, int size, int type,char *name)
     db->data[idx].type = type;
     strcpy(db->data[idx].name,name);
     db->fields++;
-    return 0;
+    ret = 0;
   }
-  return -1;
+  else
+  {
+#if (BTDEBUG & BTDEBUG_RANGE) > 10
+    syslog(LOG_ERR,"AddDataDL: No more field slots left. Use a higher value in PrepDL()");
+#endif
+    ret = -1;
+  }
+  return ret;
 }
-/** (internal use) Counts up how much data is being stored */
+/** \internal (internal use) Counts up how much data is being stored 
+\exception db not valid
+\internal chk'd TH 051101
+*/
 int DataSizeDL(btlogger *db)
 {
   int total,cnt;
@@ -71,20 +133,25 @@ int DataSizeDL(btlogger *db)
     total += db->data[cnt].size;
   return total;
 }
-/** Initialize the buffers and prepare for logging
- 
-Don't forget to call PrepDL() and AddDataDL() first to define what fields will
-be recorded.
+/** Initialize the buffers and prepare for logging.
+
+ Don't forget to call PrepDL() 
+and AddDataDL() first to define what fields will be recorded.
  
 \param size The number of records the buffer will hold
 \param filename The path and filename where you want to write to
-\return 0 = Success, -1 = Could not open file, -2 = Could not allocate first buffer, -3 = Could not allocate second buffer
+\retval 0 Success
+\retval -1 Could not open file
+\internal chk'd TH 051101
 */
 
 int InitDL(btlogger *db,int size, char *filename)
 {
   int datasize;
-
+#ifdef BT_NULL_PTR_GUARD
+  if (!btptr_ok(db,"InitDL"))
+    return -2;
+#endif
   db->Log_Data = 0;
   db->DLwritten = 0;
   db->Log_File_Open = 0;
@@ -106,26 +173,40 @@ int InitDL(btlogger *db,int size, char *filename)
   db->DL = db->DLbuffer1;
   return 0;
 }
-/** Turn the data logger on
+/** Turn the data logger on.
 The data logger will not record data until after DLon() is called
+\internal chk'd TH 051101
 */
 void DLon(btlogger *db)
 {
+#ifdef BT_NULL_PTR_GUARD
+  if (!btptr_ok(db,"DLon"))
+    return;
+#endif
   db->Log_Data = 1;
 }
-/** Turn the data logger off
-When the datalogger is turned off with DLoff(), data logging il paused until
+/** Turn the data logger off.
+When the datalogger is turned off with DLoff(), data logging is paused until
 logging is turned back on by DLon()
+\internal chk'd TH 051101
 */
 void DLoff(btlogger *db)
 {
+#ifdef BT_NULL_PTR_GUARD
+  if (!btptr_ok(db,"DLoff"))
+    return;
+#endif
   db->Log_Data = 0;
 }
 /** Close the logging file and free buffer memory
- 
+\internal chk'd TH 051101
 */
 void CloseDL(btlogger *db)
 {
+#ifdef BT_NULL_PTR_GUARD
+  if (!btptr_ok(db,"CloseDL"))
+    return;
+#endif
   flushDL(db);
   free(db->data);
   free(db->DLbuffer1);
@@ -133,16 +214,22 @@ void CloseDL(btlogger *db)
   fclose(db->DLfile);
 }
 
-/** Copy all the data pointed to by the btdata_info array into the present buffer
+/** Copy all the data pointed to by the btdata_info array into the present buffer.
  
+
  This function should be called every time you want to save a record to the buffer.
  Typically this is called in a high priority thread with a short loop period.
  
+ \internal chk'd TH 051101
 */
 void TriggerDL(btlogger *db)
 {
   int tmp,cnt;
   void *start,*run;
+#ifdef BT_NULL_PTR_GUARD
+  if (!btptr_ok(db,"TriggerDL"))
+    return;
+#endif
   if (db->Log_Data) //If data logging is turned on
   {
     start = db->DL + db->DLidx * db->data_size; //point to the present location in the buffer
@@ -156,7 +243,8 @@ void TriggerDL(btlogger *db)
   }
 }
 
-/** (internal)Writes the header of a binary data file.
+/**\internal  (internal)Writes the header of a binary data file.
+\internal chk'd TH 051101
 */
 void InitDataFileDL(btlogger *db)
 {
@@ -176,7 +264,8 @@ void InitDataFileDL(btlogger *db)
   }
 }
 
-/** (internal)UpdateDL increments the DL index and switches the pointer to the other buffer if necessary
+/**\internal  (internal)UpdateDL increments the DL index and switches the pointer to the other buffer if necessary
+\internal chk'd TH 051101
 */
 void UpdateDL(btlogger *db)
 {
@@ -199,7 +288,8 @@ void UpdateDL(btlogger *db)
   }
 }
 
-/** (internal)DLwrite checks to see if one of the buffers got filled and if so, writes it to a file
+/**\internal  (internal)DLwrite checks to see if one of the buffers got filled and if so, writes it to a file
+\internal chk'd TH 051101
 */
 void DLwrite(btlogger *db)
 {
@@ -231,7 +321,9 @@ void DLwrite(btlogger *db)
     }
   }
 }
-/** (internal use) Write what is remaining in our buffers before closing */
+/**\internal  (internal use) Write what is remaining in our buffers before closing
+\internal chk'd TH 051101
+*/
 void flushDL(btlogger *db)
 {
   void  *DLout;
@@ -251,19 +343,35 @@ void flushDL(btlogger *db)
     fwrite(DLout,db->data_size,db->DLidx,db->DLfile);  //Write all the data in binary form
     db->DLctr++;                                        //increment the record index
   }
-
-
 }
 
-/** Checks the buffers and writes them if necessary
+/** Checks the buffers and writes them if one is full.
+
+This must be cyclically called (from an event loop perhaps)
+with a period that is shorter than the time it takes to fill the buffer.
+
+\warning If you do not call this often enough, you will have buffer sized gaps
+in your data file.
+
+\internal chk'd TH 051101
 */
 void evalDL(btlogger *db)
 {
+#ifdef BT_NULL_PTR_GUARD
+  if (!btptr_ok(db,"evalDL"))
+    return;
+#endif
   if (db->DLwritten)
     DLwrite(db);
 }
 /*************************** binary file to text file converter ***********/
+/** Decode a binary file created by btlogger.
 
+
+\param header If header !0 then the first line will be column names
+
+\internal chk'd TH 051101
+*/
 int DecodeDL(char *infile, char *outfile, int header)
 {
   btlogger db; //use this just because it is convinient
@@ -345,7 +453,8 @@ int DecodeDL(char *infile, char *outfile, int header)
         fprintf(outf,",");
     }
     }
-    syslog(LOG_ERR,"DecodeDL:Field %d - type: %d size: %d, name: %s",cnt,db.data[cnt].type,db.data[cnt].size,db.data[cnt].name);
+    
+    //syslog(LOG_ERR,"DecodeDL:Field %d - type: %d size: %d, name: %s",cnt,db.data[cnt].type,db.data[cnt].size,db.data[cnt].name);
   }
   if (header) fprintf(outf,"\n");
 
@@ -354,7 +463,7 @@ int DecodeDL(char *infile, char *outfile, int header)
     if(fread(&current_index,sizeof(int),1,inf)==0)
       break;
     fread(&length,sizeof(long),1,inf);
-    syslog(LOG_ERR,"DecodeDL:record index: %d length: %ld",current_index,length);
+    //syslog(LOG_ERR,"DecodeDL:record index: %d length: %ld",current_index,length);
     data = btmalloc(length);
     
 

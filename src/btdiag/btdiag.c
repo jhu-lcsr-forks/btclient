@@ -228,7 +228,7 @@ int main(int argc, char **argv)
   init_haptics();
 
   wam_thd.period = 0.002;
-  btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)&wam_thd);
+  btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)wam);
 
   btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
 

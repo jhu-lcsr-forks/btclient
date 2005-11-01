@@ -12,11 +12,13 @@
  *  NOTES:
  *
  *  REVISION HISTORY:
- *                                                                      *
+ *   chk'd TH 051101                                                                   *
  *======================================================================*/
 
 /** \file btlogger.h
-    Realtime data logging functionality
+    \brief Realtime data logging functionality
+
+\section tmp Realtime data logging:
 
 The btlogger object and member functions implement a double buffer data logger.
 The double buffer mechanism allows data to be recorded at high speed into memory 
@@ -24,7 +26,11 @@ while writes to disk are done as efficient block operations in a low priority
 thread.
 
 
-Typical usage is shown in the following pseudo code
+ - PrepDL(),AddDataDL(), and InitDL() are the setup functions.
+ - DLon(), evalDL(), TriggerDL(), and DLoff() are the operation functions.
+ - CloseDL() and DecodeDL() Are the shutdown and conversion functions.
+
+ Typical usage is shown in the following pseudo code
 
 \code
 btlogger log;
@@ -59,6 +65,7 @@ void loop()
 */
 #ifndef _DOUBLEBUFFER_H
 #define _DOUBLEBUFFER_H
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -67,7 +74,13 @@ extern "C"
 
 #include <stdio.h>
 
-enum {BTLOG_INT = 0,BTLOG_LONG,BTLOG_DOUBLE,BTLOG_LONGLONG,BTLOG_BTREAL};
+enum btlog_type {
+  BTLOG_INT = 0,
+  BTLOG_LONG,
+  BTLOG_DOUBLE,
+  BTLOG_LONGLONG,
+  BTLOG_BTREAL
+};
 /** btlogger helper structure
 
   This structure holds info on each piece of data that the user wants to log.
@@ -93,14 +106,15 @@ Terminology:
  - Field: One piece of data. Per field info is stored in a btdata_info structure
  - Record: One set of Fields. This represents all the data that needs to be recorded.
  
-Function definitions are in btlogger.c.
+Function definitions are in btlogger.h.
 \internal
 \bug Add checks to make sure buffer size is large enough.
 */
 typedef struct
 {
-  void *DL,*DLbuffer1,*DLbuffer2;  //!< Buffers and buffer pointer
-  
+  void *DL; //!< Pointer to current buffer
+  void *DLbuffer1; //!< First data buffer
+  void *DLbuffer2;  //!< Second data buffer
   btdata_info *data; //!< list of data information
   size_t data_size; //!< Total size of one block of data
   int fields; //!< Number of data_info pieces
@@ -110,22 +124,14 @@ typedef struct
   int DLwritten;       //!< 0 all buffers clear, 1 buffer1 ready, 2 buffer2 ready
   int DLctr;
   int Log_Data;
-  int Log_File_Open;
+  int Log_File_Open; 
   int buffersize;
   FILE *DLfile;
   pthread_mutex_t mutex; //!< Unused
 }btlogger;
 
-// Private functions
-
-void InitDataFileDL(btlogger *db);
-int DataSizeDL(btlogger *db);
-void UpdateDL(btlogger *db);
-void flushDL(btlogger *db);
-void DLwrite(btlogger *db);
-
 // public functions
-int PrepDL(btlogger *db, int fields);
+int PrepDL(btlogger *db, unsigned int fields);
 int AddDataDL(btlogger *db,void *data, int size, int type,char *name);
 int InitDL(btlogger *db,int size, char *filename);
 

@@ -1,11 +1,11 @@
 /*!
 
-\mainpage Barrett Technology WAM control code library
+\mainpage Barrett WAM control library
 
 \section qs Programming Quickstart
 
 To learn to write software for the WAM, Barrett recommends the following course.
-
+- Read \ref intro, \ref fctly, \subpage pcv
 - Follow the quickstart sheet shipped with the WAM to get the WAM set up and running.
 - Compile and run each of the example programs
 - Read the code of the example programs
@@ -66,8 +66,11 @@ Mostly internal use:
 - playlist.h: point to point playlist funcionality for btjointcontrol
 - serial.h: serial comm library
 
-\section pcv Programming Conventions
+ 
+*/
 
+/**
+\page pcv Programming Conventions
 Based on our experience with RTAI, Linux, and our code, here are some words of advice.
 \subsection pcv1 GDB
 Learn to use gdb! If you are getting segfaults in your code (our rampant use of 

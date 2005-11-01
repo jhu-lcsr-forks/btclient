@@ -35,16 +35,7 @@
 
 
 
-/** @name Internal pointer list
-  These functions are used internally for keeping track of the memory allocated
-  for vector and matrix variables.
-  
-  An array of pointers is maintained. The list is added to each time a vector is 
-  allocated. The vector has an index into the array to avoid the need for searches. 
-  A vector can be released individually with rembtptr(). At program end all the pointers 
-  are released.
-*/
-//@{
+
 int num_btptrs = 0;
 void *btptrs[MAX_BTPTRS];
 /** (internal) Adds a pointer to the garbage collection list
@@ -83,12 +74,6 @@ void freebtptr()
   }
 }
 
-
-//@}
-/** @name vect_n Initialization and Data Access Functions
-    N element vector functions.
- */
-//@{
 /** Sets each element of a vector to the specified value
 */
 BTINLINE void fill_vn(vect_n* dest, btreal val)
@@ -449,11 +434,7 @@ void reset_vn(vect_n* src)
   src->ret->n = src->n;
 }
 
-//@}
-/** @name vect_n Operator Functions
-    N element vector operation functions.
- */
-//@{
+
 /** Vector Negate
  
 a[i] = -1.0 * a[i]
@@ -630,11 +611,7 @@ BTINLINE vect_n* bound_vn(vect_n* a, btreal min, btreal max)
   return a->ret;
 
 }
-//@}
-/** @name vect_n per element operator Functions
-    Vector math functions that treat vectors as arrays of btreals
- */
-//@{
+
 /** Per Element Multiply
  
 ret[i] = a[i] * b[i]
@@ -680,11 +657,7 @@ BTINLINE vect_n* e_sqr_vn(vect_n* a)
     a->ret->q[cnt] =  a->q[cnt] * a->q[cnt];
   return a->ret;
 }
-//@}
-/** @name vect_n Input/Output Functions
-    Functions for vect_n screen and file IO
- */
-//@{
+
 /** Use printf to print values of a vect_n
  This function prints three lines for each vector. Consider using sprint_vn instead.
 */
@@ -1043,11 +1016,7 @@ int test_vn(btreal error)
 
 
 }
-//@}
-/** @name Vector Array Functions
-    These functions are for manipulating arrays of vectors.
- */
-//@{
+
 
 /**************************************** End vect_n functions ****************/
 
@@ -1481,14 +1450,11 @@ int test_vr(btreal error)
     print_vn(idx_vr(vr2,cnt));
   }
 }
-//@}
+
 /**************************************** End vectray functions ****************/
 /********************** vect_3 functions **************************************/
 
-/** @name 3 Element Vector Optimized Functions
-    These functions are optimized for 3 element vectors.
- */
-//@{
+
 /** Optimized for 3 element vectors.  See fill_vn()
 */
 BTINLINE void fill_v3(vect_3* dest, btreal val)
@@ -1744,13 +1710,10 @@ int test_v3(btreal error)
   print_v3(cross_v3(c1,c2));
 
 }
-//@}
+
 /**************************************** End vect_3 functions ****************/
 /********************** quat functions **************************************/
-/** @name Quaternion Functions
-    These functions operate on 4 element vectors (quaternions).
- */
-//@{
+
 BTINLINE void fill_q(quat* dest, btreal val)
 {
   dest->q[0] = val;
@@ -2107,17 +2070,12 @@ vect_3* axis_q(vect_3* dest, quat* src)
   set_v3(dest,unit_v3(dest));
   return dest;
 }
-//@}
+
 /********************** quat functions **************************************/
 
 /********************** matr_h functions **************************************/
 
-/** @name matr_h - SE(3) Optimized Matrix Functions
-    These functions are optimized to operate on the subset of SE(3) that applies 
-    to physical systems. In particular, Rotation and Translation are supported, 
-    skewing and reflecting are not.
- */
-//@{
+
 /** Allocates memory and calculation swap space for a new homogeneous matrix.
  
   All matrices need to be initialized with new. It is preferable to declare 
@@ -2392,13 +2350,10 @@ int bench_mh()
 
 
 }
-//@}
+
 /**************************************** End matr_h functions ****************/
 /********************** matr_3 functions **************************************/
-/** @name matr_3 - SO(3) Optimized Matrix Functions
-    These functions are optimized to operate on SO(3).
- */
-//@{
+
 /** Allocate and initialize a new matr_3 object. See new_mh() */
 matr_3 * new_m3() //allocates memory and sets to identity
 {
@@ -2651,12 +2606,9 @@ BTINLINE matr_3* XYZftoR_m3(matr_3* R, vect_3* XYZ) //Return R
   setrow_m3(R,2,-sb,cb*sg,cb*cg);
   return R;
 }
-//@}
+
 /******************************************************************************/
-/** @name btfilter - Digital Filter Functions
-    These functions are for digital filtering.
- */
-//@{
+
 
 /** Allocates memory for and initializes a btfilter object.
  
@@ -2860,8 +2812,10 @@ void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz)
   filt->d[2] = 0.0;
 }
 
-//@)
 
+/** 2 parameter arc tangent
+
+*/
 BTINLINE btreal atan2_bt(btreal arg1, btreal arg2)
 {
   /* returns angle from -pi to pi */
