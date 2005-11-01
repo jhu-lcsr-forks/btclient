@@ -21,6 +21,17 @@
 #include "btos.h"
 
 
+void *backtracearray[50];
+char **backtracestrings;
+int backtracesize;
+void syslog_backtrace(int size)
+{
+  int cnt;
+  for (cnt = 0;cnt < size;cnt ++)
+    syslog(LOG_ERR,"WAM:Backtrace:%s",backtracestrings[cnt]);
+}
+
+/** Initialize a mutex */
 int btmutex_init(btmutex* btm){
   int ret;
   pthread_mutexattr_t mattr;
@@ -33,7 +44,11 @@ int btmutex_init(btmutex* btm){
     "Could not initialize mutex.");
   return ret;
 }
-
+/** Lock a btmutex
+See pthread_mutex_lock() for more info
+This function calls pthread_mutex_lock() and prints an error to syslog if it 
+fails.
+*/
 BTINLINE int btmutex_lock(btmutex* btm)
 {
   int ret;
@@ -44,7 +59,11 @@ BTINLINE int btmutex_lock(btmutex* btm)
   }
   return ret;
 }
-int btmutex_lock_msg(btmutex* btm,char *msg);
+/** Unlock a btmutex
+See pthread_mutex_unlock() for more info
+This function calls pthread_mutex_unlock() and prints an error to syslog if it 
+fails.
+*/
 BTINLINE int btmutex_unlock(btmutex *btm)
 {
   int ret;
@@ -57,16 +76,18 @@ BTINLINE int btmutex_unlock(btmutex *btm)
 }
 
 
-/** Null pointer access flag 
+/** Check pointer for a NULL value
 
 \todo Eventually we should check for pointers outside of program heap instead of
-just null pointers
+just null pointers. See sbrk() [gnu libc] for finding end of data segment. 
 */
 int btptr_ok(void *ptr,char *str)
 {
   if (ptr == NULL){
-#ifdef BT_BACKTRACE 
-/**\todo insert backtrace code here*/
+#if BT_BACKTRACE & BTDEBUG_BACKTRACE
+    backtracesize = baktrace(backtracearray,50);
+    backtracestrings = backtrace_symbols(backtracearray,backtracesize);
+    syslog_backtrace(backtracesize);
 #endif
     syslog(LOG_ERR,"bt ERROR: you tried to access a null pointer in %s",str);
     return 0;
@@ -82,8 +103,10 @@ Has same (backwards) return values as btptr_ok()
 int btptr_chk(void *ptr)
 {
   if (ptr == NULL){
-#ifdef BT_BACKTRACE 
-/**\todo insert backtrace code here*/
+#if BT_BACKTRACE & BTDEBUG_BACKTRACE
+  backtracesize = baktrace(backtracearray,50);
+  backtracestrings = backtrace_symbols(backtracearray,backtracesize);
+  syslog_backtrace(backtracesize);
 #endif
     return 0;
   }
@@ -94,15 +117,18 @@ int btptr_chk(void *ptr)
 int idx_bounds_ok(int idx,int max,char *str)
 {
   if ((idx < 0) || (idx > max)){
-#ifdef BT_BACKTRACE 
-/**\todo insert backtrace code here*/
+#if BT_BACKTRACE & BTDEBUG_BACKTRACE
+  backtracesize = baktrace(backtracearray,50);
+  backtracestrings = backtrace_symbols(backtracearray,backtracesize);
+  syslog_backtrace(backtracesize);
 #endif
     syslog(LOG_ERR,"bt ERROR: Your index is %d with limit %d in function %s",idx,max,str);
     return 0;
   }
   return 1;
 }
-
+/** Provides a shorthand to replace return variable checks
+*/
 BTINLINE int test_and_log(int ret, const char *str)
 {
   if (ret != 0)
@@ -120,9 +146,7 @@ BTINLINE int test_and_log(int ret, const char *str)
 */
 BTINLINE void * btmalloc(size_t size)
 {
- void* vmem;
-
-  //allocate mem for vector,return vector, and return structure
+  void* vmem;
   if ((vmem = malloc(size)) == NULL) 
   {
     syslog(LOG_ERR,"btMalloc: memory allocation failed, size %d",size);
@@ -130,11 +154,10 @@ BTINLINE void * btmalloc(size_t size)
   }
   return vmem;
 }
-/**Memory deallocation wrapper
 
+/**Memory deallocation wrapper
   free's memory at *ptr and then sets *ptr to NULL.
 */
-
 BTINLINE void btfree(void **ptr)
 {
 #ifdef BT_NULL_PTR_GUARD
@@ -161,11 +184,10 @@ void free_btthread(btthread **thd)
 We create a new posix thread with a schedpolicy of SCHED_FIFO. The thread_id
 is returned.
 
-\param
-  thd The barrett thread structure; allocated before calling this function.
-  priority The priority we wish to call this thread with. 0 = linux non-realtime priority. 99 = Max priority
-  function Pointer to the function that represents the thread
-  args Pointer to the arguments you want to pass.
+\param  thd The barrett thread structure; allocated before calling this function.
+\param  priority The priority we wish to call this thread with. 0 = linux non-realtime priority. 99 = Max priority
+\param  function Pointer to the function that represents the thread
+\param  args Pointer to the arguments you want to pass.
 \internal 
 right now we kill the program if a thread create doesn't work. I'm not sure if this 
 is reasonable.
@@ -242,25 +264,4 @@ void btperiodic_proto(void *args)
   
   
 }
-/*
-#include <rtai_lxrt.h>
-
-int btperiodic_create(btthread *thd,int priority, double period, void *function,void *args)
-{
-
-  RTIME rtime_period;
-  
-  rtime_period = (RTIME)(period * 1000000000.0);
-  
-  thd->sampleCount = nano2count(rtime_period);
-
-  rt_set_periodic_mode();
-  
-  btthread_create(thd,priority,function,args);
-  
-  start_rt_timer(thd->sampleCount);
-}
-*/
-
-
 

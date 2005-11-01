@@ -55,7 +55,10 @@ int getGimbalsAngles(wam_struct *WAM,double *gimbals)
     
     return(0); /* Return success */
 }
+/**
 
+\todo Read gimbals gain & offset from wam.conf
+*/
 int initGimbals(wam_struct *WAM)
 {
     FILE *inFile;

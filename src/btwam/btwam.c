@@ -13,14 +13,14 @@
  *======================================================================*/
 
 
-/* Tags - 
+/* Tags -
 This is a list of tags for functionality integrated into the InitWAM and WAMControlThread code
 to make it easier to find and maintaind later
-
+ 
   //th cteach = Continuous teach & play
   //th prof = Loop time profiling
   //th log = Data logging
-
+ 
 */
 #define TWOPI 6.283185
 /*==============================*
@@ -51,7 +51,7 @@ extern bus_struct *buses;
 /*==============================*
  * Internal use Functions       *
  *==============================*/
- 
+
 void WAMMaintenanceThread(void *data);
 int ActAngle2Mpos(vect_n *Mpos); //Extracts actuators 0 thru 6 into vect_n positions
 int Mtrq2ActTrq(vect_n *Mtrq);  //Packs vect_n of torques into actuator array
@@ -114,13 +114,16 @@ void InitVectors(void){
   WAM.R6acc = new_vn(6);
   WAM.R6trq = new_vn(6);
   WAM.R6force = new_vn(6);
+  WAM.js_or_cs = 0;
+  WAM.idle_when_done = 0;
+  WAM.active_sc = &WAM.Jsc;
 }
- 
+
 /** Initialize a WAM
  
   This function calls the necessary lower-level libbt functions to set
   up the pucks, enumerate them and scan in the wam configuration information.
-
+ 
   This function may kill the process using exit() if it runs into problems.
   
   \param fn wam configuration filename
@@ -135,44 +138,47 @@ wam_struct* OpenWAM(char *fn)
   const double pi = 3.14159;
   btreal theta, d, a, alpha, mass, tmpdbl;
   vect_3 *com;
-  
+
   char robotType[256];
   char key[256];
   long reply;
   int link;
   // Allocate memory for the WAM vectors
   InitVectors();
-  
+
   /* Joint Control plugin initialization */
-  for (cnt = 0; cnt < 7; cnt ++){
+  for (cnt = 0; cnt < 7; cnt ++)
+  {
     init_btPID(&(WAM.d_jpos_ctl[cnt]));
   }
   WAM.d_jpos_array.pid = WAM.d_jpos_ctl;
-  WAM.d_jpos_array.elements = 7;  
+  WAM.d_jpos_array.elements = 7;
   init_bts(&WAM.Jsc);
-  map_btstatecontrol(&WAM.Jsc, WAM.Jpos, WAM.Jvel, WAM.Jacc, 
-                      WAM.Jref, WAM.Jtrq, &WAM.dt);
+  map_btstatecontrol(&WAM.Jsc, WAM.Jpos, WAM.Jvel, WAM.Jacc,
+                     WAM.Jref, WAM.Jtrq, &WAM.dt);
   btposition_interface_mapf_btPID(&WAM.Jsc, &(WAM.d_jpos_array));
   /* Joint Control plugin initialization */
-  
-  
+
+
   /* Control plugin initialization */
-  for (cnt = 0; cnt < 3; cnt ++){
+  for (cnt = 0; cnt < 3; cnt ++)
+  {
     init_btPID(&(WAM.d_pos_ctl[cnt]));
     setgains_btPID(&(WAM.d_pos_ctl[cnt]),2000.0,5.0,0.0);
   }
   WAM.d_pos_array.pid = WAM.d_pos_ctl;
-  WAM.d_pos_array.elements = 6;  
+  WAM.d_pos_array.elements = 6;
   init_bts(&WAM.Csc);
-  map_btstatecontrol(&WAM.Csc, WAM.R6pos, WAM.R6vel, WAM.R6acc, 
-                      WAM.R6ref, WAM.R6force, &WAM.dt);
+  map_btstatecontrol(&WAM.Csc, WAM.R6pos, WAM.R6vel, WAM.R6acc,
+                     WAM.R6ref, WAM.R6force, &WAM.dt);
   btposition_interface_mapf_btPID(&WAM.Csc, &(WAM.d_pos_array));
-  
+
   /* Control plugin initialization */
-  
+
   init_pwl(&WAM.pth,3,2); //Cartesian move path
 
-  for (cnt = 0; cnt < 3; cnt ++){
+  for (cnt = 0; cnt < 3; cnt ++)
+  {
     init_btPID(&(WAM.pid[cnt]));
     setgains_btPID(&(WAM.pid[cnt]),2000.0,5.0,0.0);
   }
@@ -187,109 +193,120 @@ wam_struct* OpenWAM(char *fn)
   WAM.force_callback = BlankWAMcallback;
   WAM.log_time = 0.0;
   WAM.logdivider = 1;
-  
-    
+
+
   SetEngrUnits(1);
 #ifdef BTOLDCONFIG
+
   if(test_and_log(
-       InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
-       "Failed to initialize system"))
+            InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
+            "Failed to initialize system"))
   {
     exit(-1);
   }
-  
+
   if(test_and_log(
-    EnumerateSystem(),"Failed to enumerate system"))  {exit(-1);}
+            EnumerateSystem(),"Failed to enumerate system"))
+  {
+    exit(-1);
+  }
 
 #else //BTOLDCONFIG
   //------------------------
   err = InitializeSystem();
-  if(err){
-      syslog(LOG_ERR, "OpenWAM: InitializeSystem returned err = %d", err);
-      return(NULL);
+  if(err)
+  {
+    syslog(LOG_ERR, "OpenWAM: InitializeSystem returned err = %d", err);
+    return(NULL);
   }
 #endif
   WAM.act = GetActuators(&(WAM.num_actuators));
 
   new_bot(&WAM.robot,WAM.num_actuators);
-  
-  
-  com = new_v3(); 
-  
-  
+
+
+  com = new_v3();
+
+
   // Parse config file
   err = parseFile(fn);
-  if(err){
-      syslog(LOG_ERR, "OpenWAM: Error parsing config file- %s", fn);
-      return(NULL);
+  if(err)
+  {
+    syslog(LOG_ERR, "OpenWAM: Error parsing config file- %s", fn);
+    return(NULL);
   }
   //strcpy(robotType, buses[0].device_name);
   sprintf(key, "system.bus[0].name");
   parseGetVal(STRING, key, (void*)robotType);
-  
-  
+
+
   // Read park_location
   sprintf(key, "%s.home", robotType, link);
   parseGetVal(VECTOR, key, (void*)WAM.park_location);
-      
-  for(link = 0; link <= WAM.num_actuators; link++){
-      // Get the DH parameters
-      sprintf(key, "%s.link[%d].dh.theta", robotType, link);
-      parseGetVal(DOUBLE, key, (void*)&theta);
-      sprintf(key, "%s.link[%d].dh.d", robotType, link);
-      parseGetVal(DOUBLE, key, (void*)&d);
-      sprintf(key, "%s.link[%d].dh.a", robotType, link);
-      parseGetVal(DOUBLE, key, (void*)&a);
-      sprintf(key, "%s.link[%d].dh.alpha", robotType, link);
-      parseGetVal(DOUBLE, key, (void*)&alpha);
-      
-      // Get the mass parameters
-      sprintf(key, "%s.link[%d].com", robotType, link);
-      parseGetVal(VECTOR, key, (void*)com);
-      sprintf(key, "%s.link[%d].mass", robotType, link);
-      parseGetVal(DOUBLE, key, (void*)&mass);
 
-      if(link != WAM.num_actuators){
-          // Query for motor_position (JIDX)
-#ifdef BTOLDCONFIG 
-          WAM.motor_position[link] = link;
+  for(link = 0; link <= WAM.num_actuators; link++)
+  {
+    // Get the DH parameters
+    sprintf(key, "%s.link[%d].dh.theta", robotType, link);
+    parseGetVal(DOUBLE, key, (void*)&theta);
+    sprintf(key, "%s.link[%d].dh.d", robotType, link);
+    parseGetVal(DOUBLE, key, (void*)&d);
+    sprintf(key, "%s.link[%d].dh.a", robotType, link);
+    parseGetVal(DOUBLE, key, (void*)&a);
+    sprintf(key, "%s.link[%d].dh.alpha", robotType, link);
+    parseGetVal(DOUBLE, key, (void*)&alpha);
+
+    // Get the mass parameters
+    sprintf(key, "%s.link[%d].com", robotType, link);
+    parseGetVal(VECTOR, key, (void*)com);
+    sprintf(key, "%s.link[%d].mass", robotType, link);
+    parseGetVal(DOUBLE, key, (void*)&mass);
+
+    if(link != WAM.num_actuators)
+    {
+      // Query for motor_position (JIDX)
+#ifdef BTOLDCONFIG
+      WAM.motor_position[link] = link;
 #else
-          getProperty(WAM.act[0].bus, WAM.act[link].puck.ID, JIDX, &reply);
-          WAM.motor_position[link] = link;/** \todo Finish this *///reply; 
+
+      getProperty(WAM.act[0].bus, WAM.act[link].puck.ID, JIDX, &reply);
+      WAM.motor_position[link] = link;/** \todo Finish this *///reply;
 #endif
-          // Read joint PID constants
-          sprintf(key, "%s.link[%d].pid.kp", robotType, link);
-          parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.Kp)[link]));
-          sprintf(key, "%s.link[%d].pid.kd", robotType, link);
-          parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.Kd)[link]));
-          //parseGetVal(DOUBLE, key, (void*)&WAM.Kd);
-          sprintf(key, "%s.link[%d].pid.ki", robotType, link);
-          parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.Ki)[link]));
-          //parseGetVal(DOUBLE, key, (void*)&WAM.Ki);
-          sprintf(key, "%s.link[%d].pid.max", robotType, link);
-          parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.saturation)[link]));
-          //parseGetVal(DOUBLE, key, (void*)&WAM.saturation);
-          
-          // Read joint vel/acc defaults
-          sprintf(key, "%s.link[%d].vel", robotType, link);
-          parseGetVal(DOUBLE, key, (void*)&tmpdbl);
-          setval_vn(WAM.vel, link, tmpdbl);
-          sprintf(key, "%s.link[%d].acc", robotType, link);
-          parseGetVal(DOUBLE, key, (void*)&tmpdbl);
-          setval_vn(WAM.acc, link, tmpdbl);
-      
-          link_geom_bot(&WAM.robot, link, theta * pi, d, a, alpha * pi);
-          link_mass_bot(&WAM.robot, link, com, mass);
-      }else{
-          tool_geom_bot(&WAM.robot, theta * pi, d, a, alpha * pi);
-          tool_mass_bot(&WAM.robot, com, mass);
-          
-         
-      }
-      
+      // Read joint PID constants
+      sprintf(key, "%s.link[%d].pid.kp", robotType, link);
+      parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.Kp)[link]));
+      sprintf(key, "%s.link[%d].pid.kd", robotType, link);
+      parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.Kd)[link]));
+      //parseGetVal(DOUBLE, key, (void*)&WAM.Kd);
+      sprintf(key, "%s.link[%d].pid.ki", robotType, link);
+      parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.Ki)[link]));
+      //parseGetVal(DOUBLE, key, (void*)&WAM.Ki);
+      sprintf(key, "%s.link[%d].pid.max", robotType, link);
+      parseGetVal(DOUBLE, key, (void*)&(valptr_vn(WAM.saturation)[link]));
+      //parseGetVal(DOUBLE, key, (void*)&WAM.saturation);
+
+      // Read joint vel/acc defaults
+      sprintf(key, "%s.link[%d].vel", robotType, link);
+      parseGetVal(DOUBLE, key, (void*)&tmpdbl);
+      setval_vn(WAM.vel, link, tmpdbl);
+      sprintf(key, "%s.link[%d].acc", robotType, link);
+      parseGetVal(DOUBLE, key, (void*)&tmpdbl);
+      setval_vn(WAM.acc, link, tmpdbl);
+
+      link_geom_bot(&WAM.robot, link, theta * pi, d, a, alpha * pi);
+      link_mass_bot(&WAM.robot, link, com, mass);
+    }
+    else
+    {
+      tool_geom_bot(&WAM.robot, theta * pi, d, a, alpha * pi);
+      tool_mass_bot(&WAM.robot, com, mass);
+
+
+    }
+
   }
-  
-      
+
+
   // Link geometry - file
   // Link mass - file
   // motor_position - enum
@@ -308,9 +325,9 @@ wam_struct* OpenWAM(char *fn)
   setrow_m3(WAM.robot.world->origin,2,-1.0,0.0,0.0);
   */
   /* end WAM tipped forward hack */
-  
 
-  
+
+
   fill_vn(WAM.robot.dq,0.0);
   fill_vn(WAM.robot.ddq,0.0);
 
@@ -323,16 +340,16 @@ wam_struct* OpenWAM(char *fn)
     SCinit(&(WAM.sc[cnt]));
     SCsetpid(&(WAM.sc[cnt]),getval_vn(WAM.Kp,cnt),getval_vn(WAM.Kd,cnt),getval_vn(WAM.Ki,cnt),getval_vn(WAM.saturation,cnt));
     SCsettrjprof(&(WAM.sc[cnt]),getval_vn(WAM.vel,cnt),getval_vn(WAM.acc,cnt));
-    
+
     setgains_btPID(&(WAM.d_jpos_ctl[cnt]), getval_vn(WAM.Kp,cnt),getval_vn(WAM.Kd,cnt),getval_vn(WAM.Ki,cnt));
   }
-     
+
   test_and_log(
-      pthread_mutex_init(&(WAM.loop_mutex),NULL),
-      "Could not initialize mutex for WAM control loop.");
-  
+    pthread_mutex_init(&(WAM.loop_mutex),NULL),
+    "Could not initialize mutex for WAM control loop.");
+
   btthread_create(&WAM.maint,0,(void*)WAMMaintenanceThread,&WAM);
-  
+
   return(&WAM);
 }
 /** Free memory and close files opened by OpenWAM() */
@@ -348,7 +365,7 @@ SimpleCtl * GetWAMsc()
 {
   return WAM.sc;
 }
-/** 
+/**
  Actuator Idx starts at 0 and counts up to number of actuators. 
  MotorID is keyed to the location on the wam (and hense the joint it drives)
  This relationship allows only calculating the control info for the joints that
@@ -364,20 +381,26 @@ wam_struct * GetWAM()
 {
   return &WAM;
 }
-/** Internal: Periodically services the data logging and teach&play data 
+/** Internal: Periodically services the data logging and teach&play data
 structures.
-
+ 
 */
 void WAMMaintenanceThread(void *data)
-{ 
+{
   btthread* this_thd;
   wam_struct *wam;
-  
+
   this_thd = (btthread*)data;
   wam = (wam_struct*)this_thd->data;
-  
+
   while (!btthread_done(this_thd))
   {
+    if (wam->idle_when_done){
+      if (get_trjstate_bts(wam->active_sc) == BTTRAJ_DONE){
+        setmode_bts(wam->active_sc,SCMODE_IDLE);
+        wam->idle_when_done = 0;
+      }
+    }
     evalDL(&(wam->log));
     evalDL(&(WAM->cteach));
     usleep(100000); // Sleep for 0.1s
@@ -386,10 +409,10 @@ void WAMMaintenanceThread(void *data)
 }
 
 /** This function closes the control loop on the WAM using a PID regulator in joint space.
-
+ 
 It is worth the programmers time to read through the code of this function and 
 understand exactly what it is doing!
-
+ 
 The following functionality is in this loop:
  - Joint Space Controller (pid, point-to-point trapezoidal trajectories)
  - Loop profiling - Period time, Read pos time, Write trq time, Calc time
@@ -398,7 +421,7 @@ The following functionality is in this loop:
  - Continuous teach & play recording
  
  \todo Make control loop profiling a compiler switch so it is not normally compiled
-
+ 
 */
 
 void WAMControlThread(void *data)
@@ -425,114 +448,126 @@ void WAMControlThread(void *data)
 
   WAMControlThreadTask = rt_task_init(nam2num("WAMCon"), 0, 0, 0);
   //mlockall(MCL_CURRENT | MCL_FUTURE);
-//#ifdef  BTREALTIME
+  //#ifdef  BTREALTIME
   rt_make_hard_real_time();
-//#endif
+  //#endif
   syslog(LOG_ERR,"WAMControl initial hard");
   rt_task_make_periodic_relative_ns(WAMControlThreadTask, rtime_period, rtime_period);
   dt_targ = thisperiod;
   skiptarg = 1.5 * dt_targ;
   dt = dt_targ;
   WAM.skipmax = 0.0;
-  syslog(LOG_ERR,"WAMControl period Sec:%f, ns: %d",thisperiod, rtime_period);  
+  syslog(LOG_ERR,"WAMControl period Sec:%f, ns: %d",thisperiod, rtime_period);
   last_loop = rt_get_cpu_time_ns();
   while (!btthread_done(this_thd))
   {
     rt_task_wait_period();
     counter++;
-    
+
     loop_start = rt_get_cpu_time_ns(); //th prof
     WAM.loop_period = loop_start - last_loop; //th prof
     dt = (double)WAM.loop_period / 1000000000.0;
-    if (dt > skiptarg){
+    if (dt > skiptarg)
+    {
       skipcnt++;
-      if (dt > WAM.skipmax) WAM.skipmax = dt;
+      if (dt > WAM.skipmax)
+        WAM.skipmax = dt;
     }
     WAM.dt = dt;
-    
-    
+
+
     test_and_log(
       pthread_mutex_lock(&(WAM.loop_mutex)),"WAMControlThread lock mutex failed");
-    
+
 #ifdef BTDOUBLETIME
+
     rt_make_soft_real_time();
 #endif
+
     pos1_time = rt_get_cpu_time_ns(); //th prof
-    
+
     GetPositions();
-    
+
     pos2_time = rt_get_cpu_time_ns(); //th prof
     WAM.readpos_time = pos2_time - pos1_time; //th prof
-#ifdef BTDOUBLETIME    
+#ifdef BTDOUBLETIME
+
     rt_make_hard_real_time();
 #endif
+
     ActAngle2Mpos((WAM.Mpos)); //Move motor angles into a wam_vector variable
     Mpos2Jpos((WAM.Mpos), (WAM.Jpos)); //Convert from motor angles to joint angles
-    
+
     // Joint space stuff
     pos1_time = rt_get_cpu_time_ns(); //th prof
     eval_bts(&(WAM.Jsc));
     pos2_time = rt_get_cpu_time_ns(); //th prof
     WAM.Jsc_time = pos2_time - pos1_time; //th prof
-    
+
     // Cartesian space stuff
     set_vn(WAM.robot.q,WAM.Jpos);
 
     eval_fk_bot(&WAM.robot);
     eval_fd_bot(&WAM.robot);
-    
+
     set_v3(WAM.Cpos,T_to_W_bot(&WAM.robot,WAM.Cpoint));
     set_vn(WAM.R6pos,(vect_n*)WAM.Cpos);
-    
+
     pos1_time = rt_get_cpu_time_ns(); //th prof
     eval_bts(&(WAM.Csc));
     pos2_time = rt_get_cpu_time_ns(); //th prof
     WAM.user_time = pos2_time - pos1_time; //th prof
-    
+
     set_v3(WAM.Cforce,(vect_3*)WAM.R6force);
-   //setrange_vn((vect_n*)WAM.Ctrq,WAM.R6force,0,2,3);
+    //setrange_vn((vect_n*)WAM.Ctrq,WAM.R6force,0,2,3);
     //Force application
     apply_tool_force_bot(&WAM.robot, WAM.Cpoint, WAM.Cforce, WAM.Ctrq);
-    
+
     pos1_time = rt_get_cpu_time_ns(); //th prof
     (*WAM.force_callback)(&WAM);
     pos2_time = rt_get_cpu_time_ns(); //th prof
     WAM.user_time = pos2_time - pos1_time; //th prof
-    
+
     eval_bd_bot(&WAM.robot);
     get_t_bot(&WAM.robot,WAM.Ttrq);
 
     if(WAM.isZeroed)
     {
-        set_vn(WAM.Jtrq,add_vn(WAM.Jtrq,WAM.Ttrq));
+      set_vn(WAM.Jtrq,add_vn(WAM.Jtrq,WAM.Ttrq));
     }
-    
+
     Jtrq2Mtrq((WAM.Jtrq), (WAM.Mtrq));  //Convert from joint torques to motor torques
     Mtrq2ActTrq(WAM.Mtrq); //Move motor torques from wam_vector variable into actuator database
 #ifdef BTDOUBLETIME
+
     rt_make_soft_real_time();
 #endif
+
     trq1_time = rt_get_cpu_time_ns(); //th prof
-    
+
     SetTorques();
-    
+
     trq2_time = rt_get_cpu_time_ns(); //th prof
     WAM.writetrq_time = trq2_time - trq1_time; //th prof
 #ifdef BTDOUBLETIME
+
     rt_make_hard_real_time();
 #endif
+
     loop_end = rt_get_cpu_time_ns(); //th prof
     WAM.loop_time = loop_end - loop_start; //th prof
     last_loop = loop_start; //th prof
-    
+
     pthread_mutex_unlock(&(WAM.loop_mutex));
-    
+
     WAM.log_time += dt;
-    if ((counter % WAM.logdivider) == 0){
+    if ((counter % WAM.logdivider) == 0)
+    {
       TriggerDL(&(WAM.log)); //th log
     }
     //th cteach {
-    if (WAM.cteach.Log_Data){ 
+    if (WAM.cteach.Log_Data)
+    {
       WAM.counter++;
       WAM.teach_time += dt;
       if ((counter % WAM.divider) == 0)
@@ -633,7 +668,7 @@ void Jtrq2Mtrq(vect_n * Jtrq, vect_n * Mtrq) //conbert joint torque to motor tor
 
 
 /** Reset the position sensors on the pucks to the passed in position in units of joint-space radians
-
+ 
 Reset the position sensors on the pucks to the passed in position in units of joint-space radians
 The wam must be in idle mode.
 */
@@ -643,7 +678,7 @@ void DefineWAMpos(wam_struct *w,vect_n *wv)
   long tmp;
   vect_n *motor_angle;
   double result;
-  
+
   motor_angle = new_vn(7);
   /* Tell the safety logic to ignore the next faults */
   SetByID(SAFETY_MODULE, IFAULT, 8);
@@ -675,13 +710,13 @@ void DefineWAMpos(wam_struct *w,vect_n *wv)
 void MoveWAM(wam_struct* wam, vect_n *pos)
 {
   int cnt,ctr,idx,done = 0,count =0,Mid;
-  
+
 
   syslog(LOG_ERR,"MoveWAM start");
   for (cnt = 0;cnt < wam->num_actuators;cnt++)
   {
     Mid = MotorID_From_ActIdx(cnt);
-       SCstarttrj(&(wam->sc[Mid]),getval_vn(pos,Mid));
+    SCstarttrj(&(wam->sc[Mid]),getval_vn(pos,Mid));
   }
   syslog(LOG_ERR,"MoveWAM:Trajectory initialized");
   while (!done)
@@ -696,70 +731,114 @@ void MoveWAM(wam_struct* wam, vect_n *pos)
     if (ctr == 0)
       done = 1;
     usleep(50000);
-    if ((count % 20) == 0)  syslog(LOG_ERR,"waited 1 second to reach position");
-    if ((count % 200) == 0)  {done = 1; syslog(LOG_ERR,"Aborting move");}
+    if ((count % 20) == 0)
+      syslog(LOG_ERR,"waited 1 second to reach position");
+    if ((count % 200) == 0)
+    {
+      done = 1;
+      syslog(LOG_ERR,"Aborting move");
+    }
   }
+}
+
+void SetCartesianSpace(wam_struct* wam)
+{
+  int trjstate;
+  if (wam->active_sc == wam->Jsc)//in joint space
+  { 
+    trjstate = get_trjstate_bts(wam->active_sc);
+    if (trjstate != BTTRAJ_DONE && trjstate != BTTRAJ_STOPPED)
+      stop_trj_bts(wam->active_sc);    
+    setmode_bts(&(wam->Jsc),SCMODE_IDLE);
+    setmode_bts(&(wam->Csc),SCMODE_IDLE);
+    wam->active_sc = wam->Csc;
+  }
+}
+
+void SetJointSpace(wam_struct* wam)
+{
+  int trjstate;
+  if (wam->active_sc == wam->Csc)//in cartesian space
+  { 
+    trjstate = get_trjstate_bts(wam->active_sc);
+    if (trjstate != BTTRAJ_DONE && trjstate != BTTRAJ_STOPPED)
+      stop_trj_bts(wam->active_sc);
+    setmode_bts(&(wam->Jsc),SCMODE_IDLE);
+    setmode_bts(&(wam->Csc),SCMODE_IDLE);
+    wam->active_sc = wam->Jsc;
+  }
+}
+
+/**   Turns position constraint on/off.
+
+If the robot is being controlled in JointSpace (SetJointSpace), it will apply a PD loop to each joint.
+If the robot is being controlled in CartesianSpace (SetCartesianSpace), it will apply a PD loop to the robot endpoint.
+
+\param wam Pointer to wam structure you want to operate on.
+\param onoff 0:Off !0:On
+
+    
+We only allow setting position mode if we are idling. 
+Setting position mode while already in position mode will reset the position 
+constraint causing unexpected behavior for a user at this level
+
+
+*/
+void SetPositionConstraint(wam_struct* wam, int onoff)
+{
+  int present_state;
+  
+  present_state = getmode_bts(wam->active_sc);
+    if (onoff && present_state == SCMODE_IDLE)
+       setmode_bts(wam->active_sc,SCMODE_POS); 
+    else 
+      setmode_bts(wam->active_sc,SCMODE_IDLE); 
 }
 /** Set the velocity and acceleration of a wam move
 */
-void MovePropsWAM(vect_n *vel, vect_n *acc)
+void MoveSetup(wam_struct* wam,btreal vel,btreal acc)
 {
-  int cnt,ctr,idx,done = 0,count =0,Mid;
+  moveparm_bts(wam->active_sc,vel,acc);
+}
 
-  for (cnt = 0;cnt < WAM.num_actuators;cnt++)
+void MoveWAM(wam_struct* wam,vect_n * dest)
+{ 
+  int present_state;
+  present_state = getmode_bts(wam->active_sc);
+  if (present_state != SCMODE_POS)
   {
-    Mid = MotorID_From_ActIdx(cnt);
-    SCsettrjprof(&(WAM.sc[Mid]),getval_vn(vel,Mid),getval_vn(acc,Mid));
+    wam->idle_when_done = 1;
+    setmode_bts(wam->active_sc,SCMODE_POS);
   }
-  syslog(LOG_ERR,"MovePropsWAM:Trajectory initialized");
+  if(moveto_bts(wam->active_sc,dest))
+      syslog(LOG_ERR,"MoveWAM:Aborted");
 }
-
-void CartesianMovePropsWAM(btreal vel, btreal acc)
-{
-    setprofile_traptrj(&WAM.trj,  vel, acc);
-}
-/** Perform a Cartesian move of the wam
+/**
+\retval 0 Move is still going
+\retval 1 Move is done
 */
-void CartesianMoveWAM(vect_n *pos)
+int MoveIsDone(wam_struct* wam)
 {
-  int cnt,ctr,idx,done = 0,count =0;
-
-  clear_pwl(&WAM.pth);
-  add_arclen_point_pwl(&WAM.pth,(vect_n*)WAM.Cref);
-  add_arclen_point_pwl(&WAM.pth,pos);
-  start_traptrj(&WAM.trj, arclength_pwl(&WAM.pth));
-  
-  while (!done)
-  {
-    if (WAM.trj.state == BTTRAJ_STOPPED)
-      done = 1;
-    usleep(50000);
-    //if ((count % 1000) == 0)  syslog(LOG_ERR,"waited 1 second to reach position");
-  }
+  int ret;
+  ret = get_trjstate_bts(wam->active_sc);
+  if (ret == BTTRAJ_DONE || ret == BTTRAJ_STOPPED)
+    ret = 1;
+  else 
+    ret = 0;
+  return ret;
+}
+void MoveStop(wam_struct* wam)
+{
+  stop_trj_bts(wam->active_sc);
 }
 
 
-/** Perform a Cartesian move of the wam
-*/
-void ToolCartesianMoveWAM(vect_n *pos, btreal vel, btreal acc)
-{
-  int cnt,ctr,idx,done = 0,count =0;
 
-  //
-  setprofile_traptrj(&WAM.trj,  vel, acc);
-  clear_pwl(&WAM.pth);
-  add_arclen_point_pwl(&WAM.pth,(vect_n*)WAM.Cref);
-  add_arclen_point_pwl(&WAM.pth,(vect_n*)T_to_W_bot(&WAM.robot,(vect_3*)pos));
-  start_traptrj(&WAM.trj, arclength_pwl(&WAM.pth));
-  
-  while (!done)
-  {
-    if (WAM.trj.state == BTTRAJ_STOPPED)
-      done = 1;
-    usleep(50000);
-    //if ((count % 1000) == 0)  syslog(LOG_ERR,"waited 1 second to reach position");
-  }
-}
+
+
+/******************************************************************************/
+
+
 /** Find the center of a joint range and move to the zero_offsets position relative to the center
  
 \todo Add code to check the puck for IsZerod so that we
@@ -768,14 +847,15 @@ know whether we have to zero or not...
 
 /** Move the WAM to the park position defined in the wam data file
 */
-void ParkWAM()
+void ParkWAM(wam_struct* wam)
 {
-  MovePropsWAM(scale_vn(0.2,WAM.vel),scale_vn(0.2,WAM.acc));
-  MoveWAM(&WAM, WAM.park_location);
+  SetJointSpace(wam);
+  MoveSetup(wam,0.25,0.25);
+  MoveWAM(wam, wam->park_location);
 }
 
 /**Returns the present anti-gravity scaling
-
+ 
 */
 btreal GetGravityComp(wam_struct *w)
 {
@@ -785,11 +865,13 @@ btreal GetGravityComp(wam_struct *w)
  */
 void SetGravityComp(wam_struct *w,btreal scale)
 {
-  if (scale == 0.0){
+  if (scale == 0.0)
+  {
     w->Gcomp = 0;
     set_gravity_bot(&w->robot, 0.0);
   }
-  else{
+  else
+  {
     w->Gcomp = 1;
     set_gravity_bot(&w->robot, scale);
   }
@@ -797,54 +879,52 @@ void SetGravityComp(wam_struct *w,btreal scale)
 
 /** Sample the torques required to hold a given position
 */
-void GCompSample(vect_n *trq, double p1, double p2, double p3, double p4)
+void GCompSample(wam_struct *wam,vect_n *trq, double p1, double p2, double p3, double p4)
 {
 
 
-    const_vn(trq, p1, p2, p3, p4);
-    MoveWAM(&WAM, trq);
-    usleep(4000000);
+  const_vn(trq, p1, p2, p3, p4);
+  MoveWAM(wam, trq);
+  usleep(4000000);
 
-    //trq->q[0] = WAM.Jtrq.q[0];
-    trq->q[1] = WAM.Jtrq->q[1];
-    trq->q[2] = WAM.Jtrq->q[2];
-    trq->q[3] = WAM.Jtrq->q[3];
+  //trq->q[0] = WAM.Jtrq.q[0];
+  trq->q[1] = WAM.Jtrq->q[1];
+  trq->q[2] = WAM.Jtrq->q[2];
+  trq->q[3] = WAM.Jtrq->q[3];
 }
 
 /** Take 4DOF measurements to estimate the coefficients for calculating the effect of gravity
 */
-void getLagrangian4(double *A, double *B, double *C, double *D)
+void getLagrangian4(wam_struct *wam,double *A, double *B, double *C, double *D)
 {
 
-    double t41,t21,t42,t22,t23,t33; 
+  double t41,t21,t42,t22,t23,t33;
 
-    vect_n *trq;
-    
-    trq = new_vn(4);
+  vect_n *trq;
 
-    //PowerWAM();
+  trq = new_vn(4);
 
-    MovePropsWAM(WAM.vel,WAM.acc);
+  MoveSetup(wam,btreal vel,btreal acc);
 
-    GCompSample(trq,0,-1.5708,0,0);
-    t41 = trq->q[3];
-    t21 = trq->q[1];
+  GCompSample(wam,trq,0,-1.5708,0,0);
+  t41 = trq->q[3];
+  t21 = trq->q[1];
 
-    GCompSample(trq,0,-1.5708,0,1.5708);
-    t42 = trq->q[3];
-    //t22 = trq->q[1];
+  GCompSample(wam,trq,0,-1.5708,0,1.5708);
+  t42 = trq->q[3];
+  //t22 = trq->q[1];
 
-    GCompSample(trq,0,-1.5708,-1.5708,1.5708);
-    //t23 = trq->q[1];
-    t33 = trq->q[2];
+  GCompSample(wam,trq,0,-1.5708,-1.5708,1.5708);
+  //t23 = trq->q[1];
+  t33 = trq->q[2];
 
-    *A = -t42;
-    *B = -t41;
-    *C = t33 + *B;
-    *D = t21 - t41;
-    //  WAM.Gcomp = 1;
+  *A = -t42;
+  *B = -t41;
+  *C = t33 + *B;
+  *D = t21 - t41;
+  //  WAM.Gcomp = 1;
 
-    //SaveWAM("gcomp.dat");
+  //SaveWAM("gcomp.dat");
 
 }
 
@@ -893,22 +973,31 @@ void DumpWAM2Syslog(wam_struct *WAM)
   syslog(LOG_ERR,"End dump of WAM data-----------------------------");
 }
 /** Initialize Continuous teach and play
-
+ 
 Notes: 
  - Variable numbers of joints are handled by polling the robot structure
-
+ 
 \param Joint 0 = Cartesian space record, 1 = Joint space record
 \param Div An integer amount to divide the sample period by
 \param filename The file you want to write the path to
 */
 void StartContinuousTeach(int Joint,int Div,char *filename) //joint: 0 = Cartesian, 1 = Joint Space
-{ 
+{
   int joints;
-  
+
   WAM.teach_time = 0.0;
   WAM.counter = 0;
   WAM.divider = Div;
-  if (Joint){ //Only for joint space recording for now
+  if (Joint == 0)
+  { //Just records position. No orientation
+    PrepDL(&(WAM.cteach),2);
+    AddDataDL(&(WAM.cteach),&(WAM.teach_time),sizeof(btreal),4,"Time");
+    AddDataDL(&(WAM.cteach),valptr_vn((vect_n*)WAM.Cpos),sizeof(btreal)*3,4,"Cpos");
+    InitDL(&(WAM.cteach),1000,filename);
+    DLon(&(WAM.cteach));
+  }
+  else
+  { //Only for joint space recording for now
     joints = WAM.num_actuators;
     PrepDL(&(WAM.cteach),2);
     AddDataDL(&(WAM.cteach),&(WAM.teach_time),sizeof(btreal),4,"Time");
@@ -916,22 +1005,15 @@ void StartContinuousTeach(int Joint,int Div,char *filename) //joint: 0 = Cartesi
     InitDL(&(WAM.cteach),1000,filename);
     DLon(&(WAM.cteach));
   }
-  else { //Just records position. No orientation
-    PrepDL(&(WAM.cteach),2);
-    AddDataDL(&(WAM.cteach),&(WAM.teach_time),sizeof(btreal),4,"Time");
-    AddDataDL(&(WAM.cteach),valptr_vn((vect_n*)WAM.Cpos),sizeof(btreal)*3,4,"Cpos");
-    InitDL(&(WAM.cteach),1000,filename);
-    DLon(&(WAM.cteach));    
-  }
-}  
+}
 /** Stop recording positions to the continuous teach file */
 void StopContinuousTeach()
 {
-  
+
   DLoff(&(WAM.cteach));
   CloseDL(&(WAM.cteach));
 }
-
+/** \depreciated */
 void ServiceContinuousTeach()
 {
   evalDL(&(WAM.cteach));
@@ -941,10 +1023,10 @@ void registerWAMcallback(wam_struct* wam, void *func)
 {
   if (func != NULL)
     wam->force_callback = func;
-  else 
-      wam->force_callback = BlankWAMcallback;
+  else
+    wam->force_callback = BlankWAMcallback;
 }
-
+  
 int BlankWAMcallback(struct btwam_struct *wam)
 {
   return 0;

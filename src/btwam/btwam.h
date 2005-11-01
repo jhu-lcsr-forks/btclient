@@ -115,11 +115,12 @@ may be in mid-update.
 typedef struct btwam_struct{
   int id;
 //State Variables
-  int Gcomp; //0 = no gravity comp, 1 = gravity comp
+  int Gcomp; // 0 = no gravity comp, 1 = gravity comp
   int wrist_attached; //0 no wrist, 1 yes wrist is attached.
   int use_new;
   int type; //enum {WAM_4DOF, WAM_4DOF_G, WAM_7DOF, Wrist_3DOF} 
-  int isZeroed;
+/** \todo Query safety board to see if we already have a valid home position*/
+  int isZeroed;   
   int space; // 0 = Joint; 1 = Cartesian;
   
 //user callback
@@ -201,15 +202,20 @@ typedef struct btwam_struct{
   int divider,counter;
   btreal teach_time
   
+  //High level
+  int js_or_cs; //!< 0 = Joint space, 1 = Cartesian space
+  btstatecontrol *active_sc;
+  int idle_when_done; //!< !0 = When done with the present move switch to idle mode
   
   btthread maint;
 }wam_struct;
 
 
-/*************  Final API  ******************/
+/*************  WAM  API  ******************/
 
 wam_struct* OpenWAM(char *wamfile); //NULL -> wam.conf
-int BlankWAMcallback(struct btwam_struct *wam);
+void CloseWAM(wam_struct* wam); //Cleanupint BlankWAMcallback(struct btwam_struct *wam);
+
 void registerWAMcallback(wam_struct* wam,void *func);
 void WAMControlThread(void *data); //data points to wam_struct* wam
 
@@ -218,52 +224,39 @@ void DefineWAMpos(wam_struct *w,vect_n *wv);
 btreal GetGravityComp(wam_struct *w);
 void SetGravityComp(wam_struct *w,btreal scale);
 
-
-
-/******************************************/
-/** \internal Below this line all functions need work */
-
 void SetCartesianSpace(wam_struct* wam);
 void SetJointSpace(wam_struct* wam);
-
-int AddEndpointForce(wam_struct* wam,vect_n *force); //Cartesian only
-
-/** Turns position constraint on/off. 
-    If the robot is being controlled in JointSpace (SetJointSpace), it will apply a PD loop to each joint.
-    If the robot is being controlled in CartesianSpace (SetCartesianSpace), it will apply a PD loop to the robot endpoint.
-*/
 void SetPositionConstraint(wam_struct* wam, int onoff);
 
-/**
-  Return immediately
-  
-  1. Save constraint state
-  2. Enable position/trajectory constraint
-  3. Begin move 
-  return
-
-  Monitor move state
-    When move is done, or aborted, restore constraint state
-
-  
-*/
+void MoveSetup(wam_struct* wam,btreal vel,btreal acc);
 void MoveWAM(wam_struct* wam,vect_n * dest);
-int MoveSetup(wam_struct* wam,btreal vel,btreal acc);
 int MoveIsDone(wam_struct* wam);
-int MoveStop(wam_struct* wam);
-//MovePause(wam_struct* wam);
-//MoveContinue(wam_struct* wam);
+void MoveStop(wam_struct* wam);
 
+void ParkWAM(wam_struct* wam);
 // Continuous Teach & Play Recording
 void StartContinuousTeach(int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
 void StopContinuousTeach(); 
 void ServiceContinuousTeach();
-ct_traj* LoadContinuousTeach(char* filename); //allocate and return vectray if successful
+
+
+/******************************************/
+/** \internal Below this line all functions need work 
+
+*/
+
+
+
+int AddEndpointForce(wam_struct* wam,vect_n *force); //Cartesian only
+
+//MovePause(wam_struct* wam);
+//MoveContinue(wam_struct* wam);
+
+
 
 long GetTime(); //Wrapper for rt_get_cpu_time_ns()
 long GetElapsedTime(); //Static time variable
 
-void CloseWAM(wam_struct* wam); //Cleanup
 
 /******************************************/
 

@@ -20,9 +20,16 @@
 /** \file btos.h
     \brief Operating system abstractions and helpers
 
-A thin layer between barrett technologies code and the operating system.
+The btos module is a thin layer between barrett technologies code and the operating system.
 Additionally, global defines can go here also. Virtually every Barrett library
 source file will use this.
+
+These are the submodules that btos implements:
+ - Thread API: A simplified api for starting, stopping, and monitoring threads.
+ - Mutex API: A wrapper around pthread_mutex_* that writes errors to syslog.
+ - Malloc API: Wrappers for malloc & free that automate error handling.
+ - Pointer & Array Sanity Checks: Used for debugging.
+ - Convinience functions: Typing is such a chore. 
 
 The mutex layer allows for ERRORCHECK mutexes to be compiled in if desired for 
 debugging.
@@ -30,11 +37,18 @@ debugging.
 btmalloc() and btfree() provide error checking for memory access. Lack of memory 
 is fatal. btfree() sets the calling variable to NULL 
 
-test_and_log() provides a shorthand to replace return variable checks.
+
 
 Additionally, btos.h has #defines for error checking:
-
--BTDEBUG (This is a long bitfield)
+- BT_NULL_PTR_GUARD: bt*.c functions will check incoming object pointers
+to make sure they are not NULL and error if they are.
+- BT_ARRAY_BOUNDS_CHECK: some sort of index sanity and bounds checking will 
+be done on incoming functions
+- BT_DUMMY_PROOF: extra code will be compiled in to protect the programmer
+from thier own idiocy.
+- BT_BACKTRACE: Dump backtrace info into bterrors.txt
+- BTDEBUG (This is a long bitfield)
+*//*
 Global Values 0-32
   - 0 No debugging code compiled in
   - 1 Sanity warnings
@@ -47,7 +61,7 @@ Global Values 0-32
 Bits (by position starting with 0
   - 
 */
-#define BTDEBUG_RANGE         0xff
+#define BTDEBUG_RANGE         0x0f
 // if (BTDEBUG & BTDEBUG_RANGE) > 3 ->sanity checks
 #define BTDEBUG_PARSER        0x10
 #define BTDEBUG_SYSTEM        0x20
@@ -56,20 +70,17 @@ Bits (by position starting with 0
 #define BTDEBUG_MATH          0x100
 #define BTDEBUG_STATECONTROL  0x200
 #define BTDEBUG_CONTROL       0x400
-
-/**  
--BT_NULL_PTR_GUARD //bt*.c functions will check incoming object pointers
-to make sure they are not NULL and error if they are.
-
--BT_ARRAY_BOUNDS_CHECK //some sort of index sanity and bounds checking will 
-be done on incoming functions
-
--BT_DUMMY_PROOF //extra code will be compiled in to protect the programmer
-from thier own idiocy.
-
--BT_BACKTRACE //Dump backtrace info into bterrors.txt
-
-*/ 
+#define BTDEBUG_COMM          0x800
+#define BTDEBUG_BACKTRACE     0x1000
+/*Compiler flags in use:
+ifdefs:
+  BT_BACKTRACE
+  BT_ARRAY_BOUNDS_CHECK
+  BT_NULL_PTR_GUARD
+  
+  
+  
+*/
 #ifndef _BTOS_H
 #define _BTOS_H
 #ifdef __cplusplus
@@ -84,21 +95,24 @@ extern "C"
 #include <pthread.h>
 //#include <rtai_lxrt.h>
 /*mutex & threads*/
+/** @name Mutex API */
+//@{
+
 /**
 The intention of the thread functions is to provide a central point for
 mutex error handling and debugging.
 
-See the gnu_libc backtrace function for debugging output.
+
 */
 typedef pthread_mutex_t btmutex;
 int btmutex_init(btmutex* btm);
 BTINLINE int btmutex_lock(btmutex* btm);
-//int btmutex_lock_msg(btmutex* btm,char *msg);
 BTINLINE int btmutex_unlock(btmutex *btm);
+//int btmutex_lock_msg(btmutex* btm,char *msg);
+//@}
 
-
-
-
+/** @name Pointer and Array Sanity Checking */
+//@{
 #ifdef BT_NULL_PTR_GUARD
   #define BTPTR_OK(x,y) btptr_ok((x),(y));
 #else
@@ -108,16 +122,26 @@ int btptr_ok(void *ptr,char *str);
 int btptr_chk(void *ptr); //like btptr_ok but no syslog
 int idx_bounds_ok(int idx,int max,char *str);
 
-//void dump_backtrace_to_syslog();
+//@}
+
+/** @name Convinience functions */
+//@{
 
 BTINLINE int test_and_log(int ret,const char *str);
+//@}
 
+/** @name Malloc & Free wrappers */
+//@{
 //Memory
 BTINLINE void* btmalloc(size_t size);
 BTINLINE void btfree(void **ptr);
 
 
 //Threads
+//@}
+
+/** @name Threads: */
+//@{
 /** Convinience info for creation of threads
 
 See new_btthread()
@@ -145,9 +169,9 @@ pthread_t* btthread_create(btthread *thd,int priority, void *function,void *args
 int btthread_done(btthread *thd); //ret !0 when time to kill
 void btthread_stop(btthread *thd); //set done = 1;
 void btthread_exit(btthread *thd);
-
+/** Create a periodic thread. Not yet implemented. */
 int btperiodic_create(btthread *thd,int priority, double period, void *function,void *args);
-
+//@}
 
 
 

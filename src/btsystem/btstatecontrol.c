@@ -422,10 +422,11 @@ int setmode_bts(btstatecontrol *sc, int mode)
     {
       if (sc->btt.state != BTTRAJ_STOPPED)
         sc->btt.state = BTTRAJ_STOPPED;
-
+      if (sc->mode != SCMODE_POS){
       set_vn(sc->btp.qref,sc->btp.q);
       (*(sc->btp.reset))(&sc->btp);
       sc->mode = SCMODE_POS;
+      }
     }
     break;
   case SCMODE_TRJ: //TRJ mode is set by movement commands only
