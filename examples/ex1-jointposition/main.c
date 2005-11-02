@@ -53,7 +53,6 @@ int main(int argc, char **argv)
   {
     exit(1);
   }            
-  atexit((void*)CloseWAM);
 
   /* Check and handle any command line arguments */
   if(argc > 1)
@@ -69,22 +68,23 @@ int main(int argc, char **argv)
 
   /* Start up wam control loop */
   wam_thd.period = 0.002;
-  btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)&wam_thd);
+  btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)wam);
 
   while (!done)
   {
 
-    if ((chr = getchar()) == 'x') //Check buffer for keypress
+	  if((chr = fgetc(stdin)) == 'x')
+    //if ((chr = getchar()) == 'x') //Check buffer for keypress
       done = 1;
 
     //print present position
-    printf("Position = %s \n",sprint_vn(buf,(vect_n*)wam->Jpos));
+    printf("Position = %s \r",sprint_vn(buf,(vect_n*)wam->Jpos));
 
     usleep(100000); // Sleep for 0.1s
   }
 
   btthread_stop(&wam_thd); //Kill WAMControlThread 
-
+  CloseWAM(wam);
   exit(1);
 }
 

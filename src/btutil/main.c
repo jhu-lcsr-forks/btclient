@@ -144,6 +144,7 @@ void handleMenu(char c)
     double      cps;
     int         newID,dummy;
     long dat;
+    long vers;
 
 
     switch(c) {
@@ -151,10 +152,16 @@ void handleMenu(char c)
         printf("\n\nCAN bus enumeration (status)\n");
         getBusStatus(0, status);
         for(i = 0; i < MAX_NODES; i++) {
+		if(status[i]>=0){
+			getProperty(0,i,VERS,&vers);
+		}else{vers = 0;
+		}
             if(i % 2)
-                printf("\t\tNode %2d: %s", i, statusTxt[status[i]+1].s);
+                printf("\t\tNode %2d: %s vers=%d", i,
+				statusTxt[status[i]+1].s, vers);
             else
-                printf("\nNode %2d: %s", i, statusTxt[status[i]+1].s);
+                printf("\nNode %2d: %s vers=%d", i,
+				statusTxt[status[i]+1].s, vers);
         }
         printf("\n");
         break;

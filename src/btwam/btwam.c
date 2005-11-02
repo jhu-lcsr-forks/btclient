@@ -351,7 +351,7 @@ wam_struct* OpenWAM(char *fn)
 /** Free memory and close files opened by OpenWAM() */
 void CloseWAM(wam_struct* wam)
 {
-  btthread_stop(&wam->maint);
+  //btthread_stop(&wam->maint);
   CloseSystem();
 }
 

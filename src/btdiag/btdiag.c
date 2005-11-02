@@ -442,7 +442,7 @@ void RenderMAIN_SCREEN()
   mvprintw(line, 0 , "Force :%s ", sprint_vn(vect_buf1,active_trq));
 
   line+=3;
-  if (vta != NULL)
+  if (*vta != NULL)
   {//print current point
     vr = get_vr_vta(*vta);
     cpt = get_current_idx_vta(*vta);
