@@ -190,12 +190,12 @@ vect_n* init_vn(vect_n* v, int size)
 
 
 /** Free the memory of a vect_n object
-  This function frees the memory previously allocated. Instead of calling free_vn()
+  This function frees the memory previously allocated. Instead of calling destroy_vn()
   it is easier to call freebtptr() at the end of your program to free all the btmath
   objects.
   
 */
-void free_vn(vect_n **p)
+void destroy_vn(vect_n **p)
 {
   btfree((void**)p);
 }

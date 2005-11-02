@@ -261,8 +261,8 @@ void eval_fj_bot(btrobot* robot) //forward jacobian
   // Ji(4-6) = [z(i-1)]
   int cnt;
   for (cnt = 0;cnt < robot->num_links;cnt++){
-    set_vn(robot->links[cnt].J,cross_v3(robot->links[cnt-1].z,sub_v3(robot->links[robot->num_links-1].o,robot->links[cnt-1].o)));
-    setrange_vn(robot->links[cnt].J,robot->links[cnt-1].z,3,0,3);
+    set_vn(robot->links[cnt].J,(vect_n*)cross_v3(robot->links[cnt-1].z,sub_v3(robot->links[robot->num_links-1].o,robot->links[cnt-1].o)));
+    setrange_vn(robot->links[cnt].J,(vect_n*)robot->links[cnt-1].z,3,0,3);
   }
 
 }

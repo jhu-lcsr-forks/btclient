@@ -877,7 +877,7 @@ void getLagrangian4(wam_struct *wam,double *A, double *B, double *C, double *D)
   *C = t33 + *B;
   *D = t21 - t41;
   
-  free_vn(&trq);
+  destroy_vn(&trq);
 
 }
 

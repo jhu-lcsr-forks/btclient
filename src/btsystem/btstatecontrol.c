@@ -14,7 +14,7 @@
  *   Virtualized control functions                        
  *                                                                      
  *  REVISION HISTORY:                                                   
- *  
+ *  051102 TH - Final doc & coding pass
  *                                                                      
  *======================================================================*/
 
@@ -32,9 +32,10 @@
 #include "btjointcontrol.h"
 
 /************************** universal trajectory functions *****************/
-/** Set max velocity and acceleration.
+/** Set trajectory max velocity and acceleration.
  
 see #bttraptrj
+\internal chk'd TH 051102
 */
 void setprofile_traptrj(bttraptrj *traj, btreal vel, btreal acc)
 {
@@ -43,9 +44,11 @@ void setprofile_traptrj(bttraptrj *traj, btreal vel, btreal acc)
 }
 
 /** Calculates all the variables necessary to set up a trapezoidal trajectory.
- 
-\param dist the length of the trajectory
- 
+
+Previously you must have set the velocity and acceleration using setprofile_traptrj().
+
+\param dist The length of the trajectory.
+\internal chk'd TH 051102
 */
 void start_traptrj(bttraptrj *traj, btreal dist) //assumes that velocity and acceleration have been set to reasonable values
 {
@@ -71,17 +74,17 @@ void start_traptrj(bttraptrj *traj, btreal dist) //assumes that velocity and acc
 }
 
 
-/*! Calculate next position on the trajectory
+/** Calculate next position on the trajectory
  
-evaluate_trajectory generates points on a trapezoidal velocity trajectory. The points accerate with
-constant acceleration specified by acc up to a maximum velocity specified by vel. The max velocity
-is maintained until approximately the time it will take to decellerate at acc to a velocity of zero.
+evaluate_trajectory() generates points on a trapezoidal velocity trajectory. The points accerate with
+constant acceleration specified by \e acc up to a maximum velocity specified by \e vel. The max velocity
+is maintained until approximately the time it will take to decellerate at \e acc to a velocity of zero.
  
 \param *traj pointer to the trajectory structure
 \param dt the time step to take (in the same units as vel and acc)
  
-\return The value returned is the next point on the trajectory after a step of dt.
- 
+\return The value returned is the next point on the trajectory after a time step of dt.
+ \internal chk'd TH 051102
  
 */
 btreal evaluate_traptrj(bttraptrj *traj, btreal dt)
@@ -129,16 +132,21 @@ btreal evaluate_traptrj(bttraptrj *traj, btreal dt)
 }
 
 
-
 /**************************** state controller functions ************************/
-/** Register data input and output variables with virtual trajectory object */
+/** \internal Used by map_btstatecontrol().
+Register data input and output variables with virtual trajectory object.
+\internal chk'd TH 051102
+*/
 void mapdata_bttrj(bttrajectory_interface *btt, vect_n* qref, double *dt)
 {
   btt->qref = qref;
   btt->dt = dt;
 }
 
-/** Register data input and output variables with virtual position control object */
+/**  \internal Used by map_btstatecontrol().
+Register data input and output variables with virtual position control object.
+\internal chk'd TH 051102
+*/
 void mapdata_btpos(btposition_interface *btp,vect_n* q, vect_n* dq, vect_n* ddq,
                    vect_n* qref, vect_n* t, double *dt)
 {
@@ -152,7 +160,12 @@ void mapdata_btpos(btposition_interface *btp,vect_n* q, vect_n* dq, vect_n* ddq,
 
 
 /** Register data input and output pointers for the btstatecontrol object.
-Allocates a piecewise linear path for moving to start points. */
+Allocates a piecewise linear path for moving to start points at the same time. 
+
+\internal chk'd TH 051102
+\todo Delete the old pwl if there is one. (indicated by a NULL ptr)
+
+*/
 void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq,
                         vect_n* qref,vect_n* tref,vect_n* t, double *dt)
 {
@@ -166,13 +179,11 @@ void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq,
   sc->t = t;
   mapdata_bttrj(&sc->btt,tref,dt);
   mapdata_btpos(&sc->btp,q,dq,ddq,qref,t,dt);
-
-
-  //threm
-  //init_pwl(&(sc->btt.pth),len_vn(qref),2);
-
 }
-/** Register virtual functions and data for a trajectory with btstatecontrol */
+
+/** Register virtual functions and data for a trajectory with btstatecontrol.
+\internal chk'd TH 051102
+*/
 void maptrajectory_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* getstate)
 {
   btmutex_lock(&(sc->mutex));
@@ -184,12 +195,14 @@ void maptrajectory_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void*
     sc->btt.getstate = getstate;
     sc->btt.dat = dat;
     mapdata_bttrj(&(sc->btt),sc->tref,sc->dt);//USE sc->local_dt for pausable
-    //set_vn(sc->qref,sc->q); //Initialize trajectory output to a sane value
+    set_vn(sc->tref,sc->q); //Initialize trajectory output to a sane value
     sc->btt.state = BTTRAJ_STOPPED;
   }
   btmutex_unlock(&(sc->mutex));
 }
-/** Register virtual functions and data for a position control object with btstatecontrol*/
+/** Register virtual functions and data for a position control object with btstatecontrol.
+\internal chk'd TH 051102
+*/
 void mapposition_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* pause)
 {
   btmutex_lock(&(sc->mutex));
@@ -200,22 +213,22 @@ void mapposition_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* p
     sc->btp.pause = pause;
     sc->btp.dat = dat;
     mapdata_btpos(&(sc->btp),sc->q,sc->dq,sc->ddq,sc->qref,sc->t,sc->dt);
-
     sc->btt.state = BTTRAJ_STOPPED;
   }
   btmutex_unlock(&(sc->mutex));
 }
 
-/*! Initialize the state controller structure
+/** Initialize the state controller structure
  
-  Loads a preallocated bts object with initial values.
+Loads a preallocated bts object with initial values.
+
+\internal chk'd TH 051102
 */
 int init_bts(btstatecontrol *sc)
 {
 
   int err;
 #ifdef BT_NULL_PTR_GUARD
-
   if (!btptr_ok(sc,"moveparm_bts"))
     exit(1);
 #endif
@@ -234,6 +247,7 @@ int init_bts(btstatecontrol *sc)
   set_btramp(&(sc->ramp),BTRAMP_MAX);
   btmutex_init(&(sc->mutex));
 }
+
 /* Internal function: evaluation portion of case sc.mode */
 inline vect_n* eval_trj_bts(btstatecontrol *sc)
 {
@@ -309,14 +323,15 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
 
 /*! Evaluate the state Controller
  
-  premise: When switching from torque control to position control, our current
-  positiont is our reference point. This can only be moved by a trajectory.
+  When switching from torque control to position control, our current
+  position is our reference point. This can only be moved by a trajectory.
  
-  Changing the state of the position and trajectory controllers is handled by those objects
+  Changing the state of the position and trajectory controllers is handled by this object.
  
 \param position the measured position
 \param dt the time step we want to evaluate with.
 \return Returns a torque command.
+\internal chk'd TH 051102
 */
 vect_n* eval_bts(btstatecontrol *sc)
 {
@@ -331,7 +346,7 @@ vect_n* eval_bts(btstatecontrol *sc)
 #endif
 
   btmutex_lock(&(sc->mutex));
-
+  sc->error = 0;
   sc->last_dt = *(sc->dt);
   fill_vn(sc->t,0.0);
   switch (sc->mode)
@@ -364,7 +379,11 @@ vect_n* eval_bts(btstatecontrol *sc)
   return sc->t;
 }
 
+/** Return present mode of a btstatecontrol object.
+see #scstate for return enumerations.
 
+\internal chk'd TH 051102
+*/
 int getmode_bts(btstatecontrol *sc)
 {
 #ifdef BT_NULL_PTR_GUARD
@@ -374,7 +393,10 @@ int getmode_bts(btstatecontrol *sc)
 
   return sc->mode;
 }
-
+/** Return present trajectory state of a btstatecontrol object.
+see #trjstate for return enumerations.
+\internal chk'd TH 051102
+*/
 int get_trjstate_bts(btstatecontrol *sc)
 {
 #ifdef BT_NULL_PTR_GUARD
@@ -394,13 +416,12 @@ int get_trjstate_bts(btstatecontrol *sc)
   Sets the controller mode. To keep anything from "jumping" unexpectedly, we reset our
   pid controller whenever we switch into pidmode.
   
-  We expect that the position state variable q is being continuously updated by 
-  calling eval_bts() in a control loop.
- 
 \param sc Pointer to an sc object
-       mode SCMODE_IDLE (eval_bts returns 0.0) or SCMODE_POS (eval_bts returns pos ctl torque)
+\param mode SCMODE_IDLE or SCMODE_POS 
  
-\return Returns what new mode is. (
+\return Returns what new mode is. see #scstate
+
+\internal chk'd TH 051102
 */
 int setmode_bts(btstatecontrol *sc, int mode)
 {
@@ -423,10 +444,11 @@ int setmode_bts(btstatecontrol *sc, int mode)
     {
       if (sc->btt.state != BTTRAJ_STOPPED)
         sc->btt.state = BTTRAJ_STOPPED;
+
       if (sc->mode != SCMODE_POS){
-      set_vn(sc->btp.qref,sc->btp.q);
-      (*(sc->btp.reset))(&sc->btp);
-      sc->mode = SCMODE_POS;
+        set_vn(sc->btp.qref,sc->btp.q);
+        (*(sc->btp.reset))(&sc->btp);
+        sc->mode = SCMODE_POS;
       }
     }
     break;
@@ -439,18 +461,19 @@ int setmode_bts(btstatecontrol *sc, int mode)
   return sc->mode;
 }
 
-/** Move the wam from its present position to the starting position of the
-loaded trajectory. 
+/** Start playing the loaded trajectory.
+
+First we move from the present position to the starting position of the trajectory.
+Once there, we start the trajectory with zero velocity.
  
-\retval 0 = success
-\retval -1 = Trajectory not in a stopped state. (Prerequisite)
-\retval -2 = Statecontroller not in POS state. (prerequisite)
-\retval -3 = NULL trajectory
- 
-Start the trajectory generator. You must have first moved to
-the start of the trajectory with prep_trj_bts() 
-State transitions:
-BTTRAJ_READY => BTTRAJ_RUN
+\retval 0 success
+\retval -1 Trajectory not in a stopped state. (Prerequisite)
+\retval -2 Statecontroller not in POS state. (prerequisite)
+\retval -3 NULL trajectory
+\retval -4 The trajectory is empty (no points to play).
+
+\internal chk'd TH 051102
+State transitions:BTTRAJ_READY => BTTRAJ_RUN
 */
 int start_trj_bts(btstatecontrol *sc)
 {
@@ -478,8 +501,8 @@ int start_trj_bts(btstatecontrol *sc)
   {
     sc->mode = SCMODE_TRJ;
     clear_pwl(&(sc->pth));
+
     add_arclen_point_pwl(&(sc->pth),sc->q);
-    
     add_arclen_point_pwl(&(sc->pth),dest);
 
     setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
@@ -496,10 +519,16 @@ int start_trj_bts(btstatecontrol *sc)
   btmutex_unlock(&(sc->mutex));
 
   return ret;
-  //return prep_bttrj(&sc->btt,sc->q,vel,acc);
 }
 
-/** Move the wam along the loaded trajectory. */
+/** Move the wam to a specified position.
+
+Use this function to move the wam from it's present position to the one specified
+in dest. The move will be a straight line (in the present space) 
+trajectory with a trapezoidal velocity profile.
+
+\internal chk'd TH 051102
+*/
 int moveto_bts(btstatecontrol *sc,vect_n* dest)
 {
   char vect_buf1[200];
@@ -541,8 +570,11 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
   return ret;
 
 }
-/** Set the acceleration and velocity with which to move with
-during the initial prep move */
+/** Set the acceleration and velocity to use during the initial prep move.
+
+
+\internal chk'd TH 051102
+*/
 void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc)
 {
 #ifdef BT_NULL_PTR_GUARD
@@ -555,7 +587,10 @@ void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc)
   sc->acc = acc;
   btmutex_unlock(&(sc->mutex));
 }
-/** Return the state of the present trajectory generator */
+/** Return the state of the present trajectory generator.
+see #trjstate for enumerations.
+\internal chk'd TH 051102
+*/
 int movestatus_bts(btstatecontrol *sc)
 {
 #ifdef BT_NULL_PTR_GUARD
@@ -567,7 +602,9 @@ int movestatus_bts(btstatecontrol *sc)
 }
 
 
-/** Stop the trajectory generator
+/** Stop the trajectory generator.
+
+\internal chk'd TH 051102
 State transitions:
 ANY => BTTRAJ_STOPPED
 */
@@ -584,9 +621,10 @@ int stop_trj_bts(btstatecontrol *sc)
   btmutex_unlock(&(sc->mutex));
   return 0;
 }
-/** Switch to pausing state if possible
+/** Switch to pausing state if possible.
  
-State transitions:
+\internal chk'd TH 051102
+Allowed State transitions:
 BTTRAJ_RUN       \
 BTTRAJ_PAUSING    => BTTRAJ_PAUSING
 BTTRAJ_UNPAUSING  |
@@ -620,8 +658,8 @@ int pause_trj_bts(btstatecontrol *sc,btreal period)
 
 
 
-/** Switch to pausing state if possible
- 
+/** Switch to running state if possible.
+\internal chk'd TH 051102
 State transitions:
 BTTRAJ_RUN       \
 BTTRAJ_PAUSING    => BTTRAJ_UNPAUSING
@@ -658,7 +696,8 @@ int unpause_trj_bts(btstatecontrol *sc,btreal period)
 /**************************** btramp functions **********************************/
 /** Initialize the data for a btramp object.
  
-This should be called only once as it allocates memory for a mutex object.
+This should be called once before using this object.
+\internal chk'd TH 051102
 */
 void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate)
 {
@@ -670,7 +709,8 @@ void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate)
 }
 /** Set the state of a btramp object.
  
-See btramp for valid values of state.
+See #btramp_state for valid values of state.
+\internal chk'd TH 051102
 */
 void set_btramp(btramp *r,enum btramp_state state)
 {
@@ -680,15 +720,16 @@ void set_btramp(btramp *r,enum btramp_state state)
   btmutex_unlock(&(r->mutex));
 }
 /** Return the present value of a btramp scaler.
- 
+
+\internal chk'd TH 051102
 */
 btreal get_btramp(btramp *r)
 {
   return *(r->scaler);
 }
 /** Return the present state of a btramp.
-   see btramp_state for return values.
- 
+   see #btramp_state for return values.
+\internal chk'd TH 051102
 */
 int getstate_btramp(btramp *r)
 {
@@ -698,6 +739,7 @@ int getstate_btramp(btramp *r)
  
 See btramp documentation for object states. Note that BTRAMP_UP and BTRAMP_DOWN 
 will degenerate into BTRAMP_MAX and BTRAMP_MIN respectively. 
+\internal chk'd TH 051102
 */
 btreal eval_btramp(btramp *r,btreal dt)
 {
@@ -733,14 +775,15 @@ btreal eval_btramp(btramp *r,btreal dt)
   btmutex_unlock(&(r->mutex));
   return *(r->scaler);
 }
+/** Set the rate (slope) of the ramping function.
+
+\internal chk'd TH 051102
+*/
 void setrate_btramp(btramp *r,btreal rate)
 {
   btmutex_lock(&(r->mutex));
-
   r->rate = rate;
-
   btmutex_unlock(&(r->mutex));
-
 }
 /**************************** btramp functions **********************************/
 
