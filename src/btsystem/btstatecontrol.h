@@ -288,7 +288,7 @@ typedef struct
 {
   int mode; //!< 0:idle, 1:torque, 2:pos 3:pos + trj
   vect_n* t; //!< Internal buffer for torques
-  vect_n* q,*dq,*ddq,*qref; //!< Internal buffer for position and reference position
+  vect_n* q,*dq,*ddq,*qref,*tref; //!< Internal buffer for position and reference position
 
   double *dt;
   double local_dt; //for time warping...
@@ -308,7 +308,7 @@ typedef struct
   btmutex mutex;
 }btstatecontrol;
 void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq, 
-                                           vect_n* qref, vect_n* t, double *dt);
+                                           vect_n* qref, vect_n* tref,vect_n* t, double *dt);
 int init_bts(btstatecontrol *sc);
 //int set_bts(btstatecontrol *sc, btposition_interface* pos, bttrajectory_interface *trj);
 vect_n* eval_bts(btstatecontrol *sc);

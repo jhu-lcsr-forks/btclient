@@ -544,9 +544,9 @@ void print_q(quat* src);
 */
 typedef struct barrett_matr_h{
   struct barrett_matr_h *ret;
+  int m,n; //m rows, n cols
   btreal *q;
   btreal data[16];
-  int m,n; //m rows, n cols
 }matr_h;
 
 matr_h * new_mh();
@@ -615,8 +615,8 @@ Function definitions are in btmath.c.
 */
 typedef struct barrett_matr_mn{
   struct barrett_matr_mn *ret;
-  btreal *q;
   int m,n; //m rows, n cols
+  btreal *q;
 }matr_mn;
 
 matr_mn * new_mn();

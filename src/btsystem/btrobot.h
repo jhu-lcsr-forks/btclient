@@ -86,7 +86,7 @@ typedef struct {
   vect_3 *b,*z,*o,*g; //for jacobian & forward dynamics
   vect_3 *Rl,*Rm; //backward dynamics results
   vect_3 *Rp; //vector from external force point to cog
-  
+  vect_n *J; 
   double sinAlpha,cosAlpha,sinTheta,cosTheta; //last computed sin and cos for alpha,theta
   
   //force info

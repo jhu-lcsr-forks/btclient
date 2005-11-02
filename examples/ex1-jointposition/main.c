@@ -53,7 +53,7 @@ int main(int argc, char **argv)
   {
     exit(1);
   }            
-
+  atexit((void*)CloseWAM);
 
   /* Check and handle any command line arguments */
   if(argc > 1)

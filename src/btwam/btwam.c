@@ -78,6 +78,7 @@ void InitVectors(wam_struct *wam){
   wam->Jvel = new_vn(7);
   wam->Jacc = new_vn(7);
   wam->Jref = new_vn(7);
+  wam->Jtref = new_vn(7);
   wam->Jtrq = new_vn(7);
   wam->Ttrq = new_vn(7);
   wam->Kp = new_vn(7);
@@ -102,6 +103,7 @@ void InitVectors(wam_struct *wam){
   wam->qerr = 0;
   wam->R6pos = new_vn(6);
   wam->R6ref = new_vn(6);
+  wam->R6tref = new_vn(6);
   wam->R6vel = new_vn(6);
   wam->R6acc = new_vn(6);
   wam->R6trq = new_vn(6);
@@ -149,7 +151,7 @@ wam_struct* OpenWAM(char *fn)
   wam->d_jpos_array.elements = 7;
   init_bts(&wam->Jsc);
   map_btstatecontrol(&wam->Jsc, wam->Jpos, wam->Jvel, wam->Jacc,
-                     wam->Jref, wam->Jtrq, &wam->dt);
+                     wam->Jref, wam->Jtref,wam->Jtrq, &wam->dt);
   btposition_interface_mapf_btPID(&wam->Jsc, &(wam->d_jpos_array));
   /* Joint Control plugin initialization */
 
@@ -164,7 +166,7 @@ wam_struct* OpenWAM(char *fn)
   wam->d_pos_array.elements = 6;
   init_bts(&wam->Csc);
   map_btstatecontrol(&wam->Csc, wam->R6pos, wam->R6vel, wam->R6acc,
-                     wam->R6ref, wam->R6force, &wam->dt);
+                     wam->R6ref, wam->R6tref, wam->R6force, &wam->dt);
   btposition_interface_mapf_btPID(&wam->Csc, &(wam->d_pos_array));
 
   /* Control plugin initialization */

@@ -138,7 +138,7 @@ typedef struct btwam_struct{
   vect_n *park_location;  
 
 //Motor <-> Joint State
-  vect_n *Mpos,*Mtrq,*Jpos,*Jvel,*Jacc,*Jref,*Jtrq;
+  vect_n *Mpos,*Mtrq,*Jpos,*Jvel,*Jacc,*Jref,*Jtref,*Jtrq;
 
 //Kinematics & Dynamics
   double sample_rate;
@@ -173,7 +173,7 @@ typedef struct btwam_struct{
   btpath_pwl pth;
   
   //Cartesian Controllers
-  vect_n *R6pos,*R6vel,*R6acc,*R6ref,*R6force,*R6trq;
+  vect_n *R6pos,*R6vel,*R6acc,*R6ref,*R6tref,*R6force,*R6trq;
   double dt;
   btstatecontrol Csc;
 

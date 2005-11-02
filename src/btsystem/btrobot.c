@@ -60,6 +60,7 @@ int new_btlink(btlink* link,int type)
   link->tmpforce.f = new_v3();
   link->tmpforce.t = new_v3();
   link->tmpforce.p = new_v3();
+  link->J = new_vn(6);
   link->Gscale = 1;
   if (type) {link->type = 1; link->R = 0.0; link->P = 1.0;}
   else { link->type = 0; link->R = 1.0; link->P = 0.0;}
@@ -254,9 +255,15 @@ void eval_fk_bot(btrobot* robot) //forward kinematics
 }
 void eval_fj_bot(btrobot* robot) //forward jacobian
 {
+  
   // J = [J1J2J3J4J5...]
-  // Ji = z(i-1)X(On - O(i-1)]
-  //    = z(i-1)
+  // Ji(1-3) = [z(i-1)X(On - O(i-1)]
+  // Ji(4-6) = [z(i-1)]
+  int cnt;
+  for (cnt = 0;cnt < robot->num_links;cnt++){
+    set_vn(robot->links[cnt].J,cross_v3(robot->links[cnt-1].z,sub_v3(robot->links[robot->num_links-1].o,robot->links[cnt-1].o)));
+    setrange_vn(robot->links[cnt].J,robot->links[cnt-1].z,3,0,3);
+  }
 
 }
 /** Transform a point in Link[n] frame to the World frame.

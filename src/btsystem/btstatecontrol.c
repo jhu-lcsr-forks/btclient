@@ -154,16 +154,17 @@ void mapdata_btpos(btposition_interface *btp,vect_n* q, vect_n* dq, vect_n* ddq,
 /** Register data input and output pointers for the btstatecontrol object.
 Allocates a piecewise linear path for moving to start points. */
 void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq,
-                        vect_n* qref, vect_n* t, double *dt)
+                        vect_n* qref,vect_n* tref,vect_n* t, double *dt)
 {
   sc->q = q;
   sc->qref = qref;
+  sc->tref = tref;
   init_pwl(&(sc->pth),len_vn(qref),2);
   sc->dq = dq;
   sc->ddq = ddq;
   sc->dt = dt;
   sc->t = t;
-  mapdata_bttrj(&sc->btt,qref,dt);
+  mapdata_bttrj(&sc->btt,tref,dt);
   mapdata_btpos(&sc->btp,q,dq,ddq,qref,t,dt);
 
 
@@ -182,7 +183,7 @@ void maptrajectory_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void*
     sc->btt.eval = eval;
     sc->btt.getstate = getstate;
     sc->btt.dat = dat;
-    mapdata_bttrj(&(sc->btt),sc->qref,sc->dt);//USE sc->local_dt for pausable
+    mapdata_bttrj(&(sc->btt),sc->tref,sc->dt);//USE sc->local_dt for pausable
     //set_vn(sc->qref,sc->q); //Initialize trajectory output to a sane value
     sc->btt.state = BTTRAJ_STOPPED;
   }
@@ -454,6 +455,7 @@ BTTRAJ_READY => BTTRAJ_RUN
 int start_trj_bts(btstatecontrol *sc)
 {
   char vect_buf1[200];
+  vect_n *dest;
   int ret;
   
 #ifdef BT_NULL_PTR_GUARD
@@ -468,13 +470,17 @@ int start_trj_bts(btstatecontrol *sc)
     return -2;
 
   btmutex_lock(&(sc->mutex));
-
-  if(sc->btt.state == BTTRAJ_STOPPED || sc->btt.state == BTTRAJ_DONE)
+  dest = (*(sc->btt.reset))(&(sc->btt));
+  if (dest == NULL){
+    ret = -4;
+  }
+  else if(sc->btt.state == BTTRAJ_STOPPED || sc->btt.state == BTTRAJ_DONE)
   {
     sc->mode = SCMODE_TRJ;
     clear_pwl(&(sc->pth));
     add_arclen_point_pwl(&(sc->pth),sc->q);
-    add_arclen_point_pwl(&(sc->pth),(*(sc->btt.reset))(&(sc->btt)));
+    
+    add_arclen_point_pwl(&(sc->pth),dest);
 
     setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
     start_traptrj(&(sc->trj), arclength_pwl(&(sc->pth)));
