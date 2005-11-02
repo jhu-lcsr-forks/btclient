@@ -129,7 +129,7 @@ void killLine(char *line)
 */
 int parseFile(char *fn)
 {
-  return btparseFile(&btparser_default,fn);
+  return btParseFile(&btparser_default,fn);
 }
 
 /** Initialize the btparser object and scan the file to be parsed.
@@ -240,7 +240,7 @@ see btParseGetVal()
 */
 int parseGetVal(int type, char *find, void *loc)
 {
-  return btParseGetVal(&btparser_default,type,str,loc);
+  return btParseGetVal(&btparser_default,type,find,loc);
 }
 
 /** Look up the value of a configuration key. 
@@ -257,7 +257,7 @@ automatically if it has not yet been called.
 \retval -1 Key not found.
 \retval 1 specified type is unknown.
 */
-int btParseGetVal(btparser *parse_obj,int type, char *str, void *loc)
+int btParseGetVal(btparser *parse_obj,int type, char *find, void *loc)
 {
 	int intVal;
 	long longVal;
@@ -269,7 +269,7 @@ int btParseGetVal(btparser *parse_obj,int type, char *str, void *loc)
 	FILE *inFile;
 	
   if (parse_obj->filename[0] && !parse_obj->flatfile[0])
-    btparseFile(parse_obj,parse_obj->filename);
+    btParseFile(parse_obj,parse_obj->filename);
   
 	inFile = fopen(parse_obj->flatfile,"r");
 	while(1)

@@ -158,7 +158,7 @@ typedef struct {
   int periodic; //!0 = This thread is a periodic one
   double period; // The period we want this thread to be
   int done; //!< See btthread_done()
-  void* function; //Pointer to the function this thread is running
+  void (*function)(void *data); //Pointer to the function this thread is running
   void* data; 
   btmutex mutex;
   
@@ -173,7 +173,7 @@ int btthread_done(btthread *thd); //ret !0 when time to kill
 void btthread_stop(btthread *thd); //set done = 1;
 void btthread_exit(btthread *thd);
 /** Create a periodic thread. Not yet implemented. */
-int btperiodic_create(btthread *thd,int priority, double period, void *function,void *args);
+pthread_t* btperiodic_create(btthread *thd,int priority, double period, void *function,void *args);
 //@}
 
 

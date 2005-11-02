@@ -223,7 +223,7 @@ n = max number of elements
 //@{
 vect_n* new_vn(int size); //allocate an n-vector
 vect_n* init_vn(vect_n* v, int size); //Link up a vect_n object
-void free_vn(vect_n *p);
+void free_vn(vect_n **p);
 int len_vn(vect_n *src); //number of elements in the vector
 int sizeof_vn(vect_n *src); //return sizeof info for whole vector
 

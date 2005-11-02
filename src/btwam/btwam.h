@@ -200,7 +200,7 @@ typedef struct btwam_struct{
   //Continuous path record
   btlogger cteach;
   int divider,counter;
-  btreal teach_time
+  btreal teach_time;
   
   //High level
   int js_or_cs; //!< 0 = Joint space, 1 = Cartesian space

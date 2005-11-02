@@ -354,7 +354,7 @@ void btperiodic_proto(void *args)
     this_thd->proc_time = loop_end - loop_start; //th prof
     last_loop = loop_start; //th prof
   }
-  rt_task_delete(WAMControlThreadTask);
+  rt_task_delete(ThreadTask);
   pthread_exit(NULL);
 }
 /** 
@@ -366,7 +366,7 @@ void btperiodic_proto(void *args)
 \warning Untested!!!
 
 */
-int btperiodic_create(btthread *thd,int priority, double period, void *function,void *args)
+pthread_t* btperiodic_create(btthread *thd,int priority, double period, void *function,void *args)
 {
   thd->period = period;
   thd->function = function;

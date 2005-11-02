@@ -241,8 +241,8 @@ int main(int argc, char **argv)
     if ((chr = getch()) != ERR) //Check buffer for keypress
       ProcessInput(chr);
 
-    evalDL(&(wam->log));
-    ServiceContinuousTeach();
+    //evalDL(&(wam->log));
+    //ServiceContinuousTeach(wam);
 
     usleep(100000); // Sleep for 0.1s
   }
@@ -545,7 +545,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       active_pos = wam->R6pos;
       active_trq = wam->R6force;
       active_dest = cdest;
-      vta = vt_c;
+      vta = &vt_c;
       clearScreen();
       test_and_log(pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
       //present_screen = CARTSPACE_SCREEN;
@@ -559,7 +559,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       active_pos = wam->Jpos;
       active_trq = wam->Jtrq;
       active_dest = jdest;
-      vta = vt_j;
+      vta = &vt_j;
       clearScreen();
       test_and_log(pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
       //present_screen = JOINTSPACE_SCREEN;
@@ -606,13 +606,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
   case 'Y':  /* Start continuos teach */
      if (active_bts == &(wam->Jsc))
-      StartContinuousTeach(1,25,"teachpath");
+      StartContinuousTeach(wam,1,25,"teachpath");
      else
-      StartContinuousTeach(0,25,"teachpath");
+      StartContinuousTeach(wam,0,25,"teachpath");
     cteach = 1;
     break;
   case 'y': /*Stop continuos teach */
-    StopContinuousTeach();
+    StopContinuousTeach(wam);
     DecodeDL("teachpath","teach.csv",0);
     cteach = 0;
     stop_trj_bts(active_bts);

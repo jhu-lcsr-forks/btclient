@@ -58,12 +58,12 @@ int Mtrq2ActTrq(wam_struct *wam,vect_n *Mtrq);  //Packs vect_n of torques into a
 void Mpos2Jpos(wam_struct *wam,vect_n * Mpos, vect_n * Jpos); //convert motor angle to joint angle
 void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos);
 void Jtrq2Mtrq(wam_struct *wam,vect_n * Jtrq, vect_n * Mtrq); //conbert joint torque to motor torque
-
+void InitVectors(wam_struct *wam);
 void GetJointPositions();
 void SetJointTorques();
 
 void DumpWAM2Syslog();
-
+int BlankWAMcallback(struct btwam_struct *wam);
 /*==============================*
  * Functions                    *
  *==============================*/
@@ -386,7 +386,7 @@ void WAMMaintenanceThread(void *data)
       }
     }
     evalDL(&(wam->log));
-    evalDL(&(WAM->cteach));
+    evalDL(&(wam->cteach));
     usleep(100000); // Sleep for 0.1s
   }
   pthread_exit(NULL);
@@ -481,8 +481,8 @@ void WAMControlThread(void *data)
     rt_make_hard_real_time();
 #endif
 
-    ActAngle2Mpos((wam->Mpos)); //Move motor angles into a wam_vector variable
-    Mpos2Jpos((wam->Mpos), (wam->Jpos)); //Convert from motor angles to joint angles
+    ActAngle2Mpos(wam,(wam->Mpos)); //Move motor angles into a wam_vector variable
+    Mpos2Jpos(wam,(wam->Mpos), (wam->Jpos)); //Convert from motor angles to joint angles
 
     // Joint space stuff
     pos1_time = rt_get_cpu_time_ns(); //th prof
@@ -522,8 +522,8 @@ void WAMControlThread(void *data)
       set_vn(wam->Jtrq,add_vn(wam->Jtrq,wam->Ttrq));
     }
 
-    Jtrq2Mtrq((wam->Jtrq), (wam->Mtrq));  //Convert from joint torques to motor torques
-    Mtrq2ActTrq(wam->Mtrq); //Move motor torques from wam_vector variable into actuator database
+    Jtrq2Mtrq(wam,(wam->Jtrq), (wam->Mtrq));  //Convert from joint torques to motor torques
+    Mtrq2ActTrq(wam,wam->Mtrq); //Move motor torques from wam_vector variable into actuator database
 #ifdef BTDOUBLETIME
 
     rt_make_soft_real_time();
@@ -670,7 +670,7 @@ void DefineWAMpos(wam_struct *wam,vect_n *wv)
   SetByID(SAFETY_MODULE, IFAULT, 8);
 
   //convert from joint space to motor space, then from motor radians to encoder counts
-  Jpos2Mpos(wv,motor_angle);
+  Jpos2Mpos(wam,wv,motor_angle);
   for (cnt = 0;cnt < (wam->num_actuators - 3 * gimbalsInit);cnt++)
   {
     if(getval_vn(motor_angle,wam->motor_position[cnt]) == 0.0)
@@ -691,67 +691,33 @@ void DefineWAMpos(wam_struct *wam,vect_n *wv)
 
   wam->isZeroed = TRUE;
 }
-/** Perform a coordinated move of the wam
-*/
-void MoveWAM(wam_struct* wam, vect_n *pos)
-{
-  int cnt,ctr,idx,done = 0,count =0,Mid;
 
-
-  syslog(LOG_ERR,"MoveWAM start");
-  for (cnt = 0;cnt < wam->num_actuators;cnt++)
-  {
-    Mid = MotorID_From_ActIdx(cnt);
-    SCstarttrj(&(wam->sc[Mid]),getval_vn(pos,Mid));
-  }
-  syslog(LOG_ERR,"MoveWAM:Trajectory initialized");
-  while (!done)
-  {
-    count++;
-    ctr = 0;
-    for (cnt = 0;cnt < wam->num_actuators;cnt++)
-    {
-      if (wam->sc[Mid].trj.state != BTTRAJ_STOPPED)
-        ctr++;
-    }
-    if (ctr == 0)
-      done = 1;
-    usleep(50000);
-    if ((count % 20) == 0)
-      syslog(LOG_ERR,"waited 1 second to reach position");
-    if ((count % 200) == 0)
-    {
-      done = 1;
-      syslog(LOG_ERR,"Aborting move");
-    }
-  }
-}
 
 void SetCartesianSpace(wam_struct* wam)
 {
   int trjstate;
-  if (wam->active_sc == wam->Jsc)//in joint space
+  if (wam->active_sc == &wam->Jsc)//in joint space
   { 
     trjstate = get_trjstate_bts(wam->active_sc);
     if (trjstate != BTTRAJ_DONE && trjstate != BTTRAJ_STOPPED)
       stop_trj_bts(wam->active_sc);    
     setmode_bts(&(wam->Jsc),SCMODE_IDLE);
     setmode_bts(&(wam->Csc),SCMODE_IDLE);
-    wam->active_sc = wam->Csc;
+    wam->active_sc = &wam->Csc;
   }
 }
 
 void SetJointSpace(wam_struct* wam)
 {
   int trjstate;
-  if (wam->active_sc == wam->Csc)//in cartesian space
+  if (wam->active_sc == &wam->Csc)//in cartesian space
   { 
     trjstate = get_trjstate_bts(wam->active_sc);
     if (trjstate != BTTRAJ_DONE && trjstate != BTTRAJ_STOPPED)
       stop_trj_bts(wam->active_sc);
     setmode_bts(&(wam->Jsc),SCMODE_IDLE);
     setmode_bts(&(wam->Csc),SCMODE_IDLE);
-    wam->active_sc = wam->Jsc;
+    wam->active_sc = &wam->Jsc;
   }
 }
 
@@ -890,7 +856,7 @@ void getLagrangian4(wam_struct *wam,double *A, double *B, double *C, double *D)
 
   trq = new_vn(4);
 
-  MoveSetup(wam,btreal vel,btreal acc);
+  MoveSetup(wam,0.5,0.5);
 
   GCompSample(wam,trq,0,-1.5708,0,0);
   t41 = trq->q[3];
@@ -908,9 +874,8 @@ void getLagrangian4(wam_struct *wam,double *A, double *B, double *C, double *D)
   *B = -t41;
   *C = t33 + *B;
   *D = t21 - t41;
-  //  WAM.Gcomp = 1;
-
-  //SaveWAM("gcomp.dat");
+  
+  free_vn(&trq);
 
 }
 
@@ -948,8 +913,8 @@ void DumpWAM2Syslog(wam_struct *WAM)
   syslog(LOG_ERR,"Dump of WAM data---------------------------");
   syslog(LOG_ERR,"WAM:zero_offsets:%s",sprint_vn(buf,WAM->zero_offsets));
   syslog(LOG_ERR,"WAM:park_location:%s",sprint_vn(buf,WAM->park_location));
-  syslog(LOG_ERR,"%d, %d, %d, %d, %d, %d, %d",(WAM->zero_order->q[0]),(WAM->zero_order->q[1]),(WAM->zero_order->q[2]),(WAM->zero_order->q[3]),(WAM->zero_order->q[4]),(WAM->zero_order->q[5]),(WAM->zero_order->q[6]));
-  syslog(LOG_ERR,"%d, %d, %d, %d, %d, %d, %d",(WAM->motor_position->q[0]),(WAM->motor_position->q[1]),(WAM->motor_position->q[2]),(WAM->motor_position->q[3]),(WAM->motor_position->q[4]),(WAM->motor_position->q[5]),(WAM->motor_position->q[6]));
+  syslog(LOG_ERR,"%d, %d, %d, %d, %d, %d, %d",(WAM->zero_order[0]),(WAM->zero_order[1]),(WAM->zero_order[2]),(WAM->zero_order[3]),(WAM->zero_order[4]),(WAM->zero_order[5]),(WAM->zero_order[6]));
+  syslog(LOG_ERR,"%d, %d, %d, %d, %d, %d, %d",(WAM->motor_position[0]),(WAM->motor_position[1]),(WAM->motor_position[2]),(WAM->motor_position[3]),(WAM->motor_position[4]),(WAM->motor_position[5]),(WAM->motor_position[6]));
   syslog(LOG_ERR,"WAM:Kp:%s",sprint_vn(buf,WAM->Kp));
   syslog(LOG_ERR,"WAM:Kd:%s",sprint_vn(buf,WAM->Kd));
   syslog(LOG_ERR,"WAM:Ki:%s",sprint_vn(buf,WAM->Ki));
