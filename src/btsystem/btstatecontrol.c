@@ -306,7 +306,7 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
     else if (state == BTTRAJ_UNPAUSING && rampstate == BTRAMP_MAX)
       sc->btt.state = BTTRAJ_RUN;
 
-    set_vn(sc->btt.qref, (*(sc->btt.eval))(&(sc->btt)));//evaluate path
+    set_vn(sc->qref, (*(sc->btt.eval))(&(sc->btt)));//evaluate path
 
     if ((*(sc->btt.getstate))(&(sc->btt)) == BTTRAJ_DONE)
     {
@@ -318,7 +318,7 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
   {
     sc->mode = SCMODE_POS;
   }
-  return sc->btt.qref;
+  return sc->qref;
 }
 
 /*! Evaluate the state Controller

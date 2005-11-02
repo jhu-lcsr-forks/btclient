@@ -1064,7 +1064,8 @@ See bttrajectory_interface_struct
   if(!btptr_ok(vt,"bttrajectory_interface_reset_vt")) 
     return btt->qref;
 #endif
-  
+  if (numrows_vr(vt->trj[0].vr) <= 0)
+    return NULL;
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
     setval_vn(btt->qref,cnt,start_via_trj(&(vt->trj[cnt]),cnt));
@@ -1086,8 +1087,7 @@ vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt
   if(!btptr_ok(vt,"bttrajectory_interface_eval_vt")) 
     return btt->qref;
 #endif   
-  if (numrows_vr(vt->trj[0].vr) <= 0)
-    return NULL;
+
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
     setval_vn(btt->qref,cnt,eval_via_trj(&(vt->trj[cnt]),*(btt->dt)));
