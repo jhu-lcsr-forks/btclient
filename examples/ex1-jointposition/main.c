@@ -25,24 +25,32 @@
 #include <stdlib.h> 
 #include <stdio.h>
 #include <errno.h>
-
+#include <signal.h>
 #include "btwam.h"
+
+btthread wam_thd;
+wam_struct *wam;
+
+void sigint_handler(){
+  btthread_stop(&wam_thd); // Stop the WAMControlThread 
+  CloseWAM(wam); // Free the wam data structure
+  printf("\n\n");
+  exit(1);
+}
 
 int main(int argc, char **argv)
 {
-  char buf[50];
+  char buf[80];
   char chr;
   int  done = 0;
   int  useGimbals = 0;
   int  err;
-  btthread wam_thd;
-  wam_struct *wam;
 
   /* Initialize syslog */
   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
   atexit((void*)closelog);
 
-
+  signal(SIGINT, sigint_handler);
 
 #ifndef BTOLDCONFIG
   err = ReadSystemFromConfig("wam.conf"); 
@@ -65,31 +73,20 @@ int main(int argc, char **argv)
     }
   }
 
-
   /* Start up wam control loop */
   wam_thd.period = 0.002;
   btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)wam);
 
+  printf("\nPress Ctrl-C to exit...\n");
   while (!done)
   {
-
-	  if((chr = fgetc(stdin)) == 'x')
-    //if ((chr = getchar()) == 'x') //Check buffer for keypress
-      done = 1;
-
     //print present position
-    printf("Position = %s \r",sprint_vn(buf,(vect_n*)wam->Jpos));
-
+    printf("\rPosition = %s\t",sprint_vn(buf,(vect_n*)wam->Jpos));
+    fflush(stdout);
     usleep(100000); // Sleep for 0.1s
   }
 
-  btthread_stop(&wam_thd); //Kill WAMControlThread 
-  CloseWAM(wam);
-  exit(1);
 }
-
-
-
 
 
 
