@@ -492,10 +492,9 @@ void RenderMAIN_SCREEN()
 
 void clearScreen(void)
 {
-  test_and_log(
-    pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+  btmutex_lock(&(disp_mutex));
   clear();
-  pthread_mutex_unlock( &(disp_mutex) );
+  btmutex_unlock(&(disp_mutex));
 }
 
 /** Process user input.
@@ -536,35 +535,27 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
   case '\t': /* Switch between jointspace and cartesian space trajectories*/
     destroy_vta(vta); //empty out the data if it was full
-
-    if (active_bts == &(wam->Jsc))
-    { //switch to cartesian space mode.
       setmode_bts(&(wam->Jsc),SCMODE_IDLE);
       setmode_bts(&(wam->Csc),SCMODE_IDLE);
+      
+    if (active_bts == &(wam->Jsc))
+    { //switch to cartesian space mode.
       active_bts = &(wam->Csc);
       active_pos = wam->R6pos;
       active_trq = wam->R6force;
       active_dest = cdest;
       vta = &vt_c;
-      clearScreen();
-      test_and_log(pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
-      //present_screen = CARTSPACE_SCREEN;
-      pthread_mutex_unlock(&(disp_mutex));
     }
     else
     {
-      setmode_bts(&(wam->Jsc),SCMODE_IDLE);
-      setmode_bts(&(wam->Csc),SCMODE_IDLE);
+
       active_bts = &(wam->Jsc);
       active_pos = wam->Jpos;
       active_trq = wam->Jtrq;
       active_dest = jdest;
       vta = &vt_j;
-      clearScreen();
-      test_and_log(pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
-      //present_screen = JOINTSPACE_SCREEN;
-      pthread_mutex_unlock(&(disp_mutex));
     }
+    clearScreen();
     break;
   case 'D': //Haptics on
     bth.state = 1;
