@@ -2073,6 +2073,143 @@ vect_3* axis_q(vect_3* dest, quat* src)
 
 /********************** quat functions **************************************/
 
+
+matr_mn * new_mn(int r,int c) //allocate an n-vector
+{
+  void *ptr;
+  matr_mn *n;
+  //allocate mem for return structure
+  ptr = btmalloc(2*sizeof(matr_mn) + 2*r*c*sizeof(btreal));
+
+  n = (matr_mn*)ptr;
+  n->ret = (matr_mn*)(ptr + sizeof(matr_mn));
+  n->ret->ret = n->ret;
+  n->q = (btreal*)(ptr + 2*sizeof(matr_mn));
+  n->ret->q = (btreal*)(ptr + 2*sizeof(matr_mn) + r*c*sizeof(btreal));
+  ident_mn(n);
+  n->m = r;
+  n->n = c;
+
+  return n;
+}
+void destroy_mn(matr_mn **src)
+{
+  btfree((void**)src);
+}
+
+BTINLINE void set_mn(matr_mn* dest, matr_mn* src)
+{
+  int i,j,imax,jmax;
+  unsigned int ds,ss;
+  
+  
+  imax = (dest->r < src->r)?dest->r:src->r;
+  jmax = (dest->c < src->c)?dest->c:src->c;
+  ds = dest->c; //destination stride
+  ss = src->c; //source stride
+  for (i = 0; i < imax; i++)
+    for (j = 0; j < jmax; j++)
+      dest->q[i*ds + j] = src->q[i*ss + j];
+}
+void ident_mn(matr_mn* dest)
+{ 
+  int i,j,imax,jmax;
+  unsigned int ds;
+  
+  imax = dest->r;
+  jmax = dest->c;
+  
+  ds = dest->c; //destination stride
+  for (i = 0; i < imax; i++)
+    for (j = 0; j < jmax; j++)
+      (i == j) ? dest->q[i*ds + j] = 1.0 : dest->q[i*ds + j] = 0.0;
+  
+}
+void setrow_mn(matr_mn* dest, vect_n* src,int row)
+{
+  int i,j,imax,jmax;
+  unsigned int ds,ss;
+  
+  
+  if (row <= dest->r || row > 0)
+    imax = row;
+  else
+    return;
+  
+  jmax = (dest->c < src->n)?dest->c:src->n;
+  ds = dest->c; //destination stride
+  
+  for (j = 0; j < jmax; j++)
+    dest->q[imax*ds + j] = src->q[j];
+}
+void setcol_mn(matr_mn* dest, vect_n* src,int col)
+{
+  int i,j,imax,jmax;
+  unsigned int ds,ss;
+  
+  
+  if (col <= dest->c || col > 0)
+    jmax = col;
+  else
+    return;
+  
+  imax = (dest->r < src->n)?dest->r:src->n;
+  ds = dest->c; //destination stride
+  
+  for (i = 0; i < imax; i++)
+    dest->q[i*ds + jmax] = src->q[i];
+}
+
+getcol_mn(vect_n* dest, matr_mn* src, int col)
+{
+  int i,j,imax,jmax;
+  unsigned int ds,ss;
+  
+  
+  if (col <= src->c || col > 0)
+    jmax = col;
+  else
+    return;
+  
+  imax = (src->r < dest->n)?src->r:dest->n;
+  ds = src->c; //destination stride
+  
+  for (i = 0; i < imax; i++)
+    dest->q[i] = src->q[i*ds + jmax];
+}
+btreal getval_mn(matr_mn* src, int row, int col)
+{
+  return src->q[src->c * row + col];
+}
+void setval_mn(matr_mn* src, int row, int col, btreal val)
+{
+  src->q[src->c * row + col] = val;
+  
+}
+/** Multiply a matrix by a vector.
+
+b must have at least a->c elements.
+ret must have at least a->r elements
+
+*/
+vect_n* matXvec_mn(matr_mn* a, vect_n* b,vect_n* ret)
+{
+  int i,j,imax,jmax;
+  unsigned int ds;
+  
+  imax = a->r;
+  jmax = a->c;
+  
+  for (i = 0; i < imax; i++){
+    ret->q[i] = 0.0;
+    ds = a->c * i;
+    for (j = 0; j < jmax; j++)
+      ret->q[i] += a->q[ds + j] * b->q[j];
+  }
+  return ret;
+  
+  
+}
 /********************** matr_h functions **************************************/
 
 
@@ -2125,6 +2262,7 @@ matr_h * new_mh() //allocate an n-vector
 
   return n;
 }
+
 /** Copy src matrix to dest matrix
 */
 BTINLINE void set_mh(matr_h* dest, matr_h* src)
@@ -2607,7 +2745,7 @@ BTINLINE matr_3* XYZftoR_m3(matr_3* R, vect_3* XYZ) //Return R
   return R;
 }
 
-/******************************************************************************/
+/***************************  btfilter   **********************************/
 
 
 /** Allocates memory for and initializes a btfilter object.

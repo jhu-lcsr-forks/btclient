@@ -1137,7 +1137,7 @@ based on input velocity. Also sets the corner acceleration.
 \internal chk'd TH 051103
 \todo Need to include acceleration in the calculation.
 */
-int scale_vta(via_trj_array* vt,double vel,double acc)
+int dist_scale_vta(via_trj_array* vt,double vel,double acc)
 {
   btreal arclen = 0.0,thislen;
   vectray *vr;
@@ -1162,6 +1162,31 @@ int scale_vta(via_trj_array* vt,double vel,double acc)
   }
   return 0; 
 }
+
+/** Scale the time values in a trajectory.
+
+Adjust all the time points in a via point trajectory array
+by a scale factor. 
+
+\internal chk'd TH 051103 (untested)
+*/
+int time_scale_vta(via_trj_array* vt,double s)
+{
+  btreal arclen = 0.0,thislen;
+  vectray *vr;
+  int cnt;
+  
+  if (vt == NULL) return -1;
+ 
+  vr = vt->trj[0].vr;
+  setval_vn(idx_vr(vr,0),0,0.0);
+  
+  for(cnt = 1;cnt < numrows_vr(vr);cnt++){
+    setval_vn(lval_vr(vr,cnt),0,s * getval_vn(rval_vr(vr,cnt),0));
+  }
+  return 0; 
+}
+
 vect_n* reset_vta(via_trj_array* vt,double dt,vect_n* qref)
 {
   double ret;

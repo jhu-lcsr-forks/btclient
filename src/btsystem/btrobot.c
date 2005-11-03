@@ -95,6 +95,7 @@ int new_bot(btrobot* robot, int nlinks)
   robot->G = new_v3();
   const_v3(robot->G,0.0,0.0,-9.8);
 
+  robot->J = new_mn(6,nlinks);
   return 0;
 }
 
@@ -263,8 +264,10 @@ void eval_fj_bot(btrobot* robot) //forward jacobian
   for (cnt = 0;cnt < robot->num_links;cnt++){
     set_vn(robot->links[cnt].J,(vect_n*)cross_v3(robot->links[cnt-1].z,sub_v3(robot->links[robot->num_links-1].o,robot->links[cnt-1].o)));
     setrange_vn(robot->links[cnt].J,(vect_n*)robot->links[cnt-1].z,3,0,3);
+    setcol_mn(robot->J,robot->links[cnt].J,cnt);
   }
 
+  
 }
 /** Transform a point in Link[n] frame to the World frame.
 

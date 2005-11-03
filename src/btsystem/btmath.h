@@ -620,13 +620,16 @@ typedef struct barrett_matr_mn{
 }matr_mn;
 
 matr_mn * new_mn();
+void destroy_mn(matr_mn **src);
 BTINLINE void set_mn(matr_mn* dest, matr_mn* src);
 BTINLINE void ident_mn(matr_mn* dest); // identity matrix
-BTINLINE void setrow_mn(matr_mn* dest,int row, vect_n* src);
-BTINLINE void setcol_mn(matr_mn* dest,int row, vect_n* src);
-void getcol_mn(vect_n* dest, matr_mn* src, int n); //get the specified column
+BTINLINE void setrow_mn(matr_mn* dest, vect_n* src,int row);
+BTINLINE void setcol_mn(matr_mn* dest, vect_n* src,int col);
+void getcol_mn(vect_n* dest, matr_mn* src, int col); //get the specified column
 
 BTINLINE btreal getval_mn(matr_mn* src, int row, int col);
+BTINLINE void setval_mn(matr_mn* src, int row, int col, btreal val);
+
 BTINLINE matr_mn* mul_mn(matr_mn* a,matr_mn* b);
 BTINLINE void setmul_mn(matr_mn* a,matr_mn* b); //multiply and store in a
 BTINLINE vect_n* matXvec_mn(matr_mn* a, vect_n* b);

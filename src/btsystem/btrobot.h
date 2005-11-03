@@ -120,6 +120,7 @@ typedef struct {
  vect_n *q,*dq,*ddq; //Joint state inputs
  vect_n *t;      //Joint torque outputs
  vect_3 *G;      //Gravity vector
+ matr_mn *J; //Jacobian
 }btrobot;
 
 //an array of links define a robot
