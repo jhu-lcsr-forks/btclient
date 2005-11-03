@@ -645,7 +645,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       refresh();
       ret = scanw("%lf\n", &vel);
       if(vta != NULL)
-        scale_vta(vta,vel,acc);
+        dist_scale_vta(vta,vel,acc);
       finish_entry();
     }
     break;

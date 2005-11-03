@@ -1311,7 +1311,7 @@ BTINLINE void clear_vr(vectray *ray)
 /** Calculate the lenth of all the points if you
 connected the dots.
 
-Used by scale_vta()
+Used by dist_scale_vta()
 */
 btreal arclength_vr(vectray *ray)
 {
