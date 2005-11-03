@@ -21,10 +21,22 @@
     \brief System control algorithms and objects. 
  
  
--# PID object
--# Via Trajectory object
+    
+-# PID object: #btPID
+-# Via Trajectory object: #via_trj
+
+See the control module for function documentation. \ref control
+
+Both objects implement the virtual interface required by #btstatecontrol. Since
+#btstatecontrol is expecting a  #vect_n to be returned we extend those objects
+with #btPID_array and #via_trj_array.
  
+\internal chk'd TH 051103
 */
+/** @addtogroup control Control algorithms
+ */
+//@{
+//@}
 #ifndef _BTCONTROL_H
 #define _BTCONTROL_H
 #ifdef __cplusplus
@@ -41,7 +53,11 @@ extern "C"
 #endif /*PI*/
 
 /*================================================PID stuff================================*/
-
+/** @addtogroup pid PID position regulator
+    @ingroup control
+    - see #btPID for an object overview
+ */
+//@{
 /** PID regulator
 
 btPID maintains configuration and state information for a generic PID controller.
@@ -73,6 +89,7 @@ are typically unchanging you can send them only when they change and call step_b
   }
 
 \endcode
+\internal chk'd TH 051103
 */
 typedef struct  
 {
@@ -103,10 +120,7 @@ typedef struct
   btPID* pid;
   int elements;
 }btPID_array;
-/** @name PID
-    btpid functions
- */
-//@{
+
 //Create-Destroy
 void init_btPID(btPID *pid);
 void init_err_btPID(btPID *pid); //setup for use with eval_err_btPID
@@ -143,7 +157,7 @@ void btposition_interface_mapf_btPID(btstatecontrol *sc, btPID_array *pid);
 //@} 
 
 /*================================================Trajectory stuff================================*/
-/** @name Linear interpolation trajectory
+/**  Linear interpolation trajectory
    
  */
 //@{
@@ -151,7 +165,11 @@ void btposition_interface_mapf_btPID(btstatecontrol *sc, btPID_array *pid);
 
   ct_traj stores an array of time,position data and 
   plays it back by linear interpolation.
-
+  
+  This was primarily developed as a quick way to test the virtual interfaces of
+  #btstatecontrol. You probably want to use #via_trj_array instead.
+  
+  \internal chk'd TH 051103
 */
 typedef struct 
 {
@@ -199,10 +217,16 @@ double v_prev, double v_next, double seg_acc, int end);
 
 
 
-                   
+/** @addtogroup vta Trajectory with parabolic blending at via points
+    @ingroup control
+    
+    - see #via_trj_array for an object overview
+ */
+ //@{                   
 /** A piecewise linear trajectory with parabolic blending.
 
-
+see #via_trj_array for more info.
+\internal chk'd TH 051103
 */
 typedef struct 
 {
@@ -242,24 +266,23 @@ void SetAcc_vt(via_trj *trj,double acc);
 double eval_via_trj(via_trj *trj,double dt);
 double start_via_trj(via_trj *trj,int col);
 
-/** @name Linear trajectory with parabolic blending at via points
-   
- */
- //@{
-/** A piecewise linear trajectory with parabolic blending using vect_n data.
+
+/** A piecewise linear trajectory with parabolic blending using #vect_n data.
+
+via_trj_array objects (hereafter called vta objects) must be allocated by 
+calling new_vta() and destroyed (deallocated) by calling destroy_vta().
+
+All of the member functions will gracefully do nothing if passed a NULL object pointer.
 
 A simple edit api is provided to simplify programming user interaction with this 
 data structure.
 
-see via_trj data structure for details. 
-btcontrol.c has the API documentation.
+btcontrol.h has the API documentation.
 
 This data structure is used for implementing a trajectory object for the
-btstatecontrol object. See bttrajectory_interface_struct object for information 
-on creating your own.
+#btstatecontrol object. 
 
-\bug If sequential time values are the same or out of order the behavior is undefined
-this should be checked for and handled.
+\warning If sequential time values are the same or out of order the behavior is undefined.
 
 See also example_3 of the code examples.
 Example code:
@@ -296,7 +319,7 @@ if(cnt = 0;cnt<15;cnt++){ //Add path that goes back & forth 15 times
 \endcode
 
 
-
+\internal chk'd TH 051103
 */
 typedef struct
 {

@@ -2,7 +2,7 @@
  *  Module .............libbtsystem
  *  File ...............btcontrol.c
  *  Author .............Traveler Hauptman
- *  Creation Date ......Apr 01, 2002
+ *  Creation Date ......Mar 31, 2005 
  *  Addtl Authors ......Brian Zenowich, Sam Clanton
  *                                                                      *
  *  ******************************************************************  *
@@ -17,7 +17,8 @@
  *  021124 - TH - File created
  *  16 Dec 2004 - BZ, SC, TH
  *    Initial port to linux + RTAI
- *
+ *  03 Nov 2005 - TH
+ *    Final pass on documentation 
  *======================================================================*/
 
 
@@ -44,6 +45,8 @@
 The function sets the main parameters of a PID regulator. You
 will only have to use this function a single time when you create the variable. Before
 you start using PIDcalc, remember to set y and yref.
+
+\internal chk'd TH 051103
 */
 void init_btPID(btPID *pid)
 {
@@ -67,7 +70,7 @@ void init_btPID(btPID *pid)
 
 }
 /** Initialize a btPID object for use with an external error.
- 
+ \internal chk'd TH 051103
 */
 void init_err_btPID(btPID *pid)
 {
@@ -77,7 +80,9 @@ void init_err_btPID(btPID *pid)
  
   Sets the accumulated error to zero, the reference value to the present value, and notifies
   the algorithm that it is re-starting.
-*/
+
+  \internal chk'd TH 051103
+  */
 void reset_btPID(btPID *pid)
 {
   btmutex_lock(&(pid->mutex));
@@ -91,8 +96,11 @@ void reset_btPID(btPID *pid)
 
 /** Start the PID regulator
  
-  Sets the accumulated error to zero, the reference value to the present value, and notifies
-  the algorithm that it is re-starting.
+ Resets the regulator (see reset_btPID()) and enables the evaluator.
+  
+  
+  
+  \internal chk'd TH 051103
 */
 void start_btPID(btPID *pid)
 {
@@ -107,8 +115,9 @@ void start_btPID(btPID *pid)
 }
 /** Stop the PID regulator
  
-  Sets the accumulated error to zero, the reference value to the present value, and notifies
-  the algorithm that it is re-starting.
+  Disables the evaluator
+  
+  \internal chk'd TH 051103
 */
 void stop_btPID(btPID *pid)
 {
@@ -126,6 +135,7 @@ and then calculates the error between y and yref.
 \param *pid A pointer to the pre-allocated and initialized PIDregulator structure.
  
 \return The regulator output for the present dt, y, and yref.
+\internal chk'd TH 051103
 */
 btreal step_btPID(btPID *pid)
 {
@@ -164,7 +174,11 @@ btreal step_btPID(btPID *pid)
   btmutex_unlock(&(pid->mutex));
   return(pid->lastresult); //bz
 }
-/** Set measured value 'y'. See btPID object of more info.*/
+/** Set measured value 'y'. 
+
+See #btPID object of more info.
+\internal chk'd TH 051103
+*/
 void sety_btPID(btPID *pid, btreal y)
 {
   btmutex_lock(&(pid->mutex));
@@ -173,7 +187,11 @@ void sety_btPID(btPID *pid, btreal y)
 
   btmutex_unlock(&(pid->mutex));
 }
-/** Set reference value 'yref'. See btPID object of more info.*/
+/** Set reference value 'yref'. 
+
+See #btPID object of more info.
+\internal chk'd TH 051103
+*/
 void setyref_btPID(btPID *pid, btreal yref)
 {
   btmutex_lock(&(pid->mutex));
@@ -182,7 +200,11 @@ void setyref_btPID(btPID *pid, btreal yref)
 
   btmutex_unlock(&(pid->mutex));
 }
-/** Set time step value 'dt'. See btPID object of more info.*/
+/** Set time step value 'dt'. 
+
+See #btPID object of more info.
+\internal chk'd TH 051103
+*/
 void setdt_btPID(btPID *pid, btreal dt)
 {
   btmutex_lock(&(pid->mutex));
@@ -191,7 +213,11 @@ void setdt_btPID(btPID *pid, btreal dt)
 
   btmutex_unlock(&(pid->mutex));
 }
-/** Get the last calculated effort value. See btPID object of more info.*/
+/** Get the last calculated effort value. 
+
+See #btPID object of more info.
+\internal chk'd TH 051103
+*/
 btreal lastresult_btPID(btPID *pid)
 {
   btreal ret;
@@ -203,7 +229,11 @@ btreal lastresult_btPID(btPID *pid)
 
   return ret;
 }
-/** Evaluate the btPID object. See btPID object of more info.*/
+/** Evaluate the btPID object. 
+
+See #btPID object of more info.
+\internal chk'd TH 051103
+*/
 btreal eval_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
 {
   btmutex_lock(&(pid->mutex));
@@ -216,7 +246,10 @@ btreal eval_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
 
   return step_btPID(pid);
 }
-
+/** Evaluate a pid object using the provided error.
+See #btPID object of more info.
+\internal chk'd TH 051103
+*/
 btreal eval_err_btPID(btPID *pid, btreal error, btreal dt)
 {
   btmutex_lock(&(pid->mutex));
@@ -228,7 +261,11 @@ btreal eval_err_btPID(btPID *pid, btreal error, btreal dt)
 
   return step_btPID(pid);
 }
-/** Set all the input values. See btPID object of more info.*/
+/** Set all the input values. 
+
+See #btPID object of more info.
+\internal chk'd TH 051103
+*/
 void setinputs_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
 {
   btmutex_lock(&(pid->mutex));
@@ -242,7 +279,10 @@ void setinputs_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
 /** Set the gains.
  
 If the library is compiled with BT_DUMMY_PROOF, we will verify that you only
-change the gains when tho regulator is in the off state. See btPID object of more info.*/
+change the gains when the regulator is in the off state. 
+See #btPID object of more info.
+\internal chk'd TH 051103
+*/
 void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
 {
   btmutex_lock(&(pid->mutex));
@@ -268,9 +308,11 @@ void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
 
   btmutex_unlock(&(pid->mutex));
 }
-/** Set saturation of the regulator. If set anti-windup will kick in above this value. See btPID object of more info.
-\internal 
-\todo verif anti-windup functionality
+/** Set saturation of the regulator. 
+
+If set anti-windup will kick in above this value. See #btPID object of more info.
+\internal chk'd TH 051103
+\todo verify anti-windup functionality
 */
 void setsaturation_btPID(btPID *pid, btreal saturation)
 {
@@ -280,7 +322,9 @@ void setsaturation_btPID(btPID *pid, btreal saturation)
 
   btmutex_unlock(&(pid->mutex));
 }
-/** Get the present gain values. */
+/** Get the present gain values. 
+\internal chk'd TH 051103
+*/
 void getgains_btPID(btPID *pid, btreal *Kp, btreal *Kd, btreal *Ki)
 {
   btmutex_lock(&(pid->mutex));
@@ -291,7 +335,9 @@ void getgains_btPID(btPID *pid, btreal *Kp, btreal *Kd, btreal *Ki)
 
   btmutex_unlock(&(pid->mutex));
 }
-/** Get the present input values */
+/** Get the present input values 
+\internal chk'd TH 051103
+*/
 void getinputs_btPID(btPID *pid, btreal *y, btreal *yref, btreal *dt)
 {
   btmutex_lock(&(pid->mutex));
@@ -302,7 +348,9 @@ void getinputs_btPID(btPID *pid, btreal *y, btreal *yref, btreal *dt)
 
   btmutex_unlock(&(pid->mutex));
 }
-/** Get the present saturation values */
+/** Get the present saturation values 
+\internal chk'd TH 051103
+*/
 void getsaturation_btPID(btPID *pid, btreal *saturation)
 {
   btmutex_lock(&(pid->mutex));
@@ -368,23 +416,13 @@ void btposition_interface_pause_btPID(struct btposition_interface_struct* btp)
     stop_btPID(&(pids->pid[cnt]));
   }
 }
-/*
-void btposition_interface_set_ref_btPID(void *dat,vect_n* ref)
-{
-  btPID_array *pids;
-  int cnt;
-  
-  pids = (btPID_array*)dat;
-  
-  for (cnt = 0; cnt < pids->elements; cnt++){
-    setyref_btPID(&(pids->pid[cnt]),getval_vn(ref,cnt));
-  }
-}
-*/
 
 /**************************** Continuous trajectory ***************************/
 
-
+/** 
+\internal chk'd TH 051103
+Not thought to be useful so not documented 
+*/
 void create_ct(ct_traj *trj,vectray *vr)
 {
   trj->state = BTTRAJ_OFF;
@@ -393,6 +431,10 @@ void create_ct(ct_traj *trj,vectray *vr)
   init_pwl_from_vectray(trj->pwl,vr);
 
 }
+/** 
+\internal chk'd TH 051103
+Not thought to be useful so not documented 
+*/
 int readfile_ct(ct_traj* ct,char* filename)
 {
   vectray *vr;
@@ -402,15 +444,26 @@ int readfile_ct(ct_traj* ct,char* filename)
   destroy_vr(&vr);
   return 0;
 }
+/** 
+\internal chk'd TH 051103
+Not thought to be useful so not documented 
+*/
 vect_n* init_ct(ct_traj *trj)
 {
   return dsinit_pwl(trj->pwl,0.0);
 }
+/** 
+\internal chk'd TH 051103
+Not thought to be useful so not documented 
+*/
 vect_n* eval_ct(ct_traj *trj, btreal dt)
 {
   return ds_pwl(trj->pwl,dt);
 }
-
+/** 
+\internal chk'd TH 051103
+Not thought to be useful so not documented 
+*/
 int done_ct(ct_traj *trj)
 {
   if (trj->pwl->proxy_s == arclength_pwl(trj->pwl))
@@ -418,7 +471,10 @@ int done_ct(ct_traj *trj)
   else
     return 0;
 }
-
+/** 
+\internal chk'd TH 051103
+Not thought to be useful so not documented 
+*/
 int bttrajectory_interface_getstate_ct(struct bttrajectory_interface_struct *btt)
 {
   ct_traj* ct;
@@ -429,7 +485,10 @@ int bttrajectory_interface_getstate_ct(struct bttrajectory_interface_struct *btt
   else
     return BTTRAJ_RUN;
 }
-
+/** 
+\internal chk'd TH 051103
+Not thought to be useful so not documented 
+*/
 vect_n* bttrajectory_interface_reset_ct(struct bttrajectory_interface_struct *btt)
 {
   ct_traj* ct;
@@ -438,7 +497,10 @@ vect_n* bttrajectory_interface_reset_ct(struct bttrajectory_interface_struct *bt
 
   return dsinit_pwl(ct->pwl,0.0);
 }
-
+/** 
+\internal chk'd TH 051103
+Not thought to be useful so not documented 
+*/
 vect_n* bttrajectory_interface_eval_ct(struct bttrajectory_interface_struct *btt)
 {
   ct_traj* ct;
@@ -449,7 +511,10 @@ vect_n* bttrajectory_interface_eval_ct(struct bttrajectory_interface_struct *btt
     btt->state = BTTRAJ_DONE;
   return ret;
 }
-
+/** 
+\internal chk'd TH 051103
+Not thought to be useful so not documented 
+*/
 void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj)
 {
   maptrajectory_bts(sc,(void*) trj,
@@ -461,10 +526,15 @@ void bttrajectory_interface_mapf_ct(btstatecontrol *sc,ct_traj *trj)
 
 /******************************************************************************/
 
-enum VT_SEG {VTS_IN_ACC = 0, VTS_IN_VEL};
+enum VT_SEG {
+  VTS_IN_ACC = 0, // We are in an acceleration segment
+  VTS_IN_VEL  // We are in an velocity segment
+};
 /** Assumes trj->vr has been loaded with a valid vectray
  
  Forces state to BTTRAJ_RUN
+ 
+ \internal chk'd TH 051103
 */
 double start_via_trj(via_trj *trj,int col)
 {
@@ -510,12 +580,17 @@ double start_via_trj(via_trj *trj,int col)
   trj->state = BTTRAJ_RUN;
   return ret;
 }
-
+/** Data access function for trj->trj_acc
+\internal chk'd TH 051103
+*/
 void SetAcc_vt(via_trj *trj,double acc)
 {
   trj->trj_acc = acc;
 }
-
+/** Evaluate a via_trj object.
+It must have previously been preped with start_via_trj()
+\internal chk'd TH 051103
+*/
 double eval_via_trj(via_trj *trj,double dt)
 {
   double Dt,Dq,Dv,Dt_next,Dq_next,Dv_next,acc_next,t_acc_next,end,et,cmd;
@@ -625,7 +700,13 @@ double eval_via_trj(via_trj *trj,double dt)
  
   see Notebook TH#6 pp146,147
   
-  \param seg_acc - Acceleration with which to blend linear segments. Expected to be positive;
+\param seg_acc - Acceleration with which to blend linear segments.
+\param q1 
+\param q2 
+\param t1 
+\param t2 
+
+\internal chk'd TH 051103 (incomplete)
 */
 void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double v_prev, double v_next, double seg_acc, int end)
 {
@@ -634,6 +715,17 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
   double min_acc,use_acc,q_acc1,q_vel,q_acc2;
   double max_acc,ac4,sqrtb;
 
+  if (t2 <= t1){
+    syslog(LOG_ERR, "CalcSeg: Error: Times are out of order!!!! Skipping this segment");
+    seg->vel = 0.0;
+    seg->acc1 = 0.0;
+    seg->acc2 = 0.0;
+    seg->dt_vel = 0.0;
+    seg->dt_acc1 = 0.0;
+    seg->dt_acc2 = 0.0;
+    return;
+  }
+  
   dt = t2 - t1;
   dq = q2 - q1;
 #if 0
@@ -784,7 +876,10 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
   syslog(LOG_ERR, "CalcSeg: ");
 #endif
 }
-/** Internal function to allocate memory for a vta object*/
+/** 
+\internal chk'd TH 051103
+Internal function to allocate memory for a vta object.
+*/
 via_trj_array* malloc_new_vta(int num_columns)
 {
   void *vmem;
@@ -798,6 +893,26 @@ via_trj_array* malloc_new_vta(int num_columns)
   vt->elements = num_columns;
   return vt;
 }
+/** Create a new vta from a csv file
+
+The trajectory via points will be read from a comma seperated values file. The via 
+points will have a vector size of the number of columns in the file minus one. 
+The first column is used for the time values. 
+
+Example file (with 3 element vectors as via points)
+\code
+0.0, 1.2, 3.2, 5.3
+0.12, 2.2, 3.4, 5.2
+1.0, 1.2, 3.2, 5.3
+\endcode
+\param extrapoints The number of via points we will allow for additional editing.
+\param filename Name of the file you wish to read.
+
+\return 
+ - Returns a pointer to a via_trj_array object.
+ - Return NULL if there was a problem.
+\internal chk'd TH 051103 
+*/
 via_trj_array* read_file_vta(char* filename,int extrapoints)
 {
   via_trj_array* vt;
@@ -814,11 +929,19 @@ via_trj_array* read_file_vta(char* filename,int extrapoints)
   
   return vt;
 }
+/** Save the vta object to a csv file
+\internal chk'd TH 051103
+*/
 void write_file_vta(via_trj_array* vt,char *filename)
 {
   if (vt != NULL) 
     write_csv_file_vr(filename,vt->trj[0].vr);
 }
+/** Simulate running a trajectory and dump results to file.
+
+Us this for debugging or previewing your trajectories.
+\internal chk'd TH 051103
+*/
 vect_n* sim_vta(via_trj_array* vt,double dt,double duration,char*filename)
 {
   FILE *out;
@@ -839,7 +962,9 @@ vect_n* sim_vta(via_trj_array* vt,double dt,double duration,char*filename)
   
   fclose(out);
 }
-/** set acceleration on corners of via trajectory */
+/** set acceleration on corners of via trajectory 
+\internal chk'd TH 051103
+*/
 void set_acc_vta(via_trj_array* vt,btreal acc)
 {
   int cnt;
@@ -848,7 +973,16 @@ void set_acc_vta(via_trj_array* vt,btreal acc)
     SetAcc_vt(&(vt->trj[cnt]),acc);
   }
 }
-/** Allocate a vta object and vectray objects */
+/** Allocate a vta object and vectray objects.
+
+vta objects must be created using new_vta(). They must be destroyed using
+destroy_vta(). A vta object allocated by simply declaring
+\code
+via_trj_array myobject;
+\endcode
+will behave in an undefined (but generally bad) manner.
+\internal chk'd TH 051103
+*/
 via_trj_array* new_vta(int num_columns,int max_rows)
 {
   via_trj_array* vt;
@@ -864,6 +998,11 @@ via_trj_array* new_vta(int num_columns,int max_rows)
   return vt;
 }
 /** Free memory allocated during new_vr()
+
+Note that we are expecting the address of your pointer. As a matter of convention,
+your pointer will be be set to NULL to indicate that it is no longer pointing to
+a valid via_trj_array object.
+\internal chk'd TH 051103
 */
 void destroy_vta(via_trj_array** vt)
 {
@@ -876,6 +1015,8 @@ void destroy_vta(via_trj_array** vt)
 
 If the edit point reaches the end of the list,
 it stays there.
+
+\internal chk'd TH 051103
 */
 void next_point_vta(via_trj_array* vt)
 {
@@ -886,27 +1027,34 @@ void next_point_vta(via_trj_array* vt)
 
 If the edit point reaches the beginning of the list,
 it stays there.
+
+\internal chk'd TH 051103
 */
 void prev_point_vta(via_trj_array* vt)
 {
   if (vt != NULL)
     prev_vr(vt->trj[0].vr);
 }
-/** set the edit point to the begining of the list*/
+/**Set the edit point to the begining of the list.
+\internal chk'd TH 051103
+*/
 void first_point_vta(via_trj_array* vt)
 {
   if (vt != NULL)
     start_vr(vt->trj[0].vr);
 }
-/**Set the edit point to the end of the list*/
+/**Set the edit point to the end of the list.
+\internal chk'd TH 051103
+*/
 void last_point_vta(via_trj_array* vt)
 {
   if (vt != NULL)
     end_vr(vt->trj[0].vr);
 }
-/** Insert a location into the teach & play list
+/** Insert a location into the teach & play list.
 at the edit point. To add a location to the end of the list, you
-may move the edit point to the end.
+may move the edit point to the end. (last_point_vta())
+\internal chk'd TH 051103
 */
 int ins_point_vta(via_trj_array* vt, vect_n *pt)
 {
@@ -937,27 +1085,33 @@ int ins_point_vta(via_trj_array* vt, vect_n *pt)
     return insert_vr(vt->trj[0].vr,tmp);
   }
 }
-/** Delete the location at the edit point from the
-teach & play list.
-
+/** Delete the location at the edit point from the list.
+\internal chk'd TH 051103
 */
 int del_point_vta(via_trj_array* vt)
 {
   if (vt == NULL) return -1;
   else return delete_vr(vt->trj[0].vr);
 }
-/** Return the index of the present edit point*/
+/** Return the index of the present edit point.
+\internal chk'd TH 051103
+*/
 int get_current_idx_vta(via_trj_array* vt)
 {
   if (vt == NULL) return -1;
   else return edit_point_vr(vt->trj[0].vr);
 }
-/** Set the index of the present edit point */
+/** Set the index of the present edit point.
+\internal chk'd TH 051103
+*/
 int set_current_idx_vta(via_trj_array* vt,int idx)
 {
   if (vt == NULL) return -1;
   else return edit_at_vr(vt->trj[0].vr,idx);
 }
+/** Copy the point at the present idx to dest.
+\internal chk'd TH 051103
+*/
 void get_current_point_vta(via_trj_array* vt, vect_n *dest)
 {
   vectray *vr;
@@ -966,8 +1120,9 @@ void get_current_point_vta(via_trj_array* vt, vect_n *dest)
 }
 
 
-/** Get a pointer to the vectray object being used by this via trajectory
-object */
+/** Get a pointer to the vectray object being used by this vta object.
+\internal chk'd TH 051103
+*/
 vectray* get_vr_vta(via_trj_array* vt)
 {
   if (vt == NULL) return NULL;
@@ -977,9 +1132,9 @@ vectray* get_vr_vta(via_trj_array* vt)
 /** Set the time values in a trajectory.
 
 Adjust all the time points in a via point trajectory array
-based on input velocity. Also sets the corner acceleration
+based on input velocity. Also sets the corner acceleration.
 
-
+\internal chk'd TH 051103
 \todo Need to include acceleration in the calculation.
 */
 int scale_vta(via_trj_array* vt,double vel,double acc)
@@ -1032,6 +1187,7 @@ vect_n* eval_vta(via_trj_array* vt,double dt,vect_n* qref)
 
 /** Implements the getstate interface for bttrajectory_interface_struct.
 See bttrajectory_interface_struct
+\internal chk'd TH 051103
 */
 int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt)
 {
@@ -1054,7 +1210,9 @@ int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt
 }
 /** Implements the reset interface for bttrajectory_interface_struct.
 See bttrajectory_interface_struct
-*/vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt)
+\internal chk'd TH 051103
+*/
+vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *btt)
 {
   double ret;
   int cnt;
@@ -1076,6 +1234,7 @@ See bttrajectory_interface_struct
 /** Implements the eval interface for bttrajectory_interface_struct.
 See bttrajectory_interface_struct
 \return NULL if trajectory has no points.
+\internal chk'd TH 051103
 */
 vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt)
 {
@@ -1095,7 +1254,9 @@ vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt
   return btt->qref;
 }
 /** Registers the necessary data and function pointers with the 
-btstatecontrol object */
+btstatecontrol object 
+\internal chk'd TH 051103
+*/
 void register_vta(btstatecontrol *sc,via_trj_array *vt)
 { 
 #ifdef BT_NULL_PTR_GUARD
