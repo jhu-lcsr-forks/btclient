@@ -213,7 +213,7 @@ typedef struct btwam_struct{
 
 /*************  WAM  API  ******************/
 
-wam_struct* OpenWAM(char *wamfile); //NULL -> wam.conf
+wam_struct* OpenWAM(char *wamfile, char *robotName); //NULL -> wam.conf
 void CloseWAM(wam_struct* wam); //Cleanupint BlankWAMcallback(struct btwam_struct *wam);
 
 void registerWAMcallback(wam_struct* wam,void *func);

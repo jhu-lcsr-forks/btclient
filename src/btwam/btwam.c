@@ -126,14 +126,14 @@ void InitVectors(wam_struct *wam){
   
   See #btwam_struct
 */
-wam_struct* OpenWAM(char *fn)
+wam_struct* OpenWAM(char *fn, char *robotName)
 {
   int cnt,ret,err;
   const double pi = 3.14159;
   btreal theta, d, a, alpha, mass, tmpdbl;
   vect_3 *com;
   wam_struct *wam;
-  char robotType[256];
+  char robotName[256];
   char key[256];
   long reply;
   int link;
@@ -225,37 +225,43 @@ wam_struct* OpenWAM(char *fn)
 
 
   // Parse config file
+  if(!*fn){ // If no config file was given
+      strcpy(fn, "wam.conf"); // Default to wam.conf
+  }
   err = parseFile(fn);
   if(err)
   {
     syslog(LOG_ERR, "OpenWAM: Error parsing config file- %s", fn);
     return(NULL);
   }
-  //strcpy(robotType, buses[0].device_name);
-  sprintf(key, "system.bus[0].name");
-  parseGetVal(STRING, key, (void*)robotType);
-
+  //strcpy(robotName, buses[0].device_name);
+  
+  if(!*robotName){ // If no robot name was given
+      // Extract it from the config file
+      sprintf(key, "system.bus[0].name");
+      parseGetVal(STRING, key, (void*)robotName);
+  }
 
   // Read park_location
-  sprintf(key, "%s.home", robotType, link);
+  sprintf(key, "%s.home", robotName, link);
   parseGetVal(VECTOR, key, (void*)wam->park_location);
 
   for(link = 0; link <= wam->num_actuators; link++)
   {
     // Get the DH parameters
-    sprintf(key, "%s.link[%d].dh.theta", robotType, link);
+    sprintf(key, "%s.link[%d].dh.theta", robotName, link);
     parseGetVal(DOUBLE, key, (void*)&theta);
-    sprintf(key, "%s.link[%d].dh.d", robotType, link);
+    sprintf(key, "%s.link[%d].dh.d", robotName, link);
     parseGetVal(DOUBLE, key, (void*)&d);
-    sprintf(key, "%s.link[%d].dh.a", robotType, link);
+    sprintf(key, "%s.link[%d].dh.a", robotName, link);
     parseGetVal(DOUBLE, key, (void*)&a);
-    sprintf(key, "%s.link[%d].dh.alpha", robotType, link);
+    sprintf(key, "%s.link[%d].dh.alpha", robotName, link);
     parseGetVal(DOUBLE, key, (void*)&alpha);
 
     // Get the mass parameters
-    sprintf(key, "%s.link[%d].com", robotType, link);
+    sprintf(key, "%s.link[%d].com", robotName, link);
     parseGetVal(VECTOR, key, (void*)com);
-    sprintf(key, "%s.link[%d].mass", robotType, link);
+    sprintf(key, "%s.link[%d].mass", robotName, link);
     parseGetVal(DOUBLE, key, (void*)&mass);
 
     if(link != wam->num_actuators)
@@ -269,23 +275,23 @@ wam_struct* OpenWAM(char *fn)
       wam->motor_position[link] = link;/** \todo Finish this *///reply;
 #endif
       // Read joint PID constants
-      sprintf(key, "%s.link[%d].pid.kp", robotType, link);
+      sprintf(key, "%s.link[%d].pid.kp", robotName, link);
       parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->Kp)[link]));
-      sprintf(key, "%s.link[%d].pid.kd", robotType, link);
+      sprintf(key, "%s.link[%d].pid.kd", robotName, link);
       parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->Kd)[link]));
       //parseGetVal(DOUBLE, key, (void*)&wam->Kd);
-      sprintf(key, "%s.link[%d].pid.ki", robotType, link);
+      sprintf(key, "%s.link[%d].pid.ki", robotName, link);
       parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->Ki)[link]));
       //parseGetVal(DOUBLE, key, (void*)&wam->Ki);
-      sprintf(key, "%s.link[%d].pid.max", robotType, link);
+      sprintf(key, "%s.link[%d].pid.max", robotName, link);
       parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->saturation)[link]));
       //parseGetVal(DOUBLE, key, (void*)&wam->saturation);
 
       // Read joint vel/acc defaults
-      sprintf(key, "%s.link[%d].vel", robotType, link);
+      sprintf(key, "%s.link[%d].vel", robotName, link);
       parseGetVal(DOUBLE, key, (void*)&tmpdbl);
       setval_vn(wam->vel, link, tmpdbl);
-      sprintf(key, "%s.link[%d].acc", robotType, link);
+      sprintf(key, "%s.link[%d].acc", robotName, link);
       parseGetVal(DOUBLE, key, (void*)&tmpdbl);
       setval_vn(wam->acc, link, tmpdbl);
 
