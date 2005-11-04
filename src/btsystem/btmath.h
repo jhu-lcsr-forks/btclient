@@ -632,8 +632,10 @@ BTINLINE void setval_mn(matr_mn* src, int row, int col, btreal val);
 
 BTINLINE matr_mn* mul_mn(matr_mn* a,matr_mn* b);
 BTINLINE void setmul_mn(matr_mn* a,matr_mn* b); //multiply and store in a
-BTINLINE vect_n* matXvec_mn(matr_mn* a, vect_n* b);
+BTINLINE vect_n* matXvec_mn(matr_mn* a, vect_n* b,vect_n* ret);
 void print_mn(matr_mn* src);
+char* sprint_mn(char *dest,matr_mn* src);
+void strto_mn(matr_mn* dest,char *str);
 int test_mn(btreal error);
 //@}
 /*=======================================================================*/

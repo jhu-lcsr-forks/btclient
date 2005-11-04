@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <string.h>
+#include <regex.h>
 #include "btmath.h"
 
 #define MAX_LINE_LENGTH     255
@@ -2103,10 +2104,10 @@ BTINLINE void set_mn(matr_mn* dest, matr_mn* src)
   unsigned int ds,ss;
   
   
-  imax = (dest->r < src->r)?dest->r:src->r;
-  jmax = (dest->c < src->c)?dest->c:src->c;
-  ds = dest->c; //destination stride
-  ss = src->c; //source stride
+  imax = (dest->m < src->m)?dest->m:src->m;
+  jmax = (dest->n < src->n)?dest->n:src->n;
+  ds = dest->n; //destination stride
+  ss = src->n; //source stride
   for (i = 0; i < imax; i++)
     for (j = 0; j < jmax; j++)
       dest->q[i*ds + j] = src->q[i*ss + j];
@@ -2116,13 +2117,16 @@ void ident_mn(matr_mn* dest)
   int i,j,imax,jmax;
   unsigned int ds;
   
-  imax = dest->r;
-  jmax = dest->c;
+  imax = dest->m;
+  jmax = dest->n;
   
-  ds = dest->c; //destination stride
+  ds = dest->n; //destination stride
   for (i = 0; i < imax; i++)
     for (j = 0; j < jmax; j++)
-      (i == j) ? dest->q[i*ds + j] = 1.0 : dest->q[i*ds + j] = 0.0;
+      if(i == j) 
+        dest->q[i*ds + j] = 1.0;
+      else
+        dest->q[i*ds + j] = 0.0;
   
 }
 void setrow_mn(matr_mn* dest, vect_n* src,int row)
@@ -2131,13 +2135,13 @@ void setrow_mn(matr_mn* dest, vect_n* src,int row)
   unsigned int ds,ss;
   
   
-  if (row <= dest->r || row > 0)
+  if (row <= dest->m || row > 0)
     imax = row;
   else
     return;
   
-  jmax = (dest->c < src->n)?dest->c:src->n;
-  ds = dest->c; //destination stride
+  jmax = (dest->n < src->n)?dest->n:src->n;
+  ds = dest->n; //destination stride
   
   for (j = 0; j < jmax; j++)
     dest->q[imax*ds + j] = src->q[j];
@@ -2148,48 +2152,48 @@ void setcol_mn(matr_mn* dest, vect_n* src,int col)
   unsigned int ds,ss;
   
   
-  if (col <= dest->c || col > 0)
+  if (col <= dest->n || col > 0)
     jmax = col;
   else
     return;
   
-  imax = (dest->r < src->n)?dest->r:src->n;
-  ds = dest->c; //destination stride
+  imax = (dest->m < src->n)?dest->m:src->n;
+  ds = dest->n; //destination stride
   
   for (i = 0; i < imax; i++)
     dest->q[i*ds + jmax] = src->q[i];
 }
 
-getcol_mn(vect_n* dest, matr_mn* src, int col)
+void getcol_mn(vect_n* dest, matr_mn* src, int col)
 {
   int i,j,imax,jmax;
   unsigned int ds,ss;
   
   
-  if (col <= src->c || col > 0)
+  if (col <= src->n || col > 0)
     jmax = col;
   else
     return;
   
-  imax = (src->r < dest->n)?src->r:dest->n;
-  ds = src->c; //destination stride
+  imax = (src->m < dest->n)?src->m:dest->n;
+  ds = src->n; //destination stride
   
   for (i = 0; i < imax; i++)
     dest->q[i] = src->q[i*ds + jmax];
 }
 btreal getval_mn(matr_mn* src, int row, int col)
 {
-  return src->q[src->c * row + col];
+  return src->q[src->n * row + col];
 }
 void setval_mn(matr_mn* src, int row, int col, btreal val)
 {
-  src->q[src->c * row + col] = val;
+  src->q[src->n * row + col] = val;
   
 }
 /** Multiply a matrix by a vector.
 
-b must have at least a->c elements.
-ret must have at least a->r elements
+b must have at least a->n elements.
+ret must have at least a->m elements
 
 */
 vect_n* matXvec_mn(matr_mn* a, vect_n* b,vect_n* ret)
@@ -2197,12 +2201,12 @@ vect_n* matXvec_mn(matr_mn* a, vect_n* b,vect_n* ret)
   int i,j,imax,jmax;
   unsigned int ds;
   
-  imax = a->r;
-  jmax = a->c;
+  imax = a->m;
+  jmax = a->n;
   
   for (i = 0; i < imax; i++){
     ret->q[i] = 0.0;
-    ds = a->c * i;
+    ds = a->n * i;
     for (j = 0; j < jmax; j++)
       ret->q[i] += a->q[ds + j] * b->q[j];
   }
@@ -2210,6 +2214,85 @@ vect_n* matXvec_mn(matr_mn* a, vect_n* b,vect_n* ret)
   
   
 }
+/** Print a matrix to a string
+Uses barretts <<>> delimited format.
+*/
+char* sprint_mn(char *dest,matr_mn* src)
+{
+  int i,j;
+   
+  if (btptr_ok(src,"sprint_vn"))
+  {
+    dest[0] = '<';
+    dest[1] = 0;
+    for (i = 0;i<src->m;i++){
+      sprintf(dest+strlen(dest),"<");
+      for(j = 0;j<src->n;j++){
+        sprintf(dest+strlen(dest),"%8.4f,",src->q[i*src->n+j]);
+      }
+      sprintf(dest+strlen(dest),">,");
+    }
+    dest[strlen(dest)-1] = 0;
+    strcat(dest,">");
+  }
+  return dest;
+}
+/** Fill an existing matrix with values from a string.
+
+This function takes a string that has values in the format of:
+\code
+"< < 123, 321>, <123>,  <234, 324, 344>>"
+\endcode
+to represent:
+\code
+123 321 (0)
+123 (0) (0)
+234 324 344
+\endcode
+
+If the string is invalid, nothing is done.
+
+Behaves nicely if the string matrix is a different size than the destination 
+matrix. 
+*/
+void strto_mn(matr_mn* dest,char *str)
+{
+  regex_t tra[3];
+  int row = 0;
+  char *sub;
+  char str1[400];
+  char str2[400];
+  unsigned int len;
+  regmatch_t matches[50];
+  vect_n *vect;
+  local_vn(tmpvn,100);
+  
+  init_vn(tmpvn,100);
+  regcomp(&tra[0],"<[[:space:]]*(<[[:digit:][:space:],.+eE-]+>[[:space:],]*)+[[:space:]]*>",REG_EXTENDED );
+  regcomp(&tra[1],"<[[:space:]]*<.*>[[:space:]]*>",REG_EXTENDED );
+  regcomp(&tra[2],"<[[:digit:][:space:],.+eE-]+>",REG_EXTENDED );
+  //printf("%s ...\n",str);
+  if (!regexec(&tra[0],str,0,NULL,0) && !regexec(&tra[1],str,0,NULL,0)){
+    sub = str;
+    while (!regexec(&tra[2],sub,3,matches,0)){
+      if (row > dest->m) break;
+      
+      len = matches[0].rm_eo-matches[0].rm_so;
+      strncpy(str1,sub + matches[0].rm_so,len+1);
+      str1[len] = 0;
+      sub = sub + matches[0].rm_eo;
+      vect = sscan_vn(str1);
+      setrow_mn(dest,vect,row);
+      print_vn(vect);
+      
+      destroy_vn(&vect);
+      row++;
+      printf("\n:%s\n",str1); 
+    }
+  }
+  
+}
+
 /********************** matr_h functions **************************************/
 
 
