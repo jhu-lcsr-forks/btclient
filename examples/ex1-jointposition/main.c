@@ -45,7 +45,7 @@ int main(int argc, char **argv)
   int  done = 0;
   int  useGimbals = 0;
   int  err;
-
+  
   /* Initialize syslog */
   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
   atexit((void*)closelog);
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
   err = ReadSystemFromConfig("wam.conf"); 
 #else //BTOLDCONFIG
 #endif //BTOLDCONFIG    
-  wam = OpenWAM("wam.conf");
+  wam = OpenWAM("wam.conf", NULL);
   if(!wam)
   {
     exit(1);
@@ -80,12 +80,14 @@ int main(int argc, char **argv)
   printf("\nPress Ctrl-C to exit...\n");
   while (!done)
   {
-    //print present position
     printf("\rPosition = %s\t",sprint_vn(buf,(vect_n*)wam->Jpos));
     fflush(stdout);
     usleep(100000); // Sleep for 0.1s
   }
 
+  btthread_stop(&wam_thd); //Kill WAMControlThread 
+  CloseWAM(wam);
+  exit(1);
 }
 
 

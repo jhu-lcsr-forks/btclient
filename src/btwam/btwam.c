@@ -133,7 +133,6 @@ wam_struct* OpenWAM(char *fn, char *robotName)
   btreal theta, d, a, alpha, mass, tmpdbl;
   vect_3 *com;
   wam_struct *wam;
-  char robotName[256];
   char key[256];
   long reply;
   int link;
@@ -242,6 +241,7 @@ wam_struct* OpenWAM(char *fn, char *robotName)
       parseGetVal(STRING, key, (void*)robotName);
   }
 
+  syslog(LOG_ERR, "robotName=%s", robotName);
   // Read park_location
   sprintf(key, "%s.home", robotName, link);
   parseGetVal(VECTOR, key, (void*)wam->park_location);

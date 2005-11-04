@@ -180,12 +180,11 @@ int main(int argc, char **argv)
 #else //BTOLDCONFIG
 #endif //BTOLDCONFIG
 
-    *robotName = NULL;
+    *robotName = 0; 
     for(i = 1; i < argc-1; i++){
         if(!strcmp(argv[i],"-n"))
-            strcpy(robotType, argv[i+1]);
+            strcpy(robotName, argv[i+1]);
     }
-
     wam = OpenWAM("wam.conf", robotName);
     if(!wam) {
         exit(1);

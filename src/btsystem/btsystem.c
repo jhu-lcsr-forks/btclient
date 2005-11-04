@@ -595,7 +595,7 @@ int EnumerateSystem()
     }
 
     //if number running != expected || number reset != expected, error, dump status, mode, temp to syslog
-
+#if 1 
     if ((running_cnt != expected_cnt) && (reset_cnt != expected_cnt))
     {
       syslog(LOG_ERR, "!!!!!!!!!!!!!!!!!!!TROUBLE!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -607,7 +607,7 @@ int EnumerateSystem()
       else
         return -4;
     }
-
+#endif
     //if all pucks on the bus were recently reset
     //if (reset_cnt == expected_cnt)
     //{
