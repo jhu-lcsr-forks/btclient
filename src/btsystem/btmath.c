@@ -2268,8 +2268,8 @@ void strto_mn(matr_mn* dest,char *str)
   local_vn(tmpvn,100);
   
   init_vn(tmpvn,100);
-  regcomp(&tra[0],"<[[:space:]]*(<[[:digit:][:space:],.+eE-]+>[[:space:],]*)+[[:space:]]*>",REG_EXTENDED );
-  regcomp(&tra[1],"<[[:space:]]*<.*>[[:space:]]*>",REG_EXTENDED );
+  regcomp(&tra[0],"<[[:space:]]*(<[[:digit:][:space:],.+eE-]+>[[:space:],]*)+[[:space:]]*>[[:space:]]*",REG_EXTENDED );
+  regcomp(&tra[1],"<[[:space:]]*<.*>[[:space:]]*>[[:space:]]*",REG_EXTENDED );
   regcomp(&tra[2],"<[[:digit:][:space:],.+eE-]+>",REG_EXTENDED );
   //printf("%s ...\n",str);
   if (!regexec(&tra[0],str,0,NULL,0) && !regexec(&tra[1],str,0,NULL,0)){
