@@ -333,6 +333,11 @@ int btParseGetVal(btparser *parse_obj,int type, char *find, void *loc)
 		    syslog(LOG_ERR, "btParseGetVal:Key[%s]=%s",find,sprint_vn(buf,(vect_n*)loc));
       #endif 
 		break;
+        case MATRIX:
+          strto_mn((matr_n *)loc, val);
+      #if BTDEBUG & BTDEBUG_PARSER
+		    syslog(LOG_ERR, "btParseGetVal:Key[%s]=%s",find,sprint_mn(buf,(matr_n*)loc));
+      #endif 
 		default:
 			return(1);
 		break;

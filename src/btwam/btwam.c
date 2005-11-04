@@ -243,9 +243,13 @@ wam_struct* OpenWAM(char *fn, char *robotName)
 
   syslog(LOG_ERR, "robotName=%s", robotName);
   // Read park_location
-  sprintf(key, "%s.home", robotName, link);
+  sprintf(key, "%s.home", robotName);
   parseGetVal(VECTOR, key, (void*)wam->park_location);
-
+  
+  // Read the worldframe->origin transform matrix
+  sprintf(key, "%s.world", robotName);
+  parseGetVal(MATRIX, key, (void*)wam->robot.world->origin);
+  
   for(link = 0; link <= wam->num_actuators; link++)
   {
     // Get the DH parameters
