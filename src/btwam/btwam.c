@@ -315,6 +315,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
 
   }
 
+  DefineWAMpos(wam, wam->park_location);
 
   // Link geometry - file
   // Link mass - file
@@ -437,6 +438,7 @@ void WAMControlThread(void *data)
   double thisperiod;
   RTIME rtime_period,sampleCount;
   wam_struct *wam;
+
 
   /* Set up timer*/
   this_thd = (btthread*)data;
