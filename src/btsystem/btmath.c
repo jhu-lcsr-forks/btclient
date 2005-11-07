@@ -2283,11 +2283,11 @@ void strto_mn(matr_mn* dest,char *str)
       sub = sub + matches[0].rm_eo;
       vect = sscan_vn(str1);
       setrow_mn(dest,vect,row);
-      print_vn(vect);
+      //print_vn(vect);
       
       destroy_vn(&vect);
       row++;
-      printf("\n:%s\n",str1); 
+      //printf("\n:%s\n",str1); 
     }
   }
   

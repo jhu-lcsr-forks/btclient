@@ -56,7 +56,7 @@ int main(int argc, char **argv)
   err = ReadSystemFromConfig("wam.conf"); 
 #else //BTOLDCONFIG
 #endif //BTOLDCONFIG    
-  wam = OpenWAM("wam.conf", NULL);
+  wam = OpenWAM("wam.conf", "");
   if(!wam)
   {
     exit(1);

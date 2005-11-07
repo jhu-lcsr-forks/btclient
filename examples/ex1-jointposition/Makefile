@@ -12,7 +12,7 @@ LDFLAGS = -L/usr/realtime/lib -L/usr/lib -L../../lib -lpthread -llxrt \
 
 default: ex1
 
-ex1: ${OBJS}
+ex1: ${OBJS} 
 	$(CC) -o ${TARG} ${OBJS} ${LDFLAGS}
 
 clean: 

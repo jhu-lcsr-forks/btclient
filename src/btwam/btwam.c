@@ -126,7 +126,7 @@ void InitVectors(wam_struct *wam){
   
   See #btwam_struct
 */
-wam_struct* OpenWAM(char *fn, char *robotName)
+wam_struct* OpenWAM(char *fn, char *rName)
 {
   int cnt,ret,err;
   const double pi = 3.14159;
@@ -136,6 +136,7 @@ wam_struct* OpenWAM(char *fn, char *robotName)
   char key[256];
   long reply;
   int link;
+  char robotName[256];
   
   wam = (wam_struct*)btmalloc(sizeof(wam_struct));
   // Allocate memory for the WAM vectors
@@ -235,10 +236,12 @@ wam_struct* OpenWAM(char *fn, char *robotName)
   }
   //strcpy(robotName, buses[0].device_name);
   
-  if(!*robotName){ // If no robot name was given
+  if(!*rName){ // If no robot name was given
       // Extract it from the config file
       sprintf(key, "system.bus[0].name");
       parseGetVal(STRING, key, (void*)robotName);
+  }else{
+	  strcpy(robotName, rName);
   }
 
   syslog(LOG_ERR, "robotName=%s", robotName);
