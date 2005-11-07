@@ -12,7 +12,7 @@
  *  NOTES:
  *
  *  REVISION HISTORY:
- *                                                                      *
+ *  '051107 TH Minimal documentation in place.                          *
  *======================================================================*/
 /** 
 
@@ -29,13 +29,6 @@
 vect_n * idxa_pwl(btpath_pwl *pth,int idx); //internal: 
 vect_n * idxb_pwl(btpath_pwl *pth,int idx); //internal: 
 int get_segment_pwl(btpath_pwl *pth,btreal s); //Given an arclength, find what segment we are. (binary search)
-
-/**
-  Paths define geometry in space.
-  Trajectories define a location and velocity as a function of time.
-  Paths are stored as functions of pathlength
-*/
-
 
 /** Allocate memory for a pwl data structure. Further allocation is done by init_pwl()
 
@@ -55,7 +48,7 @@ btpath_pwl * new_pwl()
 
 /** Initialize a piecewize linear path 
 
-Even some more
+Expects a preinitialized btpath_pwl object.
 */
 int init_pwl(btpath_pwl *pth, int vect_size,int rows)
 {
@@ -76,6 +69,10 @@ int init_pwl(btpath_pwl *pth, int vect_size,int rows)
   pth->endnode = 0;
   return 0;
 }
+
+/** Initializes a pwl path from an existing vectray.
+
+*/
 int init_pwl_from_vectray(btpath_pwl *pth,vectray *vr)
 {
   void* vmem;
@@ -112,7 +109,6 @@ void free_pwl(btpath_pwl *pth)
   btfree((void**)&(pth->s));
 }
 /** Break a curve paramaterized by t (usually time) into x(s) and s(t) | s = arclength. 
-
 
 */
 void new_param_by_arclen_pwl(btpath_pwl *pth, btpath_pwl *crv2)
@@ -151,8 +147,6 @@ vect_n * idxb_pwl(btpath_pwl *pth,int idx) //internal:
 { return getvn_vr(pth->tmp2,pth->vr,idx);}
 /** Adds a point to a path and computes the arclength which it uses as the
 parameter
-
-
 */
 int add_arclen_point_pwl(btpath_pwl *pth, vect_n *p)
 {
@@ -166,9 +160,7 @@ int add_arclen_point_pwl(btpath_pwl *pth, vect_n *p)
   
   return idx;
 }
-/** Adds a point to a path 
-
-
+/** Adds a point to a path with parameter s
 */
 int add_point_pwl(btpath_pwl *pth, vect_n *p, btreal s)
 {
@@ -195,6 +187,11 @@ int clear_pwl(btpath_pwl *pth)
   pth->segment = 0;
   
 }
+/** Add each element in a vectray to pth. 
+
+Uses the first column as the parameter s.
+
+*/
 int add_vectray_pwl(btpath_pwl *pth, vectray *vr)//use the first column for the parameter
 {
   vect_n *cpy;
@@ -243,10 +240,8 @@ int get_segment_pwl(btpath_pwl *pth,btreal s)
 btreal getnodes_pwl(btpath_pwl *pth,int idx)
 {
   return pth->s[idx];
-  
 }
 /** Find the point location at arc-distance s into the curve
-
 */
 vect_n * getval_pwl(btpath_pwl *pth, btreal s)
 {
@@ -324,6 +319,4 @@ btreal arclength_pwl(btpath_pwl *pth)
   return pth->s[idx];
   
 }
-
-
 

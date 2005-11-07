@@ -12,12 +12,22 @@
  *  NOTES:
  *
  *  REVISION HISTORY:
- *                                                                      *
+ *   '051107 TH Minimal documentation in place.                         *
  *======================================================================*/
 /** \file btrobot.h
-\brief serial robot kinematics & dynamics
+\brief Simple serial robot kinematics & dynamics math
 
-example usage
+We use DH paramaterization to define the robot. The structure of the robot is 
+stored as a list of link-frames. Additionally we also have User, World, and Tool 
+frames integrated for convinience.
+
+All intermediate results are stored in the link structure. As such, the forward
+kinematics are calculated in a single pass, after which, the transform and origin 
+matrices of each frame are available. (transform matrix: transform from previous frame to this frame.
+origin frame: transform from this frame to the origin)
+
+examples:
+Initialize a robot object:
 \code
   btrobot robot;
   new_bot(&robot,2);
@@ -28,7 +38,17 @@ example usage
   link_mass_bot(&robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
   tool_geom_bot(&robot,0.0,0.356,0.0,0.0);
   tool_mass_bot(&robot,C_v3(0.0,0.0,0.025),2.50);
-  
+\endcode
+Get the position of the end-point
+\code
+  while (1){
+    set_q_bot(&robot,Jpos,Jvel,Jacc); 
+    eval_fk_bot(&robot);  //forward kinematics
+    set_v3(Cpos,T_to_W_bot(&robot,C_v3(0,0,0));
+  }
+\endcode
+Apply a cartesian force-torque to the robot.
+\code
   while (1){
     set_q_bot(&robot,Jpos,Jvel,Jacc); 
     eval_fk_bot(&robot);  //forward kinematics
@@ -154,7 +174,7 @@ matr_h* Ln_to_W_trans_bot(btrobot* robot,int link); //return tranform matrix
 matr_h* T_to_W_trans_bot(btrobot* robot);
 
 void fk_btwam(btrobot* robot);  //forward kinematics optimized for the wam
-void fj_bot(btrobot* robot);
+void fj_bot(btrobot* robot); //forward jacobian
 void eval_fd_bot(btrobot* robot); //forward dynamics
 void apply_force_bot(btrobot* robot,int link, vect_3* pos, vect_3 *force, vect_3* torque);
 void apply_tool_force_bot(btrobot* robot, vect_3* pos, vect_3 *force, vect_3* torque);

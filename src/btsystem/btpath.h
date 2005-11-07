@@ -12,10 +12,17 @@
  *  NOTES:
  *
  *  REVISION HISTORY:
- *                                                                      *
+ *  '051107 TH Minimal documentation in place.                          *
  *======================================================================*/
 /** \file btpath.h
 \brief Piecewize space curve geometry
+
+The btpath_pwl object is a primitive meant for use either in trajectories or
+haptic curve geometry. It's main property is that it paramaterizes a curve
+by arc-length.
+
+Presently this object is only used by the #btstatecontrol point-to-point move
+code.
 
 */
 #ifndef _BTPATH_H
@@ -35,7 +42,9 @@ btpath_pwl is for N dimensional piecewize linear curves
 
  The parameter s is assumed to be monotonically increasing.
 
-
+  Paths define geometry in space.
+  Trajectories define a location and velocity as a function of time.
+  Paths are stored as functions of pathlength
 
 
 */

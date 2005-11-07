@@ -12,7 +12,7 @@
  *  NOTES:
  *
  *  REVISION HISTORY:
- *                                                                      *
+ *  '051107 TH Minimal documentation in place.                          *
  *======================================================================*/
 
 #include <math.h>
@@ -100,8 +100,9 @@ int new_bot(btrobot* robot, int nlinks)
 }
 
 
-/** Define the DH parameters of the specified link
-  the value passed for the joint parameter (theta or d depending on revolute or prismatic joint)
+/** Define the DH parameters of the specified link.
+
+  The value passed for the joint parameter (theta or d depending on revolute or prismatic joint)
   is an offset to allow specification of where the joint zero position is.
 */
 void link_geom_bot(btrobot* robot, int link, double theta, double d, double a, double alpha)
@@ -121,8 +122,9 @@ void link_geom_bot(btrobot* robot, int link, double theta, double d, double a, d
   set_v3(robot->links[link].Rl,matTXvec_m3(robot->links[link].trans,robot->links[link].Rl));
   robot->links[link].has_geom = 1;
 }
-/** Define the DH parameters of the tool
-  the value passed for the joint parameter (theta or d depending on revolute or prismatic joint)
+/** Define the DH parameters of the tool.
+
+  The value passed for the joint parameter (theta or d depending on revolute or prismatic joint)
   is an offset to allow specification of where the joint zero position is.
 */
 void tool_geom_bot(btrobot* robot,double theta, double d, double a, double alpha)
@@ -205,6 +207,8 @@ void set_gravity_bot(btrobot* robot, double Gscale) //set value to scale effect 
   for (cnt = 0;cnt < robot->num_links + 1;cnt++)
     robot->links[cnt].Gscale = Gscale;
 }
+/** Get the present gravity scaling
+*/
 btreal get_gravity_bot(btrobot* robot)
 {
   return robot->links[0].Gscale;
@@ -254,6 +258,13 @@ void eval_fk_bot(btrobot* robot) //forward kinematics
     getcol_mh(robot->tool->z,robot->tool->origin,2);
     getcol_mh(robot->tool->o,robot->tool->origin,3);
 }
+/** Extract the jacobian from the eval_fk_bot() calcs.
+
+ J = [J1J2J3J4J5...]
+ Ji(v) = [z(i-1)X(On - O(i-1)]
+ Ji(w) = [z(i-1)]
+
+*/
 void eval_fj_bot(btrobot* robot) //forward jacobian
 {
   
@@ -303,6 +314,9 @@ matr_h* Ln_to_W_trans_bot(btrobot* robot,int link) //return tranform matrix
 {
   return robot->links[link].origin;
 }
+/** Returns a pointer to the transform matrix between the world frame and the
+tool frame.
+*/
 matr_h* T_to_W_trans_bot(btrobot* robot)
 {
   return robot->tool->origin;
@@ -311,6 +325,7 @@ matr_h* T_to_W_trans_bot(btrobot* robot)
 //void fj_bot(btrobot* robot);
 /** Calculate RNE forward dynamics for robot.
 
+eval_fk_bot() Must have been called previously.
 */
 
 void eval_fd_bot(btrobot* robot) //forward dynamics
@@ -381,6 +396,11 @@ void eval_fd_bot(btrobot* robot) //forward dynamics
 
 }
 /** Calculate RNE backward dynamics for robot.
+
+eval_fk_bot() ,eval_fd_bot(). Must have been called previously.
+
+Gravity, along with any external forces applied with 
+apply_force_bot() will be calculated.
 
 */
 void eval_bd_bot(btrobot* robot) //backward kinematics
@@ -487,23 +507,6 @@ void apply_tool_force_bot(btrobot* robot, vect_3* pos, vect_3 *force, vect_3* to
     add_v3(robot->tool->eforce.f,matTXvec_m3(robot->tool->origin,force)));
 }
 
-void init_4dof_wam_bot(btrobot* robot)
-{
-  const double pi = 3.14159;
-  new_bot(robot,4);
-  
-  link_geom_bot(robot,0,0.0,0.0,0.0,-pi/2.0);
-  link_geom_bot(robot,1,0.0,0.0,0.0,pi/2.0);
-  link_geom_bot(robot,2,0.0,0.550,0.045,-pi/2.0);
-  link_geom_bot(robot,3,0.0,0.0,-0.045,pi/2.0);
-  tool_geom_bot(robot,0.0,0.3574,0.0,0.0);
-  
-  link_mass_bot(robot,0,C_v3(0.0,0.1405,-0.0061),12.044);
-  link_mass_bot(robot,1,C_v3(0.0,-0.0166,0.0096),5.903);
-  link_mass_bot(robot,2,C_v3(-0.0443,0.2549,0.0),2.08);
-  link_mass_bot(robot,3,C_v3(0.01465,0.0,0.1308),1.135);
-  tool_mass_bot(robot,C_v3(0.0,0.0,0.0235),2.148);
-}
 
 void dumptofile_bot(btrobot* robot)
 {
