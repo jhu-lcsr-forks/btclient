@@ -45,7 +45,6 @@ it to properly establish the time values.
 /*==============================*
  * INCLUDES - Project Files     *
  *==============================*/
-
 #include "btwam.h"
 #include "bthaptics.h"
 
@@ -56,7 +55,7 @@ it to properly establish the time values.
 /*==============================*
  * PRIVATE MACRO definitions    *
  *==============================*/
-#define fer(_x_,_y_) for (_x_ = 0;_x_ < _y_;_x_++)
+
 /*==============================*
  * PRIVATE typedefs and structs *
  *==============================*/
@@ -64,16 +63,12 @@ it to properly establish the time values.
 /*==============================*
  * GLOBAL file-scope variables  *
  *==============================*/
-
-
 pthread_mutex_t disp_mutex;
 
 int entryLine;
 
 int useGimbals      = FALSE;
 int done            = FALSE;
-
-int gcompToggle = 0;
 
 btstatecontrol *active_bts;
 
@@ -97,8 +92,6 @@ static RT_TASK *mainTask;
 btthread disp_thd,wam_thd;
 double sample_rate;
 /******* Haptics *******/
-
-
 btgeom_plane myplane,plane2,planes[10];
 bteffect_wall mywall,wall[10];
 bteffect_wickedwall mywickedwall,mywickedwall2,wickedwalls[10];
@@ -110,7 +103,6 @@ bteffect_global myglobal;
 vect_3 *p1,*p2,*p3,*zero_v3;
 bthaptic_scene bth;
 btgeom_state pstate;
-
 
 /*==============================*
  * PRIVATE Function Prototypes  *
@@ -131,11 +123,8 @@ void init_haptics(void);
 /*==============================*
  * Functions                    *
  *==============================*/
-
-
 /** Entry point for the application.
     Initializes the system and executes the main event loop.
- 
 */
 int main(int argc, char **argv)
 {
@@ -150,7 +139,6 @@ int main(int argc, char **argv)
     init_ncurses();
     atexit((void*)endwin);
 
-
     /* Initialize syslog */
     openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
     atexit((void*)closelog);
@@ -160,7 +148,7 @@ int main(int argc, char **argv)
         pthread_mutex_init(&(disp_mutex),NULL),
         "Could not initialize mutex for displays.");
 
-
+    /* Lead the user through a proper WAM startup */
     mvprintw(1,0,"Make sure the all WAM power and signal cables are securely");
     mvprintw(2,0,"fastened, then turn on the main power to WAM and press <Enter>");
     while((chr=getch())==ERR)
@@ -169,84 +157,81 @@ int main(int argc, char **argv)
     mvprintw(5,0,"on the control pendant. Then press <Enter>");
     while((chr=getch())==ERR)
         usleep(5000);
-
     mvprintw(7,0,"Place WAM in its home (folded) position, then press <Enter>");
     while((chr=getch())==ERR)
         usleep(5000);
 
 #ifndef BTOLDCONFIG
-
     err = ReadSystemFromConfig("wam.conf");
 #else //BTOLDCONFIG
 #endif //BTOLDCONFIG
-
+    /* If the robot name was given on the command line, use it */
     *robotName = 0; 
     for(i = 1; i < argc-1; i++){
         if(!strcmp(argv[i],"-n"))
             strcpy(robotName, argv[i+1]);
     }
-    wam = OpenWAM("wam.conf", robotName);
-    if(!wam) {
+    
+    /* Initialize and get a handle to the robot */
+    if(!(wam = OpenWAM("wam.conf", robotName)))
         exit(1);
-    }
 
-
-    /* Check and handle any command line arguments */
-    if(argc > 1) {
-        if(!strcmp(argv[1],"-g")) // If gimbals are being used
+    /* Check and handle any additional command line arguments */
+    for(i = 1; i < argc-1; i++){
+        if(!strcmp(argv[i],"-g")) // If gimbals are being used
         {
             initGimbals(wam);
-            useGimbals = 1;
+            useGimbals = TRUE;
             syslog(LOG_ERR, "Gimbals expected.");
         }
     }
 
+    /* Register the ctrl-c interrupt handler */
+    signal(SIGINT, sigint_handler);
 
-    /* Obtain a pointer to the wam state object */
-    //wam = GetWAM();
-
-    signal(SIGINT, sigint_handler); //register the interrupt handler
-
+    /* Set the safety limits */
     setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
-    //setProperty(0,10,TL2,FALSE,8200);
 
-    DefineWAMpos(wam,wam->park_location);
-
-    //prep modes
+    // const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
+    // DefineWAMpos(wam, wv);
+    
+    /* Prepare MODE */
     jdest = new_vn(len_vn(wam->Jpos));
     cdest = new_vn(len_vn(wam->R6pos));
-
+    
     active_bts = &(wam->Jsc);
     setmode_bts(active_bts,SCMODE_IDLE);
     active_pos = wam->Jpos;
     active_trq = wam->Jtrq;
     active_dest = jdest;
     prev_mode = SCMODE_IDLE;
-
-    //new trajectory
+    
+    /* Create a new trajectory */
     vt_j = new_vta(len_vn(active_pos),50);
     vta = &vt_j;
     register_vta(active_bts,*vta);
-
+    
     active_file[0] = 0;
 
     init_haptics();
 
+    /* Spin off the WAM control thread */
     wam_thd.period = 0.002;
     btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)wam);
 
+    /* Spin off the display thread */
     btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
 
     while (!done) {
+        /* Check the active trajectory for completion */
         if (get_trjstate_bts(active_bts) == BTTRAJ_DONE) {
             stop_trj_bts(active_bts);
             setmode_bts(active_bts,prev_mode);
         }
-        if ((chr = getch()) != ERR) //Check buffer for keypress
+        
+        /* Check and handle user keypress */
+        if ((chr = getch()) != ERR)
             ProcessInput(chr);
-
-        //evalDL(&(wam->log));
-        //ServiceContinuousTeach(wam);
 
         usleep(100000); // Sleep for 0.1s
     }
@@ -335,8 +320,6 @@ void sigint_handler()
     exit(1);
 }
 
-
-
 /** Spins in a loop, updating the screen.
     Runs as its own thread, updates the screen.
 */
@@ -389,95 +372,102 @@ void finish_entry()
 */
 void RenderMAIN_SCREEN()
 {
-    //int val;
-    int cnt, idx,Mid,cp;
-    int line,line2;
-    int cpt,nrows;
+    int cnt, idx, Mid, cp;
+    int line, line2;
+    int cpt, nrows;
     double gimb[4];
     vectray* vr;
     char vect_buf1[250];
 
-    //clear();
     /***** Display the interface text *****/
     line = 0;
-    //mvprintw(line , 0, "012345678 1 2345678 2 2345678 3 2345678 4 2345678 5 2345678 6 2345678 7 2345678-8");++line;
 
-    mvprintw(line , 0, "Barrett Technology - BTdiag");
-
-    if (active_bts == &(wam->Jsc)) {
-        mvprintw(line , 30, "Mode: Joint Space    ");
-    } else if (active_bts == &(wam->Csc)) {
-        mvprintw(line , 30, "Mode: Cartesian Space");
-    } else {
-        mvprintw(line , 30, "Mode: Undefined!!!   ");
-    }
+    mvprintw(line , 0, "Barrett Technology - Diagnostic Application");
     line+=2;
 
-    if (cteach)
-        mvprintw(line , 50, "Teaching continuous trajectoy");
-    else if (vta == NULL)
-        mvprintw(line , 50, "Trajectory: NONE             ");
-    else
-        mvprintw(line , 50, "Trajectory: %s",active_file);
-
+    // Show MODE
+    if (active_bts == &(wam->Jsc)) {
+        mvprintw(line, 0, "Mode       : Joint Space    ");
+    } else if (active_bts == &(wam->Csc)) {
+        mvprintw(line, 0, "Mode       : Cartesian Space");
+    } else {
+        mvprintw(line, 0, "Mode       : Undefined!!!   ");
+    }
+    ++line;
+    
+    // Show CONSTRAINT
     if (getmode_bts(active_bts)==SCMODE_IDLE)
-        mvprintw(line , 24, "Constraint: IDLE      ");
+        mvprintw(line, 0, "Constraint : IDLE      ");
     else if (getmode_bts(active_bts)==SCMODE_POS)
-        mvprintw(line , 24, "Constraint: POSITION  ");
+        mvprintw(line, 0, "Constraint : POSITION  ");
     else if (getmode_bts(active_bts)==SCMODE_TRJ)
-        mvprintw(line , 24, "Constraint: TRAJECTORY");
+        mvprintw(line, 0, "Constraint : TRAJECTORY");
     else
-        mvprintw(line , 24, "Constraint: UNDEFINED!");
-
+        mvprintw(line, 0, "Constraint : UNDEFINED!");
+    line+=2;
+    
+    // Show TRAJECTORY
+    if (cteach)
+        mvprintw(line, 0, "Trajectory : Teaching continuous trajectoy");
+    else if (*vta == NULL)
+        mvprintw(line, 0, "Trajectory : NONE                         ");
+    else
+        mvprintw(line, 0, "Trajectory : %s                           ",*active_file?active_file:"NONE");
     ++line;
-    mvprintw(line , 0, "Vel: %+8.4f Acc: %+8.4f  Dest:%s ",vel,acc,sprint_vn(vect_buf1,active_dest));
-
-    line+=3;
-    mvprintw(line, 0 , "Position :%s ", sprint_vn(vect_buf1,active_pos));
+    mvprintw(line, 0, "Velocity   : %+8.4f  ",vel);
     ++line;
-    mvprintw(line, 0 , "Target :%s ", sprint_vn(vect_buf1,active_bts->qref));
+    mvprintw(line, 0, "Accel      : %+8.4f  ",acc);
     ++line;
-    mvprintw(line, 0 , "Force :%s ", sprint_vn(vect_buf1,active_trq));
-
-    line+=3;
-    if (*vta != NULL) {//print current point
+    mvprintw(line, 0, "Destination: %s ",sprint_vn(vect_buf1,active_dest));
+    line+=2;
+    
+    mvprintw(line, 0, "Position   : %s ", sprint_vn(vect_buf1,active_pos));
+    ++line;
+    mvprintw(line, 0, "Target     : %s ", sprint_vn(vect_buf1,active_bts->qref));
+    ++line;
+    mvprintw(line, 0, "Force      : %s ", sprint_vn(vect_buf1,active_trq));
+    line+=2;
+    
+    if (*vta != NULL) { // print current point
         vr = get_vr_vta(*vta);
         cpt = get_current_idx_vta(*vta);
         nrows = numrows_vr(vr);
-        mvprintw(line,0,"Current Index:%d of %d    ",cpt,nrows-1);
+        mvprintw(line,0,"Teach Point: %d of %d      ",cpt,nrows-1);
         line++;
 
-        mvprintw(line, 0 ,   "Previos Teach Point :                                                       ");
-        mvprintw(line+1, 0 , "Current Teach Point :                                                       ");
-        mvprintw(line+2, 0 , "   Next Teach Point :                                                       ");
+        mvprintw(line  , 0 , "Previous   :\t\t\t\t\t\t\t\t\t\t");
+        mvprintw(line+1, 0 , "Current    :\t\t\t\t\t\t\t\t\t\t");
+        mvprintw(line+2, 0 , "Next       :\t\t\t\t\t\t\t\t\t\t");
 
+        // Previous
+        if (nrows > 0 && cpt > 0)
+            mvprintw(line, 13,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt-1)));
+        
+        // Current
         if (nrows > 0) {
             if (nrows != cpt)
-                mvprintw(line+1, 21 , "%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt)));
+                mvprintw(line+1, 13 , "%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt)));
             else
-                mvprintw(line+1, 21 , "END OF LIST                                      ");
+                mvprintw(line+1, 13 , "END OF LIST");
         } else
-            mvprintw(line+1, 21 , "EMPTY LIST                                      ");
+            mvprintw(line+1, 13 , "EMPTY LIST");
 
-        if (nrows >0 && cpt > 0)
-            mvprintw(line, 21,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt-1)));
-
-        if (nrows >1)
+        // Next
+        if (nrows > 1)
             if (cpt < nrows-1)
-                mvprintw(line+2, 21,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt+1)));
+                mvprintw(line+2, 13,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt+1)));
             else if (cpt == nrows-1)
-                mvprintw(line+2, 21, "END OF LIST                                       ");
-        line +=3;
+                mvprintw(line+2, 13, "END OF LIST");
+        line += 3;
     } else {
         line++;
         line++;
         mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
-        line +=2;
+        line += 2;
     }
-    line+=3;
+    line += 3;
 
     mvprintw(line,0,"bts: state:%d",active_bts->mode);
-    //if(active_bts->btt.dat != NULL)
     mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
     entryLine = line + 2;
     refresh();
@@ -520,11 +510,9 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         SetGravityComp(wam,tvel);
         finish_entry();
         break;
-
     case '_':  /* Refresh display */
         clearScreen();
         break;
-
     case '\t': /* Switch between jointspace and cartesian space trajectories*/
         destroy_vta(vta); //empty out the data if it was full
         setmode_bts(&(wam->Jsc),SCMODE_IDLE);
@@ -558,7 +546,6 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         else
             setmode_bts(active_bts,SCMODE_POS);
         break;
-
     case '.':  /* Play presently loaded trajectory */
         moveparm_bts(active_bts,vel,acc);
         active_bts->loop_trj = 0;
@@ -567,7 +554,6 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             setmode_bts(active_bts,SCMODE_POS);
         start_trj_bts(active_bts);
         break;
-
     case 'b':  /* Simulate presently loaded trajectory */
         sim_vta(*vta,0.002,getval_vn(idx_vr(get_vr_vta(*vta),numrows_vr(get_vr_vta(*vta))-1),0),"sim.csv");
         break;
@@ -583,7 +569,6 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         stop_trj_bts(active_bts);
         setmode_bts(active_bts,prev_mode);
         break;
-
     case 'Y':  /* Start continuos teach */
         if (active_bts == &(wam->Jsc))
             StartContinuousTeach(wam,1,25,"teachpath");
@@ -603,7 +588,6 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         *vta = read_file_vta(active_file,20);
         register_vta(active_bts,*vta);
         break;
-        //Free mode:
     case 'l':  /* Load trajectory file */
         if(getmode_bts(active_bts)!=SCMODE_TRJ) {
             start_entry();
@@ -623,7 +607,6 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             finish_entry();
         }
         break;
-
     case 'w':  /*  Save trajectory to a file */
         if(getmode_bts(active_bts)!=SCMODE_TRJ) {
             start_entry();
@@ -715,7 +698,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             addstr("Enter trajectory velocity: ");
             refresh();
             ret = scanw("%lf\n", &vel);
-            if(vta != NULL)
+            if(*vta != NULL)
                 dist_adjust_vta(*vta,vel);
             finish_entry();
         }
@@ -784,35 +767,4 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         break;
     }
 }
-
-/*======================================================================*
- *                                                                      *
- *          Copyright (c) 2005 Barrett Technology, Inc.                 *
- *                        625 Mount Auburn St                           *
- *                    Cambridge, MA  02138,  USA                        *
- *                                                                      *
- *                        All rights reserved.                          *
- *                                                                      *
- *  ******************************************************************  *
- *                            DISCLAIMER                                *
- *                                                                      *
- *  This software and related documentation are provided to you on      *
- *  an as is basis and without warranty of any kind.  No warranties,    *
- *  express or implied, including, without limitation, any warranties   *
- *  of merchantability or fitness for a particular purpose are being    *
- *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
- *  Technology, Inc. be liable for any lost development expenses, lost  *
- *  lost profits, or any incidental, special, or consequential damage.  *
- *======================================================================*/
-
-
-
-
-
-
-
-
-
-
-
 
