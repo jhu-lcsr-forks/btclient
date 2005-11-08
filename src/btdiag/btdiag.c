@@ -559,7 +559,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             setmode_bts(active_bts,SCMODE_POS);
         break;
 
-    case '.':  /* Play presontly loaded trajectory */
+    case '.':  /* Play presently loaded trajectory */
         moveparm_bts(active_bts,vel,acc);
         active_bts->loop_trj = 0;
         prev_mode = getmode_bts(active_bts);
@@ -568,10 +568,10 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         start_trj_bts(active_bts);
         break;
 
-    case ',':  /* Simulate presently loaded trajectory */
+    case 'm':  /* Simulate presently loaded trajectory */
         sim_vta(*vta,0.002,getval_vn(idx_vr(get_vr_vta(*vta),numrows_vr(get_vr_vta(*vta))-1),0),"sim.csv");
         break;
-    case '?':  /* Play presontly loaded trajectory */
+    case '?':  /* Play presently loaded trajectory */
         moveparm_bts(active_bts,vel,acc);
         active_bts->loop_trj = 1;
         prev_mode = getmode_bts(active_bts);
@@ -579,7 +579,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             setmode_bts(active_bts,SCMODE_POS);
         start_trj_bts(active_bts);
         break;
-    case '/':  /* Stop presontly loaded trajectory */
+    case '/':  /* Stop presently loaded trajectory */
         stop_trj_bts(active_bts);
         setmode_bts(active_bts,prev_mode);
         break;
@@ -709,18 +709,29 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             del_point_vta(*vta);
         }
         break;
-    case 's':  /* Scale the present trajectory */
+    case 's':  /* Set point times by defining a velocity */
         if(getmode_bts(active_bts)==SCMODE_IDLE) {
             start_entry();
             addstr("Enter trajectory velocity: ");
             refresh();
             ret = scanw("%lf\n", &vel);
             if(vta != NULL)
-                dist_scale_vta(*vta,vel,acc);
+                dist_adjust_vta(*vta,vel);
             finish_entry();
         }
         break;
-    case 'S':  /* Set the corner acceleration */
+    case 'S':  /* Scale the present trajectory in time*/
+        if(getmode_bts(active_bts)==SCMODE_IDLE) {
+            start_entry();
+            addstr("Enter scale factor: ");
+            refresh();
+            ret = scanw("%lf\n", &vel);
+            if(vta != NULL)
+                time_scale_vta(*vta,vel);
+            finish_entry();
+        }
+        break;
+    case 'A':  /* Set the corner acceleration */
         if(getmode_bts(active_bts)==SCMODE_IDLE) {
             start_entry();
             addstr("Enter Corner Acceleration: ");
@@ -731,6 +742,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             finish_entry();
         }
         break;
+    case ',': /* if PAUSING or PAUSED : Unpause*/
+      status =  movestatus_bts(active_bts);
+        if (status == BTTRAJ_PAUSING || status == BTTRAJ_PAUSED)
+          unpause_trj_bts(active_bts);
+        else
+          pause_trj_bts(active_bts); 
+      break;
+        
     case 27: //Handle and discard extended keyboard characters (like arrows)
         if ((chr = getch()) != ERR) {
             if (chr == 91) {

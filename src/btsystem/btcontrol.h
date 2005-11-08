@@ -325,7 +325,11 @@ typedef struct
 {
   via_trj* trj;
   int elements;
-  double vel;
+  /** 
+  
+  When adding new points this velocity is used to calculate new time values.
+  */
+  double vel;  
 }via_trj_array;
 /*Memory Management API*/
 //via_trj_array* malloc_new_vta(int num_columns);
@@ -345,10 +349,10 @@ int get_current_idx_vta(via_trj_array* vt);
 int set_current_idx_vta(via_trj_array* vt,int idx);
 void get_current_point_vta(via_trj_array* vt, vect_n *dest);
 
-int dist_scale_vta(via_trj_array* vt,double vel,double acc);
+int dist_adjust_vta(via_trj_array* vt,double vel); //
 int time_scale_vta(via_trj_array* vt,double s);
 void set_acc_vta(via_trj_array* vt,btreal acc);
-
+void set_vel_vta(via_trj_array* vt,btreal acc);
 //File I/O
 void write_file_vta(via_trj_array* vt,char *filename);
 via_trj_array* read_file_vta(char* filename,int extrapoints);

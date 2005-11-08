@@ -969,9 +969,18 @@ void set_acc_vta(via_trj_array* vt,btreal acc)
 {
   int cnt;
   if (vt != NULL)
-  for(cnt = 0;cnt < vt->elements;cnt++){
-    SetAcc_vt(&(vt->trj[cnt]),acc);
-  }
+    for(cnt = 0;cnt < vt->elements;cnt++){
+      SetAcc_vt(&(vt->trj[cnt]),acc);
+    }
+}
+
+/** set velocity used when adding points
+\internal chk'd TH 051103
+*/
+void set_vel_vta(via_trj_array* vt,btreal vel)
+{
+  if (vt != NULL)
+    vt->vel = vel;
 }
 /** Allocate a vta object and vectray objects.
 
@@ -1115,6 +1124,7 @@ int set_current_idx_vta(via_trj_array* vt,int idx)
 void get_current_point_vta(via_trj_array* vt, vect_n *dest)
 {
   vectray *vr;
+  if (vt == NULL) return;
   vr = vt->trj[0].vr;
   set_vn(dest,edit_vr(vr));
 }
@@ -1137,7 +1147,7 @@ based on input velocity. Also sets the corner acceleration.
 \internal chk'd TH 051103
 \todo Need to include acceleration in the calculation.
 */
-int dist_scale_vta(via_trj_array* vt,double vel,double acc)
+int dist_adjust_vta(via_trj_array* vt,double vel)
 {
   btreal arclen = 0.0,thislen;
   vectray *vr;
@@ -1147,7 +1157,6 @@ int dist_scale_vta(via_trj_array* vt,double vel,double acc)
   if (vt == NULL) return -1;
   
   vt->vel = vel;
-  set_acc_vta(vt,acc);
   
   vr = vt->trj[0].vr;
   setval_vn(idx_vr(vr,0),0,0.0);
@@ -1191,7 +1200,8 @@ vect_n* reset_vta(via_trj_array* vt,double dt,vect_n* qref)
 {
   double ret;
   int cnt;
-
+  if (vt == NULL) return qref;
+  
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
     setval_vn(qref,cnt,start_via_trj(&(vt->trj[cnt]),cnt));
@@ -1203,6 +1213,9 @@ vect_n* eval_vta(via_trj_array* vt,double dt,vect_n* qref)
 {
   double ret;
   int cnt;
+  
+  if (vt == NULL) return qref;
+  
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
     setval_vn(qref,cnt,eval_via_trj(&(vt->trj[cnt]),dt));
