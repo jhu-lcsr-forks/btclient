@@ -45,7 +45,7 @@ int main(int argc, char **argv)
     int  useGimbals = 0;
     int  err, i;
     char robotName[128];
-
+    
     /* Initialize syslog */
     openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
     atexit((void*)closelog);
@@ -83,9 +83,14 @@ int main(int argc, char **argv)
     wam_thd.period = 0.002;
     btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)wam);
 
+    printf("\nActivate the WAM, then press <Enter>");
+    fflush(stdout);
+    fgetc(stdin);
+    SetGravityComp(wam, 1.0); // Set gravity scale to 1.0g
+    
     printf("\nPress Ctrl-C to exit...\n");
     while(1) {
-        printf("\rPosition = %s\t",sprint_vn(buf,(vect_n*)wam->Jpos));
+        printf("\rJoint Torque = %s\t",sprint_vn(buf,(vect_n*)wam->Jtrq));
         fflush(stdout);
         usleep(100000); // Sleep for 0.1s
     }

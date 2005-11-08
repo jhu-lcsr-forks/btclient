@@ -207,7 +207,7 @@ int main(int argc, char **argv)
     /* Spin off the display thread */
     btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
 
-    while (!done) {
+    while(!done) {
         /* Check the active trajectory for completion */
         if (get_trjstate_bts(active_bts) == BTTRAJ_DONE) {
             stop_trj_bts(active_bts);
@@ -222,7 +222,7 @@ int main(int argc, char **argv)
     }
 
     btthread_stop(&wam_thd); //Kill WAMControlThread
-
+    CloseWAM(wam);
     exit(1);
 }
 
