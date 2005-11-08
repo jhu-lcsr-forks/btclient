@@ -315,7 +315,15 @@ wam_struct* OpenWAM(char *fn, char *rName)
 
   }
 
-  DefineWAMpos(wam, wam->park_location);
+  /* If the WAM is already zeroed, note it- else, zero it */
+  getProperty(wam->act[0].bus, SAFETY_MODULE, ZERO, &reply);
+  if(reply){
+      wam->isZeroed = TRUE;
+      syslog(LOG_ERR, "WAM was already zeroed");
+  }else{
+      DefineWAMpos(wam, wam->park_location);
+      syslog(LOG_ERR, "WAM zeroed by application");
+  }
 
   // Link geometry - file
   // Link mass - file
