@@ -497,7 +497,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 {
     int cnt,elapsed = 0;
     double ftmp,tacc,tvel;
-    int dtmp;
+    int dtmp,status;
 
     char fn[250],chr;
     int ret;
@@ -568,7 +568,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         start_trj_bts(active_bts);
         break;
 
-    case 'm':  /* Simulate presently loaded trajectory */
+    case 'b':  /* Simulate presently loaded trajectory */
         sim_vta(*vta,0.002,getval_vn(idx_vr(get_vr_vta(*vta),numrows_vr(get_vr_vta(*vta))-1),0),"sim.csv");
         break;
     case '?':  /* Play presently loaded trajectory */
@@ -745,9 +745,9 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     case ',': /* if PAUSING or PAUSED : Unpause*/
       status =  movestatus_bts(active_bts);
         if (status == BTTRAJ_PAUSING || status == BTTRAJ_PAUSED)
-          unpause_trj_bts(active_bts);
+          unpause_trj_bts(active_bts,2);
         else
-          pause_trj_bts(active_bts); 
+          pause_trj_bts(active_bts,2); 
       break;
         
     case 27: //Handle and discard extended keyboard characters (like arrows)
