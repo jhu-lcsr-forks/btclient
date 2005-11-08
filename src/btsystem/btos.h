@@ -20,6 +20,10 @@
 /** \file btos.h
     \brief Operating system abstractions and helpers.
 
+
+   
+\section BTOS 
+    
 The btos module is a thin layer between barrett technologies code and the operating system.
 Additionally, global defines can go here also. Virtually every Barrett library
 source file will use this.
@@ -48,7 +52,40 @@ be done on incoming functions
 from thier own idiocy.
 - BT_BACKTRACE: Dump backtrace info into bterrors.txt
 - BTDEBUG (This is a long bitfield)
-*//*
+*/
+/**
+\page  boc Barrett Object Conventions
+
+Much of the btsystem and btwam libraries are written in an object oriented style.
+OOP in C is less clean but easier to bind to other languages. 
+To keep things sane, we follow certain conventions when working with the objects
+used in our library. Since this is C and not C++; it's trickier. Treat the 
+following functionname_obj() as reserved functions.
+
+ - Pointers: Pointers to objects should be initialized to a NULL value.
+             A NULL object pointer is treated as on empty pointer and is handled 
+             gracefully. When an object is destroyed; It's referencing pointer is
+             set to NULL.
+             
+ - Object memory allocation: 
+   - malloc_obj() - Allocate memory for this object and sub-objects.
+   - local_obj() - Macro for allocating this object on the local function stack. (It will be deallocated when the function exits)
+   - sizeof_obj() - Size in bytes needed for an instance of this object
+   - destroy_obj() - Free memory and set referencing pointer to NULL
+   
+ - Object initialization:
+   - initval_obj() - Initialize the values in the object to sane values
+   - initptr_obj() - Initialize the structure of the object (inter-object pointers)
+   
+ - Compound functions:
+   - init_obj() - Initialize values and structure of the object.
+   - new_obj() - Allocate memory for the object and initialization.
+\internal
+\todo Update all of btclient to use these conventions.
+
+*/
+
+/*
 Global Values 0-32
   - 0 No debugging code compiled in
   - 1 Sanity warnings

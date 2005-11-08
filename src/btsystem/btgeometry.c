@@ -22,7 +22,11 @@
 #include "btmath.h"
 #include "btgeometry.h"
 #include <syslog.h>
+/** Initialize the state tracking object 
 
+\internal Mixed initialization and allocation. fix me per conventions in 
+btos.h
+*/
 void init_state_btg(btgeom_state *bts,btreal samplerate,btreal cutoffHz)
 {
   bts->pos = new_v3();
@@ -33,14 +37,21 @@ void init_state_btg(btgeom_state *bts,btreal samplerate,btreal cutoffHz)
   init_btfilter_vn_diff(bts->velfilt,2,samplerate,cutoffHz);
   init_btfilter_vn_diff(bts->accfilt,2,samplerate,cutoffHz);
 }
+/** Update the state object using the given position.
 
+*/
 void eval_state_btg(btgeom_state *bts,vect_3* pos)
 {
   set_v3(bts->pos,pos);
   set_v3(bts->vel,(vect_3*)eval_btfilter_vn(bts->velfilt, (vect_n*)bts->pos));
   set_v3(bts->acc,(vect_3*)eval_btfilter_vn(bts->accfilt, (vect_n*)bts->vel));
 }
+/** Define a plane from 3 points
 
+  The normal of the plane is defined by the right-hand rule. ie if you draw 3
+  (non colinear) points on a page, the normal will point out of the page if they 
+  are ordered 1-3 counter-clockwise.
+*/
 int init_pl_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3)
 {
   vect_3 * rel2;
@@ -57,7 +68,7 @@ int init_pl_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3)
   plane->distance = dot_v3(plane->normal, pt1);
   
 }
-
+/** Distance & Normal between a point and a plane. */
 btreal D_Pt2Pl(vect_3 *norm,btgeom_plane *plane, vect_3 *point)
 {
   btreal Dist;
@@ -65,7 +76,12 @@ btreal D_Pt2Pl(vect_3 *norm,btgeom_plane *plane, vect_3 *point)
   set_v3(norm,plane->normal); //dist from point to plane surface
   return Dist;
 }
+/** Create a sphere object 
 
+\param pt1 Center of sphere.
+\param pt2 Edge of sphere.
+\param inside 0 = Box is solid inside. 1 = Box is hollow.
+*/
 int init_sp_btg( btgeom_sphere *sphere, vect_3 *pt1, vect_3 *pt2,int inside)
 {
   
@@ -75,7 +91,7 @@ int init_sp_btg( btgeom_sphere *sphere, vect_3 *pt1, vect_3 *pt2,int inside)
   sphere->radius = norm_v3(sub_v3(pt1,pt2));
   sphere->inside = inside;
 }
-
+/** Distance & Normal between a sphere and a point. */
 btreal D_Pt2Sp(vect_3 *norm,btgeom_sphere *sp, vect_3 *pt)
 {
   btreal Dist;
@@ -92,7 +108,23 @@ btreal D_Pt2Sp(vect_3 *norm,btgeom_sphere *sp, vect_3 *pt)
   
   return Dist;
 }
+/** Create a box object.
 
+The plane that contains points 1, 2, &3 is the reference side. The normal 
+of the plane determines the matching sidewall (thk away).
+The vector from point 1 to 2 is the normal for the next two sidewalls. They 
+will be placed distance dir1/2 away from pt1.
+The vector in the plane, normal to the 1-2 line segment, with point 3 as it's end
+determines the final direction. The walls will be dir2/2 from pt1.
+
+\param pt1 Defines the side of the box. Also the center point from which box dimensions are measured.
+\param pt2 The vector from pt1 to pt2 in the normal (and perpindicular) of the sidewalls.
+\param pt3 Third point in the plane definition.
+\param thk Distance from pt1, normal to the first plane, that the second wall is placed.
+\param dir1 Distance/2 to place walls 3,4.
+\param dir2 Distance/2 to place walls 5,6.
+\param inside 0 = Box is solid inside. 1 = Box is hollow.
+*/
 int init_bx_btg( btgeom_box *box,vect_3 *pt1, vect_3 *pt2, vect_3 *pt3,btreal thk,btreal dir1,btreal dir2,int inside)
 {
   vect_3* swap;
@@ -156,7 +188,7 @@ int init_bx_btg( btgeom_box *box,vect_3 *pt1, vect_3 *pt2, vect_3 *pt3,btreal th
   }
   
 }
-
+/** Distance between a point and a box object */
 btreal D_Pt2Bx(vect_3 *dist,btgeom_box *bx, vect_3 *pt)
 {
   btreal Dist[6],Dmax,Dmin;
@@ -202,12 +234,19 @@ btreal D_Pt2Bx(vect_3 *dist,btgeom_box *bx, vect_3 *pt)
   }
     
 }
-
-void new_Seg_btg(btgeom_lineseg *seg,int size)
+/** Initialize a btgeom_lineseg object.
+Allocate memory for the internal vectors.
+*/
+void init_Seg_btg(btgeom_lineseg *seg,int size)
 {
   seg->start = new_vn(size);
   seg->end = new_vn(size);
+  seg->unit = new_vn(size);
 }
+
+/** Define a line segment from 2 points.
+p1, p2 are end points of a line segment.
+*/
 void set_Seg_btg(btgeom_lineseg *seg,vect_n *p1,vect_n *p2)
 {
   if (p1 != NULL) set_vn(seg->start,p1);
@@ -216,8 +255,6 @@ void set_Seg_btg(btgeom_lineseg *seg,vect_n *p1,vect_n *p2)
 }
 
 /** Distance between a point and line
-
-  
 */
 btreal D_Ln2Pt(btgeom_lineseg *seg,vect_n *pt)
 {

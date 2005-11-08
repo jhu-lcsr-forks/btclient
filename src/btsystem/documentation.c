@@ -5,7 +5,7 @@
 \section qs Programming Quickstart
 
 To learn to write software for the WAM, Barrett recommends the following course.
-- Read \ref intro, \ref fctly, \subpage pcv
+- Read \ref intro, \ref fctly, \subpage pcv, \subpage boc
 - Follow the quickstart sheet shipped with the WAM to get the WAM set up and running.
 - Compile and run each of the example programs
 - Read the code of the example programs

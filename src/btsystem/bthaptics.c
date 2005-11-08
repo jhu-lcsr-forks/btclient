@@ -20,7 +20,11 @@
 #include <syslog.h>
 #include "bthaptics.h"
 
+/** Allocate and initialize memory for a haptic scene.
 
+\param size The maximimum number of objects in the scene.
+
+*/
 int new_bthaptic_scene(bthaptic_scene *bth, int size)
 {
   bth->num_objects = 0;
@@ -31,7 +35,7 @@ int new_bthaptic_scene(bthaptic_scene *bth, int size)
   return 0;
 }
 
-/**
+/** Evaluate a haptic scene.
  each object adds it's effect to the tipforce
 */
 vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force)
@@ -48,7 +52,7 @@ vect_n* eval_bthaptics(bthaptic_scene *bth,vect_n *pos, vect_n *vel, vect_n *acc
   }
   return force;
 }
-
+/** Add a haptic object to the haptic scene. */
 int addobject_bth(bthaptic_scene *bth,bthaptic_object *object)
 {
   int i;
@@ -59,7 +63,7 @@ int addobject_bth(bthaptic_scene *bth,bthaptic_object *object)
   return(bth->num_objects - 1);
 }
 
-
+/** Remove a haptic object to the haptic scene. */
 void removeobject_bth(bthaptic_scene *bth,int index)
 {
   int cnt;
@@ -73,14 +77,19 @@ void removeobject_bth(bthaptic_scene *bth,int index)
   }
 }
 
+/** Evaluate a typical analytical geometry object.
 
+Given a position for an interaction point; Calculate the reaction forces on
+that point.
+*/
 int eval_geom_normal_interact_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force)
 {
   btreal depth;
   depth = (*(obj->collide))(obj,pos,(vect_n*)obj->Istate.pos);
   (*(obj->normalforce))(obj,depth,(vect_n*)obj->Istate.pos,vel,acc,force);
 }
-
+/** Evaluate global effects for a hapic object.
+*/
 int eval_global_interact_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force)
 {
   bteffect_global *gp;
@@ -88,7 +97,8 @@ int eval_global_interact_bth(struct bthaptic_object_struct *obj, vect_n *pos, ve
   set_vn(force,add_vn(force,add_vn(scale_vn(-1.0*gp->B,vel),(vect_n*)gp->F)));
 
 }
-
+/** Initialize a global effects object
+*/
 int init_global_bth(bthaptic_object *obj, bteffect_global *global,btreal B,vect_3 *F)
 {
   
@@ -101,7 +111,7 @@ int init_global_bth(bthaptic_object *obj, bteffect_global *global,btreal B,vect_
 }
 
 /**
-\bug this uses a digital filter which assumes constant sample period and the sample rate and
+\warning this uses a digital filter which assumes constant sample period and the sample rate and
 cutoff freq are hard coded
 */
 int init_normal_plane_bth(bthaptic_object *obj, btgeom_plane *plane, void*nfobj,void*nffunc)
@@ -113,7 +123,9 @@ int init_normal_plane_bth(bthaptic_object *obj, btgeom_plane *plane, void*nfobj,
   obj->normalforce = nffunc;
   obj->norm_eff = nfobj;
 }
-
+/** Test for collision with a plane object. 
+This is a #bthaptic_object_struct virtual interface implimentation.
+*/
 btreal plane_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *norm)
 {
   btreal res;
@@ -121,6 +133,8 @@ btreal plane_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n
   return res;
 }
 
+/** Initialize a sphere haptic object. 
+*/
 int init_normal_sphere_bth(bthaptic_object *obj, btgeom_sphere *sphere, void*nfobj,void*nffunc)
 {
   init_state_btg(&(obj->Istate),0.002,30);
@@ -130,7 +144,11 @@ int init_normal_sphere_bth(bthaptic_object *obj, btgeom_sphere *sphere, void*nfo
   obj->normalforce = nffunc;
   obj->norm_eff = nfobj;
 }
+/** Test for collision with a haptic sphere.
 
+This is a #bthaptic_object_struct virtual interface implimentation.
+
+*/
 btreal sphere_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *norm)
 {
   btreal res;
@@ -138,13 +156,15 @@ btreal sphere_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_
   //set_v3(obj->Istate.pos,scale_v3(res,(vect_3*)norm));
   return res;
 }
-
+/** Initialize a haptic wall effect */
 void init_wall(bteffect_wall *wall,btreal K, btreal B)
 {
   wall->K = K;
   wall->B = B;
 }
-
+/** Calculate wall interaction forces
+This is a #bthaptic_object_struct virtual interface implimentation.
+*/
 int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force)
 {
   btreal Dist,K,B;
@@ -169,7 +189,9 @@ int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect
              add_v3((vect_3*)force,
                      scale_v3(WallStiff + WallDamp,(vect_3*)norm)));
 }
-
+/** Calculate wall interaction forces
+This is a #bthaptic_object_struct virtual interface implimentation.
+*/
 int sheetwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force)
 {
   btreal Dist,K,B;
@@ -191,7 +213,9 @@ int sheetwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm,
                      scale_v3(WallStiff + WallDamp,(vect_3*)norm)));
 }
 
-
+/** Initialize a haptic wall effect.
+see #bteffect_bulletproofwall
+*/
 void init_bulletproofwall(bteffect_bulletproofwall *wall,btreal Boffset,btreal K2, btreal K2offset, btreal K1, btreal Bin, btreal Bout)
 {
   wall->K1 = K1;
@@ -201,7 +225,9 @@ void init_bulletproofwall(bteffect_bulletproofwall *wall,btreal Boffset,btreal K
   wall->Bout = Bout;
   wall->Boffset = Boffset;
 }
-
+/** Calculate wall interaction forces
+This is a #bthaptic_object_struct virtual interface implimentation.
+*/
 int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force)
 {
   btreal WallStiff,WallDamp,Vel;
@@ -229,7 +255,9 @@ int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n 
              add_v3((vect_3*)force,
                      scale_v3(WallStiff + WallDamp,(vect_3*)norm)));
 }
-
+/** Initialize a haptic wall effect.
+see #bteffect_wickedwall
+*/
 void init_wickedwall(bteffect_wickedwall *wall,btreal K1, btreal Bin,btreal Bout,btreal Thk,btreal Boffset)
 {
   wall->state = 1;
@@ -239,7 +267,9 @@ void init_wickedwall(bteffect_wickedwall *wall,btreal K1, btreal Bin,btreal Bout
   wall->Thk = Thk;
   wall->Boffset = Boffset;
 }
-
+/** Calculate wall interaction forces
+This is a #bthaptic_object_struct virtual interface implimentation.
+*/
 int wickedwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force)
 {
   btreal WallStiff,WallDamp,Vel;

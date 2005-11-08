@@ -62,12 +62,18 @@ where to look first.
 
 1. calling sprint_vn() on an uninitialized vect_n *
 \internal 
-\todo Add code and compiler switches for counting the number of operations.
+\todo We need to do the following
+ - Add code and compiler switches for counting the number of operations.
+ - Change optimized functions to use generalized objects.
+ - Use Numerical recipies conventions for matrices (array of pointers to rows)
+ - Freelist memory implementation for fast vector allocation. (See thfaststack.c in
+ experimental code section)
 */
 /** @addtogroup btmath Extended Math Library
 
 This is a general description so that I can see the output.
 */
+
 #ifndef _BTMATH_H
 #define _BTMATH_H
 

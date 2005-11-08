@@ -18,7 +18,7 @@
  
  \brief Haptics scene list and object interaction functions
  
- 
+ See code example 4.
  
  */
 #ifndef _BTHAPTICS_H
@@ -30,7 +30,9 @@ extern "C"
 #endif/* __cplusplus */
 #include "btmath.h"
 #include "btgeometry.h"
+/** A generic haptic object that presents a virtual interface.
 
+*/
 typedef struct bthaptic_object_struct{
   int type;
   int (*interact)(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force);
@@ -41,6 +43,7 @@ typedef struct bthaptic_object_struct{
   int idx;
 }bthaptic_object;
 
+/** A simple haptic scene. */
 typedef struct {
   bthaptic_object **list;
   int num_objects;
@@ -71,24 +74,38 @@ void init_wall(bteffect_wall *wall,btreal K, btreal B);
 int wall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force);
 int sheetwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force);
  
+/** Bullett Proof Wall effect
+
+This effect presents a spring damper wall with two spring constants. The second
+constant in added to the first after a certain depth into the wall.
+
+*/
 typedef struct { 
-  btreal Boffset; //Relative start of damping
-  btreal K2; //second stage spring constant
-  btreal K2offset; //Distance into wall second spring constant starts
-  btreal K1; //first stage spring constant
-  btreal Bin; //damping as you move into the wall
-  btreal Bout; //damping as you move out of the wall
+  btreal Boffset; //!<Relative start of damping
+  btreal K2; //!<second stage spring constant
+  btreal K2offset; //!<Distance into wall second spring constant starts
+  btreal K1; //!<first stage spring constant
+  btreal Bin; //!<damping as you move into the wall
+  btreal Bout; //!<damping as you move out of the wall
 }bteffect_bulletproofwall;
 void init_bulletproofwall(bteffect_bulletproofwall *wall,btreal Boffset,btreal K2, btreal K2offset, btreal K1, btreal Bin, btreal Bout);
 int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force);
+/** Wicked Wall haptic effect.
 
+This effect presents a spring-damper wall that shuts off after a specified depth
+and does not turn on until the wall is exited.
+
+There are different damping values for entry and exit. The start of damping can 
+be offsett from the zero point (start of spring) of the wall.
+
+*/
 typedef struct { 
-  int state; //outside, inside, brokethru
-  btreal Boffset; //Relative start of damping
-  btreal K1; //first stage spring constant
-  btreal Bin; //damping as you move into the wall
-  btreal Bout; //damping as you move out of the wall
-  btreal Thk;
+  int state; //!<outside, inside, brokethru
+  btreal Boffset; //!<Relative start of damping
+  btreal K1; //!<first stage spring constant
+  btreal Bin; //!<damping as you move into the wall
+  btreal Bout; //!<damping as you move out of the wall
+  btreal Thk; //!< Thickness of the wall.
 }bteffect_wickedwall;
 void init_wickedwall(bteffect_wickedwall *wall,btreal K1, btreal Bin,btreal Bout,btreal Thk,btreal Boffset);
 int wickedwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force);

@@ -19,7 +19,7 @@
 
  The objects in this file are primarily used by bthaptics.c
 
- */
+*/
 #ifndef _BTGEOMETRY_H
 #define _BTGEOMETRY_H
 
@@ -29,7 +29,16 @@ extern "C"
 #endif/* __cplusplus */
 #include "btmath.h"
 
-//Geometry
+/** Tracks the state of an object.
+
+Given position updates at constant time intervals, this object tracks the
+velocity and acceleration.
+
+Uses low pass digital filters so you must insure that the samplerate is constant.
+
+Position,velocity, and acceleration are assumed to be 3-vectors.
+
+*/
 typedef struct {
   vect_3 *pos,*vel,*acc; //Normal of plane
   btfilter_vn *velfilt,*accfilt;
@@ -39,19 +48,27 @@ void init_state_btg(btgeom_state *bts,btreal samplerate,btreal cutoffHz);
 void eval_state_btg(btgeom_state *bts,vect_3* pos);
 
 
+/** A analytic line segment object.
+
+(Not yet implemented)
+
+*/
 typedef struct {
   vect_n *start,*end; //Normal of plane
   vect_n *unit;
 }btgeom_lineseg;
 
-void new_Seg_btg(btgeom_lineseg *seg,int size);
+void init_Seg_btg(btgeom_lineseg *seg,int size);
 void set_Seg_btg(btgeom_lineseg *seg,vect_n *p1,vect_n *p2);
 btreal D_Ln2Pt(btgeom_lineseg *seg,vect_n *pt); 
+/* Not yet implemented...
+
 btreal I_Ln2Ln(btgeom_lineseg *seg,vect_n *pt); 
 btreal D_Seg2Pt(btgeom_lineseg *seg,vect_n *pt); //Distance
 btreal Pt_Seg2Pt(vect_n *loc,btgeom_lineseg *seg,vect_n *pt); //Distance, return point on line
 btreal D_Seg2Seg(btgeom_lineseg *seg1,btgeom_lineseg *seg2); //Distance
-/**
+*/
+/** An analytic plane object.
 
 
 */
@@ -62,8 +79,8 @@ typedef struct {
 
 btgeom_plane* new_pl_btg();
 int init_pl_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3);
-int init_3point_plane_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3);
-int init_pointnormal_plane_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2);
+//int init_3point_plane_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2, vect_3 *pt3);
+//int init_pointnormal_plane_btg( btgeom_plane *plane, vect_3 *pt1, vect_3 *pt2);
 btreal D_Pt2Pl(vect_3 *norm,btgeom_plane *plane, vect_3 *point);
 
 //vect_3* I_Li2Pl(
