@@ -711,6 +711,8 @@ void test_filter_vn();
 
 BTINLINE btreal atan2_bt(btreal arg1, btreal arg2); 
 BTINLINE btreal interp_bt(btreal x1, btreal y1, btreal x2, btreal y2, btreal x); //linear interpolation
+BTINLINE btreal interpolate_bt(btreal x1, btreal y1, btreal x2, btreal y2, btreal x); //linear interpolation
+
 BTINLINE btreal max_bt(btreal x,btreal y);
 BTINLINE btreal min_bt(btreal x,btreal y);
 #define Sgn(x) (x>=0.0?1.0:-1.0)

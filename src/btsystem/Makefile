@@ -1,10 +1,10 @@
 LIB_OBJS =  btsystem.o  btjointcontrol.o playlist.o \
             btlogger.o btcan_esd.o btrobot.o btmath.o \
             btos.o btpath.o btcontrol.o btserial.o bthaptics.o btstatecontrol.o \
-            btgeometry.o btparser.o
+            btgeometry.o btparser.o btseg.o
 INCL_FILES = btcan.h btsystem.h  btlogger.h btjointcontrol.h \
             btmath.h btrobot.h btos.h btpath.h btcontrol.h btserial.h bthaptics.h \
-            btstatecontrol.h playlist.h btgeometry.h btparser.h
+            btstatecontrol.h playlist.h btgeometry.h btparser.h btseg.h
 LIB_TARG = ./libbtsystem.a
 SLIB_TARG = ./libbtsystem.so
 CC = gcc

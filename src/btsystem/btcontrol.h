@@ -47,6 +47,7 @@ extern "C"
 #include <pthread.h>
 #include "btmath.h"
 #include "btos.h"
+#include "btseg.h"
 #include "btstatecontrol.h"
 #ifndef PI
 #define PI 3.141596
@@ -206,7 +207,7 @@ typedef struct {
   btreal q_acc2;
 }Seg_int;
 void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, 
-double v_prev, double v_next, double seg_acc, int end);
+double t3, double v_prev, double v_next, double seg_acc, int end);
 
                    
                    
@@ -248,6 +249,7 @@ typedef struct
   double dt_acc,dt_vel; 
   double t_acc, t_vel, q_acc, q_vel;
   double t0,q0,v0;
+  double qn,qp,tn,tp,t3;
   double acc,vel;
   double last_vel;
   double last_cmd; //added for temp debugging
@@ -329,10 +331,13 @@ typedef struct
   
   When adding new points this velocity is used to calculate new time values.
   */
-  double vel;  
+  double vel,acc;  
+  pararray_vn *pavn;
+  vectray *vr;
+  double t;
 }via_trj_array;
 /*Memory Management API*/
-//via_trj_array* malloc_new_vta(int num_columns);
+//via_trj_array* malloc_vta(int num_columns);
 
 via_trj_array* new_vta(int num_columns,int max_rows);
 void destroy_vta(via_trj_array** vt);

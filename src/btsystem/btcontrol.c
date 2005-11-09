@@ -32,6 +32,7 @@
 #include "btcontrol.h"
 #include "btos.h"
 #include "btstatecontrol.h"
+#include "btseg.h"
 
 #define BT_DUMMY_PROOF
 
@@ -549,6 +550,7 @@ double start_via_trj(via_trj *trj,int col)
   trj->last_cmd = ret;
   trj->segment = VTS_IN_ACC;//acc first
 
+  
   Dt_next = getval_vn(idx_vr(trj->vr,trj->idx+2),0) - getval_vn(idx_vr(trj->vr,trj->idx+1),0);
   Dq_next = getval_vn(idx_vr(trj->vr,trj->idx+2),trj->col) - getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col);
   trj->v_prev = 0;
@@ -559,20 +561,27 @@ double start_via_trj(via_trj *trj,int col)
   else if (trj->n == 2) {
     end = 3;
     trj->v_next = 0.0;
+    trj->t3 = getval_vn(idx_vr(trj->vr,trj->idx+1),0);
   }
   else {
     end = 0;
     trj->v_next = Dq_next/Dt_next;
+    trj->t3 = getval_vn(idx_vr(trj->vr,trj->idx+2),0);
   }
-  CalcSegment(&(trj->seg),getval_vn(idx_vr(trj->vr,trj->idx),trj->col), getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col),
-              getval_vn(idx_vr(trj->vr,trj->idx),0), getval_vn(idx_vr(trj->vr,trj->idx+1),0),trj->v_prev,trj->v_next,trj->trj_acc, end);
+  trj->qp = getval_vn(idx_vr(trj->vr,trj->idx),trj->col);
+  trj->qn = getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col);
+  trj->tp = getval_vn(idx_vr(trj->vr,trj->idx),0);
+  trj->tn = getval_vn(idx_vr(trj->vr,trj->idx+1),0);
+  
+  CalcSegment(&(trj->seg),trj->qp,trj->qn,
+             trj->tp,trj->tn,trj->t3 ,trj->v_prev,trj->v_next,trj->trj_acc, end);
   
   trj->acc = trj->seg.acc1;
   trj->dt_acc = trj->seg.dt_acc1;
   trj->v_prev = trj->seg.vel;
   trj->t_acc = trj->dt_acc;
 
-  trj->t=0.0;
+  trj->t=getval_vn(idx_vr(trj->vr,trj->idx),0);
   trj->t0=0.0;
   trj->q0 = getval_vn(idx_vr(trj->vr,trj->idx),trj->col);
   trj->v0 = 0.0;
@@ -580,13 +589,7 @@ double start_via_trj(via_trj *trj,int col)
   trj->state = BTTRAJ_RUN;
   return ret;
 }
-/** Data access function for trj->trj_acc
-\internal chk'd TH 051103
-*/
-void SetAcc_vt(via_trj *trj,double acc)
-{
-  trj->trj_acc = acc;
-}
+
 /** Evaluate a via_trj object.
 It must have previously been preped with start_via_trj()
 \internal chk'd TH 051103
@@ -608,20 +611,23 @@ double eval_via_trj(via_trj *trj,double dt)
       }
       else
       {
-        trj->q0 = trj->q0 + trj->v0*trj->dt_acc + 0.5*trj->dt_acc*trj->dt_acc*trj->acc;
-        trj->vel = trj->seg.vel;
         
-        trj->t0 = trj->t_acc;
+        trj->vel = trj->seg.vel;
         trj->dt_vel = trj->seg.dt_vel;
+        trj->t0 = trj->t_acc;
         trj->t_vel = trj->dt_vel + trj->t0;
+        trj->q0 = trj->q0 + trj->v0*trj->dt_acc + 0.5*trj->dt_acc*trj->dt_acc*trj->acc;
+        //trj->q0 = interpolate_bt(trj->tp,trj->qp,trj->tn,trj->qn,trj->t0);
+        //trj->q0 = trj->qp;
         trj->v0 = trj->vel;
         trj->acc = 0.0;
         trj->segment = VTS_IN_VEL;
       }
 
     }
-    else if((trj->segment == VTS_IN_VEL) && (trj->t > trj->t_vel))
+    if((trj->segment == VTS_IN_VEL) && (trj->t > trj->t_vel))
     { //setup acc segment
+      //trj->q0 = interpolate_bt(trj->tp,trj->qp,trj->tn,trj->qn,trj->t_vel);
       trj->idx++;
       if (trj->idx >= trj->n-1) //Setup final deceleration
       {
@@ -629,20 +635,17 @@ double eval_via_trj(via_trj *trj,double dt)
         trj->dt_acc = trj->seg.dt_acc2;
         trj->t0 = trj->t_vel;
         trj->t_acc = trj->dt_acc + trj->t0;
-        trj->q0 = trj->q0 + trj->vel*trj->dt_vel;
+        //trj->q0 = trj->q0 + trj->vel*trj->dt_vel;
         trj->v0 = trj->vel;
         trj->segment = VTS_IN_ACC;//acc first
       }
       else
       {
-        tp = getval_vn(idx_vr(trj->vr,trj->idx-1),0);
-        tn = getval_vn(idx_vr(trj->vr,trj->idx),0);
-        qn = getval_vn(idx_vr(trj->vr,trj->idx),trj->col);
-        qp = getval_vn(idx_vr(trj->vr,trj->idx-1),trj->col);
-        Dt = tn - tp;
-        Dq = qn - qp;
-        //trj->v_prev = Dq/Dt;
-
+        trj->qp = getval_vn(idx_vr(trj->vr,trj->idx),trj->col);
+        trj->qn = getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col);
+        trj->tp = getval_vn(idx_vr(trj->vr,trj->idx),0);
+        trj->tn = getval_vn(idx_vr(trj->vr,trj->idx+1),0);
+        trj->t3 = getval_vn(idx_vr(trj->vr,trj->idx+2),0);
         if (trj->idx >= trj->n-2)
         {
           end = 2;
@@ -655,9 +658,9 @@ double eval_via_trj(via_trj *trj,double dt)
           Dq_next = getval_vn(idx_vr(trj->vr,trj->idx+2),trj->col) - getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col);
           trj->v_next = Dq_next/Dt_next;
         }
-        syslog(LOG_ERR, "CalcSegment: Col %d",trj->col);
-        CalcSegment(&(trj->seg),getval_vn(idx_vr(trj->vr,trj->idx),trj->col), getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col),
-                    tn,getval_vn(idx_vr(trj->vr,trj->idx+1),0),trj->v_prev,trj->v_next,trj->trj_acc, end);
+        //syslog(LOG_ERR, "CalcSegment: Col %d",trj->col);
+        CalcSegment(&(trj->seg),trj->qp, trj->qn,
+                    trj->tp,trj->tn,trj->t3,trj->v_prev,trj->v_next,trj->trj_acc, end);
         
                     
         trj->segment = 0;//acc first
@@ -666,6 +669,8 @@ double eval_via_trj(via_trj *trj,double dt)
         trj->t0 = trj->t_vel;
         trj->t_acc = trj->dt_acc + trj->t0;
         trj->q0 = trj->q0 + trj->vel*trj->dt_vel;
+        //trj->q0 = interpolate_bt(trj->tp,trj->qp,trj->tn,trj->qn,trj->t0);
+        //trj->q0 = trj->qp;
         trj->v0 = trj->vel;
         trj->v_prev = trj->seg.vel;
       }
@@ -708,9 +713,9 @@ double eval_via_trj(via_trj *trj,double dt)
 
 \internal chk'd TH 051103 (incomplete)
 */
-void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double v_prev, double v_next, double seg_acc, int end)
+void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double t3, double v_prev, double v_next, double seg_acc, int end)
 {
-  double dt,dq;
+  double dt,dq,dtn;
   double vel,acc1,acc2,dt_vel,dt_acc1,dt_acc2;
   double min_acc,use_acc,q_acc1,q_vel,q_acc2;
   double max_acc,ac4,sqrtb;
@@ -727,6 +732,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
   }
   
   dt = t2 - t1;
+  dtn = t3 - t2;
   dq = q2 - q1;
 #if 0
   syslog(LOG_ERR, "CalcSeg: in: q1: %f q2: %f  t1: %f t2: %f",q1,q2,t1,t2);
@@ -751,24 +757,38 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
     q_acc1 = q1 + 0.5*acc1*dt_acc1*dt_acc1;
     //vel = (q2 - q_acc1)/(dt - dt_acc1);
     vel = acc1*dt_acc1;
-    acc2 = Sgn(v_next - vel)*seg_acc;
-    dt_acc2 = (v_next - vel)/acc2;
+    acc2 = Sgn(v_next - vel)*use_acc;
+    /* Force acceleration high enough to make the corner */
+    if (fabs(v_next - vel) > dtn*fabs(acc2)/2){
+      acc2 = (v_next - vel)*2/dtn;
+      syslog(LOG_ERR, "CalcSegment: Boosted next segment acceleration to %f to fit next side",acc1);
+    }
+    else if (fabs(v_next - vel) > dt*fabs(acc2)/2){
+      acc2 = (v_next - vel)*2/dt;
+      syslog(LOG_ERR, "CalcSegment: Boosted mid segment acceleration to %f to fit this side",acc1);
+    }
+    if (acc2 != 0.0){
+      dt_acc2 = (v_next - vel)/acc2;
+    }
+    else {
+      dt_acc2 = 0.0;
+    }
     dt_vel = dt - dt_acc1 - dt_acc2/2.0;
     if (dt_vel < 0.0){
-      dt_vel = 0.0; 
+      dt_vel = 0.0;
       
       syslog(LOG_ERR, "CalcSegment: Init Acc: Not enough acceleration!");
       syslog(LOG_ERR, "CalcSegment: Init Acc: dt:%f dt_acc1:%f 0.5*dt_acc2:%f",dt,dt_acc1,dt_acc2/2.0);
     }
   }
-  else if (end == 1)
+  else if (end == 1) //Middle segment
   {
     vel = dq/dt;
-    acc1 = Sgn(vel - v_prev)*use_acc;
+    //acc1 = Sgn(vel - v_prev)*use_acc;
+    /*
     if (fabs(vel - v_prev) > dt*fabs(acc1)/2){
       acc1 = (vel - v_prev)*2/dt;
       syslog(LOG_ERR, "CalcSegment: Boosted mid segment acceleration to %f to match velocity change",acc1);
-
     }
     if (acc1 != 0.0){
       dt_acc1 = (vel - v_prev)/acc1;
@@ -777,14 +797,33 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
       dt_acc1 = 0.0;
     }
     q_acc1 = q1 + 0.5*acc1*dt_acc1*dt_acc1;
+    */
+    acc1 = seg->acc2;
+    dt_acc1 = seg->dt_acc2;
     
     acc2 = Sgn(v_next - vel)*use_acc;
-    dt_acc2 = (v_next - vel)/acc2;
+    /* Force acceleration high enough to make the corner */
+    if (fabs(v_next - vel) > dtn*fabs(acc2)/2){
+      acc2 = (v_next - vel)*2/dtn;
+      syslog(LOG_ERR, "CalcSegment: Boosted next segment acceleration to %f to fit next side",acc1);
+    }
+    else if (fabs(v_next - vel) > dt*fabs(acc2)/2){
+      acc2 = (v_next - vel)*2/dt;
+      syslog(LOG_ERR, "CalcSegment: Boosted mid segment acceleration to %f to fit this side",acc1);
+    }
+    if (acc2 != 0.0){
+      dt_acc2 = (v_next - vel)/acc2;
+    }
+    else {
+      dt_acc2 = 0.0;
+    }
+    
     dt_vel = dt - dt_acc1/2 - dt_acc2/2;
     if (dt_vel < 0.0){
-      dt_vel = 0.0; 
+      dt_vel = 0.0;
 
       syslog(LOG_ERR, "CalcSegment: Mid segment: Not enough acceleration!");
+      syslog(LOG_ERR, "CalcSegment: Init Acc: dt:%f 0.5*dt_acc1:%f 0.5*dt_acc2:%f",dt,dt_acc1/2.0,dt_acc2/2.0);
     }
   }
   else if (end == 2)//Ending segment (decelerate)
@@ -876,11 +915,21 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
   syslog(LOG_ERR, "CalcSeg: ");
 #endif
 }
+
+/** Data access function for trj->trj_acc
+\internal chk'd TH 051103
+*/
+void SetAcc_vt(via_trj *trj,double acc)
+{
+  trj->trj_acc = acc;
+  
+}
+
 /** 
 \internal chk'd TH 051103
 Internal function to allocate memory for a vta object.
 */
-via_trj_array* malloc_new_vta(int num_columns)
+via_trj_array* malloc_vta(int num_columns)
 {
   void *vmem;
   via_trj_array* vt;
@@ -921,11 +970,17 @@ via_trj_array* read_file_vta(char* filename,int extrapoints)
   if (read_csv_file_vr(filename,&vr) != 0) return NULL;
   vr = resize_vr(&vr,maxrows_vr(vr)+extrapoints);
   
-  vt = malloc_new_vta(numelements_vr(vr)-1);
+  vt = malloc_vta(numelements_vr(vr)-1);
+  vt->vr = vr;
+  vt->acc = 1.0;
+  vt->pavn = NULL;
+  
+  /*VT*/
   for(cnt = 0;cnt < vt->elements;cnt++){
     SetAcc_vt(&(vt->trj[cnt]),1.0);
     vt->trj[cnt].vr = vr;
   }
+  /*VT*/
   
   return vt;
 }
@@ -934,8 +989,8 @@ via_trj_array* read_file_vta(char* filename,int extrapoints)
 */
 void write_file_vta(via_trj_array* vt,char *filename)
 {
-  if (vt != NULL) 
-    write_csv_file_vr(filename,vt->trj[0].vr);
+  if (vt != NULL)
+    write_csv_file_vr(filename,vt->vr);
 }
 /** Simulate running a trajectory and dump results to file.
 
@@ -949,15 +1004,15 @@ vect_n* sim_vta(via_trj_array* vt,double dt,double duration,char*filename)
   double t = dt;
   local_vn(qref,7);
   init_vn(qref,7);
-  
+  t = getval_vn(idx_vr(vt->vr,0),0);
   out = fopen(filename,"w");
   reset_vta(vt,dt,qref);
-  fprintf(out,"%8.4f, %s\n",t,sprint_csv_vn(buff,qref));
+  fprintf(out,"%f, %s\n",t,sprint_csv_vn(buff,qref));
   
   while (t < duration){
     t += dt;
     eval_vta(vt,dt,qref);
-    fprintf(out,"%8.4f, %s\n",t,sprint_csv_vn(buff,qref));
+    fprintf(out,"%f, %s\n",t,sprint_csv_vn(buff,qref));
   }
   
   fclose(out);
@@ -968,10 +1023,14 @@ vect_n* sim_vta(via_trj_array* vt,double dt,double duration,char*filename)
 void set_acc_vta(via_trj_array* vt,btreal acc)
 {
   int cnt;
-  if (vt != NULL)
+  if (vt != NULL){
+    vt->acc = acc;
+    /*VT*/
     for(cnt = 0;cnt < vt->elements;cnt++){
       SetAcc_vt(&(vt->trj[cnt]),acc);
     }
+    /*VT*/
+  }
 }
 
 /** set velocity used when adding points
@@ -999,11 +1058,16 @@ via_trj_array* new_vta(int num_columns,int max_rows)
   int cnt;
   vt = malloc_new_vta(num_columns);
   vr = new_vr(num_columns+1,max_rows);
+  vt->vr = vr;
+  vt->acc = 1.0;
+  vt->vel = 0.5;
+  vt->pavn = NULL;
+  /*VT*/
   for(cnt = 0;cnt < vt->elements;cnt++){
     SetAcc_vt(&(vt->trj[cnt]),1.0);
     vt->trj[cnt].vr = vr;
   }
-  vt->vel = 0.5;
+  /*VT*/
   return vt;
 }
 /** Free memory allocated during new_vr()
@@ -1016,7 +1080,7 @@ a valid via_trj_array object.
 void destroy_vta(via_trj_array** vt)
 {
   if (*vt != NULL){
-    destroy_vr(&(*vt)->trj[0].vr);
+    destroy_vr(&(*vt)->vr);
     btfree((void**)vt);
   }
 }
@@ -1030,7 +1094,7 @@ it stays there.
 void next_point_vta(via_trj_array* vt)
 {
   if (vt != NULL) 
-    next_vr(vt->trj[0].vr);
+    next_vr(vt->vr);
 }
 /**Decrement the edit point by one.
 
@@ -1042,7 +1106,7 @@ it stays there.
 void prev_point_vta(via_trj_array* vt)
 {
   if (vt != NULL)
-    prev_vr(vt->trj[0].vr);
+    prev_vr(vt->vr);
 }
 /**Set the edit point to the begining of the list.
 \internal chk'd TH 051103
@@ -1050,7 +1114,7 @@ void prev_point_vta(via_trj_array* vt)
 void first_point_vta(via_trj_array* vt)
 {
   if (vt != NULL)
-    start_vr(vt->trj[0].vr);
+    start_vr(vt->vr);
 }
 /**Set the edit point to the end of the list.
 \internal chk'd TH 051103
@@ -1058,7 +1122,7 @@ void first_point_vta(via_trj_array* vt)
 void last_point_vta(via_trj_array* vt)
 {
   if (vt != NULL)
-    end_vr(vt->trj[0].vr);
+    end_vr(vt->vr);
 }
 /** Insert a location into the teach & play list.
 at the edit point. To add a location to the end of the list, you
@@ -1078,7 +1142,7 @@ int ins_point_vta(via_trj_array* vt, vect_n *pt)
   
   if (vt == NULL) return -1;
   else {
-    vr = vt->trj[0].vr;
+    vr = vt->vr;
     setrange_vn(tmp,pt,1,0,len_vn(pt));
     setval_vn(tmp,0,0.0);
     i = edit_point_vr(vr);
@@ -1091,7 +1155,7 @@ int ins_point_vta(via_trj_array* vt, vect_n *pt)
       else
         setval_vn(tmp,0,t + d/0.1);
     }
-    return insert_vr(vt->trj[0].vr,tmp);
+    return insert_vr(vt->vr,tmp);
   }
 }
 /** Delete the location at the edit point from the list.
@@ -1100,7 +1164,7 @@ int ins_point_vta(via_trj_array* vt, vect_n *pt)
 int del_point_vta(via_trj_array* vt)
 {
   if (vt == NULL) return -1;
-  else return delete_vr(vt->trj[0].vr);
+  else return delete_vr(vt->vr);
 }
 /** Return the index of the present edit point.
 \internal chk'd TH 051103
@@ -1108,7 +1172,7 @@ int del_point_vta(via_trj_array* vt)
 int get_current_idx_vta(via_trj_array* vt)
 {
   if (vt == NULL) return -1;
-  else return edit_point_vr(vt->trj[0].vr);
+  else return edit_point_vr(vt->vr);
 }
 /** Set the index of the present edit point.
 \internal chk'd TH 051103
@@ -1116,7 +1180,7 @@ int get_current_idx_vta(via_trj_array* vt)
 int set_current_idx_vta(via_trj_array* vt,int idx)
 {
   if (vt == NULL) return -1;
-  else return edit_at_vr(vt->trj[0].vr,idx);
+  else return edit_at_vr(vt->vr,idx);
 }
 /** Copy the point at the present idx to dest.
 \internal chk'd TH 051103
@@ -1125,7 +1189,7 @@ void get_current_point_vta(via_trj_array* vt, vect_n *dest)
 {
   vectray *vr;
   if (vt == NULL) return;
-  vr = vt->trj[0].vr;
+  vr = vt->vr;
   set_vn(dest,edit_vr(vr));
 }
 
@@ -1136,7 +1200,7 @@ void get_current_point_vta(via_trj_array* vt, vect_n *dest)
 vectray* get_vr_vta(via_trj_array* vt)
 {
   if (vt == NULL) return NULL;
-  else return vt->trj[0].vr;
+  else return vt->vr;
 }
 
 /** Set the time values in a trajectory.
@@ -1158,7 +1222,7 @@ int dist_adjust_vta(via_trj_array* vt,double vel)
   
   vt->vel = vel;
   
-  vr = vt->trj[0].vr;
+  vr = vt->vr;
   setval_vn(idx_vr(vr,0),0,0.0);
   
   for(cnt = 1;cnt < numrows_vr(vr);cnt++){
@@ -1187,7 +1251,7 @@ int time_scale_vta(via_trj_array* vt,double s)
   
   if (vt == NULL) return -1;
  
-  vr = vt->trj[0].vr;
+  vr = vt->vr;
   setval_vn(idx_vr(vr,0),0,0.0);
   
   for(cnt = 1;cnt < numrows_vr(vr);cnt++){
@@ -1202,10 +1266,16 @@ vect_n* reset_vta(via_trj_array* vt,double dt,vect_n* qref)
   int cnt;
   if (vt == NULL) return qref;
   
+  
+  destroy_pavn(&vt->pavn);
+  vt->pavn = vr2pararray(vt->vr,vt->acc);
+
+  /*
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
     setval_vn(qref,cnt,start_via_trj(&(vt->trj[cnt]),cnt));
-  }
+  }*/
+  set_vn(qref,reset_pavn(vt->pavn));
   return qref;
   
 }
@@ -1215,11 +1285,14 @@ vect_n* eval_vta(via_trj_array* vt,double dt,vect_n* qref)
   int cnt;
   
   if (vt == NULL) return qref;
-  
+  /*
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
     setval_vn(qref,cnt,eval_via_trj(&(vt->trj[cnt]),dt));
-  }
+  }*/
+  
+  set_vn(qref,eval_pavn(vt->pavn,dt));
+  
   return qref;
 }
 
@@ -1238,12 +1311,13 @@ int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt
   if(!btptr_ok(vt,"bttrajectory_interface_getstate_vt")) 
     return  BTTRAJ_OFF;
 #endif  
-  ret = BTTRAJ_DONE;
+  /*ret = BTTRAJ_DONE;
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
     if (vt->trj[cnt].state == BTTRAJ_RUN)
       ret = BTTRAJ_RUN;
-  }
+  }*/
+  ret = getstate_pavn(vt->pavn);
   return ret;
 }
 /** Implements the reset interface for bttrajectory_interface_struct.
@@ -1260,12 +1334,18 @@ vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *bt
   if(!btptr_ok(vt,"bttrajectory_interface_reset_vt")) 
     return btt->qref;
 #endif
-  if (numrows_vr(vt->trj[0].vr) <= 0)
+  if (numrows_vr(vt->vr) <= 0)
     return NULL;
+ 
+  
+  destroy_pavn(&vt->pavn);
+  vt->pavn = vr2pararray(vt->vr,vt->acc);
+  set_vn(btt->qref,reset_pavn(vt->pavn));
+  /*
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
     setval_vn(btt->qref,cnt,start_via_trj(&(vt->trj[cnt]),cnt));
-  }
+  }*/
   return btt->qref;
 }
 
@@ -1284,11 +1364,13 @@ vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt
   if(!btptr_ok(vt,"bttrajectory_interface_eval_vt")) 
     return btt->qref;
 #endif   
-
+/*
   for (cnt = 0;cnt<vt->elements;cnt++)
   {
     setval_vn(btt->qref,cnt,eval_via_trj(&(vt->trj[cnt]),*(btt->dt)));
-  }
+  }*/
+  
+  set_vn(btt->qref,eval_pavn(vt->pavn,*(btt->dt)));
   return btt->qref;
 }
 /** Registers the necessary data and function pointers with the 

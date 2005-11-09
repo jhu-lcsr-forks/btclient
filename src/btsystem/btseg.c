@@ -1,13 +1,16 @@
-
+#include <math.h>
 #include "btseg.h"
+#include "btmath.h"
+#include "btstatecontrol.h"
 #include <stdio.h>
 #include <syslog.h>
 
-void dump_para(parabolic *p,FILE *out)
+void dump_pb(parabolic *p,FILE *out)
 {
   fprintf(out,"tf: %f, sf: %f, spf: %f, sppf: %f\n",p->tf,p->sf,p->spf,p->sppf);
 }
-void cpy_para(parabolic *dest,parabolic *src)
+/** Duplicate a parabolic object */
+void dup_pb(parabolic *dest,parabolic *src)
 {
   dest->tf = src->tf;
   dest->sf = src->sf;
@@ -15,7 +18,11 @@ void cpy_para(parabolic *dest,parabolic *src)
   dest->sppf = src->sppf;
   dest->next = src->next;
 }
-btreal sp_of_t_para(parabolic *p, btreal t)
+
+/** Given a time, return velocity on a parabolic object
+
+*/
+btreal sp_of_t_pb(parabolic *p, btreal t)
 {
   btreal difft;
   if (t > p->tf)
@@ -23,7 +30,12 @@ btreal sp_of_t_para(parabolic *p, btreal t)
   difft = t - p->tf;
   return p->spf + p->sppf * difft;
 }
-btreal s_of_t_para(parabolic *p, btreal t)
+/** Given a time, return position on a parabolic object
+
+\exception If time is greater than time_final, position will be 
+position_final.
+*/
+btreal s_of_t_pb(parabolic *p, btreal t)
 {
   btreal difft;
   if (t > p->tf){ //End of segment
@@ -32,45 +44,52 @@ btreal s_of_t_para(parabolic *p, btreal t)
   difft = t - p->tf;
   return p->sf + p->spf * difft + 0.5*p->sppf * difft * difft;
 }
-btreal s_of_t_paral(parabolic **pin, btreal t)
-{
-  btreal difft;
-  parabolic *p;
-  
-  p = *pin;
-  while (t > p->tf){ //Next segment
-    p = p->next;
-    if (p != NULL) {
-      *pin = p;
-    }
-    else { //no more in the list
-      p = *pin;  //backup to the end of the list
-      break;
-    }
-  }
-  return s_of_t_para(p,t);
-}
-btreal sp_of_t_paral(parabolic **pin, btreal t)
-{
-  btreal difft;
-  parabolic *p;
-  
-  p = *pin;
-  while (t > p->tf){ //Next segment
-    p = p->next;
-    if (p != NULL) {
-      *pin = p;
-    }
-    else { //no more in the list
-      p = *pin;  //backup to the end of the list
-      break;
-    }
-  }
-  return sp_of_t_para(p,t);
-}
-/** Init bi object from boundary conditions
+/** Given a time and a pointer into a list of parabolic objects, return position.
+
+The pointer must be malleable by this function.
 */
-btreal boundary_para(parabolic *b,btreal t0, btreal s0,btreal sf,btreal sp0,btreal spf)
+btreal s_of_t_pbl(parabolic **pin, btreal t)
+{
+  btreal difft;
+  parabolic *p;
+  
+  p = *pin;
+  while (t > p->tf){ //Next segment
+    p = p->next;
+    if (p != NULL) {
+      *pin = p;
+    }
+    else { //no more in the list
+      p = *pin;  //backup to the end of the list
+      break;
+    }
+  }
+  return s_of_t_pb(p,t);
+}
+/** Given a time and a pointer into a list of parabolic objects, return velocity.
+The pointer must be malleable by this function.
+*/
+btreal sp_of_t_pbl(parabolic **pin, btreal t)
+{
+  btreal difft;
+  parabolic *p;
+  
+  p = *pin;
+  while (t > p->tf){ //Next segment
+    p = p->next;
+    if (p != NULL) {
+      *pin = p;
+    }
+    else { //no more in the list
+      p = *pin;  //backup to the end of the list
+      break;
+    }
+  }
+  return sp_of_t_pb(p,t);
+}
+/** Init parabolic object from boundary conditions
+*/
+btreal boundary_pb(parabolic *b,btreal t0, btreal s0,btreal sf,btreal sp0,btreal spf)
 {
   
   btreal a,tf;
@@ -106,7 +125,7 @@ btreal boundary_para(parabolic *b,btreal t0, btreal s0,btreal sf,btreal sp0,btre
   Final time
 
 */
-btreal s0sfspftf_para(parabolic *b,btreal t0, btreal s0,btreal sf,btreal spf,btreal tf)
+btreal s0sfspftf_pb(parabolic *b,btreal t0, btreal s0,btreal sf,btreal spf,btreal tf)
 {
   
   btreal a,sp0,t;
@@ -125,12 +144,15 @@ btreal s0sfspftf_para(parabolic *b,btreal t0, btreal s0,btreal sf,btreal spf,btr
     sp0 = 2.0*sf/t - 2.0*s0/t - spf;
     a = (spf - sp0)/t;
   }
+  else {
+    a = 0.0;
+  }
   b->sf = sf;
   b->tf = tf;
   b->sppf = a;
   b->spf = spf;
   //printf("\nt0: %f, s0: %f, sp0: %f\n",t0,s0,sp0);
-  //dump_para(b,stdout);
+  //dump_pb(b,stdout);
   return b->tf;
 }
 
@@ -143,7 +165,7 @@ sp0 = starting velocity
 spf = final velocity
 t0 = starting time
 */
-btreal blend_para(parabolic *b,btreal t0, btreal st,btreal sp0,btreal spf,btreal t)
+btreal blend_pb(parabolic *b,btreal t0, btreal st,btreal sp0,btreal spf,btreal t)
 {
   btreal tf,a,s0,sf;
 
@@ -155,7 +177,7 @@ btreal blend_para(parabolic *b,btreal t0, btreal st,btreal sp0,btreal spf,btreal
   //sf = s0 + sp0*tf + 0.5*a*tf^2
   sf = st + spf*(tf-t);
   
-  return boundary_para(b,t0,s0,sf,sp0,spf);
+  return boundary_pb(b,t0,s0,sf,sp0,spf);
 }
 
 
@@ -164,13 +186,24 @@ pararray* new_pa(int max)
 {
   void* mem;
   pararray* pa;
-
+  
+  /*malloc_pa*/
   mem = btmalloc(sizeof(parabolic) * max + sizeof(pararray));
+  
+  /*initptr_pa*/
   pa = (pararray*)mem;
-  pa->pa = (parabolic*)(mem + sizeof(pararray));
+  pa->pb = (parabolic*)(mem + sizeof(pararray));
+  
+  /*initval_pa*/
   pa->max = max;
   pa->cnt = 0;
+  pa->state = BTTRAJ_STOPPED;
+  pa->t = 0.0;
   return pa;
+}
+void destroy_pa(pararray* pa)
+{
+  btfree((void**)pa);
 }
 void clear_pa(pararray* pa)
 {
@@ -182,15 +215,15 @@ btreal add_bseg_pa(pararray* pa,parabolic* p)
 {
   int cnt; 
   btreal ret;
-  if (pa->cnt > pa->max-1) ret = pa->pa[pa->cnt].tf;
+  if (pa->cnt > pa->max-1) ret = pa->pb[pa->cnt].tf;
   else{
-    cpy_para(&(pa->pa[pa->cnt]),p);
+    dup_pb(&(pa->pb[pa->cnt]),p);
                                     
     //link with previous segment                             
     if (pa->cnt > 0){
-      pa->pa[pa->cnt - 1].next = &(pa->pa[pa->cnt]);
+      pa->pb[pa->cnt - 1].next = &(pa->pb[pa->cnt]);
     }
-    pa->pa[pa->cnt].next = NULL;
+    pa->pb[pa->cnt].next = NULL;
   }
   
   pa->cnt++;
@@ -201,16 +234,23 @@ btreal add_bseg_pa(pararray* pa,parabolic* p)
 btreal reset_pa(pararray* pa)
 {
   int cnt;
-  pa->iter = &(pa->pa[0]);
+  pa->iter = &(pa->pb[0]);
+  pa->state = BTTRAJ_RUN;
+  pa->t = 0.0;
   return eval_pa(pa,0.0);
 }
 
-btreal eval_pa(pararray* pa,btreal t)
+btreal eval_pa(pararray* pa,btreal dt)
 {
   int cnt; 
-  return s_of_t_paral(&(pa->iter),t); 
+  btreal ret;
+  pa->t += dt;
+  ret = s_of_t_pbl(&(pa->iter),pa->t);
+  if (pa->iter->next == NULL)
+    pa->state = BTTRAJ_DONE;
+  return ret;
 }
-
+/************************ pararray_vn **************************************/
 pararray_vn* new_pavn(int max,int elements)
 {
   void *mem;
@@ -225,6 +265,17 @@ pararray_vn* new_pavn(int max,int elements)
   pavn->result = new_vn(elements);
   return pavn;
 }
+destroy_pavn(pararray_vn** pavn)
+{
+  int cnt;
+  
+  if (*pavn != NULL){
+    destroy_vn(&(*pavn)->result);
+    for (cnt = 0; cnt < elements; cnt ++)
+      destroy_pa(&(*pavn)->pa[cnt]);
+  }
+  btfree((void**)pavn);
+}
 void clear_pavn(pararray_vn* pavn)
 {
   int cnt;
@@ -232,22 +283,37 @@ void clear_pavn(pararray_vn* pavn)
     clear_pa(pavn->pa[cnt]);
   
 }
-
+/** Prep a pavn object for evaluation */
 vect_n*  reset_pavn(pararray_vn* pavn)
 {
   int cnt;
   btreal ret;
-  for (cnt = 0;cnt< pavn->elements; cnt ++)
+  
+  for (cnt = 0;cnt< pavn->elements; cnt ++){
     setval_vn(pavn->result,cnt,reset_pa(pavn->pa[cnt]));
+  }
   return pavn->result;
 }
-vect_n* eval_pavn(pararray_vn* pavn,btreal t)
+/** Evaluate a pavn object. Return position for time t.*/
+vect_n* eval_pavn(pararray_vn* pavn,btreal dt)
 {
   int cnt;
   btreal ret;
   for (cnt = 0;cnt< pavn->elements; cnt ++)
-    setval_vn(pavn->result,cnt,eval_pa(pavn->pa[cnt],t));
+    setval_vn(pavn->result,cnt,eval_pa(pavn->pa[cnt],dt));
   return pavn->result;
+}
+/** Return the state of the trajectories
+*/
+int getstate_pavn(pararray_vn* pavn)
+{
+  int cnt,state;
+  btreal ret;
+  state = BTTRAJ_STOPPED;
+  for (cnt = 0;cnt< pavn->elements; cnt ++)
+    if (pavn->pa[cnt]->state == BTTRAJ_RUN)
+      state = BTTRAJ_RUN;
+  return state;
 }
 /**
 Convert a vectray of time/points to a segment list
@@ -306,7 +372,7 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
     v2 = (x2-saf)/(dt-tacc); //final velocity
     sa0 = x1;
     
-    tf_prev = s0sfspftf_para(&pa,0.0,sa0,saf,v2,tacc);  //acc seg starting at time 0.0
+    tf_prev = s0sfspftf_pb(&pa,0.0,sa0,saf,v2,tacc);  //acc seg starting at time 0.0
     add_bseg_pa(pavn->pa[cnt],&pa);
     
     setval_vn(idx_vr(vr,0),cnt+1,x2-dt*v2);
@@ -371,19 +437,19 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
       
       /* Calc : tf_prev & saf carry history from prev loops */
       sa0 = x2 - v1*(tacc/2); //acc start pos 
-      tf_prev = s0sfspftf_para(&pa,tf_prev,saf,sa0,v1,t2-tacc/2); //velocity seg
+      tf_prev = s0sfspftf_pb(&pa,tf_prev,saf,sa0,v1,t2-tacc/2); //velocity seg
       add_bseg_pa(pavn->pa[cnt],&pa);
       
       saf = x2 + v2*(tacc/2); //acc end pos
-      tf_prev = s0sfspftf_para(&pa,tf_prev,sa0,saf,v2,t2+tacc/2);  //acc seg
+      tf_prev = s0sfspftf_pb(&pa,tf_prev,sa0,saf,v2,t2+tacc/2);  //acc seg
       add_bseg_pa(pavn->pa[cnt],&pa);
     }
     
     v2 = 0.0;
-    tf_prev = s0sfspftf_para(&pa,tf_prev,saf,sa0_last,v1_last,t3-t_last); //velocity seg
+    tf_prev = s0sfspftf_pb(&pa,tf_prev,saf,sa0_last,v1_last,t3-t_last); //velocity seg
     add_bseg_pa(pavn->pa[cnt],&pa);
     
-    tf_prev = s0sfspftf_para(&pa,tf_prev,sa0_last,saf_last,v2,t3);  //acc seg starting at time 0.0
+    tf_prev = s0sfspftf_pb(&pa,tf_prev,sa0_last,saf_last,v2,t3);  //acc seg starting at time 0.0
     add_bseg_pa(pavn->pa[cnt],&pa);
     
   }

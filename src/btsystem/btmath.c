@@ -731,7 +731,7 @@ char* sprint_csv_vn(char *dest,vect_n* src)
   {
     dest[0] = 0;
     for(j = 0;j<src->n;j++)
-      sprintf(dest+strlen(dest)," %8.4f,",src->q[j]);
+      sprintf(dest+strlen(dest)," %f,",src->q[j]);
     dest[strlen(dest)-1] = 0;
   }
   return dest;
@@ -3084,7 +3084,16 @@ btreal interp_bt(btreal x1, btreal y1, btreal x2, btreal y2, btreal x)
   else
     return (y2+y1)/2;
 }
+/**
 
+*/
+btreal interpolate_bt(btreal x1, btreal y1, btreal x2, btreal y2, btreal x)
+{
+  if ((x2-x1) != 0.0)
+    return (y1 + (x-x1)*(y2-y1)/(x2-x1));
+  else
+    return (y2+y1)/2;
+}
 
 btfilter_vn * new_btfilter_vn(int size,int vsize)
 {
