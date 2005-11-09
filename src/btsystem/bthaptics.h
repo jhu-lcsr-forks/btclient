@@ -64,6 +64,8 @@ btreal plane_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n
 int init_normal_sphere_bth(bthaptic_object *obj, btgeom_sphere *sphere, void*nfobj,void*nffunc);
 btreal sphere_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *norm);
 
+int init_normal_box_bth(bthaptic_object *obj, btgeom_box *box, void*nfobj,void*nffunc);
+btreal box_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *norm);
 
 typedef struct { 
   btreal K,B;

@@ -10,9 +10,9 @@ LDFLAGS = -L/usr/realtime/lib -L/usr/lib -L../../lib -lpthread -llxrt \
           -lncurses -lm -lbtwam -lbtsystem -lntcan
 
 
-default: ex1
+default: ex3
 
-ex1: ${OBJS}
+ex3: ${OBJS}
 	$(CC) -o ${TARG} ${OBJS} ${LDFLAGS}
 
 clean: 

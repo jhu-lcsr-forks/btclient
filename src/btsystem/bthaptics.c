@@ -156,6 +156,29 @@ btreal sphere_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_
   //set_v3(obj->Istate.pos,scale_v3(res,(vect_3*)norm));
   return res;
 }
+
+/** Initialize a sphere haptic object. 
+*/
+int init_normal_box_bth(bthaptic_object *obj, btgeom_box *box, void*nfobj,void*nffunc)
+{
+  init_state_btg(&(obj->Istate),0.002,30);
+  obj->interact = eval_geom_normal_interact_bth;
+  obj->collide = box_collide_bth;
+  obj->geom = (void *) box;
+  obj->normalforce = nffunc;
+  obj->norm_eff = nfobj;
+}
+
+/** Test for collision with a box object. 
+This is a #bthaptic_object_struct virtual interface implimentation.
+*/
+btreal box_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *norm)
+{
+  btreal res;
+  res = D_Pt2Bx((vect_3*)norm,(btgeom_box *)obj->geom,(vect_3*)pos);
+  return res;
+}
+
 /** Initialize a haptic wall effect */
 void init_wall(bteffect_wall *wall,btreal K, btreal B)
 {

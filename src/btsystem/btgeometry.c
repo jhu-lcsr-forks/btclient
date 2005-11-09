@@ -180,7 +180,7 @@ int init_bx_btg( btgeom_box *box,vect_3 *pt1, vect_3 *pt2, vect_3 *pt3,btreal th
 
   init_pl_btg(&box->side[5],tp[5],tp[4],tp[3]); //Plane5
   
-  if (inside){ //if inside, flip normals and distances
+  if (0){//inside){ //if inside, flip normals and distances
     for (cnt = 0; cnt < 6; cnt ++){
       set_v3(box->side[cnt].normal,neg_v3(box->side[cnt].normal));
       box->side[cnt].distance *= -1.0;
@@ -189,14 +189,14 @@ int init_bx_btg( btgeom_box *box,vect_3 *pt1, vect_3 *pt2, vect_3 *pt3,btreal th
   
 }
 /** Distance between a point and a box object */
-btreal D_Pt2Bx(vect_3 *dist,btgeom_box *bx, vect_3 *pt)
+btreal D_Pt2Bx(vect_3 *norm,btgeom_box *bx, vect_3 *pt)
 {
   btreal Dist[6],Dmax,Dmin;
   staticv3 sp[7];
   vect_3* tp[7];
-  int cnt,idx = 0,closest_in = -1,closest_out = -1,active_sides = 0;
+  int cnt,idx = 0,closest_inside_plane = -1,closest_outside_plane = -1,active_sides = 0;
   
-  for(cnt = 0;cnt < 2;cnt ++)
+  for(cnt = 0;cnt < 6;cnt ++)
     tp[cnt] = init_staticv3(&sp[cnt]);
   Dmax = -10.0e10;
   Dmin = 10.0e10;
@@ -206,31 +206,30 @@ btreal D_Pt2Bx(vect_3 *dist,btgeom_box *bx, vect_3 *pt)
     
     
     if ((Dist[cnt] < 0.0) && (Dist[cnt] > Dmax)) {
-      if (!bx->inside) active_sides++;
       Dmax = Dist[cnt];
-      closest_in = cnt;
+      closest_inside_plane = cnt;
     }
     else if ((Dist[cnt] > 0.0) && (Dist[cnt] < Dmin)) {
-      if (bx->inside) active_sides++;
+      active_sides++;
       Dmin =  Dist[cnt];
-      closest_out = cnt;
+      closest_outside_plane = cnt;
     }
   }
-  if ((!bx->inside) && (active_sides == 6)){
-    set_v3(dist,tp[closest_in]);
-    return Dist[closest_in];
+  if ((bx->inside) && (active_sides == 6)){
+    set_v3(norm,tp[closest_outside_plane]);
+    return Dist[closest_outside_plane];
   }
-  else if ((!bx->inside)){
-    set_v3(dist,tp[closest_out]);
-    return Dist[closest_out];
+  else if ((bx->inside)){
+    set_v3(norm,tp[closest_inside_plane]);
+    return Dist[closest_inside_plane];
   }
-  else if ((bx->inside) && (active_sides == 6)){
-    set_v3(dist,tp[closest_out]);
-    return Dist[closest_out];
+  else if ((!bx->inside) && (active_sides == 6)){
+    set_v3(norm,neg_v3(tp[closest_outside_plane]));
+    return -Dist[closest_outside_plane];
   }
   else{ //if ((bx->inside)){
-    set_v3(dist,tp[closest_in]);
-    return Dist[closest_in];
+    set_v3(norm,neg_v3(tp[closest_inside_plane]));
+    return -Dist[closest_inside_plane];
   }
     
 }

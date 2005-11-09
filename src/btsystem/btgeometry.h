@@ -107,7 +107,7 @@ dir1 = dim of box in dir of pt1 to pt2
 dir2 = dim of box in dir of pt3 normal to pt1,pt2 line
 */
 int init_bx_btg( btgeom_box *box,vect_3 *pt1, vect_3 *pt2, vect_3 *pt3,btreal thk,btreal dir1,btreal dir2,int inside);
-btreal D_Pt2Bx(vect_3 *dist,btgeom_box *bx, vect_3 *pt);
+btreal D_Pt2Bx(vect_3 *norm,btgeom_box *bx, vect_3 *pt);
 
 #ifdef __cplusplus
 }
