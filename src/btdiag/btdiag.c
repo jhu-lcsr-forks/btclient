@@ -196,7 +196,7 @@ int main(int argc, char **argv)
 
     /* Set the safety limits */
     setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
-
+    setProperty(0,10,TL2,FALSE,8200); //Eliminate torque faults in silly places
     // const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
     // DefineWAMpos(wam, wv);
     
