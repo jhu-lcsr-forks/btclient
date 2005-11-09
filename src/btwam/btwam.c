@@ -969,8 +969,6 @@ void StartContinuousTeach(wam_struct *wam,int Joint,int Div,char *filename) //jo
     PrepDL(&(wam->cteach),2);
     AddDataDL(&(wam->cteach),&(wam->teach_time),sizeof(btreal),4,"Time");
     AddDataDL(&(wam->cteach),valptr_vn((vect_n*)wam->Cpos),sizeof(btreal)*3,4,"Cpos");
-    InitDL(&(wam->cteach),1000,filename);
-    DLon(&(wam->cteach));
   }
   else
   { //Only for joint space recording for now
@@ -978,9 +976,11 @@ void StartContinuousTeach(wam_struct *wam,int Joint,int Div,char *filename) //jo
     PrepDL(&(wam->cteach),2);
     AddDataDL(&(wam->cteach),&(wam->teach_time),sizeof(btreal),4,"Time");
     AddDataDL(&(wam->cteach),valptr_vn(wam->Jpos),sizeof(btreal)*joints,4,"Jpos");
-    InitDL(&(wam->cteach),1000,filename);
-    DLon(&(wam->cteach));
   }
+  
+  InitDL(&(wam->cteach),1000,filename);
+  DLon(&(wam->cteach));
+  TriggerDL(&(wam->cteach));
 }
 /** Stop recording positions to the continuous teach file */
 void StopContinuousTeach(wam_struct *wam)
