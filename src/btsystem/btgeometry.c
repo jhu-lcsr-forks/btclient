@@ -110,6 +110,8 @@ btreal D_Pt2Sp(vect_3 *norm,btgeom_sphere *sp, vect_3 *pt)
 }
 /** Create a box object.
 
+Normals will be pointing outward.
+
 The plane that contains points 1, 2, &3 is the reference side. The normal 
 of the plane determines the matching sidewall (thk away).
 The vector from point 1 to 2 is the normal for the next two sidewalls. They 
@@ -179,8 +181,8 @@ int init_bx_btg( btgeom_box *box,vect_3 *pt1, vect_3 *pt2, vect_3 *pt3,btreal th
   set_v3(tp[5],add_v3(tp[0],scale_v3(-0.5*dir1,box->side[4].normal)));  
 
   init_pl_btg(&box->side[5],tp[5],tp[4],tp[3]); //Plane5
-  
-  if (0){//inside){ //if inside, flip normals and distances
+  box->inside = inside;
+  if (inside){ //if inside, flip normals and distances
     for (cnt = 0; cnt < 6; cnt ++){
       set_v3(box->side[cnt].normal,neg_v3(box->side[cnt].normal));
       box->side[cnt].distance *= -1.0;
@@ -191,45 +193,58 @@ int init_bx_btg( btgeom_box *box,vect_3 *pt1, vect_3 *pt2, vect_3 *pt3,btreal th
 /** Distance between a point and a box object */
 btreal D_Pt2Bx(vect_3 *norm,btgeom_box *bx, vect_3 *pt)
 {
-  btreal Dist[6],Dmax,Dmin;
+  btreal Dist[6],Dmax,Dmin,Dret;
   staticv3 sp[7];
   vect_3* tp[7];
-  int cnt,idx = 0,closest_inside_plane = -1,closest_outside_plane = -1,active_sides = 0;
+  int cnt,idx = 0,closest_in = -1,closest_out = -1,active_sides = 0;
   
-  for(cnt = 0;cnt < 6;cnt ++)
+  for(cnt = 0;cnt < 7;cnt ++)
     tp[cnt] = init_staticv3(&sp[cnt]);
-  Dmax = -10.0e10;
-  Dmin = 10.0e10;
+  Dmax = -10.0e100;
+  Dmin = 10.0e100;
   
   for (cnt = 0; cnt < 6; cnt ++){
     Dist[cnt] = D_Pt2Pl(tp[cnt],&bx->side[cnt],pt);
     
     
-    if ((Dist[cnt] < 0.0) && (Dist[cnt] > Dmax)) {
+    if ((Dist[cnt] < 0.0) ) {
+      if (!bx->inside) active_sides++;
+      if (Dist[cnt] > Dmax){
       Dmax = Dist[cnt];
-      closest_inside_plane = cnt;
+      closest_in = cnt;
+      }
     }
-    else if ((Dist[cnt] > 0.0) && (Dist[cnt] < Dmin)) {
-      active_sides++;
-      Dmin =  Dist[cnt];
-      closest_outside_plane = cnt;
+    else if ((Dist[cnt] > 0.0))  {
+      if (bx->inside) active_sides++;
+      if(Dist[cnt] < Dmin){
+        Dmin =  Dist[cnt];
+        closest_out = cnt;
+      }
     }
   }
-  if ((bx->inside) && (active_sides == 6)){
-    set_v3(norm,tp[closest_outside_plane]);
-    return Dist[closest_outside_plane];
+
+  if ((!bx->inside) && (active_sides == 6)){
+    set_v3(norm,tp[closest_in]);
+    return Dist[closest_in];
   }
-  else if ((bx->inside)){
-    set_v3(norm,tp[closest_inside_plane]);
-    return Dist[closest_inside_plane];
+  else if ((!bx->inside)){
+    set_v3(norm,tp[closest_out]);
+    return Dist[closest_out];
   }
-  else if ((!bx->inside) && (active_sides == 6)){
-    set_v3(norm,neg_v3(tp[closest_outside_plane]));
-    return -Dist[closest_outside_plane];
+  else if ((bx->inside) && (active_sides == 6)){
+    set_v3(norm,tp[closest_out]);
+    return Dist[closest_out];
   }
   else{ //if ((bx->inside)){
-    set_v3(norm,neg_v3(tp[closest_inside_plane]));
-    return -Dist[closest_inside_plane];
+    fill_v3(norm,0.0);
+    Dret = 0.0;
+    for (cnt = 0; cnt < 6; cnt ++){
+      if (Dist[cnt] < 0.0)
+        set_v3(norm,add_v3(norm,scale_v3(-Dist[cnt],tp[cnt])));
+    }
+    Dret = -norm_v3(norm);
+    set_v3(norm,unit_v3(norm));
+    return Dret;
   }
     
 }

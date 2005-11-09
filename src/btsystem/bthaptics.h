@@ -40,6 +40,7 @@ typedef struct bthaptic_object_struct{
   int (*normalforce)(struct bthaptic_object_struct *obj, btreal depth, vect_n *dist, vect_n *vel, vect_n *acc, vect_n *force);
   void *geom,*norm_eff,*tang_eff;
   btgeom_state Istate;
+  double dist; //debugging tool
   int idx;
 }bthaptic_object;
 
@@ -57,6 +58,10 @@ int addobject_bth(bthaptic_scene *bth,bthaptic_object *object);
 void removeobject_bth(bthaptic_scene *bth,int index);
 
 int eval_geom_normal_interact_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *vel, vect_n *acc, vect_n *force);
+
+
+int init_normal_box_bth(bthaptic_object *obj, btgeom_box *box, void*nfobj,void*nffunc);
+btreal box_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *norm);
 
 int init_normal_plane_bth(bthaptic_object *obj, btgeom_plane *plane, void *nfobj,void *nffunc);
 btreal plane_collide_bth(struct bthaptic_object_struct *obj, vect_n *pos, vect_n *norm);

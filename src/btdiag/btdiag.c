@@ -305,20 +305,23 @@ void init_haptics(void)
         init_wickedwall(&wickedwalls[cnt],3000.0, 10.0,5.0,0.020,0.01);
     }
     init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
-    init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,zorig+0.0),const_v3(p2,0.7,0.01,zorig+0.0),const_v3(p3,0.7,0.0,zorig+0.01),1.0,0.6,0.4,1);
-    init_normal_box_bth(&objects[0],&boxs[0],(void*)&bpwall[0],bulletproofwall_nf);
+    init_bx_btg(&boxs[1],const_v3(p1,0.7,0.0,zorig+0.0),const_v3(p2,0.7,0.01,zorig+0.0),const_v3(p3,0.7,0.0,zorig+0.01),1.0,0.6,0.4,1);
+    init_bx_btg(&boxs[0],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.5,0.01,zorig+0.0),const_v3(p3,0.5,0.0,zorig+0.01),0.10,0.1,0.1,0);
+    init_normal_box_bth(&objects[0],&boxs[1],(void*)&bpwall[0],bulletproofwall_nf);
+    init_normal_box_bth(&objects[1],&boxs[0],(void*)&bpwall[0],bulletproofwall_nf);
     addobject_bth(&bth,&objects[0]);
+    addobject_bth(&bth,&objects[1]);
     /*
     for(cnt = 0;cnt < 6;cnt++) {
         init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&bpwall[0],bulletproofwall_nf);
         //init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
         addobject_bth(&bth,&objects[cnt]);
     }*/
-/*
+
     for(cnt = 0;cnt < 4;cnt++) {
         init_normal_sphere_bth(&objects[cnt+6],&spheres[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
         addobject_bth(&bth,&objects[cnt+6]);
-    }*/
+    }
     /*
     //for box demo
     init_bx_btg(&boxs[1],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.5,0.01,0.0),const_v3(p3,0.5,0.0,0.01),0.2,0.2,0.2,1);
@@ -414,13 +417,7 @@ void RenderMAIN_SCREEN()
     double gimb[4],tacc,tvel;
     vectray* vr;
     char vect_buf1[250];
-    /*Haptics debug*/
-  staticv3 sp[7];
-  vect_3* tp[7];
-  btreal Dist[6];
-  for(cnt = 0;cnt < 7;cnt ++)
-    tp[cnt] = init_staticv3(&sp[cnt]);
-  /*Haptics debug*/
+
     /***** Display the interface text *****/
     line = 0;
 
@@ -475,14 +472,7 @@ void RenderMAIN_SCREEN()
     ++line;
     mvprintw(line, 0, "Force      : %s ", sprint_vn(vect_buf1,active_trq));
     line+=2;
-    mvprintw(line, 0, "Haptic D:%f : %s ",objects[0].dist,sprint_vn(vect_buf1,(vect_n*)objects[0].Istate.pos));
-line++;
-    for (cnt = 0; cnt < 6;cnt++){
-      Dist[cnt] = D_Pt2Pl(tp[cnt],&boxs[0].side[cnt],wam->Cpos);
-      mvprintw(line, 0, "Wall 1:%f : %s ",Dist[cnt],sprint_vn(vect_buf1,(vect_n*)tp[cnt]));
-      line++;
-    }
-    mvprintw(line, 0, "Isd:%d Osd:%d As:%d  ",&boxs[0].isd,&boxs[0].osd,&boxs[0].as);
+
     
     
     line+=2;
