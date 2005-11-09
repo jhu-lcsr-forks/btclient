@@ -194,7 +194,7 @@ void maptrajectory_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void*
     sc->btt.eval = eval;
     sc->btt.getstate = getstate;
     sc->btt.dat = dat;
-    mapdata_bttrj(&(sc->btt),sc->tref,sc->dt);//USE sc->local_dt for pausable
+    mapdata_bttrj(&(sc->btt),sc->tref,&sc->local_dt);//USE sc->local_dt for pausable
     set_vn(sc->tref,sc->q); //Initialize trajectory output to a sane value
     sc->btt.state = BTTRAJ_STOPPED;
   }
@@ -278,6 +278,8 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
       else
         sc->btt.state = BTTRAJ_RUN;
     }
+    
+    
     set_vn(sc->qref, getval_pwl(&(sc->pth),evaluate_traptrj(&(sc->trj),*(sc->dt))));
   }
   else if (state == BTTRAJ_DONE && sc->loop_trj)
@@ -507,7 +509,7 @@ int start_trj_bts(btstatecontrol *sc)
 
     setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
     start_traptrj(&(sc->trj), arclength_pwl(&(sc->pth)));
-
+    set_btramp(&(sc->ramp),BTRAMP_MAX);
     sc->btt.state = BTTRAJ_INPREP;
     sc->prep_only = 0;
     ret = 0;
@@ -553,6 +555,7 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
     setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
     arclen = arclength_pwl(&(sc->pth));
     start_traptrj(&(sc->trj), arclen);
+    set_btramp(&(sc->ramp),BTRAMP_MAX);
     sc->btt.state = BTTRAJ_INPREP;
     sc->prep_only = 1;
     sc->mode = SCMODE_TRJ;

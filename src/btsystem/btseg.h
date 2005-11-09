@@ -53,7 +53,7 @@ typedef struct pararray_s{
 }pararray;
 
 pararray* new_pa(int max);
-void destroy_pa(pararray* pa);
+void destroy_pa(pararray** pa);
 
 void clear_pa(pararray* pa);
 btreal add_bseg_pa(pararray* pa,parabolic* p);
@@ -72,7 +72,7 @@ typedef struct pararray_vns{
 }pararray_vn;
 
 pararray_vn* new_pavn(int max,int elements);
-void destroy_pavn(pararray_vn* pavn);
+void destroy_pavn(pararray_vn** pavn);
 void clear_pavn(pararray_vn* pavn);
 vect_n*  add_bseg_pavn(pararray_vn* pavn,vect_n* t0,vect_n* s0,vect_n* sf,vect_n* sp0,vect_n* spf);
 vect_n*  reset_pavn(pararray_vn* pavn);

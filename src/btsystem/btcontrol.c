@@ -1056,7 +1056,7 @@ via_trj_array* new_vta(int num_columns,int max_rows)
   via_trj_array* vt;
   vectray *vr;
   int cnt;
-  vt = malloc_new_vta(num_columns);
+  vt = malloc_vta(num_columns);
   vr = new_vr(num_columns+1,max_rows);
   vt->vr = vr;
   vt->acc = 1.0;

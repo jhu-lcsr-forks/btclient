@@ -201,7 +201,7 @@ pararray* new_pa(int max)
   pa->t = 0.0;
   return pa;
 }
-void destroy_pa(pararray* pa)
+void destroy_pa(pararray** pa)
 {
   btfree((void**)pa);
 }
@@ -265,13 +265,13 @@ pararray_vn* new_pavn(int max,int elements)
   pavn->result = new_vn(elements);
   return pavn;
 }
-destroy_pavn(pararray_vn** pavn)
+void destroy_pavn(pararray_vn** pavn)
 {
   int cnt;
   
   if (*pavn != NULL){
     destroy_vn(&(*pavn)->result);
-    for (cnt = 0; cnt < elements; cnt ++)
+    for (cnt = 0; cnt < (*pavn)->elements; cnt ++)
       destroy_pa(&(*pavn)->pa[cnt]);
   }
   btfree((void**)pavn);
@@ -309,7 +309,7 @@ int getstate_pavn(pararray_vn* pavn)
 {
   int cnt,state;
   btreal ret;
-  state = BTTRAJ_STOPPED;
+  state = BTTRAJ_DONE;
   for (cnt = 0;cnt< pavn->elements; cnt ++)
     if (pavn->pa[cnt]->state == BTTRAJ_RUN)
       state = BTTRAJ_RUN;
