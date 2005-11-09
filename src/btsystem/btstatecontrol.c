@@ -286,7 +286,7 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
   {
 
     clear_pwl(&(sc->pth));
-    add_arclen_point_pwl(&(sc->pth),sc->q);
+    add_arclen_point_pwl(&(sc->pth),sc->qref);
     add_arclen_point_pwl(&(sc->pth),(*(sc->btt.reset))(&(sc->btt)));
 
     setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
@@ -294,7 +294,7 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
 
     sc->btt.state = BTTRAJ_INPREP;
     sc->prep_only = 0;
-    set_vn(sc->qref, getval_pwl(&(sc->pth),evaluate_traptrj(&(sc->trj),*(sc->dt))));
+  
   }
   else if (state == BTTRAJ_READY && sc->loop_trj)
   {
@@ -504,7 +504,7 @@ int start_trj_bts(btstatecontrol *sc)
     sc->mode = SCMODE_TRJ;
     clear_pwl(&(sc->pth));
 
-    add_arclen_point_pwl(&(sc->pth),sc->q);
+    add_arclen_point_pwl(&(sc->pth),sc->qref);
     add_arclen_point_pwl(&(sc->pth),dest);
 
     setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
@@ -549,7 +549,7 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
   if(sc->btt.state == BTTRAJ_STOPPED || sc->btt.state == BTTRAJ_DONE)
   {
     clear_pwl(&(sc->pth));
-    add_arclen_point_pwl(&(sc->pth),sc->q);
+    add_arclen_point_pwl(&(sc->pth),sc->qref);
     add_arclen_point_pwl(&(sc->pth),dest);
 
     setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);

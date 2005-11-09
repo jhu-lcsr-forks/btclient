@@ -103,7 +103,8 @@ bteffect_global myglobal;
 vect_3 *p1,*p2,*p3,*zero_v3;
 bthaptic_scene bth;
 btgeom_state pstate;
-
+char *command_help[100];
+int num_commands;
 /*==============================*
  * PRIVATE Function Prototypes  *
  *==============================*/
@@ -120,6 +121,7 @@ void finish_entry(void);
 void start_entry(void);
 void init_ncurses(void);
 void init_haptics(void);
+void read_keys(char *filename);
 /*==============================*
  * Functions                    *
  *==============================*/
@@ -133,7 +135,10 @@ int main(int argc, char **argv)
     int i;
     struct sched_param mysched;
     char robotName[128];
-    
+    //system("grep case btdiag.c > keys.tmp");
+    //system("sed 's/[[:space:]]*case \\(.*\\)/\\1/' keys.tmp > keys.txt ");
+    system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
+    read_keys("keys.txt");
     wv = new_vn(7);
     /* Initialize the ncurses screen library */
     init_ncurses();
@@ -246,6 +251,35 @@ int WAMcallback(struct btwam_struct *wam)
     eval_bthaptics(&bth,(vect_n*)wam->Cpos,(vect_n*)pstate.vel,(vect_n*)zero_v3,(vect_n*)wam->Cforce);
     apply_tool_force_bot(&(wam->robot), wam->Cpoint, wam->Cforce, wam->Ctrq);
     return 0;
+}
+void read_keys(char *filename)
+{
+  FILE *inf;
+  int done = 0;
+  int cnt = 0;
+  int len = 100;
+  int ret;
+  
+  num_commands = 0;
+  inf = fopen(filename,"r");
+  ret = getline(&(command_help[num_commands]),&len,inf);
+  if (inf != NULL){
+    while (!done){
+      command_help[num_commands] = (char*)btmalloc(100);
+      ret = getline(&(command_help[num_commands]),&len,inf);
+      if (ret == -1 || num_commands > 98)
+        done = 1;
+      else 
+        command_help[num_commands][ret-1] = 0;
+      num_commands++;
+    }
+  }
+  fclose(inf);
+  inf = fopen("test.out","w");
+  for(cnt = 0;cnt < num_commands;cnt++)
+    fprintf(inf,"%s",command_help[cnt]);
+  fclose(inf);
+  
 }
 void init_haptics(void)
 {
@@ -375,7 +409,7 @@ void RenderMAIN_SCREEN()
     int cnt, idx, Mid, cp;
     int line, line2;
     int cpt, nrows;
-    double gimb[4];
+    double gimb[4],tacc,tvel;
     vectray* vr;
     char vect_buf1[250];
 
@@ -469,7 +503,19 @@ void RenderMAIN_SCREEN()
 
     mvprintw(line,0,"bts: state:%d",active_bts->mode);
     mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
-    entryLine = line + 2;
+    line += 2;
+    entryLine = line;
+    line += 2;
+    for (cnt = 0; cnt < num_commands;cnt++){
+      if (cnt % 2){
+        mvprintw(line,40,"%.39s",command_help[cnt]);
+        line += 1;
+      }
+      else {
+        mvprintw(line,0,"%.39s",command_help[cnt]);
+
+      }
+    }
     refresh();
 }
 
@@ -494,15 +540,15 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     int done1;
 
     switch (c) {
-    case 'x':  /* eXit */
-    case 'X':  /* eXit */
+    case 'x'://eXit
+    case  'X'://eXit
         done = 1;
         break;
-        //case 'z':  /* Send home-position to WAM */
+        // 'z':  /* Send home-position to WAM */
         //  const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
         //  DefineWAMpos(wam,wv);
         //  break;
-    case 'g':  /* Set gravity compensation */
+    case 'g'://Set gravity compensation
         start_entry();
         addstr("Enter scale value for gravity (1.0 = 9.8m/s^2): ");
         refresh();
@@ -510,10 +556,10 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         SetGravityComp(wam,tvel);
         finish_entry();
         break;
-    case '_':  /* Refresh display */
+    case '_'://Refresh display
         clearScreen();
         break;
-    case '\t': /* Switch between jointspace and cartesian space trajectories*/
+    case '\t'://Toggle jointspace and cartesian space
         destroy_vta(vta); //empty out the data if it was full
         setmode_bts(&(wam->Jsc),SCMODE_IDLE);
         setmode_bts(&(wam->Csc),SCMODE_IDLE);
@@ -534,19 +580,19 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         }
         clearScreen();
         break;
-    case 'D': //Haptics on
+    case 'D'://Haptics on
         bth.state = 1;
         break;
-    case 'd': //Haptics off
+    case 'd'://Haptics off
         bth.state = 0;
         break;
-    case 'p':  /* Turn on/off Constraint */
+    case 'p'://Turn on/off Constraint
         if (getmode_bts(active_bts)!=SCMODE_IDLE)
             setmode_bts(active_bts,SCMODE_IDLE);
         else
             setmode_bts(active_bts,SCMODE_POS);
         break;
-    case '.':  /* Play presently loaded trajectory */
+    case '.'://Play presently loaded trajectory
         moveparm_bts(active_bts,vel,acc);
         active_bts->loop_trj = 0;
         prev_mode = getmode_bts(active_bts);
@@ -554,10 +600,10 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             setmode_bts(active_bts,SCMODE_POS);
         start_trj_bts(active_bts);
         break;
-    case 'b':  /* Simulate presently loaded trajectory */
+    case 'b'://Simulate presently loaded trajectory
         sim_vta(*vta,0.002,getval_vn(idx_vr(get_vr_vta(*vta),numrows_vr(get_vr_vta(*vta))-1),0),"sim.csv");
         break;
-    case '?':  /* Play presently loaded trajectory */
+    case '?'://Play presently loaded trajectory
         moveparm_bts(active_bts,vel,acc);
         active_bts->loop_trj = 1;
         prev_mode = getmode_bts(active_bts);
@@ -565,18 +611,18 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             setmode_bts(active_bts,SCMODE_POS);
         start_trj_bts(active_bts);
         break;
-    case '/':  /* Stop presently loaded trajectory */
+    case '/'://Stop presently loaded trajectory
         stop_trj_bts(active_bts);
         setmode_bts(active_bts,prev_mode);
         break;
-    case 'Y':  /* Start continuos teach */
+    case 'Y'://Start continuos teach
         if (active_bts == &(wam->Jsc))
             StartContinuousTeach(wam,1,25,"teachpath");
         else
             StartContinuousTeach(wam,0,25,"teachpath");
         cteach = 1;
         break;
-    case 'y': /*Stop continuos teach */
+    case 'y'://Stop continuos teach
         StopContinuousTeach(wam);
         DecodeDL("teachpath","teach.csv",0);
         cteach = 0;
@@ -588,7 +634,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         *vta = read_file_vta(active_file,20);
         register_vta(active_bts,*vta);
         break;
-    case 'l':  /* Load trajectory file */
+    case 'l'://Load trajectory from file
         if(getmode_bts(active_bts)!=SCMODE_TRJ) {
             start_entry();
             addstr("Enter filename for trajectory: ");
@@ -607,7 +653,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             finish_entry();
         }
         break;
-    case 'w':  /*  Save trajectory to a file */
+    case 'w'://Save trajectory to a file
         if(getmode_bts(active_bts)!=SCMODE_TRJ) {
             start_entry();
             addstr("Enter filename for trajectory: ");
@@ -626,7 +672,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             finish_entry();
         }
         break;
-    case 'n': /* Create a new trajectory*/
+    case 'n'://Create a new trajectory
         if(getmode_bts(active_bts)!=SCMODE_TRJ) {
             start_entry();
             addstr("Enter the max number of points that will be in your trajectory: ");
@@ -647,7 +693,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             finish_entry();
         }
         break;
-    case 'M':  /* Move to a location */
+    case 'M'://Move to a location
         if(getmode_bts(active_bts)!=SCMODE_TRJ) {
             start_entry();
             addstr("Enter comma seperated destination \".2,.4,...\": ");
@@ -674,58 +720,76 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             finish_entry();
         }
         break;
-    case 'm':  /* Move to the presently selected trajectory point*/
-        break;
-    case '<':  /* Select next point in the trajectory */
+  /*'m': Move to the presently selected trajectory point*/
+
+    case '<'://Select next trajectory point
         prev_point_vta(*vta);
         break;
-    case '>':  /* Select previous point in the trajectory */
+    case '>'://Select previous trajectory point
         next_point_vta(*vta);
         break;
-    case '+':  /* Insert a point in the trajectory */
+    case '+'://Insert a point in the trajectory
         if(getmode_bts(active_bts)==SCMODE_IDLE) {
             ins_point_vta(*vta,active_pos);
         }
         break;
-    case '-':  /* Remove a point in the trajectory */
+    case '-'://Remove a point in the trajectory
         if(getmode_bts(active_bts)==SCMODE_IDLE) {
             del_point_vta(*vta);
         }
         break;
-    case 's':  /* Set point times by defining a velocity */
+    case 's'://Adjust trj times using a velocity
         if(getmode_bts(active_bts)==SCMODE_IDLE) {
             start_entry();
             addstr("Enter trajectory velocity: ");
             refresh();
-            ret = scanw("%lf\n", &vel);
+            ret = scanw("%lf\n", &tvel);
             if(*vta != NULL)
-                dist_adjust_vta(*vta,vel);
+                dist_adjust_vta(*vta,tvel);
             finish_entry();
         }
         break;
-    case 'S':  /* Scale the present trajectory in time*/
+    case 'S'://Scale trajectory in time
         if(getmode_bts(active_bts)==SCMODE_IDLE) {
             start_entry();
             addstr("Enter scale factor: ");
             refresh();
-            ret = scanw("%lf\n", &vel);
+            ret = scanw("%lf\n", &tvel);
             if(vta != NULL)
-                time_scale_vta(*vta,vel);
+                time_scale_vta(*vta,tvel);
             finish_entry();
         }
         break;
-    case 'A':  /* Set the corner acceleration */
+    case 'A'://Set the corner acceleration
         if(getmode_bts(active_bts)==SCMODE_IDLE) {
             start_entry();
             addstr("Enter Corner Acceleration: ");
             refresh();
-            ret = scanw("%lf\n", &acc);
+            ret = scanw("%lf\n", &tacc);
             if(*vta != NULL)
-                set_acc_vta(*vta,acc);
+                set_acc_vta(*vta,tacc);
             finish_entry();
         }
         break;
-    case ',': /* if PAUSING or PAUSED : Unpause*/
+    case 'a'://Set the move acceleration
+        if(getmode_bts(active_bts)==SCMODE_IDLE) {
+            start_entry();
+            addstr("Enter Move Acceleration: ");
+            refresh();
+            ret = scanw("%lf\n", &acc);
+            finish_entry();
+        }
+         break;
+    case 'v'://Set the move velocity
+        if(getmode_bts(active_bts)==SCMODE_IDLE) {
+            start_entry();
+            addstr("Enter Move Velocity: ");
+            refresh();
+            ret = scanw("%lf\n", &vel);
+            finish_entry();
+        }        
+        break;        
+    case ','://Pause/Unpause trajectory
       status =  movestatus_bts(active_bts);
         if (status == BTTRAJ_PAUSING || status == BTTRAJ_PAUSED)
           unpause_trj_bts(active_bts,2);
@@ -733,7 +797,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
           pause_trj_bts(active_bts,2); 
       break;
         
-    case 27: //Handle and discard extended keyboard characters (like arrows)
+    case 27://Handle and discard extended keyboard characters (like arrows)
         if ((chr = getch()) != ERR) {
             if (chr == 91) {
                 if ((chr = getch()) != ERR) {
