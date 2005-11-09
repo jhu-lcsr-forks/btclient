@@ -482,6 +482,7 @@ line++;
       mvprintw(line, 0, "Wall 1:%f : %s ",Dist[cnt],sprint_vn(vect_buf1,(vect_n*)tp[cnt]));
       line++;
     }
+    mvprintw(line, 0, "Isd:%d Osd:%d As:%d  ",&boxs[0].isd,&boxs[0].osd,&boxs[0].as);
     
     
     line+=2;
@@ -616,11 +617,9 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         else
             setmode_bts(active_bts,SCMODE_POS);
         break;
-<<<<<<< .mine
+
     case '.'://Play loaded trajectory
-=======
-    case '.'://Play presently loaded trajectory
->>>>>>> .r220
+
         moveparm_bts(active_bts,vel,acc);
         active_bts->loop_trj = 0;
         prev_mode = getmode_bts(active_bts);
@@ -628,18 +627,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             setmode_bts(active_bts,SCMODE_POS);
         start_trj_bts(active_bts);
         break;
-<<<<<<< .mine
+
     case 'b'://Simulate loaded trajectory
-=======
-    case 'b'://Simulate presently loaded trajectory
->>>>>>> .r220
+
         sim_vta(*vta,0.002,getval_vn(idx_vr(get_vr_vta(*vta),numrows_vr(get_vr_vta(*vta))-1),0),"sim.csv");
         break;
-<<<<<<< .mine
+
     case '?'://Play loaded trajectory
-=======
-    case '?'://Play presently loaded trajectory
->>>>>>> .r220
+
         moveparm_bts(active_bts,vel,acc);
         active_bts->loop_trj = 1;
         prev_mode = getmode_bts(active_bts);
@@ -647,11 +642,9 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             setmode_bts(active_bts,SCMODE_POS);
         start_trj_bts(active_bts);
         break;
-<<<<<<< .mine
+
     case '/'://Stop loaded trajectory
-=======
-    case '/'://Stop presently loaded trajectory
->>>>>>> .r220
+
         stop_trj_bts(active_bts);
         setmode_bts(active_bts,prev_mode);
         break;
