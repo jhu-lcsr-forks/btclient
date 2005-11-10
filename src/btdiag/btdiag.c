@@ -51,6 +51,7 @@ it to properly establish the time values.
 /*==============================*
  * PRIVATE DEFINED constants    *
  *==============================*/
+enum{SCREEN_MAIN, SCREEN_HELP};
 
 /*==============================*
  * PRIVATE MACRO definitions    *
@@ -79,6 +80,7 @@ vect_n* active_trq;
 vect_n *wv;
 double vel = 0.5,acc = 0.5;
 
+int screen = SCREEN_MAIN;
 int prev_mode;
 char active_file[250];
 char *user_def = "User edited point list";
@@ -105,11 +107,13 @@ bthaptic_scene bth;
 btgeom_state pstate;
 char *command_help[100];
 int num_commands;
+
 /*==============================*
  * PRIVATE Function Prototypes  *
  *==============================*/
 void sigint_handler();
 void RenderMAIN_SCREEN(void);
+void RenderHELP_SCREEN(void);
 void RenderJOINTSPACE_SCREEN(void);
 void RenderCARTSPACE_SCREEN(void);
 void ProcessInput(int c);
@@ -122,6 +126,7 @@ void start_entry(void);
 void init_ncurses(void);
 void init_haptics(void);
 void read_keys(char *filename);
+
 /*==============================*
  * Functions                    *
  *==============================*/
@@ -371,9 +376,14 @@ void DisplayThread()
     while (!done) {
         test_and_log(
             pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
-
-        RenderMAIN_SCREEN();
-
+	switch(screen){
+	case SCREEN_MAIN:
+        	RenderMAIN_SCREEN();
+		break;
+	case SCREEN_HELP:
+		RenderHELP_SCREEN();
+		break;
+	}
         pthread_mutex_unlock(&(disp_mutex));
         usleep(100000);
     }
@@ -421,7 +431,7 @@ void RenderMAIN_SCREEN()
     /***** Display the interface text *****/
     line = 0;
 
-    mvprintw(line , 0, "Barrett Technology - Diagnostic Application");
+    mvprintw(line , 0, "Barrett Technology - Diagnostic Application\t\tPress 'h' for help");
     line+=2;
 
     // Show MODE
@@ -432,14 +442,8 @@ void RenderMAIN_SCREEN()
     } else {
         mvprintw(line, 0, "Mode       : Undefined!!!   ");
     }
-
-    if (bth.state) {
-        mvprintw(line, 40, "Haptics       : ON    ");
-    } else {
-        mvprintw(line, 40, "Haptics       : OFF    ");
-    }
     ++line;
-    
+
     // Show CONSTRAINT
     if (getmode_bts(active_bts)==SCMODE_IDLE)
         mvprintw(line, 0, "Constraint : IDLE      ");
@@ -449,6 +453,13 @@ void RenderMAIN_SCREEN()
         mvprintw(line, 0, "Constraint : TRAJECTORY");
     else
         mvprintw(line, 0, "Constraint : UNDEFINED!");
+    ++line;
+ 
+    if (bth.state) {
+        mvprintw(line, 0, "Haptics    : ON    ");
+    } else {
+        mvprintw(line, 0, "Haptics    : OFF    ");
+    }
     line+=2;
     
     // Show TRAJECTORY
@@ -471,10 +482,6 @@ void RenderMAIN_SCREEN()
     mvprintw(line, 0, "Target     : %s ", sprint_vn(vect_buf1,active_bts->qref));
     ++line;
     mvprintw(line, 0, "Force      : %s ", sprint_vn(vect_buf1,active_trq));
-    line+=2;
-
-    
-    
     line+=2;
     
     if (*vta != NULL) { // print current point
@@ -514,12 +521,18 @@ void RenderMAIN_SCREEN()
         mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
         line += 2;
     }
-    line += 3;
-
+  /*  line += 1;
     mvprintw(line,0,"bts: state:%d",active_bts->mode);
     mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
-    line += 2;
-    entryLine = line;
+    line += 1;
+ */   entryLine = line;
+    refresh();
+}
+
+void RenderHELP_SCREEN(){
+	int cnt, line = 0;
+
+	mvprintw(line, 0, "Help Screen - (press 'h' to toggle)");	
     line += 2;
     for (cnt = 0; cnt < num_commands;cnt++){
       if (cnt % 2){
@@ -531,9 +544,8 @@ void RenderMAIN_SCREEN()
 
       }
     }
-    refresh();
+	refresh();
 }
-
 void clearScreen(void)
 {
     btmutex_lock(&(disp_mutex));
@@ -610,12 +622,20 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
     case '.'://Play loaded trajectory
 
+        if(getmode_bts(active_bts)!=SCMODE_TRJ) {
         moveparm_bts(active_bts,vel,acc);
         active_bts->loop_trj = 0;
         prev_mode = getmode_bts(active_bts);
         if (prev_mode != SCMODE_POS)
             setmode_bts(active_bts,SCMODE_POS);
         start_trj_bts(active_bts);
+        } else {
+            start_entry();
+            addstr("You must stop the running trajectory first!: ");
+            refresh();
+            sleep(1);
+            finish_entry();
+        }
         break;
 
     case 'b'://Simulate loaded trajectory
@@ -623,14 +643,22 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         sim_vta(*vta,0.002,getval_vn(idx_vr(get_vr_vta(*vta),numrows_vr(get_vr_vta(*vta))-1),0),"sim.csv");
         break;
 
-    case '?'://Play loaded trajectory
+    case '?'://Loop loaded trajectory
 
+        if(getmode_bts(active_bts)!=SCMODE_TRJ) {
         moveparm_bts(active_bts,vel,acc);
         active_bts->loop_trj = 1;
         prev_mode = getmode_bts(active_bts);
         if (prev_mode != SCMODE_POS)
             setmode_bts(active_bts,SCMODE_POS);
         start_trj_bts(active_bts);
+        } else {
+            start_entry();
+            addstr("You must stop the running trajectory first!: ");
+            refresh();
+            sleep(1);
+            finish_entry();
+        }
         break;
 
     case '/'://Stop loaded trajectory
@@ -819,7 +847,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         else
           pause_trj_bts(active_bts,2); 
       break;
-        
+       case 'h'://Toggle Help
+        clearScreen();
+	screen = !screen;
+	break;
+ 
     case 27://Handle and discard extended keyboard characters (like arrows)
         if ((chr = getch()) != ERR) {
             if (chr == 91) {
