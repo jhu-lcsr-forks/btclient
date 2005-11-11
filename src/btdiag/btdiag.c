@@ -140,11 +140,10 @@ int main(int argc, char **argv)
     int i;
     struct sched_param mysched;
     char robotName[128];
-    //system("grep case btdiag.c > keys.tmp");
-    //system("sed 's/[[:space:]]*case \\(.*\\)/\\1/' keys.tmp > keys.txt ");
+    /* Figure out what the keys do and print it on screen */
     system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
     read_keys("keys.txt");
-    wv = new_vn(7);
+    
     /* Initialize the ncurses screen library */
     init_ncurses();
     atexit((void*)endwin);
@@ -202,8 +201,7 @@ int main(int argc, char **argv)
     /* Set the safety limits */
     setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
     setProperty(0,10,TL2,FALSE,8200); //Eliminate torque faults in silly places
-    // const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //Blank link home pos
-    // DefineWAMpos(wam, wv);
+
     
     /* Prepare MODE */
     jdest = new_vn(len_vn(wam->Jpos));
@@ -571,10 +569,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     case  'X'://eXit
         done = 1;
         break;
-        // 'z':  /* Send home-position to WAM */
-        //  const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
-        //  DefineWAMpos(wam,wv);
-        //  break;
+
     case 'g'://Set gravity compensation
         start_entry();
         addstr("Enter scale value for gravity (1.0 = 9.8m/s^2): ");
