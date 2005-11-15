@@ -154,14 +154,17 @@ void handleMenu(char c)
         for(i = 0; i < MAX_NODES; i++) {
 		if(status[i]>=0){
 			getProperty(0,i,VERS,&vers);
-		}else{vers = 0;
-		}
-            if(i % 2)
-                printf("\t\tNode %2d: %s vers=%d", i,
-				statusTxt[status[i]+1].s, vers);
-            else
                 printf("\nNode %2d: %s vers=%d", i,
 				statusTxt[status[i]+1].s, vers);
+
+		}else{vers = 0;
+		}
+            //if(i % 2)
+             //   printf("\t\tNode %2d: %s vers=%d", i,
+	//			statusTxt[status[i]+1].s, vers);
+         //   else
+          //      printf("\nNode %2d: %s vers=%d", i,
+	//			statusTxt[status[i]+1].s, vers);
         }
         printf("\n");
         break;
@@ -448,6 +451,7 @@ int BHFirmwareDL(char *fname){
     int count = 0;
     int lobyte, hibyte;
     static int ramarray[300];
+    int errcnt=0;
     
     count=0;
     total_bytes=0;
@@ -473,7 +477,6 @@ int BHFirmwareDL(char *fname){
     Write('X'); //Write to MC68HC811 e<X>ternal EEPROM
 
     printf( "\nPower up the hand to begin download...\n" );
-    int errcnt=0;
     while ( Read() != ':' && errcnt<50) errcnt++; //Wait for RESET
 
     if( errcnt>=50 ){
