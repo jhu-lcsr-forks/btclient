@@ -126,7 +126,7 @@ void showMenu(void)
     printf("\nD)ownload firmware");
     //printf("\nC)hange puck ID");
     printf("\nT)ension cable");
-    //printf("\nB)arrettHand firmware download");
+    printf("\nB)arrettHand firmware download");
 
     printf("\n\nYour Choice: ");
 }
@@ -419,6 +419,7 @@ int Write( char ch )
 {
     char buf[2] = " ";
     buf[0] = ch;
+    buf[1] = 0;
 
     //write character
     return( WriteSerial( buf, 1 ) );
@@ -434,17 +435,17 @@ int EchoWrite(char ch)
     int err;
 
     err = Write( ch );
-   printf("i");fflush(stdout); 
+   fflush(stdout); 
     do{
         test = Read();
     }while( ch != test );
-   printf("o");fflush(stdout);
+   printf("%.2x",ch);fflush(stdout);
     return(err);
 }
 
 int BHFirmwareDL(char *fname){
     char stype[3],shex[80], line[100];
-    int num,opcode,temp_lo,temp_high,first;
+    int num,temp_lo,temp_high,first,opcode;
     FILE *fhook;
     int total_bytes;
     long i;
@@ -478,7 +479,7 @@ int BHFirmwareDL(char *fname){
 
     printf( "\nPower up the hand to begin download...\n" );
     while ( Read() != ':' && errcnt<50) errcnt++; //Wait for RESET
-
+    printf("...%d errors before moving on.\n",errcnt);
     if( errcnt>=50 ){
         printf( "\nDownload Failed\n" );
         return(1);
