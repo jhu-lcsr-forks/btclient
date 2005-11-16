@@ -663,6 +663,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
         stop_trj_bts(active_bts);
         setmode_bts(active_bts,prev_mode);
+        active_bts->loop_trj = 0;
         break;
     case 'Y'://Start continuos teach
         if (active_bts == &(wam->Jsc))
