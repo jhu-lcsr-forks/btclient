@@ -23,6 +23,8 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <string.h>
+#include <syslog.h>
+
 #include "btserial.h"
 
 /** Open serial port 
@@ -32,6 +34,8 @@
 */
 int serialOpen(PORT *port,char *portlocation)
 { 
+    struct termios options;
+    
     // Open port for reading
 //	port->ifd = open(port, 0_RDRW | 0_NOCTTY | 0_NONBLOCK);
     if ( ( port->isp=fopen(portlocation,"r") ) != NULL ) 
@@ -55,6 +59,23 @@ int serialOpen(PORT *port,char *portlocation)
     
     // Set port to no delay on read
     fcntl(port->ifd, F_SETFL, FNDELAY);
+    
+    tcgetattr(port->ofd, &options);
+    
+    /* Show the serial flags   
+    syslog(LOG_ERR, "btserial: c_iflag = %x",options.c_iflag);
+    syslog(LOG_ERR, "btserial: c_oflag = %x",options.c_oflag);
+    syslog(LOG_ERR, "btserial: c_cflag = %x",options.c_cflag);
+    syslog(LOG_ERR, "btserial: c_lflag = %x",options.c_lflag);
+    */
+    
+    options.c_iflag = 0;
+    options.c_oflag = 0;
+    options.c_iflag |= CREAD | CLOCAL;
+    
+    /* * Set the new options for the port...  */ 
+    tcsetattr(port->ifd, TCSANOW, &options); 
+    tcsetattr(port->ofd, TCSANOW, &options); 
     
     return 0; /**\retval 0 Success */
 }
@@ -193,11 +214,10 @@ int serialSetBaud(PORT *port, long baud)
             cfsetospeed(&options, B9600);
         break;
     }
-    /* * Enable the receiver and set local mode...  */ 
-    options.c_cflag |= (CLOCAL | CREAD); 
-    options.c_lflag = 0; 
-    
+
     /* * Set the new options for the port...  */ 
     tcsetattr(port->ifd, TCSANOW, &options); 
-    tcsetattr(port->ofd, TCSANOW, &options); return 0; 
+    tcsetattr(port->ofd, TCSANOW, &options); 
+    
+    return 0; 
 }
