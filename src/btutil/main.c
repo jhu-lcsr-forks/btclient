@@ -473,6 +473,7 @@ int EchoWrite(char ch)
     }while( ch != test );
     if (test==ch)
 	    printf("%2hhX",ch);
+    fflush(stdout);
     return(err);
 }
 
