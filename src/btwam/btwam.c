@@ -403,8 +403,11 @@ void WAMMaintenanceThread(void *data)
 
   while (!btthread_done(this_thd))
   {
-    if (wam->idle_when_done){
-      if (get_trjstate_bts(wam->active_sc) == BTTRAJ_DONE){
+    if (get_trjstate_bts(wam->active_sc) == BTTRAJ_DONE){
+        if(wam->active_sc->loop_trj){
+            start_trj_bts(wam->active_sc);
+        }
+        else if (wam->idle_when_done){
         setmode_bts(wam->active_sc,SCMODE_IDLE);
         wam->idle_when_done = 0;
       }

@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 
     while (!done) {
         /* Check the active trajectory for completion */
-        if (get_trjstate_bts(active_bts) == BTTRAJ_DONE) {
+        if (get_trjstate_bts(active_bts) == BTTRAJ_DONE && !active_bts->loop_trj) {  // BZ-16Nov2005
             stop_trj_bts(active_bts);
             setmode_bts(active_bts,prev_mode);
         }

@@ -279,26 +279,7 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
         sc->btt.state = BTTRAJ_RUN;
     }
     
-    
     set_vn(sc->qref, getval_pwl(&(sc->pth),evaluate_traptrj(&(sc->trj),*(sc->dt))));
-  }
-  else if (state == BTTRAJ_DONE && sc->loop_trj)
-  {
-
-    clear_pwl(&(sc->pth));
-    add_arclen_point_pwl(&(sc->pth),sc->qref);
-    add_arclen_point_pwl(&(sc->pth),(*(sc->btt.reset))(&(sc->btt)));
-
-    setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
-    start_traptrj(&(sc->trj), arclength_pwl(&(sc->pth)));
-
-    sc->btt.state = BTTRAJ_INPREP;
-    sc->prep_only = 0;
-  
-  }
-  else if (state == BTTRAJ_READY && sc->loop_trj)
-  {
-    sc->btt.state = BTTRAJ_RUN;
   }
   else if (state == BTTRAJ_RUN || state == BTTRAJ_PAUSING || state == BTTRAJ_UNPAUSING || state == BTTRAJ_PAUSED)
   {
@@ -622,8 +603,9 @@ int stop_trj_bts(btstatecontrol *sc)
 #endif
 
   btmutex_lock(&(sc->mutex));
-
+  
   sc->btt.state = BTTRAJ_STOPPED;
+  
   btmutex_unlock(&(sc->mutex));
   return 0;
 }
