@@ -190,6 +190,35 @@ void handleMenu(char c)
         printf("\nDone: ");
         printf("\n");
         break;
+    case 'G':
+        printf("\n\nSet puck MOFST\n");
+        printf("\nPuckID: ");
+        scanf("%d", &newID);
+        wakePuck(0,newID);
+        setProperty(0,newID,IKCOR,0,102);
+        setProperty(0,newID,IKP,0,500);
+        setProperty(0,newID,IKI,0,204);
+        if(newID != 7)
+            setProperty(0,newID,IPNM,0,4100);
+        else
+            setProperty(0,newID,IPNM,0,21400);
+        setProperty(0,newID,MODE,0,MODE_TORQUE);
+
+        getProperty(0,newID,MOFST,&dat);
+        printf("\n The old MOFST was:%d\n",dat);
+
+        setProperty(0,newID,ADDR,0,32971);
+        setProperty(0,newID,VALUE,0,1);
+        printf("\nPress enter when the index pulse is found: ");
+        scanf("%d", &dummy);
+        setProperty(0,newID,ADDR,0,32970);
+        getProperty(0,newID,VALUE,&dat);
+        printf("\n The MOFST new is:%d\n",dat);
+        setProperty(0,newID,MOFST,0,dat);
+        setProperty(0,newID,SAVE,0,MOFST);
+        printf("\nDone: ");
+        printf("\n");
+        break;
     case 'P':
         printf("\n\nSet defaults for puck ID: ");
         scanf("%d", &newID);
@@ -384,8 +413,8 @@ int ReadSerial(char *buf, int bytesToRead){
         totalRead += bytesRead;
         if(bytesToRead == totalRead)
             break;
-        usleep(20000);
-        msec += 20;
+        usleep(2000);
+        msec += 2;
         if(msec == 1000){
 		printf("ReadSerial timeout!\n");
             return(1);
@@ -435,17 +464,21 @@ int EchoWrite(char ch)
     int err;
 
     err = Write( ch );
-   fflush(stdout); 
+    if (err!=1) printf("err:%d",err);
+   //fflush(stdout); 
     do{
         test = Read();
+	if (test != ch) 
+		printf("\nSent:%2hhX Recvd:%2hhX\n",ch,test);
     }while( ch != test );
-   printf("%.2x",ch);fflush(stdout);
+    if (test==ch)
+	    printf("%2hhX",ch);
     return(err);
 }
 
 int BHFirmwareDL(char *fname){
     char stype[3],shex[80], line[100];
-    int num,temp_lo,temp_high,first,opcode;
+    unsigned int num,temp_lo,temp_high,first,opcode;
     FILE *fhook;
     int total_bytes;
     long i;
@@ -478,8 +511,9 @@ int BHFirmwareDL(char *fname){
     Write('X'); //Write to MC68HC811 e<X>ternal EEPROM
 
     printf( "\nPower up the hand to begin download...\n" );
-    while ( Read() != ':' && errcnt<50) errcnt++; //Wait for RESET
-    printf("...%d errors before moving on.\n",errcnt);
+    while ( Read() != ':' && errcnt<50){
+	    errcnt++; //Wait for RESET
+    }    
     if( errcnt>=50 ){
         printf( "\nDownload Failed\n" );
         return(1);
@@ -489,7 +523,7 @@ int BHFirmwareDL(char *fname){
     
     strcpy(stype,"");
     first=1;
-    printf("\nProgress: 0%");
+    printf("\nProgress: 0%\n");
     fflush(stdout);
     //Download the *.S19 file
     if((fhook=fopen(fname,"r")) == NULL)
@@ -501,7 +535,7 @@ int BHFirmwareDL(char *fname){
 
         // basic line format, scan into variables 
         sscanf(line,"%2s%2x%2x%2x%76s",stype,&num,&temp_high,&temp_lo,shex);
-	printf("%s %x %x %x %s\n", stype, num, temp_high, temp_lo,
+	printf("%s %2x %2x %2x %2s\n", stype, temp_lo, temp_high, num,
 			shex);
         lobyte=temp_lo; hibyte=temp_high;
         if (strstr(stype,"S1")) {  //If this is a DATA S-Record 
@@ -511,7 +545,7 @@ int BHFirmwareDL(char *fname){
             per = (100*(double)(count+num)/(double)total_bytes)-1;
             if ( per < 0.0) per = 0.0; 
             count += num;
-            printf("\rProgress: %3.0lf%%", per);
+            //printf("\rProgress: %3.0lf%%", per);
             fflush(stdout);
             for (i=0;i<num; i+=1){  // read pairs into ramarray 
                 sscanf(shex+i*2,"%2x",&opcode);
@@ -521,13 +555,18 @@ int BHFirmwareDL(char *fname){
             //Pass the data on to Monitor in the BarrettHand
             //Monitor will write the data to external RAM
             Write(255);
+	    printf("=> ");
             EchoWrite (lobyte);
+	    printf(" ");
             EchoWrite (hibyte);
+	    printf(" ");
             EchoWrite (num);
+	    printf(" ");
             Write(255);
             for (i=0; i<num; i++) {
                 EchoWrite (ramarray[i]);
             }
+	    printf("\n");
         }
     }
     fclose (fhook);
