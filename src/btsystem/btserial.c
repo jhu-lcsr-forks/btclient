@@ -71,7 +71,7 @@ int serialOpen(PORT *port,char *portlocation)
     
     options.c_iflag = 0;
     options.c_oflag = 0;
-    options.c_iflag |= CREAD | CLOCAL;
+    options.c_cflag |= CREAD | CLOCAL;
     
     /* * Set the new options for the port...  */ 
     tcsetattr(port->ifd, TCSANOW, &options); 
