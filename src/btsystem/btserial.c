@@ -62,12 +62,19 @@ int serialOpen(PORT *port,char *portlocation)
     
     tcgetattr(port->ofd, &options);
     
-    /* Show the serial flags   
+    /* Show the serial flags   */
     syslog(LOG_ERR, "btserial: c_iflag = %x",options.c_iflag);
     syslog(LOG_ERR, "btserial: c_oflag = %x",options.c_oflag);
     syslog(LOG_ERR, "btserial: c_cflag = %x",options.c_cflag);
     syslog(LOG_ERR, "btserial: c_lflag = %x",options.c_lflag);
-    */
+
+    tcgetattr(port->ifd, &options);
+    
+    /* Show the serial flags   */
+    syslog(LOG_ERR, "btserial: c_iflag = %x",options.c_iflag);
+    syslog(LOG_ERR, "btserial: c_oflag = %x",options.c_oflag);
+    syslog(LOG_ERR, "btserial: c_cflag = %x",options.c_cflag);
+    syslog(LOG_ERR, "btserial: c_lflag = %x",options.c_lflag);
     
     options.c_iflag = 0;
     options.c_oflag = 0;

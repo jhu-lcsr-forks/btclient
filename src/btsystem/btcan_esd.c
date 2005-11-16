@@ -309,7 +309,7 @@ int canSendMsg(int bus, int id, char len, unsigned char *data, int blocking)
 int wakePuck(int bus, int who)
 {
     setProperty(bus, who, STAT, FALSE, STATUS_READY);
-    usleep(250000); // Wait 250ms for puck to initialize
+    usleep(300000); // Wait 300ms for puck to initialize
     
     return(0);
 }

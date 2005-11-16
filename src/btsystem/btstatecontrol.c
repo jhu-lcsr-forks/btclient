@@ -494,13 +494,15 @@ int start_trj_bts(btstatecontrol *sc)
   if(sc->mode != SCMODE_POS)
     return -2;
 
-  btmutex_lock(&(sc->mutex));
+  
   dest = (*(sc->btt.reset))(&(sc->btt));
+  
   if (dest == NULL){
     ret = -4;
   }
   else if(sc->btt.state == BTTRAJ_STOPPED || sc->btt.state == BTTRAJ_DONE)
   {
+    btmutex_lock(&(sc->mutex));
     sc->mode = SCMODE_TRJ;
     clear_pwl(&(sc->pth));
 
@@ -513,12 +515,13 @@ int start_trj_bts(btstatecontrol *sc)
     sc->btt.state = BTTRAJ_INPREP;
     sc->prep_only = 0;
     ret = 0;
+    btmutex_unlock(&(sc->mutex));
   }
   else
   {
     ret = -1;
   }
-  btmutex_unlock(&(sc->mutex));
+  
 
   return ret;
 }

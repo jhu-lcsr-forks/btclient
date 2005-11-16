@@ -569,7 +569,10 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     case  'X'://eXit
         done = 1;
         break;
-
+    case 'z':  /* Send home-position to WAM */
+          const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
+          DefineWAMpos(wam,wv);
+          break;
     case 'g'://Set gravity compensation
         start_entry();
         addstr("Enter scale value for gravity (1.0 = 9.8m/s^2): ");

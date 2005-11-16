@@ -443,6 +443,7 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
       saf = x2 + v2*(tacc/2); //acc end pos
       tf_prev = s0sfspftf_pb(&pa,tf_prev,sa0,saf,v2,t2+tacc/2);  //acc seg
       add_bseg_pa(pavn->pa[cnt],&pa);
+      usleep(1);
     }
     
     v2 = 0.0;

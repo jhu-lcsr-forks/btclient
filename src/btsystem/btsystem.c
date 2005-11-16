@@ -383,7 +383,12 @@ int InitializeSystem(void)
             act[num_actuators].puck.order = reply-1;
             getProperty(canAddr, id, GRPB, &reply);
             act[num_actuators].puck.group = reply;
-            syslog(LOG_ERR,"Puck: ID-%d CTS-%d IPNM-%d %d PIDX- %d GRPB-%d",act[num_actuators].puck.ID,act[num_actuators].motor.counts_per_rev,act[num_actuators].motor.puckI_per_Nm,PIDX,act[num_actuators].puck.order,act[num_actuators].puck.group);
+            syslog(LOG_ERR,"Puck: ID=%d CTS=%d IPNM=%.2lf PIDX=%d GRPB=%d",
+                act[num_actuators].puck.ID,
+                act[num_actuators].motor.counts_per_rev,
+                act[num_actuators].motor.puckI_per_Nm,
+                act[num_actuators].puck.order,
+                act[num_actuators].puck.group);
             // Set MaxTorque to 3.3A
             setProperty(canAddr, id, MT, FALSE, 4731);
             ++num_actuators; // Update the number of actuators
@@ -676,8 +681,8 @@ void DumpData2Syslog()
   syslog(LOG_ERR, "Actuator data dump:");
   for (cnt = 0; cnt < num_actuators; cnt++)
   {
-    syslog(LOG_ERR, "[%d]:Bus-%d,ID-%d,G-%d,O-%d,IB-%d,IC-%d,M-%d,Off-%d,Enc-%d",
-           cnt, act[cnt].bus, act[cnt].puck.ID, act[cnt].puck.group, act[cnt].puck.order, act[cnt].puck.IoffsetB, act[cnt].puck.IoffsetC,
+    syslog(LOG_ERR, "[%d]:Bus-%d,ID-%d,G-%d,O-%d,M-%d,Off-%d,Enc-%d",
+           cnt, act[cnt].bus, act[cnt].puck.ID, act[cnt].puck.group, act[cnt].puck.order,
            act[cnt].motor.serial, act[cnt].motor.commutation_offset, act[cnt].motor.counts_per_rev);
   }
   for (cnt = 0; cnt < num_buses; cnt++)
