@@ -569,13 +569,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         setmode_bts(&(wam->Csc),SCMODE_IDLE);
 
         if (active_bts == &(wam->Jsc)) { //switch to cartesian space mode.
+            SetCartesianSpace(wam);
             active_bts = &(wam->Csc);
             active_pos = wam->R6pos;
             active_trq = wam->R6force;
             active_dest = cdest;
             vta = &vt_c;
         } else {
-
+            SetJointSpace(wam);
             active_bts = &(wam->Jsc);
             active_pos = wam->Jpos;
             active_trq = wam->Jtrq;
