@@ -288,56 +288,35 @@ void init_haptics(void)
 {
     int cnt;
     btreal xorig,yorig,zorig;
+    int objectCount = 0;
+    
     p1 = new_v3();
     p2 = new_v3();
     p3 = new_v3();
     xorig = 0.0;
     yorig = 0.0;
     zorig = 0.10;
-
+    
     new_bthaptic_scene(&bth,10);
     init_state_btg(&pstate,0.002,30.0);
 
+    // Create workspace bounding box
+    init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,zorig+0.0),const_v3(p2,0.7,0.01,zorig+0.0),const_v3(p3,0.7,0.0,zorig+0.01),1.0,0.6,0.4,1);
+    init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
+    init_normal_box_bth(&objects[objectCount],&boxs[0],(void*)&bpwall[0],bulletproofwall_nf);
+    addobject_bth(&bth,&objects[objectCount++]);
+    
+    // Create nested spheres
     init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.4,0.0,zorig+0.0),0);
     init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.42,0.0,zorig+0.0),1);
     init_sp_btg( &spheres[2],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.3,0.0,zorig+0.0),0);
     init_sp_btg( &spheres[3],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.32,0.0,zorig+0.0),1);
-
-    //init_wall(&mywall,0.0,10.0);
-    for(cnt = 0;cnt < 6;cnt++) {
-        init_wickedwall(&wickedwalls[cnt],3000.0, 10.0,5.0,0.020,0.01);
-    }
-    init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
-    init_bx_btg(&boxs[1],const_v3(p1,0.7,0.0,zorig+0.0),const_v3(p2,0.7,0.01,zorig+0.0),const_v3(p3,0.7,0.0,zorig+0.01),1.0,0.6,0.4,1);
-    init_bx_btg(&boxs[0],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.5,0.01,zorig+0.0),const_v3(p3,0.5,0.0,zorig+0.01),0.10,0.1,0.1,0);
-    init_normal_box_bth(&objects[0],&boxs[1],(void*)&bpwall[0],bulletproofwall_nf);
-    init_normal_box_bth(&objects[1],&boxs[0],(void*)&bpwall[0],bulletproofwall_nf);
-    addobject_bth(&bth,&objects[0]);
-    addobject_bth(&bth,&objects[1]);
-    /*
-    for(cnt = 0;cnt < 6;cnt++) {
-        init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&bpwall[0],bulletproofwall_nf);
-        //init_normal_plane_bth(&objects[cnt],&boxs[0].side[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
-        addobject_bth(&bth,&objects[cnt]);
-    }*/
-
     for(cnt = 0;cnt < 4;cnt++) {
-        init_normal_sphere_bth(&objects[cnt+6],&spheres[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
-        addobject_bth(&bth,&objects[cnt+6]);
+        init_wickedwall(&wickedwalls[cnt],3000.0, 10.0,5.0,0.020,0.01);
+        init_normal_sphere_bth(&objects[objectCount],&spheres[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
+        addobject_bth(&bth,&objects[objectCount++]);
     }
-    /*
-    //for box demo
-    init_bx_btg(&boxs[1],const_v3(p1,0.5,0.0,0.0),const_v3(p2,0.5,0.01,0.0),const_v3(p3,0.5,0.0,0.01),0.2,0.2,0.2,1);
-
-    for(cnt = 0;cnt < 6;cnt++){
-      init_bulletproofwall(&bpwall[cnt],0.002,3000.0,0.002,3000.0,50.0,20.0);
-      //init_wall(&wall[cnt],6000.0,50.0);
-      init_normal_plane_bth(&objects[cnt+10],&boxs[1].side[cnt],(void*)&bpwall[cnt],bulletproofwall_nf);
-      addobject_bth(&bth,&objects[cnt+10]);
-}
-    init_global_bth(&myobject2, &myglobal,60.0,C_v3(-0.0,0.0,0.0));
-    addobject_bth(&bth,&myobject2);
-    */
+    
     const_v3(wam->Cpoint,0.0,-0.0,0.0);
 
     registerWAMcallback(wam,WAMcallback);
