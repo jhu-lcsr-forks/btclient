@@ -767,7 +767,7 @@ void GetPositions()
   {
     err = getPositions(cnt, 0, buses[cnt].num_pucks, data);
     if(err){ // Problem reading positions
-	    syslog(LOG_ERR, "getPositions err = %d", err);
+	    //syslog(LOG_ERR, "getPositions err = %d", err);
     }
     //for each puck on this bus, get your position from the return array
     for (cnt2 = 0; cnt2 < buses[cnt].num_pucks; cnt2++)
