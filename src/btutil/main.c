@@ -21,6 +21,7 @@
 Puck utilities:
  
 Bus enumeration - Prints out what is alive
+Bus Enumeration (debug)- Broadcast request; Print CANid,Serial,Status 
  
 Bus enumeration and puck status - 
   Prints out all interesting puck values.
@@ -124,13 +125,115 @@ void showMenu(void)
     printf("\nF)ind Motor offset");
     printf("\nP)arameter defaults");
     printf("\nD)ownload firmware");
-    //printf("\nC)hange puck ID");
+    printf("\nG)et parameters");
     printf("\nT)ension cable");
     printf("\nB)arrettHand firmware download");
 
     printf("\n\nYour Choice: ");
 }
+void setMofst(int newID){
+	long dat;
+	int dummy;
 
+        wakePuck(0,newID);
+        setProperty(0,newID,MODE,0,MODE_TORQUE);
+
+        getProperty(0,newID,MOFST,&dat);
+        printf("\n The old MOFST was:%d\n",dat);
+
+        setProperty(0,newID,ADDR,0,32971);
+        setProperty(0,newID,VALUE,0,1);
+        printf("\nPress enter when the index pulse is found: ");
+        scanf("%d", &dummy);
+        setProperty(0,newID,ADDR,0,32970);
+        getProperty(0,newID,VALUE,&dat);
+        printf("\n The MOFST new is:%d\n",dat);
+        setProperty(0,newID,MOFST,0,dat);
+        setProperty(0,newID,SAVE,0,MOFST);
+        printf("\nDone: ");
+        printf("\n");
+}
+void paramDefaults(int newID){
+
+        wakePuck(0,newID);
+        setProperty(0,newID,ACCEL,0,32);
+        setProperty(0,newID,AP,0,0);
+        setProperty(0,newID,CT,0,750);
+        setProperty(0,newID,CTS,0,40960);
+        setProperty(0,newID,DP,0,0);
+        setProperty(0,newID,EN,0,0x00EE);
+        setProperty(0,newID,GAIN1,0,0x1000);
+        setProperty(0,newID,GAIN2,0,0x1000);
+        setProperty(0,newID,GAIN3,0,0x1000);
+        if(newID <= 4) { //4DOF
+            setProperty(0,newID,IKCOR,0,1638);
+            setProperty(0,newID,IKP,0,8192);
+            setProperty(0,newID,IKI,0,3276);
+            setProperty(0,newID,IPNM,0,2700);
+        } else if(newID <= 7) { //Wrist
+            setProperty(0,newID,IKCOR,0,819);
+            setProperty(0,newID,IKP,0,4096);
+            setProperty(0,newID,IKI,0,819);
+            if(newID != 7)
+                setProperty(0,newID,IPNM,0,4100);
+            else
+                setProperty(0,newID,IPNM,0,21400);
+
+        }
+        setProperty(0,newID,MT,0,990);
+        setProperty(0,newID,OFFSET1,0,0);
+        setProperty(0,newID,OFFSET2,0,0);
+        setProperty(0,newID,OFFSET3,0,0);
+        setProperty(0,newID,JIDX,0,newID);
+        setProperty(0,newID,PIDX,0,((newID-1)%4)+1);
+        setProperty(0,newID,PTEMP,0,0);
+        setProperty(0,newID,SAVE,0,-1); // Save All
+}
+getParams(int newID){
+	long reply;
+
+        wakePuck(0,newID);
+        getProperty(0,newID,ACCEL,&reply);
+	printf("ACCEL = %ld\n",reply);
+        getProperty(0,newID,AP,&reply);
+	printf("AP = %ld\n",reply);
+        getProperty(0,newID,CT,&reply);
+	printf("CT = %ld\n",reply);
+        getProperty(0,newID,CTS,&reply);
+	printf("CTS = %ld\n",reply);
+        getProperty(0,newID,DP,&reply);
+	printf("DP = %ld\n",reply);
+        getProperty(0,newID,EN,&reply);
+	printf("EN = %ld\n",reply);
+        getProperty(0,newID,GAIN1,&reply);
+	printf("GAIN1 = %ld\n",reply);
+        getProperty(0,newID,GAIN2,&reply);
+	printf("GAIN2 = %ld\n",reply);
+        getProperty(0,newID,GAIN3,&reply);
+	printf("GAIN3 = %ld\n",reply);
+        getProperty(0,newID,IKCOR,&reply);
+	printf("IKCOR = %ld\n",reply);
+        getProperty(0,newID,IKP,&reply);
+	printf("IKP = %ld\n",reply);
+        getProperty(0,newID,IKI,&reply);
+	printf("IKI = %ld\n",reply);
+        getProperty(0,newID,IPNM,&reply);
+	printf("IPNM = %ld\n",reply);
+        getProperty(0,newID,MT,&reply);
+	printf("MT = %ld\n",reply);
+        getProperty(0,newID,OFFSET1,&reply);
+	printf("OFFSET1 = %ld\n",reply);
+        getProperty(0,newID,OFFSET2,&reply);
+	printf("OFFSET2 = %ld\n",reply);
+        getProperty(0,newID,OFFSET3,&reply);
+	printf("OFFSET3 = %ld\n",reply);
+        getProperty(0,newID,JIDX,&reply);
+	printf("JIDX = %ld\n",reply);
+        getProperty(0,newID,PIDX,&reply);
+	printf("PIDX = %ld\n",reply);
+        getProperty(0,newID,PTEMP,&reply);
+	printf("PTEMP = %ld\n",reply);
+}
 void handleMenu(char c)
 {
     char        fname[32];
@@ -172,25 +275,9 @@ void handleMenu(char c)
         printf("\n\nSet puck MOFST\n");
         printf("\nPuckID: ");
         scanf("%d", &newID);
-        wakePuck(0,newID);
-        setProperty(0,newID,MODE,0,MODE_TORQUE);
-
-        getProperty(0,newID,MOFST,&dat);
-        printf("\n The old MOFST was:%d\n",dat);
-
-        setProperty(0,newID,ADDR,0,32971);
-        setProperty(0,newID,VALUE,0,1);
-        printf("\nPress enter when the index pulse is found: ");
-        scanf("%d", &dummy);
-        setProperty(0,newID,ADDR,0,32970);
-        getProperty(0,newID,VALUE,&dat);
-        printf("\n The MOFST new is:%d\n",dat);
-        setProperty(0,newID,MOFST,0,dat);
-        setProperty(0,newID,SAVE,0,MOFST);
-        printf("\nDone: ");
-        printf("\n");
+	setMofst(newID);
         break;
-    case 'G':
+    case 'W':
         printf("\n\nSet puck MOFST\n");
         printf("\nPuckID: ");
         scanf("%d", &newID);
@@ -222,40 +309,13 @@ void handleMenu(char c)
     case 'P':
         printf("\n\nSet defaults for puck ID: ");
         scanf("%d", &newID);
-        wakePuck(0,newID);
-        setProperty(0,newID,ACCEL,0,32);
-        setProperty(0,newID,AP,0,0);
-        setProperty(0,newID,CT,0,750);
-        setProperty(0,newID,CTS,0,40960);
-        setProperty(0,newID,DP,0,0);
-        setProperty(0,newID,EN,0,0x00EE);
-        setProperty(0,newID,GAIN1,0,0x1000);
-        setProperty(0,newID,GAIN2,0,0x1000);
-        setProperty(0,newID,GAIN3,0,0x1000);
-        if(newID <= 4) { //4DOF
-            setProperty(0,newID,IKCOR,0,1638);
-            setProperty(0,newID,IKP,0,8192);
-            setProperty(0,newID,IKI,0,3276);
-            setProperty(0,newID,IPNM,0,2700);
-        } else if(newID <= 7) { //Wrist
-            setProperty(0,newID,IKCOR,0,819);
-            setProperty(0,newID,IKP,0,4096);
-            setProperty(0,newID,IKI,0,819);
-            if(newID != 7)
-                setProperty(0,newID,IPNM,0,4100);
-            else
-                setProperty(0,newID,IPNM,0,21400);
-
-        }
-        setProperty(0,newID,MT,0,990);
-        setProperty(0,newID,OFFSET1,0,0);
-        setProperty(0,newID,OFFSET2,0,0);
-        setProperty(0,newID,OFFSET3,0,0);
-        setProperty(0,newID,JIDX,0,newID);
-        setProperty(0,newID,PIDX,0,((newID-1)%4)+1);
-        setProperty(0,newID,PTEMP,0,0);
-        setProperty(0,newID,SAVE,0,-1); // Save All
+	paramDefaults(newID);
         break;
+    case 'G':
+        printf("\n\nGet params from puck ID: ");
+        scanf("%d", &newID);
+	getParams(newID);
+	break;
     case 'D':
         firmwareDL();
         break;
@@ -284,15 +344,19 @@ int main( int argc, char **argv )
     if(err = initCAN(0)) {
         syslog(LOG_ERR, "initCAN returned err=%d", err);
     }
-
+    if(argc > 1){
+	    c = argv[1][1];
+	    
+    }else{
     /* Show Menu */
     showMenu();
 
     /* Get Choice */
     c = getchar();
     //printf("\nYou pressed ASCII: %d", c);
+    }
     c = toupper(c);
-
+    
     /* Handle Menu */
     handleMenu(c);
 
