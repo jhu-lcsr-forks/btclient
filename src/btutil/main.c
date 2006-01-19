@@ -168,6 +168,7 @@ void setMofst(int newID)
     setProperty(0,newID,VALUE,0,1);
     printf("\nPress enter when the index pulse is found: ");
     mygetch();
+    mygetch();
     setProperty(0,newID,ADDR,0,32970);
     getProperty(0,newID,VALUE,&dat);
     printf("\n The MOFST new is:%d\n",dat);
@@ -190,7 +191,7 @@ void paramDefaults(int newID)
         setProperty(0,newID,IKCOR,0,1638);
         setProperty(0,newID,IKP,0,8192);
         setProperty(0,newID,IKI,0,3276);
-        setProperty(0,newID,IPNM,0,2700);
+        setProperty(0,newID,IPNM,0,2755);
     } else if(newID <= 7) { //Wrist
         setProperty(0,newID,IKCOR,0,819);
         setProperty(0,newID,IKP,0,4096);
@@ -343,7 +344,7 @@ int main( int argc, char **argv )
         handleMenu(toupper(c));
     } else {
         done = FALSE;
-        while(!done){
+        //while(!done){
             /* Show Menu */
             showMenu();
     
@@ -352,7 +353,7 @@ int main( int argc, char **argv )
 
             /* Handle Menu */
             handleMenu(toupper(c));
-        }
+        //}
     }
     
     exit(0);
