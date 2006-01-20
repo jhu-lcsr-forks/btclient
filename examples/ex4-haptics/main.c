@@ -154,14 +154,13 @@ int main(int argc, char **argv)
     
     printf("\n\nRunning -- Press Ctrl-C to quit\n");
     while (!done) {
-        printf("\rPosition: %s -- Force:", sprint_vn(vect_buf1,wam->R6pos));
-        printf(" %s ", sprint_vn(vect_buf1,wam->R6force));
+        printf("\rForce (Nm): %s ", sprint_v3(vect_buf1,wam->Cforce));
         fflush(stdout);
         usleep(100000); // Sleep for 0.1s
     }
 
+    printf("\n\nExiting...\n\n");
     btthread_stop(&wam_thd); //Kill WAMControlThread
-
     exit(1);
 }
 
