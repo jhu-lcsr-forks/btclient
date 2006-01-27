@@ -44,7 +44,7 @@ extern "C"
 {
 #endif/* __cplusplus */
 
-#include <pthread.h>
+//#include <pthread.h>
 #include "btmath.h"
 #include "btos.h"
 #include "btseg.h"
@@ -209,15 +209,6 @@ typedef struct {
 void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, 
 double t3, double v_prev, double v_next, double seg_acc, int end);
 
-                   
-                   
-                   
-                   
-
-
-
-
-
 /** @addtogroup vta Trajectory with parabolic blending at via points
     @ingroup control
     
@@ -300,7 +291,7 @@ fill_vn(pos2,10.0);
 vta = new_vta(6,50); //6 DOF, Maximum of 50 edit points
 register_vta(active_bts,vta); //Register trajectory with state controller
 
-if(cnt = 0;cnt<15;cnt++){ //Add path that goes back & forth 15 times
+for(cnt = 0; cnt < 15; cnt++){ //Add path that goes back & forth 15 times
   ins_point_vta(vta,pos1);
   ins_point_vta(vta,pos2);
 }
