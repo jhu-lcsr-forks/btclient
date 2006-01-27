@@ -200,7 +200,8 @@ int main(int argc, char **argv)
 
     /* Set the safety limits */
     setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
-    setProperty(0,10,TL2,FALSE,8200); //Eliminate torque faults in silly places
+    setProperty(0,10,TL2,FALSE,5400); //Eliminate torque faults in silly places
+    setProperty(0,10,TL1,FALSE,1800); //Eliminate torque faults in silly places
 
     
     /* Prepare MODE */
