@@ -14,7 +14,8 @@ esdcan driver (libntcan)
 Quickstart:
 
 Important! If you have the old puck firmware: (presently UAlberta,MIT,CMU,RIC,B.PW,UTenn)
-You need to add -DBTOLDCONFIG to the Makefiles in the btsystem & btwam libraries.
+Set the environment variable BTOLDCFG to -DBTOLDCONFIG
+Example: #export BTOLDCFG=-DBTOLDCONFIG
 
 #cd src/btdiag
 #chmod 755 makeall run
