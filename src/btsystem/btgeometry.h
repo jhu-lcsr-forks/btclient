@@ -94,6 +94,13 @@ typedef struct {
 int init_sp_btg( btgeom_sphere *sphere, vect_3 *pt1, vect_3 *pt2,int inside);
 btreal D_Pt2Sp(vect_3 *norm,btgeom_sphere *sp, vect_3 *pt);
 
+
+
+
+btreal D_Pt2Pt(vect_3 *pt1, vect_3 *pt2);
+
+
+
 typedef struct {
   btgeom_plane side[6];
   int inside;

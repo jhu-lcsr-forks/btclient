@@ -328,3 +328,81 @@ int wickedwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm
              add_v3((vect_3*)force,
                      scale_v3(WallStiff + WallDamp,(vect_3*)norm)));
 }
+
+
+
+
+
+/** Initialize a haptic wall effect.
+see #bteffect_magneticwall
+*/
+void init_magneticwall(bteffect_magneticwall *wall,btreal Boffset,btreal K2, btreal K2offset, btreal K1, btreal Bin, btreal Bout)
+{
+  wall->K1 = K1;
+  wall->K2 = K2;
+  wall->K2offset = K2offset;
+  wall->Bin = Bin;
+  wall->Bout = Bout;
+  wall->Boffset = Boffset;
+}
+/** Calculate wall interaction forces
+This is a #bthaptic_object_struct virtual interface implimentation.
+*/
+int magneticwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *norm, vect_n *vel, vect_n *acc, vect_n *force)
+{
+  btreal WallStiff,WallDamp,Vel;
+  bteffect_magneticwall *norm_eff;
+
+  
+  WallStiff = 0.0;
+  WallDamp = 0.0;
+
+  norm_eff = (bteffect_magneticwall*)obj->norm_eff;
+  Vel = dot_v3((vect_3*)norm,(vect_3*)vel);
+  
+
+// Variables that can be adjusted:
+// magforce: the force of the magnet, the greater
+//           this value is, the larger the attraction.
+//           typical range is between 0 and 10.
+// oprange: operation range (m), the distance from the 
+//           surface of the magnetic object in which
+//           there is magnetism. At any distance
+//           greater than oprange, there is no
+//           magnetic force on the arm whatsoever. 
+
+
+  double magforce = 0.1;
+  double oprange = 0.5;
+  double threshold = 0.01;
+  double yval = -1.0*norm_eff->K1*threshold;
+  double xval = sqrt(magforce/(-1.0*yval));
+  double shift = threshold - xval;
+  
+
+  if (depth > threshold) {
+     if (depth < oprange)
+       WallStiff = -magforce/((depth - shift)*(depth - shift));
+     else 
+       WallStiff = 0;
+  }
+
+
+  if (depth < threshold){
+     WallStiff = -1.0*norm_eff->K1*depth;
+     if (depth < -1.0*norm_eff->K2offset)
+       WallStiff += -1.0*norm_eff->K2*(depth+norm_eff->K2offset);
+  }
+  
+  if (depth - norm_eff->Boffset < 0.0){
+    if(Vel < 0.0) WallDamp = -1.0*norm_eff->Bin*Vel;
+    else if (Vel > 0.0) WallDamp = -1.0*norm_eff->Bout*Vel;
+  }
+  set_v3((vect_3*)force,
+             add_v3((vect_3*)force,
+                     scale_v3(WallStiff + WallDamp,(vect_3*)norm)));
+}
+
+
+
+

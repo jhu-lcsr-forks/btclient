@@ -108,6 +108,35 @@ btreal D_Pt2Sp(vect_3 *norm,btgeom_sphere *sp, vect_3 *pt)
   
   return Dist;
 }
+
+
+/** Distance between two points */
+
+
+btreal D_Pt2Pt(vect_3 *pt1, vect_3 *pt2)
+{
+    btreal pt1x = getval_vn((vect_n*)pt1, 0);
+    btreal pt1y = getval_vn((vect_n*)pt1, 1);
+    btreal pt1z = getval_vn((vect_n*)pt1, 2);
+
+    btreal pt2x = getval_vn((vect_n*)pt2, 0);
+    btreal pt2y = getval_vn((vect_n*)pt2, 1);
+    btreal pt2z = getval_vn((vect_n*)pt2, 2);
+
+    btreal xd = pt1x - pt2x;
+    btreal yd = pt1y - pt2y;
+    btreal zd = pt1z - pt2z;
+ 
+    btreal distance = sqrt(xd*xd + yd*yd + zd*zd);
+
+    return distance;
+
+}
+
+
+
+
+
 /** Create a box object.
 
 Normals will be pointing outward.

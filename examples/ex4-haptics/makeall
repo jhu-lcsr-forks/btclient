@@ -1,5 +1,5 @@
 rm ../../lib/libbtwam.a ../../lib/libbtsystem.a
-cd ../btsystem
+cd ../../src/btsystem
 make clean
 make lib
 make install
@@ -7,7 +7,7 @@ cd ../btwam
 make clean
 make lib
 make install
-cd ../btdiag
+cd ../../examples/ex4-haptics
 make clean
 make
 
