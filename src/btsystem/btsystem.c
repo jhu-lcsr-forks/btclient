@@ -354,7 +354,6 @@ int InitializeSystem(void)
           if(status[id] != STATUS_READY)
           {
             syslog(LOG_ERR, "The safety module on bus %d is not functioning properly", canAddr);
-            return -1;
           }
         }
         else
