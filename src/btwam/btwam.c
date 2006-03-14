@@ -73,6 +73,8 @@ void InitVectors(wam_struct *wam){
   wam->stop_torque = new_vn(7);
   wam->park_location = new_vn(7);
   wam->Mpos = new_vn(7);
+  wam->N = new_vn(7);
+  wam->n = new_vn(7);
   wam->Mtrq  = new_vn(7);
   wam->Jpos = new_vn(7);
   wam->Jvel = new_vn(7);
@@ -252,6 +254,14 @@ wam_struct* OpenWAM(char *fn, char *rName)
   // Read the worldframe->origin transform matrix
   sprintf(key, "%s.world", robotName);
   parseGetVal(MATRIX, key, (void*)wam->robot.world->origin);
+  
+  // Read the Transmission ratios  
+  sprintf(key, "%s.N", robotName);
+  parseGetVal(VECTOR, key, (void*)wam->N);
+  
+   // Read the transmission ratios
+  sprintf(key, "%s.n", robotName);
+  parseGetVal(VECTOR, key, (void*)wam->n);
   
   for(link = 0; link <= wam->num_actuators; link++)
   {
@@ -641,14 +651,18 @@ int Mtrq2ActTrq(wam_struct *wam,vect_n *Mtrq) //Packs wam_vector of torques into
 void Mpos2Jpos(wam_struct *wam,vect_n * Mpos, vect_n * Jpos) //convert motor angle to joint angle
 {
   btreal pos[10];
+  btreal mN[10];
+  btreal mn[10];
   extract_vn(pos,Mpos);
-  setval_vn(Jpos,0, ( -pos[0] / mN1));
-  setval_vn(Jpos,1, (0.5 * pos[1] / mN2) - (0.5 * pos[2] / mN3));
-  setval_vn(Jpos,2, ( -0.5 * pos[1] * mn3 / mN2) - (0.5 * mn3 * pos[2] / mN3));
-  setval_vn(Jpos,3,  (pos[3] / mN4));
-  setval_vn(Jpos,4, 0.5 * pos[4] / mN5 + 0.5 * pos[5] / mN5);
-  setval_vn(Jpos,5, -0.5 * pos[4] * mn6 / mN5 + 0.5 * mn6 * pos[5] / mN5);
-  setval_vn(Jpos,6, -1 * pos[6] / mN7);
+  extract_vn(mN,wam->N);
+  extract_vn(mn,wam->n);
+  setval_vn(Jpos,0, ( -pos[0] / mN[0]));
+  setval_vn(Jpos,1, (0.5 * pos[1] / mN[1]) - (0.5 * pos[2] / mN[2]));
+  setval_vn(Jpos,2, ( -0.5 * pos[1] * mn[2] / mN[1]) - (0.5 * mn[2] * pos[2] / mN[2]));
+  setval_vn(Jpos,3,  (pos[3] / mN[3]));
+  setval_vn(Jpos,4, 0.5 * pos[4] / mN[4] + 0.5 * pos[5] / mN[4]);
+  setval_vn(Jpos,5, -0.5 * pos[4] * mn[5] / mN[4] + 0.5 * mn[5] * pos[5] / mN[4]);
+  setval_vn(Jpos,6, -1 * pos[6] / mN[6]);
 }
 //=================================================working code
 /** Transform wam_vector Joint positions to Motor positions
@@ -656,28 +670,36 @@ void Mpos2Jpos(wam_struct *wam,vect_n * Mpos, vect_n * Jpos) //convert motor ang
 void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos) //convert motor angle to joint angle
 {
   btreal pos[10];
+  btreal mN[10];
+  btreal mn[10];
   extract_vn(pos,Jpos);
-  setval_vn(Mpos,0, ( -pos[0] * mN1));
-  setval_vn(Mpos,1, (pos[1] * mN2) - (pos[2] * mN3 / mn3));
-  setval_vn(Mpos,2, ( -pos[1] * mN2) - ( pos[2] * mN3 / mn3));
-  setval_vn(Mpos,3, (pos[3] * mN4));
-  setval_vn(Mpos,4,pos[4] * mN5 - pos[5] * mN5 / mn6);
-  setval_vn(Mpos,5, pos[4] * mN5 + pos[5] * mN5 / mn6);
-  setval_vn(Mpos,6, -pos[6] / mN7);
+  extract_vn(mN,wam->N);
+  extract_vn(mn,wam->n);
+  setval_vn(Mpos,0, ( -pos[0] * mN[0]));
+  setval_vn(Mpos,1, (pos[1] * mN[1]) - (pos[2] * mN[2] / mn[2]));
+  setval_vn(Mpos,2, ( -pos[1] * mN[1]) - ( pos[2] * mN[2] / mn[2]));
+  setval_vn(Mpos,3, (pos[3] * mN[3]));
+  setval_vn(Mpos,4,pos[4] * mN[4] - pos[5] * mN[4] / mn[5]);
+  setval_vn(Mpos,5, pos[4] * mN[4] + pos[5] * mN[4] / mn[5]);
+  setval_vn(Mpos,6, -pos[6] / mN[6]);
 }
 /** Transform wam_vector Joint torques to Motor torques
 */
 void Jtrq2Mtrq(wam_struct *wam,vect_n * Jtrq, vect_n * Mtrq) //conbert joint torque to motor torque
 {
   btreal trq[10];
+  btreal mN[10];
+  btreal mn[10];
   extract_vn(trq,Jtrq);
-  setval_vn(Mtrq,0, ( -trq[0] / mN1));
-  setval_vn(Mtrq,1, (0.5 * trq[1] / mN2) - (0.5 * trq[2] *mn3/ mN3));
-  setval_vn(Mtrq,2, ( -0.5 * trq[1]  / mN2) - (0.5 * mn3 * trq[2] / mN3));
-  setval_vn(Mtrq,3,  (trq[3] / mN4));
-  setval_vn(Mtrq,4, 0.5 * trq[4] / mN5 - 0.5 * mn6 * trq[5] / mN5);
-  setval_vn(Mtrq,5, 0.5 * trq[4] / mN5 + 0.5 * mn6 * trq[5] / mN5);
-  setval_vn(Mtrq,6, -1 * trq[6] / mN7);
+  extract_vn(mN,wam->N);
+  extract_vn(mn,wam->n);
+  setval_vn(Mtrq,0, ( -trq[0] / mN[0]));
+  setval_vn(Mtrq,1, (0.5 * trq[1] / mN[1]) - (0.5 * trq[2] *mn[2]/ mN[2]));
+  setval_vn(Mtrq,2, ( -0.5 * trq[1]  / mN[1]) - (0.5 * mn[2] * trq[2] / mN[2]));
+  setval_vn(Mtrq,3,  (trq[3] / mN[3]));
+  setval_vn(Mtrq,4, 0.5 * trq[4] / mN[4] - 0.5 * mn[5] * trq[5] / mN[4]);
+  setval_vn(Mtrq,5, 0.5 * trq[4] / mN[4] + 0.5 * mn[5] * trq[5] / mN[4]);
+  setval_vn(Mtrq,6, -1 * trq[6] / mN[6]);
 }
 
 
