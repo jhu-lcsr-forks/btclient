@@ -102,8 +102,9 @@ static struct argp_option options[] = {
                                         {"mofst",   'f', "pID_mofst",OPTION_ARG_OPTIONAL, "Find motor offset" },
                                         {"defaults",   'p', "pID_def", OPTION_ARG_OPTIONAL, "Set parameter defaults" },
                                         {"params",   'g', "pID_get", OPTION_ARG_OPTIONAL, "Get parameters" },
+                                        {"allparams",   'a', "pID_getall", 0, "Get all parameters for one puck" },
                                         {"target", 'l', "pID_targ",0,"ID of puck you want defaults to look like"},
-                                        {"dlpuck", 'd', "pID_dl", 0, "Download puck firmware over CAN"},
+                                        {"dlpuck", 'd', "DL_FILE", 0, "Download puck firmware over CAN"},
                                         {"tension", 't', "pID_tension", 0, "Tension Cable (not active yet)"},
                                         {"dlhand", 'b', 0, 0, "Download firmware to Barrett Hand"},
                                         { 0 }
@@ -117,7 +118,7 @@ struct arguments
   char cmd;
   int pID,tID;
   int  verbose;
-  char *output_file;
+  char *dl_file;
 };
 /* Parse a single option. */
 static error_t
@@ -137,20 +138,27 @@ parse_opt (int key, char *arg, struct argp_state *state)
     if (arg)
     arguments->pID = atoi(arg);
     break;
+  case 'l':
+    arguments->tID = atoi(arg);
+    break;
   case 'p':
     arguments->cmd = 'P';
     if (arg)
     arguments->pID = atoi(arg);
     break;
+  case 'a':
+    arguments->cmd = 'A';
+    if (arg)
+      arguments->pID = atoi(arg); 
+    break;
   case 'g':
     arguments->cmd = 'G';
     if (arg)
-    arguments->pID = atoi(arg);
+      arguments->pID = atoi(arg); 
     break;
   case 'd':
     arguments->cmd = 'D';
-    if (arg)
-    arguments->pID = atoi(arg);
+    arguments->dl_file = arg;
     break;
   case 'b':
     arguments->cmd = 'B';
@@ -160,8 +168,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
       /* Too many arguments. */
       argp_usage (state);
 
-    arguments->pID = atoi(arg);
-
+      arguments->pID = atoi(arg);
+      printf("Thisarg: %s \n",arg);
     break;
 
   case ARGP_KEY_END:
@@ -176,6 +184,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 }
 /* Our argp parser. */
 static struct argp argp = { options, parse_opt, args_doc, doc };
+struct arguments arguments;
 /******************************************************************************/
 //extern  local_info_t    priv_data;
 int     REVOLUTIONS_F, REVOLUTIONS_R, SMOOTH_CT;
@@ -218,7 +227,7 @@ defaults[] = {
 
 void PuckControlThread(void *data);
 int firmwareDL(void);
-void handleMenu(char c,int passedID);
+void handleMenu(char c);
 void showMenu(void);
 void tensionCable(void);
 
@@ -273,27 +282,29 @@ void setMofst(int newID)
 }
 
 
-void paramDefaults(int newID)
+void paramDefaults(int newID,int targID)
 {
   int i;
+
+  if (targID < 0) targID = newID;
 
   wakePuck(0,newID);
   for(i = 0; defaults[i].key; i++)
     setProperty(0, newID, defaults[i].key, 0, defaults[i].val);
 
-  if(newID <= 4)
+  if(targID <= 4)
   { //4DOF
     setProperty(0,newID,IKCOR,0,1638);
     setProperty(0,newID,IKP,0,8192);
     setProperty(0,newID,IKI,0,3276);
     setProperty(0,newID,IPNM,0,2755);
   }
-  else if(newID <= 7)
+  else if(targID <= 7)
   { //Wrist
     setProperty(0,newID,IKCOR,0,819);
     setProperty(0,newID,IKP,0,4096);
     setProperty(0,newID,IKI,0,819);
-    if(newID != 7)
+    if(targID != 7)
       setProperty(0,newID,IPNM,0,4100);
     else
       setProperty(0,newID,IPNM,0,21400);
@@ -308,7 +319,9 @@ void paramDefaults(int newID)
 getParams(int newID)
 {
   long reply;
-
+  int cnt;
+  
+  
   wakePuck(0,newID);
   getProperty(0,newID,VERS,&reply);
   printf("VERS = %ld\n",reply);
@@ -353,14 +366,25 @@ getParams(int newID)
   getProperty(0,newID,PTEMP,&reply);
   printf("PTEMP = %ld\n",reply);
 }
+allParams(int newID)
+{
+  long reply;
+  int cnt;
+  
+  wakePuck(0,newID);
+  for (cnt = 0;cnt < PROP_END; cnt++){
+    getProperty(0,newID,cnt,&reply);
+    printf("%s = %ld\n",Prop2Name(cnt),reply);
+  }
+}
 
-void handleMenu(char c, int passedID)
+void handleMenu(char c)
 {
   long        status[MAX_NODES];
   int         i;
-  int         newID;
+  int         newID,targID;
   long        vers;
-
+  
 
   switch(c)
   {
@@ -381,23 +405,35 @@ void handleMenu(char c, int passedID)
   case 'F':
     printf("\n\nSet puck MOFST\n");
     printf("\nPuckID: ");
-    if (passedID < 0){
+    if (arguments.pID < 0){
     scanf("%d", &newID);
-    }else{newID = passedID;printf("%d\n",newID);}
+    }else{newID = arguments.pID;printf("%d\n",newID);}
+    
     setMofst(newID);
     break;
   case 'P':
-    printf("\n\nSet defaults for puck ID: ");
-    if (passedID < 0){
+    printf("\n\nSet defaults for puck ID: "); 
+    if (arguments.pID < 0){
     scanf("%d", &newID);
-    }else{newID = passedID;printf("%d\n",newID);}
-    paramDefaults(newID);
+    }else{newID = arguments.pID;printf("%d\n",newID);}
+    if (arguments.tID < 0){
+      targID = -1;
+    }else{targID = arguments.tID;printf("Using target id %d\n",targID);}
+    paramDefaults(newID,targID);
+    break;
+  case 'A':
+    printf("\n\nGet params from puck ID: ");
+    if (arguments.pID < 0){
+    scanf("%d", &newID);
+    }else{newID = arguments.pID;printf("%d\n",newID);}
+    allParams(newID);
+    break;
     break;
   case 'G':
     printf("\n\nGet params from puck ID: ");
-    if (passedID < 0){
+    if (arguments.pID < 0){
     scanf("%d", &newID);
-    }else{newID = passedID;printf("%d\n",newID);}
+    }else{newID = arguments.pID;printf("%d\n",newID);}
     getParams(newID);
     break;
   case 'D':
@@ -428,6 +464,7 @@ void showMenu(void)
   printf("\nP)arameter defaults");
   printf("\nD)ownload firmware");
   printf("\nG)et parameters");
+  printf("\nGet (A)ll parameters");
   printf("\nT)ension cable");
   printf("\nB)arrettHand firmware download");
   printf("\n\nQ)uit");
@@ -439,8 +476,10 @@ int main( int argc, char **argv )
   char            c;
   int             err;
   int pID;
-  struct arguments arguments;
+  
   arguments.pID = -1;
+  arguments.tID = -1;
+  arguments.dl_file = NULL;
   /* Initialize syslogd */
   openlog("LOG_ERR",LOG_CONS | LOG_NDELAY, LOG_USER);
   syslog(LOG_ERR, "syslog initalized");
@@ -456,7 +495,7 @@ int main( int argc, char **argv )
   
   if(argc > 1)
   {
-    handleMenu(arguments.cmd,arguments.pID);
+    handleMenu(arguments.cmd);
   }
   else
   {
@@ -469,7 +508,7 @@ int main( int argc, char **argv )
     c = mygetch();
 
     /* Handle Menu */
-    handleMenu(toupper(c),-1);
+    handleMenu(toupper(c));
     //}
   }
 
@@ -492,9 +531,14 @@ int firmwareDL(void)
   char line[100];
   int rcpt;
 
-  printf("Please enter *.tek file name: ");
-  scanf("%s", fn);
-  printf("Which puck ID [all]");
+  if (arguments.dl_file == NULL){
+    printf("Please enter *.tek file name: ");
+    scanf("%s", fn);
+  }
+  else{
+    strcpy(fn,arguments.dl_file);
+  }
+  printf("Which puck ID [all");
   getBusStatus(0, status);
   cnt = 0;
   for(i = 1; i < MAX_NODES; i++)
