@@ -72,7 +72,8 @@ int getProperty(int bus, int who, int property, long *reply);
 int setProperty(int bus, int who, int property, int verify, long value);
 int getPositions(int bus, int group, int howMany, long *pos);
 int setTorques(int bus, int group, int *values);
-
+char* Prop2Name(int prop);
+int Name2Prop(char *name);
 
 /*! bcastGroup */
 enum {
@@ -231,6 +232,11 @@ enum {
 	JIDX,
     IPNM,
 	PROP_END
+};
+
+struct propTxtStruct {
+	char	key[8];
+	int	idx;
 };
 
 enum bus_status_enum{

@@ -73,6 +73,137 @@ typedef unsigned long DWORD;
 HANDLE              canDev[MAX_BUS];
 pthread_mutex_t     commMutex;
 
+/* keyword, index */
+const struct propTxtStruct propTxt[]={
+    { "OFFSET1", OFFSET1 }, /* Gimbals offset 1 (Q4.12) */
+    { "OFFSET2", OFFSET2 }, /* Gimbals offset 2 (Q4.12) */
+    { "OFFSET3", OFFSET3 }, /* Gimbals offset 3 (Q4.12) */
+    { "TENSION", TENSION }, /* Tensioner output */
+    { "IFAULT", IFAULT }, /* Ignore fault count */
+    { "ILOGIC", ILOGIC }, /* Logic current */
+    { "IMOTOR", IMOTOR }, /* Motor current */
+    { "MAXPWR", MAXPWR }, /* Max allowed power */
+    { "SAMPLE", SAMPLE }, /* Sample time */
+    { "UPSECS", UPSECS }, /* Up seconds in operation */
+    { "VLOGIC", VLOGIC }, /* Logic voltage */
+    { "VOLTH1", VOLTH1 }, /* Voltage high warning level */
+    { "VOLTH2", VOLTH2 }, /* Voltage high critical level */
+    { "VOLTL1", VOLTL1 }, /* Voltage low warning level */
+    { "VOLTL2", VOLTL2 }, /* Voltage low critical level */
+    { "ACCEL", ACCEL }, /* Acceleration */
+    { "ERROR", ERROR }, /* Error */
+    { "GAIN1", GAIN1 }, /* Gimbals gain 1 (Q4.12) */
+    { "GAIN2", GAIN2 }, /* Gimbals gain 2 (Q4.12) */
+    { "GAIN3", GAIN3 }, /* Gimbals gain 3 (Q4.12) */
+    { "IKCOR", IKCOR }, /* Current sense correction factor */
+    { "IOFST", IOFST }, /* Current offset */
+    { "MOFST", MOFST }, /* Mechanical offset */
+    { "OTEMP", OTEMP }, /* Over temperature alarm */
+    { "PTEMP", PTEMP }, /* Peak temperature recorded */
+    { "RATIO", RATIO }, /* Output angle multiplier */
+    { "TENST", TENST }, /* Tension total */
+    { "TENSO", TENSO }, /* Tension offset */
+    { "THERM", THERM }, /* Thermistor */
+    { "TSTOP", TSTOP }, /* Time until considered stopped */
+    { "UNITS", UNITS }, /* Units of input angle */
+    { "VALUE", VALUE }, /* Value to poke/peeked */
+    { "ADDR", ADDR }, /* Address to peek/poke */
+    { "ANA0", ANA0 }, /* Analog input */
+    { "ANA1", ANA1 }, /* Analog input */
+    { "BAUD", BAUD }, /* Baud rate */
+    { "DIG0", DIG0 }, /* Digital I/O */
+    { "DIG1", DIG1 }, /* Digital I/O */
+    { "DUMP", DUMP }, /* Log dump mode: 0=Manual, 1=Auto */
+    { "GRPA", GRPA }, /* Comm group A */
+    { "GRPB", GRPB }, /* Comm group B */
+    { "GRPC", GRPC }, /* Comm group C */
+    { "IOFF", IOFF }, /* Initialization offset */
+    { "IPNM", IPNM }, /* CommandedCurrent / Nm (ratio) */
+    { "IVEL", IVEL }, /* Initialization velocity */
+    { "JIDX", JIDX }, /* Joint index */
+    { "LOAD", LOAD }, /* Load command for CAN */
+    { "LOCK", _LOCK }, /* Lock */
+    { "LOG1", LOG1 }, /* Log variable address 1 */
+    { "LOG2", LOG2 }, /* Log variable address 2 */
+    { "LOG3", LOG3 }, /* Log variable address 3 */
+    { "LOG4", LOG4 }, /* Log variable address 4 */
+    { "MECH", MECH }, /* Mechanical angle */
+    { "MODE", MODE }, /* Mode of operation */
+    { "PIDX", PIDX }, /* Puck index for torque */
+    { "ROLE", ROLE }, /* Role */
+    { "SAFE", SAFE }, /* Safety debug */
+    { "SAVE", SAVE }, /* Save command for CAN */
+    { "STAT", STAT }, /* Status */
+    { "TEMP", TEMP }, /* Temperature */
+    { "TORQ", TORQ }, /* Torque command */
+    { "VBUS", VBUS }, /* Bus voltage */
+    { "VERS", VERS }, /* Version */
+    { "VNOM", VNOM }, /* Vnominal */
+    { "ZERO", ZERO }, /* Zeroed status */
+    { "CTS", CTS }, /* Counts per revolution */
+    { "DEF", DEF }, /* Default command for CAN */
+    { "HSG", HSG }, /* High strain gage */
+    { "IKI", IKI }, /* Current sense integral gain */
+    { "IKP", IKP }, /* Current sense proportional gain */
+    { "LOG", LOG }, /* Log status: 0=Off, 1=Once, 2=Continuous */
+    { "LSG", LSG }, /* Low strain gage */
+    { "MCV", MCV }, /* Max close velocity */
+    { "MDS", MDS }, /* Max duty sum */
+    { "MOV", MOV }, /* Max open velocity */
+    { "MPE", MPE }, /* Max position error */
+    { "PEN", PEN }, /* Pendant debug */
+    { "PWR", PWR }, /* Observed power */
+    { "TL1", TL1 }, /* Torque warning level */
+    { "TL2", TL2 }, /* Torque critical level */
+    { "VL1", VL1 }, /* Velocity warning level (Q4.12) */
+    { "VL2", VL2 }, /* Velocity critical level (Q4.12) */
+    { "AP", AP }, /* Actual position */
+    { "CT", CT }, /* Close torque */
+    { "DP", DP }, /* Default position */
+    { "DS", _DS }, /* Default step */
+    { "EN", EN }, /* Enable bitfield */
+    { "ID", ID }, /* CANbus ID */
+    { "KD", KD }, /* Differential gain */
+    { "KI", KI }, /* Integral gain */
+    { "KP", KP }, /* Proportional gain */
+    { "MD", MD }, /* Max duty */
+    { "MT", MT }, /* Max torque */
+    { "MV", MV }, /* Max velocity */
+    { "OD", OD }, /* Odometer */
+    { "OT", OT }, /* Open torque */
+    { "SG", SG }, /* Strain gage */
+    { "SN", SN }, /* Serial number */
+    { "B", B }, /* Brake */
+    { "D", D }, /* Duty cycle */
+    { "E", E }, /* Endpoint target */
+    { "P", P }, /* Position command */
+    { "V", V }, /* Velocity command */
+
+	{ "",		0		}
+};
+
+char* Prop2Name(int prop)
+{
+  int cnt;
+  
+  cnt = 0;
+  while (cnt < PROP_END && prop != propTxt[cnt].idx){
+    cnt++;
+  }
+  return propTxt[cnt].key;
+}
+int Name2Prop(char *name)
+{
+  int cnt;
+  
+  cnt = 0;
+  while (cnt < PROP_END && strcmp(propTxt[cnt].key,name)!= 0){
+    cnt++;
+  }
+  return propTxt[cnt].idx;
+}
+
+
 /* keyword, index, readFunction, writeFunction, defaultVal, type */
 const int dataType[]={
      /* VERS */ L16 ,
