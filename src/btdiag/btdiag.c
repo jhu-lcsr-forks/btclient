@@ -151,6 +151,7 @@ int main(int argc, char **argv)
     /* Initialize syslog */
     openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
     atexit((void*)closelog);
+    syslog(LOG_ERR,"...Starting btdiag program...");
 
     /* Initialize the display mutex */
     test_and_log(
@@ -198,6 +199,14 @@ int main(int argc, char **argv)
     /* Register the ctrl-c interrupt handler */
     signal(SIGINT, sigint_handler);
 
+    wam->logdivider = 1;
+    PrepDL(&(wam->log),6);
+    AddDataDL(&(wam->log),&(wam->log_time),sizeof(double),2,"Time");
+    //AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
+    AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
+    //AddDataDL(&(wam->log),&(Jpos_filt[4]),sizeof(btreal)*3,4,"Filt");
+    InitDL(&(wam->log),1000,"datafile.dat");
+    
     /* Set the safety limits */
     setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
     setProperty(0,10,TL2,FALSE,5400); //Eliminate torque faults in silly places
@@ -241,12 +250,13 @@ int main(int argc, char **argv)
         /* Check and handle user keypress */
         if ((chr = getch()) != ERR)
             ProcessInput(chr);
-
+        evalDL(&(wam->log));
         usleep(100000); // Sleep for 0.1s
     }
 
     btthread_stop(&wam_thd); //Kill WAMControlThread
-
+    CloseDL(&(wam->log));
+    DecodeDL("datafile.dat","dat.csv",1);
     exit(1);
 }
 int WAMcallback(struct btwam_struct *wam)
@@ -549,9 +559,18 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     case  'X'://eXit
         done = 1;
         break;
-    case '!':
+    case '!'://Set puct 1 to mode TORQ
          setProperty(0, 1, MODE, FALSE, 2);
          break;
+     case '@'://Set puct 1 to mode IDLE
+         setProperty(0, 1, MODE, FALSE, 0);
+         break;
+    case '#': //Data logging on
+      DLon(&(wam->log));
+      break;
+    case '3': //Data logging off
+      DLoff(&(wam->log));
+      break;
     case 'z':  /* Send home-position to WAM */
           const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
           DefineWAMpos(wam,wv);
