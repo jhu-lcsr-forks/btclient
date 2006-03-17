@@ -288,8 +288,14 @@ wam_struct* OpenWAM(char *fn, char *rName)
       wam->motor_position[link] = link;
 #else
 
+      getProperty(wam->act[0].bus, wam->act[link].puck.ID, ROLE, &reply);
+      if (reply == 1){
+	      
+          wam->motor_position[link] = wam->act[link].puck.ID - 1;/** \mtodo Finish this *///reply;
+      }else{
       getProperty(wam->act[0].bus, wam->act[link].puck.ID, JIDX, &reply);
-      wam->motor_position[link] = link;/** \todo Finish this *///reply;
+      wam->motor_position[link] = reply-1;/** \todo Finish this *///reply;
+      }
 #endif
       // Read joint PID constants
       sprintf(key, "%s.link[%d].pid.kp", robotName, link);

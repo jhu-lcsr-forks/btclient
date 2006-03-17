@@ -122,6 +122,7 @@ typedef struct btwam_struct{
 /** \todo Query safety board to see if we already have a valid home position*/
   int isZeroed;   
   int space; // 0 = Joint; 1 = Cartesian;
+  int dof;
   
 //user callback
   int (*force_callback)(struct btwam_struct *wam);

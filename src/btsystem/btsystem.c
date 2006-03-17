@@ -340,7 +340,7 @@ int InitializeSystem(void)
       for(id = cnt = 0; id < MAX_NODES; cnt += status[id++] >= 0)
         ; // Count responding nodes
       syslog(LOG_ERR, "About to allocate space for %d nodes", cnt);
-      act = malloc(sizeof(actuator_struct) * (cnt + 1));
+      act = malloc(sizeof(actuator_struct) * (cnt + 3));
       if (act == NULL)
       {
         syslog(LOG_ERR, "Actuator Memory allocation failed. Tried to allocate %d actuators.", cnt);
@@ -372,8 +372,7 @@ int InitializeSystem(void)
             act[num_actuators].bus = canAddr;
 
             // Query for various info
-            getProperty(canAddr, id, ID, &reply);
-            act[num_actuators].puck.ID = reply;
+            act[num_actuators].puck.ID = id;
             getProperty(canAddr, id, CTS, &reply);
             act[num_actuators].motor.counts_per_rev = reply;
             getProperty(canAddr, id, IPNM, &reply);

@@ -321,14 +321,14 @@ getParams(int newID)
   long reply;
   int cnt;
   
-  
+ printf("\n...Puck %d...\n",newID);  
   wakePuck(0,newID);
   getProperty(0,newID,VERS,&reply);
   printf("VERS = %ld\n",reply);
   getProperty(0,newID,ACCEL,&reply);
   printf("ACCEL = %ld\n",reply);
-  getProperty(0,newID,AP,&reply);
-  printf("AP = %ld\n",reply);
+  //getProperty(0,newID,AP,&reply);
+  //printf("AP = %ld\n",reply);
   getProperty(0,newID,CT,&reply);
   printf("CT = %ld\n",reply);
   getProperty(0,newID,CTS,&reply);
@@ -374,7 +374,7 @@ allParams(int newID)
   wakePuck(0,newID);
   for (cnt = 0;cnt < PROP_END; cnt++){
     getProperty(0,newID,cnt,&reply);
-    printf("%s = %ld\n",Prop2Name(cnt),reply);
+    printf("%d %s = %ld\n",cnt,Prop2Name(cnt),reply);
   }
 }
 
