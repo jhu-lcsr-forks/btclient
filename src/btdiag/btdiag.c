@@ -204,6 +204,7 @@ int main(int argc, char **argv)
     AddDataDL(&(wam->log),&(wam->log_time),sizeof(double),2,"Time");
     //AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
     AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
+    AddDataDL(&(wam->log),&(wam->act[1].puck.position),sizeof(long),BTLOG_LONG,"J4pos");
     //AddDataDL(&(wam->log),&(Jpos_filt[4]),sizeof(btreal)*3,4,"Filt");
     InitDL(&(wam->log),1000,"datafile.dat");
     

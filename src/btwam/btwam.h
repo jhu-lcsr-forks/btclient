@@ -141,6 +141,7 @@ typedef struct btwam_struct{
 //Motor <-> Joint State
   vect_n *Mpos,*Mtrq,*Jpos,*Jvel,*Jacc,*Jref,*Jtref,*Jtrq;
   vect_n *N,*n;
+  matr_mn *M2JP,*J2MT,*J2MP;
 //Kinematics & Dynamics
   double sample_rate;
   btrobot robot;

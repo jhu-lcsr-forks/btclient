@@ -15,7 +15,7 @@
 
 /* Tags -
 This is a list of tags for functionality integrated into the InitWAM and WAMControlThread code
-to make it easier to find and maintaind later
+to make it easier to find and maintain later
  
   //th cteach = Continuous teach & play
   //th prof = Loop time profiling
@@ -75,6 +75,9 @@ void InitVectors(wam_struct *wam){
   wam->Mpos = new_vn(7);
   wam->N = new_vn(7);
   wam->n = new_vn(7);
+  wam->M2JP = new_mn(7,7);
+  wam->J2MT = new_mn(7,7);
+  wam->J2MP = new_mn(7,7);
   wam->Mtrq  = new_vn(7);
   wam->Jpos = new_vn(7);
   wam->Jvel = new_vn(7);
@@ -139,6 +142,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
   long reply;
   int link;
   char robotName[256];
+  int actcnt = 0;
   
   wam = (wam_struct*)btmalloc(sizeof(wam_struct));
   // Allocate memory for the WAM vectors
@@ -220,7 +224,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
 #endif
   wam->act = GetActuators(&(wam->num_actuators));
 
-  new_bot(&wam->robot,wam->num_actuators);
+ 
 
 
   com = new_v3();
@@ -247,6 +251,14 @@ wam_struct* OpenWAM(char *fn, char *rName)
   }
 
   syslog(LOG_ERR, "robotName=%s", robotName);
+  
+    
+  // Read Degrees of Freedom
+  sprintf(key, "%s.dof", robotName);
+  parseGetVal(INT, key, (void*)&wam->dof);
+  
+   new_bot(&wam->robot,wam->dof);
+  
   // Read park_location
   sprintf(key, "%s.home", robotName);
   parseGetVal(VECTOR, key, (void*)wam->park_location);
@@ -254,6 +266,14 @@ wam_struct* OpenWAM(char *fn, char *rName)
   // Read the worldframe->origin transform matrix
   sprintf(key, "%s.world", robotName);
   parseGetVal(MATRIX, key, (void*)wam->robot.world->origin);
+  
+  //Read transmission matrix
+  sprintf(key, "%s.m2jp", robotName);
+  parseGetVal(MATRIX, key, (void*)wam->M2JP);
+  
+  //Read transmission matrix
+  sprintf(key, "%s.j2mt", robotName);
+  parseGetVal(MATRIX, key, (void*)wam->J2MT);
   
   // Read the Transmission ratios  
   sprintf(key, "%s.N", robotName);
@@ -263,7 +283,22 @@ wam_struct* OpenWAM(char *fn, char *rName)
   sprintf(key, "%s.n", robotName);
   parseGetVal(VECTOR, key, (void*)wam->n);
   
-  for(link = 0; link <= wam->num_actuators; link++)
+  // Find motor positions
+  for (actcnt = 0;actcnt < wam->num_actuators;actcnt++){
+#ifdef BTOLDCONFIG
+      wam->motor_position[actcnt] = actcnt;
+#else
+      getProperty(wam->act[actcnt].bus, wam->act[actcnt].puck.ID, ROLE, &reply);
+      if (reply == 1){
+          wam->motor_position[actcnt] = wam->act[actcnt].puck.ID - 1;
+      }
+      else{
+        getProperty(wam->act[actcnt].bus, wam->act[actcnt].puck.ID, JIDX, &reply);
+        wam->motor_position[actcnt] = reply-1;
+      }
+#endif
+  }
+  for(link = 0; link <= wam->dof; link++)
   {
     // Get the DH parameters
     sprintf(key, "%s.link[%d].dh.theta", robotName, link);
@@ -280,23 +315,13 @@ wam_struct* OpenWAM(char *fn, char *rName)
     parseGetVal(VECTOR, key, (void*)com);
     sprintf(key, "%s.link[%d].mass", robotName, link);
     parseGetVal(DOUBLE, key, (void*)&mass);
-
-    if(link != wam->num_actuators)
+    
+    
+    
+    if(link != wam->dof)
     {
       // Query for motor_position (JIDX)
-#ifdef BTOLDCONFIG
-      wam->motor_position[link] = link;
-#else
 
-      getProperty(wam->act[0].bus, wam->act[link].puck.ID, ROLE, &reply);
-      if (reply == 1){
-	      
-          wam->motor_position[link] = wam->act[link].puck.ID - 1;/** \mtodo Finish this *///reply;
-      }else{
-      getProperty(wam->act[0].bus, wam->act[link].puck.ID, JIDX, &reply);
-      wam->motor_position[link] = reply-1;/** \todo Finish this *///reply;
-      }
-#endif
       // Read joint PID constants
       sprintf(key, "%s.link[%d].pid.kp", robotName, link);
       parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->Kp)[link]));
@@ -332,7 +357,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
   }
 
   /* If the WAM is already zeroed, note it- else, zero it */
-  getProperty(wam->act[0].bus, SAFETY_MODULE, ZERO, &reply);
+  getProperty(wam->act[SAFETY_MODULE].bus, SAFETY_MODULE, ZERO, &reply);
   if(reply){
       wam->isZeroed = TRUE;
       syslog(LOG_ERR, "WAM was already zeroed");
@@ -656,9 +681,14 @@ int Mtrq2ActTrq(wam_struct *wam,vect_n *Mtrq) //Packs wam_vector of torques into
 */
 void Mpos2Jpos(wam_struct *wam,vect_n * Mpos, vect_n * Jpos) //convert motor angle to joint angle
 {
+  vect_n tmp_vn[2];
+  btreal tmp_btreal[8];
   btreal pos[10];
   btreal mN[10];
   btreal mn[10];
+  
+  init_local_vn(tmp_vn,tmp_btreal,8);
+  /*
   extract_vn(pos,Mpos);
   extract_vn(mN,wam->N);
   extract_vn(mn,wam->n);
@@ -669,6 +699,8 @@ void Mpos2Jpos(wam_struct *wam,vect_n * Mpos, vect_n * Jpos) //convert motor ang
   setval_vn(Jpos,4, 0.5 * pos[4] / mN[4] + 0.5 * pos[5] / mN[4]);
   setval_vn(Jpos,5, -0.5 * pos[4] * mn[5] / mN[4] + 0.5 * mn[5] * pos[5] / mN[4]);
   setval_vn(Jpos,6, -1 * pos[6] / mN[6]);
+  */
+  set_vn(Jpos,matXvec_mn(wam->M2JP,Mpos,tmp_vn));
 }
 //=================================================working code
 /** Transform wam_vector Joint positions to Motor positions
@@ -693,9 +725,13 @@ void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos) //convert motor ang
 */
 void Jtrq2Mtrq(wam_struct *wam,vect_n * Jtrq, vect_n * Mtrq) //conbert joint torque to motor torque
 {
+  vect_n tmp_vn[2];
+  btreal tmp_btreal[8];
   btreal trq[10];
   btreal mN[10];
   btreal mn[10];
+  init_local_vn(tmp_vn,tmp_btreal,8);
+  /*
   extract_vn(trq,Jtrq);
   extract_vn(mN,wam->N);
   extract_vn(mn,wam->n);
@@ -706,6 +742,9 @@ void Jtrq2Mtrq(wam_struct *wam,vect_n * Jtrq, vect_n * Mtrq) //conbert joint tor
   setval_vn(Mtrq,4, 0.5 * trq[4] / mN[4] - 0.5 * mn[5] * trq[5] / mN[4]);
   setval_vn(Mtrq,5, 0.5 * trq[4] / mN[4] + 0.5 * mn[5] * trq[5] / mN[4]);
   setval_vn(Mtrq,6, -1 * trq[6] / mN[6]);
+  */
+  set_vn(Mtrq,matXvec_mn(wam->J2MT,Jtrq,tmp_vn));
+  
 }
 
 

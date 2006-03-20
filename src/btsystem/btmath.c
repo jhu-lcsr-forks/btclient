@@ -236,7 +236,7 @@ vect_n* init_local_vn(vect_n* header,btreal* data, int size)
    idx_bounds_ok(size,MAX_VECTOR_SIZE,"init_local_vn");
 #endif
   fill_vn(n,0.0);
-  fill_vn(n->ret,0.0);
+  //fill_vn(n->ret,0.0);
   return n;
 }
 
