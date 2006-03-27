@@ -93,6 +93,8 @@ extern int isZeroed;
 static RT_TASK *mainTask;
 btthread disp_thd,wam_thd;
 double sample_rate;
+btreal Jpos_filt[7];
+btfilter *j5,*j6,*j7;
 /******* Haptics *******/
 btgeom_plane myplane,plane2,planes[10];
 bteffect_wall mywall,wall[10];
@@ -107,7 +109,7 @@ bthaptic_scene bth;
 btgeom_state pstate;
 char *command_help[100];
 int num_commands;
-
+double wamdata[8];
 /*==============================*
  * PRIVATE Function Prototypes  *
  *==============================*/
@@ -140,6 +142,16 @@ int main(int argc, char **argv)
     int i;
     struct sched_param mysched;
     char robotName[128];
+    
+    j5 = new_btfilter(5);
+    j6 = new_btfilter(5);
+    j7 = new_btfilter(5);
+    init_btfilter_lowpass(j5,0.002,20,1);
+    init_btfilter_lowpass(j6,0.002,20,0.8);
+    init_btfilter_lowpass(j7,0.002,10,0.5);
+    syslog_filter(j5);
+    syslog_filter(j6);
+    syslog_filter(j7);
     /* Figure out what the keys do and print it on screen */
     system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
     read_keys("keys.txt");
@@ -209,9 +221,8 @@ int main(int argc, char **argv)
     AddDataDL(&(wam->log),&(wam->act[4].puck.position),sizeof(long),BTLOG_LONG,"J5pos");
     AddDataDL(&(wam->log),&(wam->act[5].puck.position),sizeof(long),BTLOG_LONG,"J6pos");
     AddDataDL(&(wam->log),&(wam->act[6].puck.position),sizeof(long),BTLOG_LONG,"J7pos");
-    AddDataDL(&(wam->log),&(wam->act[4].angle),sizeof(double),2,"J5pos");
-    AddDataDL(&(wam->log),&(wam->act[5].angle),sizeof(double),2,"J6pos");
-    AddDataDL(&(wam->log),&(wam->act[6].angle),sizeof(double),2,"J7pos");
+    AddDataDL(&(wam->log),&(Jpos_filt[4]),sizeof(btreal)*3,4,"Filt");
+    AddDataDL(&(wam->log),&(wamdata[4]),sizeof(btreal)*3,4,"Src");
     syslog(LOG_ERR, "chkpt 3");
     //AddDataDL(&(wam->log),&(Jpos_filt[4]),sizeof(btreal)*3,4,"Filt");
     InitDL(&(wam->log),1000,"datafile.dat");
@@ -265,12 +276,29 @@ int main(int argc, char **argv)
     }
 
     btthread_stop(&wam_thd); //Kill WAMControlThread
+    syslog_filter(j5);
     CloseDL(&(wam->log));
     DecodeDL("datafile.dat","dat.csv",1);
     exit(1);
 }
 int WAMcallback(struct btwam_struct *wam)
 {
+    int i;
+    int nob;
+    int cnt;
+    
+    static double da;
+    
+    wamdata[0]=wam->log_time;
+    for(i=0;i<7;i++){
+      wamdata[i]=getval_vn(wam->Jpos,i);
+    }
+    da += 0.001;
+    Jpos_filt[4] = eval_btfilter(j5,wamdata[4]);
+    Jpos_filt[5] = eval_btfilter(j6,wamdata[5]);
+    Jpos_filt[6] = eval_btfilter(j7,wamdata[6]);
+  
+  
     eval_state_btg(&(pstate),wam->Cpos);
     eval_bthaptics(&bth,(vect_n*)wam->Cpos,(vect_n*)pstate.vel,(vect_n*)zero_v3,(vect_n*)wam->Cforce);
     apply_tool_force_bot(&(wam->robot), wam->Cpoint, wam->Cforce, wam->Ctrq);

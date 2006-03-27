@@ -673,9 +673,10 @@ typedef struct
 } btfilter;
 btfilter * new_btfilter(int size);
 btreal  eval_btfilter(btfilter *filt, btreal xnew);
+void syslog_filter(btfilter *filt);
 void  init_btfilter_diff(btfilter *filt, int order, btreal sample_time, btreal cutoffHz);
 void  init_btfilter_butterworth_diff(btfilter *filt, btreal sample_time, btreal cutoffHz);
-void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz);
+void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz, btreal zeta);
 void test_btfilter();
 
 /* Define the Filter structure */

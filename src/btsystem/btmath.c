@@ -2873,6 +2873,28 @@ btfilter * new_btfilter(int size)
   return ptr;
 }
 
+void syslog_filter(btfilter *filt)
+{
+  int i;
+  syslog(LOG_ERR,"Filter Parameters Dump: ptr %x",filt);
+  syslog(LOG_ERR,"Order: %d, size: %d, zeta: %d, idx: %d",filt->order,filt->size,filt->zeta,filt->index);
+  
+  for (i = 0; i < filt->size; i++){
+    syslog(LOG_ERR,"d[%d]:%f",i,filt->d[i]);
+  }
+  for (i = 0; i < filt->size; i++){
+    syslog(LOG_ERR,"n[%d]:%f",i,filt->n[i]);
+  }
+  for (i = 0; i < filt->size; i++){
+    syslog(LOG_ERR,"x[%d]:%f",i,filt->x[i]);
+  }
+  for (i = 0; i < filt->size; i++){
+    syslog(LOG_ERR,"y[%d]:%f",i,filt->y[i]);
+  }
+  
+  
+  
+}
 
 /** Evaluates a btfilter object.
  
@@ -2883,7 +2905,7 @@ incoming value and get the resulting filtered value.
 */
 btreal eval_btfilter(btfilter *filt, btreal xnew)
 {
-  int       i,idx;
+  int       i,j,idx;
   btreal      ynew;
 
   idx = filt->index;
@@ -2892,8 +2914,8 @@ btreal eval_btfilter(btfilter *filt, btreal xnew)
   filt->y[idx] = 0;
 
   for (i=0; i<=filt->order; i++){
-    filt->y[idx] += filt->n[i] * filt->x[ (idx+i+1)%(filt->order+1) ]
-                    - filt->d[i] * filt->y[ (idx+i+1)%(filt->order+1) ];
+    j = (idx+i+1)%(filt->order+1);
+    filt->y[idx] += filt->n[i] * filt->x[j]  - filt->d[i] * filt->y[j];
   }
 
   ynew  = filt->y[idx];
@@ -2994,7 +3016,7 @@ void  init_btfilter_butterworth_diff(btfilter *filt, btreal sample_time, btreal 
 
 
 }
-void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz)
+void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz, btreal zeta)
 {  //  Initializes coefficients for lowpass filter with 2 complex poles
   //  (or real poles if zeta=1).
   //  Zeta is the damping ratio, filtcutHz is the cutoff frequency.
@@ -3009,7 +3031,7 @@ void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz)
 
   filt->index = 0;
   filt->order = 2;
-  filt->zeta = 0;
+  filt->zeta = zeta;
 
   for(i=0; i<=4; i++)
   {
