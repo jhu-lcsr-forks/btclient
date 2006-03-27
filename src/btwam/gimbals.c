@@ -75,9 +75,9 @@ int initGimbals(wam_struct *WAM)
         usleep(100000);
         setProperty(0,5,DIG0,FALSE,1);
         setProperty(0,5,DIG1,FALSE,1);
-        WAM->act[4].motor.counts_per_rev = 4096.0;
-        WAM->act[5].motor.counts_per_rev = 4096.0;
-        WAM->act[6].motor.counts_per_rev = 4096.0;
+//WAM->act[4].motor.counts_per_rev = 4096.0;
+ //       WAM->act[5].motor.counts_per_rev = 4096.0;
+  //      WAM->act[6].motor.counts_per_rev = 4096.0;
 #if 0          
         /* Read the gain/offset information from the gimbals.dat file */
         if((inFile = fopen("gimbals.dat", "r")) == NULL)

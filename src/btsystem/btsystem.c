@@ -483,7 +483,7 @@ int InitializeSystem(void)
       {
         if (act[buses[cnt].pucks_by_id[cnt2]].puck.group == buses[cnt].group[cnt3].group_number)
         {
-          buses[cnt].group[cnt3].pucks_by_order[act[buses[cnt].pucks_by_id[cnt2]].puck.order] = buses[cnt].pucks_by_id[cnt2];
+          buses[cnt].group[cnt3].pucks_by_order[act[buses[cnt].pucks_by_id[cnt2]].puck.order % 4] = buses[cnt].pucks_by_id[cnt2];
         }
       }
     }

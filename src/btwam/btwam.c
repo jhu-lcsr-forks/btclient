@@ -297,6 +297,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
         wam->motor_position[actcnt] = reply-1;
       }
 #endif
+      syslog(LOG_ERR,"Motor[%d] is joint %d",actcnt,wam->motor_position[actcnt]);
   }
   for(link = 0; link <= wam->dof; link++)
   {

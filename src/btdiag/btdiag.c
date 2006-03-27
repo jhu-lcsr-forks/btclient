@@ -200,13 +200,19 @@ int main(int argc, char **argv)
     signal(SIGINT, sigint_handler);
 
     wam->logdivider = 1;
-    PrepDL(&(wam->log),6);
+    syslog(LOG_ERR, "chkpt 1");
+    PrepDL(&(wam->log),15);
+    syslog(LOG_ERR, "chkpt 2");
     AddDataDL(&(wam->log),&(wam->log_time),sizeof(double),2,"Time");
     //AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
     AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
-    AddDataDL(&(wam->log),&(wam->act[1].puck.position),sizeof(long),BTLOG_LONG,"J4pos");
+    AddDataDL(&(wam->log),&(wam->act[4].puck.position),sizeof(long),BTLOG_LONG,"J5pos");
+    AddDataDL(&(wam->log),&(wam->act[5].puck.position),sizeof(long),BTLOG_LONG,"J6pos");
+    AddDataDL(&(wam->log),&(wam->act[6].puck.position),sizeof(long),BTLOG_LONG,"J7pos");
+    syslog(LOG_ERR, "chkpt 3");
     //AddDataDL(&(wam->log),&(Jpos_filt[4]),sizeof(btreal)*3,4,"Filt");
     InitDL(&(wam->log),1000,"datafile.dat");
+    syslog(LOG_ERR, "chkpt 4");
     
     /* Set the safety limits */
     setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
