@@ -214,13 +214,7 @@ defaults[] = {
                CTS, 40960,
                DP, 0,
                EN, 0x00EE,
-               GAIN1, 0x1000,
-               GAIN2, 0x1000,
-               GAIN3, 0x1000,
                MT, 990,
-               OFFSET1, 0,
-               OFFSET2, 0,
-               OFFSET3, 0,
                PTEMP, 0,
                0, 0
              };
@@ -308,6 +302,15 @@ void paramDefaults(int newID,int targID)
       setProperty(0,newID,IPNM,0,4100);
     else
       setProperty(0,newID,IPNM,0,21400);
+  }
+  else if(targID <= 8){//Gimbals
+	  setProperty(0,newID,CTS,0,25736);
+	  setProperty(0,newID,OFFSET1,0,-13725);
+	  setProperty(0,newID,OFFSET2,0,-13357);
+	  setProperty(0,newID,OFFSET3,0,-12762);
+	  setProperty(0,newID,GAIN1,0,12428);
+	  setProperty(0,newID,GAIN2,0,29072);
+	  setProperty(0,newID,GAIN3,0,27239);
   }
 
   setProperty(0,newID,JIDX,0,newID);

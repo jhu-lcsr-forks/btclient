@@ -60,6 +60,7 @@ Typical usage:
 */
 int PrepDL(btlogger *db, unsigned int fields)
 {
+  int cnt;
 #ifdef BT_NULL_PTR_GUARD
   if (!btptr_ok(db,"PrepDL"))
     return -2;
@@ -68,6 +69,9 @@ int PrepDL(btlogger *db, unsigned int fields)
   
   db->fields = 0;
   db->maxfields = fields;
+  for(cnt = 0; cnt < db->maxfields;cnt++)
+    db->data[cnt].size = 0;
+   
   return 0;
 }
 /** Adds a field to the list of data to log.

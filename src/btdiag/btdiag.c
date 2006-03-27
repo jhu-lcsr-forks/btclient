@@ -209,6 +209,9 @@ int main(int argc, char **argv)
     AddDataDL(&(wam->log),&(wam->act[4].puck.position),sizeof(long),BTLOG_LONG,"J5pos");
     AddDataDL(&(wam->log),&(wam->act[5].puck.position),sizeof(long),BTLOG_LONG,"J6pos");
     AddDataDL(&(wam->log),&(wam->act[6].puck.position),sizeof(long),BTLOG_LONG,"J7pos");
+    AddDataDL(&(wam->log),&(wam->act[4].angle),sizeof(double),2,"J5pos");
+    AddDataDL(&(wam->log),&(wam->act[5].angle),sizeof(double),2,"J6pos");
+    AddDataDL(&(wam->log),&(wam->act[6].angle),sizeof(double),2,"J7pos");
     syslog(LOG_ERR, "chkpt 3");
     //AddDataDL(&(wam->log),&(Jpos_filt[4]),sizeof(btreal)*3,4,"Filt");
     InitDL(&(wam->log),1000,"datafile.dat");
