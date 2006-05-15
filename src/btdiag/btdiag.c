@@ -110,6 +110,7 @@ btgeom_state pstate;
 char *command_help[100];
 int num_commands;
 double wamdata[8];
+int NoSafety;
 /*==============================*
  * PRIVATE Function Prototypes  *
  *==============================*/
@@ -192,6 +193,13 @@ int main(int argc, char **argv)
     for(i = 1; i < argc-1; i++){
         if(!strcmp(argv[i],"-n"))
             strcpy(robotName, argv[i+1]);
+    }
+    
+    /* Do we want to bypass the safety circuit + pendant? */
+    NoSafety = 0;
+    for(i = 1; i < argc-1; i++){
+        if(!strcmp(argv[i],"-ns"))
+            NoSafety = 1;
     }
     
     /* Initialize and get a handle to the robot */
@@ -597,19 +605,23 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
     case  'X'://eXit
         done = 1;
         break;
-    case '!'://Set puct 1 to mode TORQ
-         setProperty(0, 1, MODE, FALSE, 2);
+    case '!'://Set puck to mode TORQ
+         if (NoSafety)
+           EnergizeActuators();
+           //setProperty(0, 1, MODE, FALSE, 2);
          break;
-     case '@'://Set puct 1 to mode IDLE
-         setProperty(0, 1, MODE, FALSE, 0);
+     case '@'://Set puck to mode IDLE
+         if (NoSafety)
+           IdleActuators();
+           //setProperty(0, 1, MODE, FALSE, 0);
          break;
-    case '#': //Data logging on
+    case '#'://Data logging on
       DLon(&(wam->log));
       break;
-    case '3': //Data logging off
+    case '3'://Data logging off
       DLoff(&(wam->log));
       break;
-    case 'z':  /* Send home-position to WAM */
+    case 'z'://Send home-position to WAM
           const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
           DefineWAMpos(wam,wv);
           break;

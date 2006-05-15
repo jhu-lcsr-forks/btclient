@@ -72,7 +72,7 @@ int getProperty(int bus, int who, int property, long *reply);
 int setProperty(int bus, int who, int property, int verify, long value);
 int getPositions(int bus, int group, int howMany, long *pos);
 int setTorques(int bus, int group, int *values);
-char* Prop2Name(int prop);
+const char* Prop2Name(int prop);
 int Name2Prop(char *name);
 
 /*! bcastGroup */
@@ -164,7 +164,7 @@ enum {
     BAUD,
     TEMP,
     OTEMP,
-    LOCK,
+    _LOCK,
     DIG0,
     DIG1,
     ANA0,
@@ -182,7 +182,7 @@ enum {
     SG,
     HSG,
     LSG,
-    DS,
+    _DS,
     IVEL,
     IOFF,
     MPE,

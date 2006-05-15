@@ -75,89 +75,105 @@ pthread_mutex_t     commMutex;
 
 /* keyword, index */
 const struct propTxtStruct propTxt[]={
-    { "OFFSET1", OFFSET1 }, /* Gimbals offset 1 (Q4.12) */
-    { "OFFSET2", OFFSET2 }, /* Gimbals offset 2 (Q4.12) */
-    { "OFFSET3", OFFSET3 }, /* Gimbals offset 3 (Q4.12) */
-    { "TENSION", TENSION }, /* Tensioner output */
+    { "OFFSET1", OFFSET1 }, /* Gimbals offset 1 (Q4.12 rad) */
+    { "OFFSET2", OFFSET2 }, /* Gimbals offset 2 (Q4.12 rad) */
+    { "OFFSET3", OFFSET3 }, /* Gimbals offset 3 (Q4.12 rad) */
+    { "TENSION", TENSION }, /* Tensioner output: 0=Off, 1=On */
+    { "VALUE32", VALUE32 }, /* 32-bit value to poke/peek */
     { "IFAULT", IFAULT }, /* Ignore fault count */
-    { "ILOGIC", ILOGIC }, /* Logic current */
-    { "IMOTOR", IMOTOR }, /* Motor current */
-    { "MAXPWR", MAXPWR }, /* Max allowed power */
-    { "SAMPLE", SAMPLE }, /* Sample time */
-    { "UPSECS", UPSECS }, /* Up seconds in operation */
-    { "VLOGIC", VLOGIC }, /* Logic voltage */
-    { "VOLTH1", VOLTH1 }, /* Voltage high warning level */
-    { "VOLTH2", VOLTH2 }, /* Voltage high critical level */
-    { "VOLTL1", VOLTL1 }, /* Voltage low warning level */
-    { "VOLTL2", VOLTL2 }, /* Voltage low critical level */
-    { "ACCEL", ACCEL }, /* Acceleration */
-    { "ERROR", ERROR }, /* Error */
-    { "GAIN1", GAIN1 }, /* Gimbals gain 1 (Q4.12) */
-    { "GAIN2", GAIN2 }, /* Gimbals gain 2 (Q4.12) */
-    { "GAIN3", GAIN3 }, /* Gimbals gain 3 (Q4.12) */
+    { "ILOGIC", ILOGIC }, /* Logic current (tbd) */
+    { "IMOTOR", IMOTOR }, /* Motor current (mA) */
+    { "MAXPWR", MAXPWR }, /* Max allowed power (tbd) */
+    { "SAMPLE", SAMPLE }, /* Sample time (tbd) */
+    { "UPSECS", UPSECS }, /* Up seconds in operation (tbd) */
+    { "VLOGIC", VLOGIC }, /* Logic voltage (tbd) */
+    { "VOLTH1", VOLTH1 }, /* Voltage high warning level (safety) */
+    { "VOLTH2", VOLTH2 }, /* Voltage high critical level (safety) */
+    { "VOLTL1", VOLTL1 }, /* Voltage low warning level (safety) */
+    { "VOLTL2", VOLTL2 }, /* Voltage low critical level (safety) */
+    { "ACCEL", ACCEL }, /* Acceleration (Q8.8 cts/ms/ms) */
+    { "ECMAX", ECMAX }, /* Encoder correction max value */
+    { "ECMIN", ECMIN }, /* Encoder correction min value */
+    { "ERROR", ERROR }, /* Error (tbd) */
+    { "GAIN1", GAIN1 }, /* Gimbals/safety gain 1 (Q4.12 rad/3V) */
+    { "GAIN2", GAIN2 }, /* Gimbals/safety gain 2 (Q4.12 rad/3V) */
+    { "GAIN3", GAIN3 }, /* Gimbals/safety gain 3 (Q4.12 rad/3V) */
+    { "HALLH", HALLH }, /* Hall history bitfield */
+    { "HALLS", HALLS }, /* Hall feedback bitfield: CBA */
     { "IKCOR", IKCOR }, /* Current sense correction factor */
-    { "IOFST", IOFST }, /* Current offset */
-    { "MOFST", MOFST }, /* Mechanical offset */
-    { "OTEMP", OTEMP }, /* Over temperature alarm */
-    { "PTEMP", PTEMP }, /* Peak temperature recorded */
-    { "RATIO", RATIO }, /* Output angle multiplier */
-    { "TENST", TENST }, /* Tension total */
-    { "TENSO", TENSO }, /* Tension offset */
-    { "THERM", THERM }, /* Thermistor */
+    { "IOFST", IOFST }, /* Current offset calibration */
+    { "MOFST", MOFST }, /* Mechanical offset calibration */
+    { "OTEMP", OTEMP }, /* Over temperature alarm (tbd) */
+    { "POLES", POLES }, /* Number of magnets on rotor */
+    { "PTEMP", PTEMP }, /* Peak temperature recorded (tbd) */
+    { "RATIO", RATIO }, /* Output angle multiplier (tbd) */
+    { "TENST", TENST }, /* Tension total (tbd) */
+    { "TENSO", TENSO }, /* Tension offset (tbd) */
+    { "TETAE", TETAE }, /* Motor electrical angle (write requires LOCK) */
+    { "THERM", THERM }, /* Thermistor (motor) temperature */
     { "TSTOP", TSTOP }, /* Time until considered stopped */
-    { "UNITS", UNITS }, /* Units of input angle */
-    { "VALUE", VALUE }, /* Value to poke/peeked */
+    { "UNITS", UNITS }, /* Units of input angle (tbd) */
+    { "VALUE", VALUE }, /* Value to poke/peek */
     { "ADDR", ADDR }, /* Address to peek/poke */
-    { "ANA0", ANA0 }, /* Analog input */
-    { "ANA1", ANA1 }, /* Analog input */
+    { "ANA0", ANA0 }, /* Analog input (pin 4:0-3V, 3:Gnd) */
+    { "ANA1", ANA1 }, /* Analog input (pin 2:0-3V, 3:Gnd) */
     { "BAUD", BAUD }, /* Baud rate */
-    { "DIG0", DIG0 }, /* Digital I/O */
-    { "DIG1", DIG1 }, /* Digital I/O */
+    { "DIG0", DIG0 }, /* Dig I/O: -1=In,0=Lo,1=Hi,2-100=%PWM (pin 41:0-3.3V, 44:Gnd) */
+    { "DIG1", DIG1 }, /* Dig I/O: -1=In,0=Lo,1=Hi (pin 43:0-3.3V, 44:Gnd) */
     { "DUMP", DUMP }, /* Log dump mode: 0=Manual, 1=Auto */
+    { "FIND", FIND }, /* Find command for CAN */
     { "GRPA", GRPA }, /* Comm group A */
     { "GRPB", GRPB }, /* Comm group B */
     { "GRPC", GRPC }, /* Comm group C */
     { "IOFF", IOFF }, /* Initialization offset */
     { "IPNM", IPNM }, /* CommandedCurrent / Nm (ratio) */
-    { "IVEL", IVEL }, /* Initialization velocity */
+    { "IVEL", IVEL }, /* Initialization velocity (tbd) */
     { "JIDX", JIDX }, /* Joint index */
+    { "LCVC", LCVC }, /* Loop control velocity coefficient */
+    { "LFAP", LFAP }, /* Loop feedback block contains absolute position */
+    { "LFDP", LFDP }, /* Loop feedback block contains delta position */
     { "LOAD", LOAD }, /* Load command for CAN */
     { "LOCK", _LOCK }, /* Lock */
     { "LOG1", LOG1 }, /* Log variable address 1 */
     { "LOG2", LOG2 }, /* Log variable address 2 */
     { "LOG3", LOG3 }, /* Log variable address 3 */
     { "LOG4", LOG4 }, /* Log variable address 4 */
-    { "MECH", MECH }, /* Mechanical angle */
-    { "MODE", MODE }, /* Mode of operation */
+    { "MECH", MECH }, /* Mechanical angle (cts) */
+    { "MODE", MODE }, /* Mode: 0=Idle, 2=Torque, 3=PID, 4=Vel, 5=Trap */
     { "PIDX", PIDX }, /* Puck index for torque */
-    { "ROLE", ROLE }, /* Role */
-    { "SAFE", SAFE }, /* Safety debug */
+    { "ROLE", ROLE }, /* Role: 0=Tater, 1=Gimbals, 2=Safety, 3=Wraptor */
+    { "SAFE", SAFE }, /* Safety debug bitfield: Safe/Shunt/Bus (safety) */
     { "SAVE", SAVE }, /* Save command for CAN */
-    { "STAT", STAT }, /* Status */
-    { "TEMP", TEMP }, /* Temperature */
+    { "STAT", STAT }, /* Status: 0=Reset/Monitor, 2=Ready/Main */
+    { "TEMP", TEMP }, /* Temperature (puck internal) */
     { "TORQ", TORQ }, /* Torque command */
-    { "VBUS", VBUS }, /* Bus voltage */
-    { "VERS", VERS }, /* Version */
-    { "VNOM", VNOM }, /* Vnominal */
+    { "VBUS", VBUS }, /* Bus voltage (V) */
+    { "VERS", VERS }, /* Firmware version */
+    { "VNOM", VNOM }, /* Nominal voltage (safety) */
     { "ZERO", ZERO }, /* Zeroed status */
     { "CTS", CTS }, /* Counts per revolution */
     { "DEF", DEF }, /* Default command for CAN */
-    { "HSG", HSG }, /* High strain gage */
+    { "HSG", HSG }, /* High strain gage (tbd) */
     { "IKI", IKI }, /* Current sense integral gain */
     { "IKP", IKP }, /* Current sense proportional gain */
+    { "ISQ", ISQ }, /* iSq current sense for debugging */
+    { "LCV", LCV }, /* Loop control block contains velocity */
+    { "LFS", LFS }, /* Loop feedback block contains strain */
+    { "LFT", LFT }, /* Loop feedback block contains temperature */
+    { "LFV", LFV }, /* Loop feedback block contains velocity */
     { "LOG", LOG }, /* Log status: 0=Off, 1=Once, 2=Continuous */
-    { "LSG", LSG }, /* Low strain gage */
-    { "MCV", MCV }, /* Max close velocity */
-    { "MDS", MDS }, /* Max duty sum */
-    { "MOV", MOV }, /* Max open velocity */
-    { "MPE", MPE }, /* Max position error */
-    { "PEN", PEN }, /* Pendant debug */
-    { "PWR", PWR }, /* Observed power */
-    { "TL1", TL1 }, /* Torque warning level */
-    { "TL2", TL2 }, /* Torque critical level */
-    { "VL1", VL1 }, /* Velocity warning level (Q4.12) */
-    { "VL2", VL2 }, /* Velocity critical level (Q4.12) */
-    { "AP", AP }, /* Actual position */
+    { "LSG", LSG }, /* Low strain gage (tbd) */
+    { "MCV", MCV }, /* Max close velocity (cts/ms) */
+    { "MDS", MDS }, /* Max duty sum for power limiting (tbd) */
+    { "MOV", MOV }, /* Max open velocity (cts/ms) */
+    { "MPE", MPE }, /* Max position error (tbd) */
+    { "PEN", PEN }, /* Pendant: -65='A', -2=Reset, -1=Clear, >0=Light */
+    { "PWR", PWR }, /* Observed power (tbd) */
+    { "TL1", TL1 }, /* Torque warning level (safety) */
+    { "TL2", TL2 }, /* Torque critical level (safety) */
+    { "VL1", VL1 }, /* Velocity warning level (safety, Q4.12 m/s, rad/s) */
+    { "VL2", VL2 }, /* Velocity critical level (safety, Q4.12 m/s, rad/s) */
+    { "AP", AP }, /* Actual position (cts) */
     { "CT", CT }, /* Close torque */
     { "DP", DP }, /* Default position */
     { "DS", _DS }, /* Default step */
@@ -166,23 +182,22 @@ const struct propTxtStruct propTxt[]={
     { "KD", KD }, /* Differential gain */
     { "KI", KI }, /* Integral gain */
     { "KP", KP }, /* Proportional gain */
-    { "MD", MD }, /* Max duty */
     { "MT", MT }, /* Max torque */
-    { "MV", MV }, /* Max velocity */
-    { "OD", OD }, /* Odometer */
+    { "MV", MV }, /* Max velocity (cts/ms) */
+    { "OD", OD }, /* Odometer (tbd) */
     { "OT", OT }, /* Open torque */
-    { "SG", SG }, /* Strain gage */
+    { "SG", SG }, /* Strain gage (tbd) */
     { "SN", SN }, /* Serial number */
-    { "B", B }, /* Brake */
-    { "D", D }, /* Duty cycle */
-    { "E", E }, /* Endpoint target */
-    { "P", P }, /* Position command */
-    { "V", V }, /* Velocity command */
+    { "B", B }, /* Brake: 0=Off, 1=On */
+    { "E", E }, /* Endpoint target (cts) */
+    { "P", P }, /* Position command (cts) */
+    { "V", V }, /* Velocity command (cts/ms) */
 
 	{ "",		0		}
 };
 
-char* Prop2Name(int prop)
+
+const char* Prop2Name(int prop)
 {
   int cnt;
   
