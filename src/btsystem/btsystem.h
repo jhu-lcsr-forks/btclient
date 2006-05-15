@@ -57,7 +57,7 @@ typedef struct
   int IoffsetB;/*!< Offset to calibrate zero for current sensors*/
   int IoffsetC; /*!< Offset to calibrate zero for current sensors*/
   int group;
-  int order; 
+  int order; /*!< Must be in the range 0..3 to be valid
   int index,zero; 
   int max_torque;
   long int position; /*!< The position value read from the puck (encoder counts) */

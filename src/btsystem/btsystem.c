@@ -226,7 +226,7 @@ int InitializeSystem(char *actuatorfile,char *busfile,char *motorfile,char *puck
       {
         if (act[buses[cnt].pucks_by_id[cnt2]].puck.group == buses[cnt].group[cnt3].group_number)
         {
-          buses[cnt].group[cnt3].pucks_by_order[act[buses[cnt].pucks_by_id[cnt2]].puck.order] = buses[cnt].pucks_by_id[cnt2];
+          buses[cnt].group[cnt3].pucks_by_order[act[buses[cnt].pucks_by_id[cnt2]].puck.order % 4] = buses[cnt].pucks_by_id[cnt2]; //%4 forces .order into valid range. prevents segfaults when we don't care what the torque order is.
         }
       }
     }
@@ -286,6 +286,7 @@ int InitializeSystem(void)
   int orderIdx;
 
   int cnt, cnt2, cnt3, cnt4;
+  int i,j,k,l;
   int min, max, min_idx, max_idx, act_cnt, grp_cnt;
   int group_cnt[65];
 
@@ -427,63 +428,63 @@ int InitializeSystem(void)
 
   //set up group indexes. CAVEATS: does not check for duplicate order numbers in groups
 
-  for (cnt = 0; cnt < num_buses; cnt++)
+  for (i = 0; i < num_buses; i++)
   {
-    buses[cnt].total_pucks=0; /** \bug This variable seems unused */
+    buses[i].total_pucks=0; /** \bug This variable seems unused */
     //initialize the group counter
-    for (cnt4 = 0;cnt4 < 65;cnt4++)
-      group_cnt[cnt4] = 0;
+    for (l = 0;l < 65;l++)
+      group_cnt[l] = 0;
     //get number of actuators on this bus
     act_cnt = 0;
-    for (cnt2 = 0; cnt2 < num_actuators; cnt2++)
+    for (j = 0; j < num_actuators; j++)
     {
-      if (act[cnt2].bus == cnt)
+      if (act[j].bus == i)
       {
         act_cnt++;
-        group_cnt[act[cnt2].puck.group]++;
+        group_cnt[act[j].puck.group]++;
       }
     }
-    buses[cnt].num_pucks = act_cnt;
+    buses[i].num_pucks = act_cnt;
     //figure out how many groups were found
-    for (cnt4 = 0;cnt4 < 65;cnt4++)
+    for (l = 0;l < 65;l++)
     {
-      if (group_cnt[cnt4])
+      if (group_cnt[l])
       {
-        buses[cnt].num_groups++;
-        buses[cnt].group[buses[cnt].num_groups - 1].group_number = cnt4;
+        buses[i].num_groups++;
+        buses[i].group[buses[i].num_groups - 1].group_number = l;
       }
     }
     min = 0;
     //for each actuator on this bus scan through and sort from lowest puck_id to highest
-    for (cnt2 = 0;cnt2 < act_cnt; cnt2++)
+    for (j = 0;j < act_cnt; j++)
     {
       max = 1000;
-      for (cnt3 = 0; cnt3 < num_actuators; cnt3++)
+      for (k = 0; k < num_actuators; k++)
       {
-        if ((act[cnt3].bus == cnt) && (act[cnt3].puck.ID < max) && (act[cnt3].puck.ID > min))
+        if ((act[k].bus == i) && (act[k].puck.ID < max) && (act[k].puck.ID > min))
         {
-          max = act[cnt3].puck.ID;
-          max_idx = cnt3;
+          max = act[k].puck.ID;
+          max_idx = k;
         }
       }
-      buses[cnt].pucks_by_id[cnt2] = max_idx;
+      buses[i].pucks_by_id[j] = max_idx;
       min = max;
     }
 
     //zero out pucks_by_order in index
-    for (cnt3 = 0;cnt3 < buses[cnt].num_groups;cnt3++)
+    for (k = 0;k < buses[i].num_groups;k++)
     {
-      for (cnt4 = 0; cnt4 < 4;cnt4++)
-        buses[cnt].group[cnt3].pucks_by_order[cnt4] = -1;
+      for (l = 0; l < 4;l++)
+        buses[i].group[k].pucks_by_order[l] = -1;
     }
     //creat index of pucks by order
-    for (cnt2 = 0;cnt2 < buses[cnt].num_pucks;cnt2++)
+    for (j = 0;j < buses[i].num_pucks;j++)
     {
-      for (cnt3 = 0;cnt3 < buses[cnt].num_groups;cnt3++)
+      for (k = 0;k < buses[i].num_groups;k++)
       {
-        if (act[buses[cnt].pucks_by_id[cnt2]].puck.group == buses[cnt].group[cnt3].group_number)
+        if (act[buses[i].pucks_by_id[j]].puck.group == buses[i].group[k].group_number)
         {
-          buses[cnt].group[cnt3].pucks_by_order[act[buses[cnt].pucks_by_id[cnt2]].puck.order % 4] = buses[cnt].pucks_by_id[cnt2];
+          buses[i].group[k].pucks_by_order[act[buses[i].pucks_by_id[j]].puck.order % 4] = buses[i].pucks_by_id[j];
         }
       }
     }
