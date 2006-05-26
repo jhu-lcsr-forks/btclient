@@ -56,7 +56,7 @@ where command is:
 */
 
 
-#define toupper(c)      ( ((c >= 'a') && (c <= 'z')) ? c - ('a' - 'A') : c )
+//#define toupper(c)      ( ((c >= 'a') && (c <= 'z')) ? c - ('a' - 'A') : c )
 #define HOLE            (0x0000)
 #if 0
 #define SMOOTH_CT       (5)
@@ -97,18 +97,18 @@ static char doc[] ="So you need help... I figured the brilliant programming spok
 static char args_doc[] = "[PuckID]";
 /* The options we understand. */
 static struct argp_option options[] = {
-                                        {"verbose",  'v', 0,      0,  "Produce verbose output" },
-                                        {"enumerate",'e', 0,      0,  "Enumerate the bus" },
-                                        {"mofst",   'f', "pID_mofst",OPTION_ARG_OPTIONAL, "Find motor offset" },
-                                        {"defaults",   'p', "pID_def", OPTION_ARG_OPTIONAL, "Set parameter defaults" },
-                                        {"params",   'g', "pID_get", OPTION_ARG_OPTIONAL, "Get parameters" },
-                                        {"allparams",   'a', "pID_getall", 0, "Get all parameters for one puck" },
-                                        {"target", 'l', "pID_targ",0,"ID of puck you want defaults to look like"},
-                                        {"dlpuck", 'd', "DL_FILE", 0, "Download puck firmware over CAN"},
-                                        {"tension", 't', "pID_tension", 0, "Tension Cable (not active yet)"},
-                                        {"dlhand", 'b', 0, 0, "Download firmware to Barrett Hand"},
-                                        { 0 }
-                                      };
+	{"verbose",  'v', 0,      0,  "Produce verbose output" },
+	{"enumerate",'e', 0,      0,  "Enumerate the bus" },
+	{"mofst",   'f', "pID_mofst",OPTION_ARG_OPTIONAL, "Find motor offset" },
+	{"defaults",   'p', "pID_def", OPTION_ARG_OPTIONAL, "Set parameter defaults" },
+	{"params",   'g', "pID_get", OPTION_ARG_OPTIONAL, "Get parameters" },
+	{"allparams",   'a', "pID_getall", 0, "Get all parameters for one puck" },
+	{"target", 'l', "pID_targ",0,"ID of puck you want defaults to look like"},
+	{"dlpuck", 'd', "DL_FILE", 0, "Download puck firmware over CAN"},
+	{"tension", 't', "pID_tension", 0, "Tension Cable (not active yet)"},
+	{"dlhand", 'b', 0, 0, "Download firmware to Barrett Hand"},
+	{ 0 }
+};
 
 
 /* Used by main to communicate with parse_opt. */
@@ -213,9 +213,19 @@ defaults[] = {
                CT, 750,
                CTS, 40960,
                DP, 0,
-               EN, 0x00EE,
+      //         EN, 0x00EE,
                MT, 990,
-               PTEMP, 0,
+	       MV, 1500,
+	       MCV, 1500,
+	       MOV, 1500,
+               DP, 0,
+	       OT, 0,
+	       CT, 1E6,
+	       _DS, 2560,
+	       KP, 2000,
+	       KD, 8000,
+	       KI, 0,
+	       
                0, 0
              };
 
@@ -278,31 +288,37 @@ void setMofst(int newID)
 
 void paramDefaults(int newID,int targID)
 {
-  int i;
+    int i;
+    
+    wakePuck(0,newID);
+    for(i = 0; defaults[i].key; i++)
+        setProperty(0, newID, defaults[i].key, 0, defaults[i].val);
+    
+    if(newID <= 4) { //4DOF
+        setProperty(0,newID,IKCOR,0,1638);
+        setProperty(0,newID,IKP,0,8192);
+        setProperty(0,newID,IKI,0,3276);
+        setProperty(0,newID,IPNM,0,2755);
+	setProperty(0,newID,POLES,0,12);
+	setProperty(0,newID,GRPA,0,0);
+	setProperty(0,newID,GRPB,0,1);
+	setProperty(0,newID,GRPC,0,4);
 
-  if (targID < 0) targID = newID;
-
-  wakePuck(0,newID);
-  for(i = 0; defaults[i].key; i++)
-    setProperty(0, newID, defaults[i].key, 0, defaults[i].val);
-
-  if(targID <= 4)
-  { //4DOF
-    setProperty(0,newID,IKCOR,0,1638);
-    setProperty(0,newID,IKP,0,8192);
-    setProperty(0,newID,IKI,0,3276);
-    setProperty(0,newID,IPNM,0,2755);
-  }
-  else if(targID <= 7)
-  { //Wrist
-    setProperty(0,newID,IKCOR,0,819);
-    setProperty(0,newID,IKP,0,4096);
-    setProperty(0,newID,IKI,0,819);
-    if(targID != 7)
-      setProperty(0,newID,IPNM,0,4100);
-    else
-      setProperty(0,newID,IPNM,0,21400);
-  }
+    } else if(newID <= 7) { //Wrist
+        setProperty(0,newID,IKCOR,0,819);
+        setProperty(0,newID,IKP,0,4096);
+        setProperty(0,newID,IKI,0,819);
+	setProperty(0,newID,GRPA,0,0);
+	setProperty(0,newID,GRPB,0,2);
+	setProperty(0,newID,GRPC,0,5);
+        if(newID != 7){
+            setProperty(0,newID,IPNM,0,4100);
+	    setProperty(0,newID,POLES,0,8);
+        }else{
+            setProperty(0,newID,IPNM,0,21400);
+	    setProperty(0,newID,POLES,0,6);
+	}
+    }
   else if(targID <= 8){//Gimbals
 	  setProperty(0,newID,CTS,0,25736);
 	  setProperty(0,newID,OFFSET1,0,-13725);
@@ -368,6 +384,8 @@ getParams(int newID)
   printf("PIDX = %ld\n",reply);
   getProperty(0,newID,PTEMP,&reply);
   printf("PTEMP = %ld\n",reply);
+  getProperty(0,newID,POLES,&reply);
+  printf("POLES = %ld\n",reply);
 }
 allParams(int newID)
 {
@@ -377,7 +395,7 @@ allParams(int newID)
   wakePuck(0,newID);
   for (cnt = 0;cnt < PROP_END; cnt++){
     getProperty(0,newID,cnt,&reply);
-    printf("%d %s = %ld\n",cnt,Prop2Name(cnt),reply);
+    //printf("%d %s = %ld\n",cnt,Prop2Name(cnt),reply);
   }
 }
 
