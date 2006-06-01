@@ -294,7 +294,7 @@ void paramDefaults(int newID,int targID)
     for(i = 0; defaults[i].key; i++)
         setProperty(0, newID, defaults[i].key, 0, defaults[i].val);
     
-    if(newID <= 4) { //4DOF
+    if(targID <= 4) { //4DOF
         setProperty(0,newID,IKCOR,0,1638);
         setProperty(0,newID,IKP,0,8192);
         setProperty(0,newID,IKI,0,3276);
@@ -304,7 +304,7 @@ void paramDefaults(int newID,int targID)
 	setProperty(0,newID,GRPB,0,1);
 	setProperty(0,newID,GRPC,0,4);
 
-    } else if(newID <= 7) { //Wrist
+    } else if(targID <= 7) { //Wrist
         setProperty(0,newID,IKCOR,0,819);
         setProperty(0,newID,IKP,0,4096);
         setProperty(0,newID,IKI,0,819);
