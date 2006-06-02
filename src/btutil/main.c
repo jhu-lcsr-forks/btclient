@@ -327,6 +327,9 @@ void paramDefaults(int newID,int targID)
 	  setProperty(0,newID,GAIN1,0,12428);
 	  setProperty(0,newID,GAIN2,0,29072);
 	  setProperty(0,newID,GAIN3,0,27239);
+	setProperty(0,newID,GRPA,0,0);
+	setProperty(0,newID,GRPB,0,2);
+	setProperty(0,newID,GRPC,0,5);
   }
 
   setProperty(0,newID,JIDX,0,newID);

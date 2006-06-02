@@ -147,9 +147,9 @@ int main(int argc, char **argv)
     j5 = new_btfilter(5);
     j6 = new_btfilter(5);
     j7 = new_btfilter(5);
-    init_btfilter_lowpass(j5,0.002,20,1);
-    init_btfilter_lowpass(j6,0.002,20,0.8);
-    init_btfilter_lowpass(j7,0.002,10,0.5);
+    init_btfilter_lowpass(j5,0.002,30,0.8);
+    init_btfilter_lowpass(j6,0.002,10,0.8);
+    init_btfilter_lowpass(j7,0.002,1,0.8);
     syslog_filter(j5);
     syslog_filter(j6);
     syslog_filter(j7);
@@ -302,9 +302,9 @@ int WAMcallback(struct btwam_struct *wam)
       wamdata[i]=getval_vn(wam->Jpos,i);
     }
     da += 0.001;
-    Jpos_filt[4] = eval_btfilter(j5,wamdata[4]);
+    Jpos_filt[4] = eval_btfilter(j5,wamdata[5]);
     Jpos_filt[5] = eval_btfilter(j6,wamdata[5]);
-    Jpos_filt[6] = eval_btfilter(j7,wamdata[6]);
+    Jpos_filt[6] = eval_btfilter(j7,wamdata[5]);
   
   
     eval_state_btg(&(pstate),wam->Cpos);

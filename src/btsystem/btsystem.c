@@ -336,6 +336,9 @@ int InitializeSystem(void)
         syslog(LOG_ERR, "Could not initialize can mutex for bus %d.", canAddr);
       if(err = initCAN(canAddr))
         syslog(LOG_ERR, "Could not initialize can bus %d, err = %d", canAddr, err);
+      syslog(LOG_ERR, "Waking all pucks");
+      wakePuck(canAddr, GROUPID(WHOLE_ARM));
+
       // Enumerate nodes on the bus
       err = getBusStatus(canAddr, status);
       for(id = cnt = 0; id < MAX_NODES; cnt += status[id++] >= 0)
