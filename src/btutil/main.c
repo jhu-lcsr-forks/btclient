@@ -129,6 +129,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
   struct arguments *arguments = state->input;
   
   switch (key){
+  case 'c':
+    arguments->cmd = 'C';
+    break;
   case 'e':
     arguments->cmd = 'E';
     
@@ -234,6 +237,7 @@ int firmwareDL(void);
 void handleMenu(char c);
 void showMenu(void);
 void tensionCable(void);
+void tensionCable2(void);
 
 /* this function will return immediately after a key is
 pressed. You do not have to wait till the enter key is hit */
@@ -271,16 +275,17 @@ void setMofst(int newID)
   getProperty(0,newID,MOFST,&dat);
   printf("\n The old MOFST was:%d\n",dat);
 
-  setProperty(0,newID,ADDR,0,32971);
-  setProperty(0,newID,VALUE,0,1);
+  //setProperty(0,newID,ADDR,0,32971);
+  //setProperty(0,newID,VALUE,0,1);
+  setProperty(0,newID,FIND,0,MOFST);
   printf("\nPress enter when the index pulse is found: ");
   mygetch();
   mygetch();
-  setProperty(0,newID,ADDR,0,32970);
-  getProperty(0,newID,VALUE,&dat);
+  //setProperty(0,newID,ADDR,0,32970);
+  getProperty(0,newID,MOFST,&dat);
   printf("\n The MOFST new is:%d\n",dat);
-  setProperty(0,newID,MOFST,0,dat);
-  setProperty(0,newID,SAVE,0,MOFST);
+  //setProperty(0,newID,MOFST,0,dat);
+  //setProperty(0,newID,SAVE,0,MOFST);
   printf("\nDone: ");
   printf("\n");
 }
@@ -311,7 +316,7 @@ void paramDefaults(int newID,int targID)
 	setProperty(0,newID,GRPA,0,0);
 	setProperty(0,newID,GRPB,0,2);
 	setProperty(0,newID,GRPC,0,5);
-        if(newID != 7){
+        if(targID != 7){
             setProperty(0,newID,IPNM,0,4100);
 	    setProperty(0,newID,POLES,0,8);
         }else{
@@ -321,12 +326,12 @@ void paramDefaults(int newID,int targID)
     }
   else if(targID <= 8){//Gimbals
 	  setProperty(0,newID,CTS,0,25736);
-	  setProperty(0,newID,OFFSET1,0,-13725);
-	  setProperty(0,newID,OFFSET2,0,-13357);
-	  setProperty(0,newID,OFFSET3,0,-12762);
-	  setProperty(0,newID,GAIN1,0,12428);
-	  setProperty(0,newID,GAIN2,0,29072);
-	  setProperty(0,newID,GAIN3,0,27239);
+	  setProperty(0,newID,OFFSET1,0,-11447);
+	  setProperty(0,newID,OFFSET2,0,-19834);
+	  setProperty(0,newID,OFFSET3,0,-12606);
+	  setProperty(0,newID,GAIN1,0,10981);
+	  setProperty(0,newID,GAIN2,0,27566);
+	  setProperty(0,newID,GAIN3,0,26782);
 	setProperty(0,newID,GRPA,0,0);
 	setProperty(0,newID,GRPB,0,2);
 	setProperty(0,newID,GRPC,0,5);
@@ -338,6 +343,53 @@ void paramDefaults(int newID,int targID)
   setProperty(0,newID,SAVE,0,-1); // Save All
 }
 
+void calibrateGimbals(void){
+	long z[8],p[8];
+	double gain, offset;
+
+	wakePuck(0,5); // Wake gimbals
+	setProperty(0,5,DIG0,0,1);
+	setProperty(0,5,DIG1,0,1);
+
+	setProperty(0,5,GAIN1,0,4096);
+	setProperty(0,5,GAIN2,0,4096);
+	setProperty(0,5,GAIN3,0,4096);
+	setProperty(0,5,OFFSET1,0,0); 
+	setProperty(0,5,OFFSET2,0,0);
+	setProperty(0,5,OFFSET3,0,0);
+	printf("\nJ5=J6=J7=0: \n");
+	mygetch();
+	getPositions(0,WHOLE_ARM,3,z);
+	printf("\nJ5=J6=J7=+1.57: \n");
+	mygetch();
+	getPositions(0,WHOLE_ARM,3,p);
+
+	// m = 1.57 / (j5p - j5z)
+	// b = -j5z * m
+	gain = 1.57 / (p[5] - z[5]);	
+	offset = -z[5] * gain;
+	gain *= 1L << 24;
+	offset *= 1L << 12;
+	setProperty(0,5,GAIN1,0,(long)gain);
+	setProperty(0,5,OFFSET1,0,(long)offset);
+	printf("J5: GAIN=%ld, OFFSET=%ld\n", (long)gain, (long)offset);
+	gain = 1.57 / (p[6] - z[6]);	
+	offset = -z[6] * gain;
+	gain *= 1L << 24;
+	offset *= 1L << 12;
+	setProperty(0,5,GAIN2,0,(long)gain);
+	setProperty(0,5,OFFSET2,0,(long)offset);
+	printf("J6: GAIN=%ld, OFFSET=%ld\n", (long)gain, (long)offset);
+	gain = 1.57 / (p[7] - z[7]);	
+	offset = -z[7] * gain;
+	gain *= 1L << 24;
+	offset *= 1L << 12;
+	setProperty(0,5,GAIN3,0,(long)gain);
+	setProperty(0,5,OFFSET3,0,(long)offset);
+	printf("J7: GAIN=%ld, OFFSET=%ld\n", (long)gain, (long)offset);
+	setProperty(0,5,SAVE,0,-1); // Save all
+}
+
 getParams(int newID)
 {
   long reply;
@@ -345,12 +397,18 @@ getParams(int newID)
   
  printf("\n...Puck %d...\n",newID);  
   wakePuck(0,newID);
+  getProperty(0,newID,SN,&reply);
+  printf("Serial Number = %ld\n",reply);
   getProperty(0,newID,VERS,&reply);
   printf("VERS = %ld\n",reply);
   getProperty(0,newID,ACCEL,&reply);
   printf("ACCEL = %ld\n",reply);
-  //getProperty(0,newID,AP,&reply);
-  //printf("AP = %ld\n",reply);
+  getProperty(0,newID,AP,&reply);
+  printf("AP = %ld\n",reply);
+  getProperty(0,newID,HALLS,&reply);
+  printf("HALLS = %ld\n",reply);
+  getProperty(0,newID,HALLH,&reply);
+  printf("HALLH = %ld\n",reply);
   getProperty(0,newID,CT,&reply);
   printf("CT = %ld\n",reply);
   getProperty(0,newID,CTS,&reply);
@@ -412,6 +470,9 @@ void handleMenu(char c)
 
   switch(c)
   {
+  case 'C':
+    calibrateGimbals();
+    break;
   case 'E':
     printf("\n\nCAN bus enumeration (status)\n");
     getBusStatus(0, status);
@@ -466,6 +527,9 @@ void handleMenu(char c)
   case 'T':
     tensionCable();
     break;
+  case 'R':
+    tensionCable2();
+    break;
   case 'B':
     BHandDL();
     break;
@@ -490,7 +554,9 @@ void showMenu(void)
   printf("\nG)et parameters");
   printf("\nGet (A)ll parameters");
   printf("\nT)ension cable");
+  printf("\nR)un motor with no index");
   printf("\nB)arrettHand firmware download");
+  printf("\nC)alibrate gimbals");
   printf("\n\nQ)uit");
   printf("\n\nYour Choice: ");
 }
@@ -640,7 +706,7 @@ void tensionCable(void)
   mygetch();
   setProperty(0,motor,TENSION,FALSE,0);
   setProperty(0,motor,TORQ,FALSE,2500);
-  usleep(1000000);
+  usleep(5000000);
   setProperty(0,motor,TORQ,FALSE,0);
   printf("\nPlease work the tension through the cable, "
          "then press <Enter>");
@@ -649,6 +715,38 @@ void tensionCable(void)
 
 }
 
+void tensionCable2(void)
+{
+  int motor;
+  long reply;
+  int cnt;
+
+  printf("\nTorque Motor...\nWhich motor: ");
+  scanf("%d", &motor);
+  setProperty(0,GROUPID(0),TORQ,FALSE,0);
+  wakePuck(0,GROUPID(0));
+  setProperty(0,GROUPID(0),MODE,FALSE,MODE_TORQUE);
+  
+  setProperty(0,motor,ECMAX,FALSE,0);
+  setProperty(0,motor,ECMIN,FALSE,0);
+  //setProperty(0,motor,MOFST,FALSE,-1);
+  setProperty(0,motor,TORQ,FALSE,500);
+  printf("\nRunning at 500 Torq");
+  for(cnt = 0;cnt<500;cnt++){
+  
+  getProperty(0,motor,AP,&reply);
+  printf("\nAP:%d ",reply);
+  getProperty(0,motor,ECMAX,&reply);
+  printf("ECMAX:%d ",reply);
+  getProperty(0,motor,ECMIN,&reply);
+  printf("ECMIN:%d ",reply);
+  usleep(100000);
+  }
+  mygetch();
+  
+  setProperty(0,motor,TORQ,FALSE,0);
+  setProperty(0,GROUPID(0),MODE,FALSE,MODE_IDLE);
+}
 /* Firmware download sample code.
  
    Note: ReadSerial(char *inputBuffer, int charCt); 
