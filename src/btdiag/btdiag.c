@@ -47,6 +47,7 @@ it to properly establish the time values.
  *==============================*/
 #include "btwam.h"
 #include "bthaptics.h"
+#include "btserial.h"
 
 /*==============================*
  * PRIVATE DEFINED constants    *
@@ -78,7 +79,7 @@ vect_n* active_dest;
 vect_n* jdest,*cdest;
 vect_n* active_trq;
 vect_n *wv;
-double vel = 0.5,acc = 0.5;
+double vel = 3.0,acc = 2.0;
 
 int screen = SCREEN_MAIN;
 int prev_mode;
@@ -105,12 +106,17 @@ bteffect_bulletproofwall mybpwall,bpwall[10];
 btgeom_box boxs[10];
 bteffect_global myglobal;
 vect_3 *p1,*p2,*p3,*zero_v3;
+vect_3 *f1;
 bthaptic_scene bth;
 btgeom_state pstate;
 char *command_help[100];
 int num_commands;
 double wamdata[8];
 int NoSafety;
+
+int zDown = 0;
+PORT p;
+int flip = 0;
 /*==============================*
  * PRIVATE Function Prototypes  *
  *==============================*/
@@ -138,256 +144,274 @@ void read_keys(char *filename);
 */
 int main(int argc, char **argv)
 {
-    char    chr,cnt;
-    int     err;
-    int i;
-    struct sched_param mysched;
-    char robotName[128];
-    
-    j5 = new_btfilter(5);
-    j6 = new_btfilter(5);
-    j7 = new_btfilter(5);
-    init_btfilter_lowpass(j5,0.002,30,0.8);
-    init_btfilter_lowpass(j6,0.002,10,0.8);
-    init_btfilter_lowpass(j7,0.002,1,0.8);
-    syslog_filter(j5);
-    syslog_filter(j6);
-    syslog_filter(j7);
-    /* Figure out what the keys do and print it on screen */
-    system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
-    read_keys("keys.txt");
-    
-    /* Initialize the ncurses screen library */
-    init_ncurses();
-    atexit((void*)endwin);
+   char    chr,cnt;
+   int     err;
+   int i;
+   struct sched_param mysched;
+   char robotName[128];
 
-    /* Initialize syslog */
-    openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
-    atexit((void*)closelog);
-    syslog(LOG_ERR,"...Starting btdiag program...");
+   f1 = new_v3();
+   j5 = new_btfilter(5);
+   j6 = new_btfilter(5);
+   j7 = new_btfilter(5);
+   init_btfilter_lowpass(j5,0.002,30,0.8);
+   init_btfilter_lowpass(j6,0.002,10,0.8);
+   init_btfilter_lowpass(j7,0.002,1,0.8);
+   syslog_filter(j5);
+   syslog_filter(j6);
+   syslog_filter(j7);
+   /* Figure out what the keys do and print it on screen */
+   system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
+   read_keys("keys.txt");
 
-    /* Initialize the display mutex */
-    test_and_log(
-        pthread_mutex_init(&(disp_mutex),NULL),
-        "Could not initialize mutex for displays.");
+   /* Initialize the ncurses screen library */
+   init_ncurses();
+   atexit((void*)endwin);
 
-    /* Lead the user through a proper WAM startup */
-    mvprintw(1,0,"Make sure the all WAM power and signal cables are securely");
-    mvprintw(2,0,"fastened, then turn on the main power to WAM and press <Enter>");
-    while((chr=getch())==ERR)
-        usleep(5000);
-    mvprintw(4,0,"Make sure all E-STOPs are released, then press Shift-Idle");
-    mvprintw(5,0,"on the control pendant. Then press <Enter>");
-    while((chr=getch())==ERR)
-        usleep(5000);
-    mvprintw(7,0,"Place WAM in its home (folded) position, then press <Enter>");
-    while((chr=getch())==ERR)
-        usleep(5000);
+   /* Initialize syslog */
+   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
+   atexit((void*)closelog);
+   syslog(LOG_ERR,"...Starting btdiag program...");
+
+   /* Initialize the display mutex */
+   test_and_log(
+      pthread_mutex_init(&(disp_mutex),NULL),
+      "Could not initialize mutex for displays.");
+
+   /* Lead the user through a proper WAM startup */
+   mvprintw(1,0,"Make sure the all WAM power and signal cables are securely");
+   mvprintw(2,0,"fastened, then turn on the main power to WAM and press <Enter>");
+   while((chr=getch())==ERR)
+      usleep(5000);
+   mvprintw(4,0,"Make sure all E-STOPs are released, then press Shift-Idle");
+   mvprintw(5,0,"on the control pendant. Then press <Enter>");
+   while((chr=getch())==ERR)
+      usleep(5000);
+   mvprintw(7,0,"Place WAM in its home (folded) position, then press <Enter>");
+   while((chr=getch())==ERR)
+      usleep(5000);
 
 #ifndef BTOLDCONFIG
-    err = ReadSystemFromConfig("wam.conf");
+
+   err = ReadSystemFromConfig("wam.conf");
 #else //BTOLDCONFIG
 #endif //BTOLDCONFIG
-    /* If the robot name was given on the command line, use it */
-    *robotName = 0; 
-    for(i = 1; i < argc-1; i++){
-        if(!strcmp(argv[i],"-n"))
-            strcpy(robotName, argv[i+1]);
-    }
-    
-    /* Do we want to bypass the safety circuit + pendant? */
-    NoSafety = 0;
-    for(i = 1; i < argc-1; i++){
-        if(!strcmp(argv[i],"-ns"))
-            NoSafety = 1;
-    }
-    
-    /* Initialize and get a handle to the robot */
-    if(!(wam = OpenWAM("wam.conf", robotName)))
-        exit(1);
+   /* If the robot name was given on the command line, use it */
+   *robotName = 0;
+   for(i = 1; i < argc-1; i++) {
+      if(!strcmp(argv[i],"-n"))
+         strcpy(robotName, argv[i+1]);
+   }
 
-    /* Check and handle any additional command line arguments */
-    for(i = 1; i < argc-1; i++){
-        if(!strcmp(argv[i],"-g")) // If gimbals are being used
-        {
-            initGimbals(wam);
-            useGimbals = TRUE;
-            syslog(LOG_ERR, "Gimbals expected.");
-        }
-    }
+   /* Do we want to bypass the safety circuit + pendant? */
+   NoSafety = 0;
+   for(i = 1; i < argc-1; i++) {
+      if(!strcmp(argv[i],"-ns"))
+         NoSafety = 1;
+   }
 
-    /* Register the ctrl-c interrupt handler */
-    signal(SIGINT, sigint_handler);
+   /* Initialize and get a handle to the robot */
+   if(!(wam = OpenWAM("wam.conf", robotName)))
+      exit(1);
 
-    wam->logdivider = 1;
-    syslog(LOG_ERR, "chkpt 1");
-    PrepDL(&(wam->log),15);
-    syslog(LOG_ERR, "chkpt 2");
-    AddDataDL(&(wam->log),&(wam->log_time),sizeof(double),2,"Time");
-    //AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
-    AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
-    AddDataDL(&(wam->log),&(wam->act[4].puck.position),sizeof(long),BTLOG_LONG,"J5pos");
-    AddDataDL(&(wam->log),&(wam->act[5].puck.position),sizeof(long),BTLOG_LONG,"J6pos");
-    AddDataDL(&(wam->log),&(wam->act[6].puck.position),sizeof(long),BTLOG_LONG,"J7pos");
-    AddDataDL(&(wam->log),&(Jpos_filt[4]),sizeof(btreal)*3,4,"Filt");
-    AddDataDL(&(wam->log),&(wamdata[4]),sizeof(btreal)*3,4,"Src");
-    syslog(LOG_ERR, "chkpt 3");
-    //AddDataDL(&(wam->log),&(Jpos_filt[4]),sizeof(btreal)*3,4,"Filt");
-    InitDL(&(wam->log),1000,"datafile.dat");
-    syslog(LOG_ERR, "chkpt 4");
-    
-    /* Set the safety limits */
-    setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
-    setProperty(0,10,TL2,FALSE,5400); //Eliminate torque faults in silly places
-    setProperty(0,10,TL1,FALSE,1800); //Eliminate torque faults in silly places
+   /* Check and handle any additional command line arguments */
+   for(i = 1; i < argc-1; i++) {
+      if(!strcmp(argv[i],"-g")) // If gimbals are being used
+      {
+         initGimbals(wam);
+         useGimbals = TRUE;
+         syslog(LOG_ERR, "Gimbals expected.");
+      }
+   }
 
-    
-    /* Prepare MODE */
-    jdest = new_vn(len_vn(wam->Jpos));
-    cdest = new_vn(len_vn(wam->R6pos));
-    
-    active_bts = &(wam->Jsc);
-    setmode_bts(active_bts,SCMODE_IDLE);
-    active_pos = wam->Jpos;
-    active_trq = wam->Jtrq;
-    active_dest = jdest;
-    prev_mode = SCMODE_IDLE;
-    
-    /* Create a new trajectory */
-    vt_j = new_vta(len_vn(active_pos),50);
-    vta = &vt_j;
-    register_vta(active_bts,*vta);
-    
-    active_file[0] = 0;
+   /* Register the ctrl-c interrupt handler */
+   signal(SIGINT, sigint_handler);
 
-    init_haptics();
+   wam->logdivider = 1;
+   //syslog(LOG_ERR, "chkpt 1");
+   PrepDL(&(wam->log),15);
+   //syslog(LOG_ERR, "chkpt 2");
+   AddDataDL(&(wam->log),&(wam->log_time),sizeof(double),2,"Time");
+   //AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
+   //AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,4,"Jpos");
+   AddDataDL(&(wam->log),&(wam->act[0].puck.position),sizeof(long),BTLOG_LONG,"M1pos");
+   AddDataDL(&(wam->log),&(wam->act[1].puck.position),sizeof(long),BTLOG_LONG,"M2pos");
+   AddDataDL(&(wam->log),&(wam->act[2].puck.position),sizeof(long),BTLOG_LONG,"M3pos");
+   AddDataDL(&(wam->log),&(wam->act[3].puck.position),sizeof(long),BTLOG_LONG,"M4pos");
+   //AddDataDL(&(wam->log),&(Jpos_filt[4]),sizeof(btreal)*3,4,"Filt");
+   //AddDataDL(&(wam->log),&(wamdata[4]),sizeof(btreal)*3,4,"Src");
+   //syslog(LOG_ERR, "chkpt 3");
+   //AddDataDL(&(wam->log),&(Jpos_filt[4]),sizeof(btreal)*3,4,"Filt");
+   InitDL(&(wam->log),1000,"datafile.dat");
+   //syslog(LOG_ERR, "chkpt 4");
 
-    /* Spin off the WAM control thread */
-    wam_thd.period = 0.002;
-    btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)wam);
+   /* Set the safety limits */
+   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
+   setProperty(0,10,TL2,FALSE,5400); //Eliminate torque faults in silly places
+   setProperty(0,10,TL1,FALSE,1800); //Eliminate torque faults in silly places
 
-    /* Spin off the display thread */
-    btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
 
-    while (!done) {
-        /* Check the active trajectory for completion */
-        if (get_trjstate_bts(active_bts) == BTTRAJ_DONE && !active_bts->loop_trj) {  // BZ-16Nov2005
-            stop_trj_bts(active_bts);
-            setmode_bts(active_bts,prev_mode);
-        }
-        
-        /* Check and handle user keypress */
-        if ((chr = getch()) != ERR)
-            ProcessInput(chr);
-        evalDL(&(wam->log));
-        usleep(100000); // Sleep for 0.1s
-    }
+   /* Prepare MODE */
+   jdest = new_vn(len_vn(wam->Jpos));
+   cdest = new_vn(len_vn(wam->R6pos));
+   wv = new_vn(7);
 
-    btthread_stop(&wam_thd); //Kill WAMControlThread
-    syslog_filter(j5);
-    CloseDL(&(wam->log));
-    DecodeDL("datafile.dat","dat.csv",1);
-    exit(1);
+   active_bts = &(wam->Jsc);
+   setmode_bts(active_bts,SCMODE_IDLE);
+   active_pos = wam->Jpos;
+   active_trq = wam->Jtrq;
+   active_dest = jdest;
+   prev_mode = SCMODE_IDLE;
+
+   /* Create a new trajectory */
+   vt_j = new_vta(len_vn(active_pos),50);
+   vta = &vt_j;
+   register_vta(active_bts,*vta);
+
+   active_file[0] = 0;
+
+   init_haptics();
+
+   /* Open serial port */
+   if(err = serialOpen(&p, "/dev/ttyS0")) {
+      syslog(LOG_ERR, "Error opening serial port: %d", err);
+   }
+   serialSetBaud(&p, 9600);
+
+   /* Spin off the WAM control thread */
+   wam_thd.period = 0.002;
+   btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)wam);
+
+   /* Spin off the display thread */
+   btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
+
+   while (!done) {
+      /* Check the active trajectory for completion */
+      if (get_trjstate_bts(active_bts) == BTTRAJ_DONE && !active_bts->loop_trj) {  // BZ-16Nov2005
+         stop_trj_bts(active_bts);
+         setmode_bts(active_bts,prev_mode);
+      }
+
+      /* Check and handle user keypress */
+      if ((chr = getch()) != ERR)
+         ProcessInput(chr);
+      evalDL(&(wam->log));
+      usleep(100000); // Sleep for 0.1s
+   }
+
+   btthread_stop(&wam_thd); //Kill WAMControlThread
+   syslog_filter(j5);
+   CloseDL(&(wam->log));
+   DecodeDL("datafile.dat","dat.csv",1);
+   exit(1);
 }
 int WAMcallback(struct btwam_struct *wam)
 {
-    int i;
-    int nob;
-    int cnt;
-    
-    static double da;
-    
-    wamdata[0]=wam->log_time;
-    for(i=0;i<7;i++){
+   int i;
+   int nob;
+   int cnt;
+
+   static double da;
+
+   wamdata[0]=wam->log_time;
+   for(i=0;i<7;i++)
+   {
       wamdata[i]=getval_vn(wam->Jpos,i);
-    }
-    da += 0.001;
-    Jpos_filt[4] = eval_btfilter(j5,wamdata[5]);
-    Jpos_filt[5] = eval_btfilter(j6,wamdata[5]);
-    Jpos_filt[6] = eval_btfilter(j7,wamdata[5]);
-  
-  
-    eval_state_btg(&(pstate),wam->Cpos);
-    eval_bthaptics(&bth,(vect_n*)wam->Cpos,(vect_n*)pstate.vel,(vect_n*)zero_v3,(vect_n*)wam->Cforce);
-    apply_tool_force_bot(&(wam->robot), wam->Cpoint, wam->Cforce, wam->Ctrq);
-    return 0;
+   }
+   da += 0.001;
+   Jpos_filt[4] = eval_btfilter(j5,wamdata[5]);
+   Jpos_filt[5] = eval_btfilter(j6,wamdata[5]);
+   Jpos_filt[6] = eval_btfilter(j7,wamdata[5]);
+
+
+   eval_state_btg(&(pstate),wam->Cpos);
+   eval_bthaptics(&bth,(vect_n*)wam->Cpos,(vect_n*)pstate.vel,(vect_n*)zero_v3,(vect_n*)wam->Cforce);
+
+   if(zDown)
+      set_v3(wam->Cforce, add_v3(wam->Cforce, const_v3(f1,0,0,-1.5)));
+
+   apply_tool_force_bot(&(wam->robot), wam->Cpoint, wam->Cforce, wam->Ctrq);
+   return 0;
 }
 void read_keys(char *filename)
 {
-  FILE *inf;
-  int done = 0;
-  int cnt = 0;
-  int len = 100;
-  int ret;
-  
-  num_commands = 0;
-  inf = fopen(filename,"r");
-  ret = getline(&(command_help[num_commands]),&len,inf);
-  if (inf != NULL){
-    while (!done){
-      command_help[num_commands] = (char*)btmalloc(100);
-      ret = getline(&(command_help[num_commands]),&len,inf);
-      if (ret == -1 || num_commands > 98)
-        done = 1;
-      else 
-        command_help[num_commands][ret-1] = 0;
-      num_commands++;
-    }
-  }
-  fclose(inf);
-  inf = fopen("test.out","w");
-  for(cnt = 0;cnt < num_commands;cnt++)
-    fprintf(inf,"%s",command_help[cnt]);
-  fclose(inf);
-  
+   FILE *inf;
+   int done = 0;
+   int cnt = 0;
+   int len = 100;
+   int ret;
+
+   num_commands = 0;
+   inf = fopen(filename,"r");
+   ret = getline(&(command_help[num_commands]),&len,inf);
+   if (inf != NULL) {
+      while (!done) {
+         command_help[num_commands] = (char*)btmalloc(100);
+         ret = getline(&(command_help[num_commands]),&len,inf);
+         if (ret == -1 || num_commands > 98)
+            done = 1;
+         else
+            command_help[num_commands][ret-1] = 0;
+         num_commands++;
+      }
+   }
+   fclose(inf);
+   inf = fopen("test.out","w");
+   for(cnt = 0;cnt < num_commands;cnt++)
+      fprintf(inf,"%s",command_help[cnt]);
+   fclose(inf);
+
 }
 void init_haptics(void)
 {
-    int cnt;
-    btreal xorig,yorig,zorig;
-    int objectCount = 0;
-    
-    p1 = new_v3();
-    p2 = new_v3();
-    p3 = new_v3();
-    xorig = 0.0;
-    yorig = 0.0;
-    zorig = 0.10;
-    
-    new_bthaptic_scene(&bth,10);
-    init_state_btg(&pstate,0.002,30.0);
+   int cnt;
+   btreal xorig,yorig,zorig;
+   int objectCount = 0;
 
-    // Create workspace bounding box
-    init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,zorig+0.0),const_v3(p2,0.7,0.01,zorig+0.0),const_v3(p3,0.7,0.0,zorig+0.01),1.0,0.6,0.4,1);
-    init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
-    init_normal_box_bth(&objects[objectCount],&boxs[0],(void*)&bpwall[0],bulletproofwall_nf);
-    addobject_bth(&bth,&objects[objectCount++]);
-    
-    // Create nested spheres
-    init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.4,0.0,zorig+0.0),0);
-    init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.42,0.0,zorig+0.0),1);
-    init_sp_btg( &spheres[2],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.3,0.0,zorig+0.0),0);
-    init_sp_btg( &spheres[3],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.32,0.0,zorig+0.0),1);
-    for(cnt = 0;cnt < 4;cnt++) {
-        init_wickedwall(&wickedwalls[cnt],3000.0, 10.0,5.0,0.020,0.01);
-        init_normal_sphere_bth(&objects[objectCount],&spheres[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
-        addobject_bth(&bth,&objects[objectCount++]);
-    }
-    
-    const_v3(wam->Cpoint,0.0,-0.0,0.0);
+   p1 = new_v3();
+   p2 = new_v3();
+   p3 = new_v3();
+   xorig = 0.0;
+   yorig = 0.0;
+   zorig = 0.10;
 
-    registerWAMcallback(wam,WAMcallback);
+   new_bthaptic_scene(&bth,10);
+   init_state_btg(&pstate,0.002,30.0);
+
+   // Create workspace bounding box
+   init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,zorig+0.0),const_v3(p2,0.7,0.01,zorig+0.0),const_v3(p3,0.7,0.0,zorig+0.01),1.0,0.6,0.4,1);
+   init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
+   init_normal_box_bth(&objects[objectCount],&boxs[0],(void*)&bpwall[0],bulletproofwall_nf);
+   addobject_bth(&bth,&objects[objectCount++]);
+
+   // Create nested spheres
+   init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.4,0.0,zorig+0.0),0);
+   //  init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.42,0.0,zorig+0.0),1);
+   init_sp_btg( &spheres[2],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.3,0.0,zorig+0.0),0);
+   init_sp_btg( &spheres[3],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.32,0.0,zorig+0.0),1);
+   init_wickedwall(&wickedwalls[0],500.0, 2.0,0.5,0.1,0.01);
+   init_normal_sphere_bth(&objects[objectCount],&spheres[0],(void*)&wickedwalls[0],wickedwall_nf);
+   addobject_bth(&bth,&objects[objectCount++]);
+   for(cnt = 2;cnt < 4;cnt++) {
+      init_wickedwall(&wickedwalls[cnt],3000.0, 10.0,5.0,0.020,0.01);
+      init_normal_sphere_bth(&objects[objectCount],&spheres[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
+      addobject_bth(&bth,&objects[objectCount++]);
+   }
+
+   const_v3(wam->Cpoint,0.0,-0.0,0.0);
+
+   registerWAMcallback(wam,WAMcallback);
 
 }
 
 /* Initialize the ncurses screen library */
 void init_ncurses(void)
 {
-    initscr();
-    cbreak();
-    noecho();
-    timeout(0);
-    clear();
+   initscr();
+   cbreak();
+   noecho();
+   timeout(0);
+   clear();
 }
 
 /** Traps the Ctrl-C signal.
@@ -395,7 +419,7 @@ void init_ncurses(void)
 */
 void sigint_handler()
 {
-    exit(1);
+   exit(1);
 }
 
 /** Spins in a loop, updating the screen.
@@ -403,24 +427,24 @@ void sigint_handler()
 */
 void DisplayThread()
 {
-    int cnt,err;
+   int cnt,err;
 
-    clear();
-    refresh();
-    while (!done) {
-        test_and_log(
-            pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
-	switch(screen){
-	case SCREEN_MAIN:
-        	RenderMAIN_SCREEN();
-		break;
-	case SCREEN_HELP:
-		RenderHELP_SCREEN();
-		break;
-	}
-        pthread_mutex_unlock(&(disp_mutex));
-        usleep(100000);
-    }
+   clear();
+   refresh();
+   while (!done) {
+      test_and_log(
+         pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+      switch(screen) {
+      case SCREEN_MAIN:
+         RenderMAIN_SCREEN();
+         break;
+      case SCREEN_HELP:
+         RenderHELP_SCREEN();
+         break;
+      }
+      pthread_mutex_unlock(&(disp_mutex));
+      usleep(100000);
+   }
 
 }
 
@@ -429,12 +453,12 @@ void DisplayThread()
 */
 void start_entry()
 {
-    int err;
-    test_and_log(
-        pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
-    move(entryLine, 1);
-    echo();
-    timeout(-1);
+   int err;
+   test_and_log(
+      pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+   move(entryLine, 1);
+   echo();
+   timeout(-1);
 }
 
 /** Unlocks the display mutex.
@@ -442,12 +466,12 @@ void start_entry()
 */
 void finish_entry()
 {
-    noecho();
-    timeout(0);
-    move(entryLine, 1);
-    addstr("                                                                              ");
-    refresh();
-    pthread_mutex_unlock( &(disp_mutex) );
+   noecho();
+   timeout(0);
+   move(entryLine, 1);
+   addstr("                                                                              ");
+   refresh();
+   pthread_mutex_unlock( &(disp_mutex) );
 }
 
 /** Draw the main information screen.
@@ -455,136 +479,136 @@ void finish_entry()
 */
 void RenderMAIN_SCREEN()
 {
-    int cnt, idx, Mid, cp;
-    int line, line2;
-    int cpt, nrows;
-    double gimb[4],tacc,tvel;
-    vectray* vr;
-    char vect_buf1[250];
+   int cnt, idx, Mid, cp;
+   int line, line2;
+   int cpt, nrows;
+   double gimb[4],tacc,tvel;
+   vectray* vr;
+   char vect_buf1[250];
 
-    /***** Display the interface text *****/
-    line = 0;
+   /***** Display the interface text *****/
+   line = 0;
 
-    mvprintw(line , 0, "Barrett Technology - Diagnostic Application\t\tPress 'h' for help");
-    line+=2;
+   mvprintw(line , 0, "Barrett Technology - Diagnostic Application\t\tPress 'h' for help");
+   line+=2;
 
-    // Show MODE
-    if (active_bts == &(wam->Jsc)) {
-        mvprintw(line, 0, "Mode       : Joint Space    ");
-    } else if (active_bts == &(wam->Csc)) {
-        mvprintw(line, 0, "Mode       : Cartesian Space");
-    } else {
-        mvprintw(line, 0, "Mode       : Undefined!!!   ");
-    }
-    ++line;
+   // Show MODE
+   if (active_bts == &(wam->Jsc)) {
+      mvprintw(line, 0, "Mode       : Joint Space    ");
+   } else if (active_bts == &(wam->Csc)) {
+      mvprintw(line, 0, "Mode       : Cartesian Space");
+   } else {
+      mvprintw(line, 0, "Mode       : Undefined!!!   ");
+   }
+   ++line;
 
-    // Show CONSTRAINT
-    if (getmode_bts(active_bts)==SCMODE_IDLE)
-        mvprintw(line, 0, "Constraint : IDLE      ");
-    else if (getmode_bts(active_bts)==SCMODE_POS)
-        mvprintw(line, 0, "Constraint : POSITION  ");
-    else if (getmode_bts(active_bts)==SCMODE_TRJ)
-        mvprintw(line, 0, "Constraint : TRAJECTORY");
-    else
-        mvprintw(line, 0, "Constraint : UNDEFINED!");
-    ++line;
- 
-    if (bth.state) {
-        mvprintw(line, 0, "Haptics    : ON    ");
-    } else {
-        mvprintw(line, 0, "Haptics    : OFF    ");
-    }
-    line+=2;
-    
-    // Show TRAJECTORY
-    if (cteach)
-        mvprintw(line, 0, "Trajectory : Teaching continuous trajectoy");
-    else if (*vta == NULL)
-        mvprintw(line, 0, "Trajectory : NONE                         ");
-    else
-        mvprintw(line, 0, "Trajectory : %s                           ",*active_file?active_file:"NONE");
-    ++line;
-    mvprintw(line, 0, "Velocity   : %+8.4f  ",vel);
-    ++line;
-    mvprintw(line, 0, "Accel      : %+8.4f  ",acc);
-    ++line;
-    mvprintw(line, 0, "Destination: %s ",sprint_vn(vect_buf1,active_dest));
-    line+=2;
-    
-    mvprintw(line, 0, "Position   : %s ", sprint_vn(vect_buf1,active_pos));
-    ++line;
-    mvprintw(line, 0, "Target     : %s ", sprint_vn(vect_buf1,active_bts->qref));
-    ++line;
-    mvprintw(line, 0, "Force      : %s ", sprint_vn(vect_buf1,active_trq));
-    line+=2;
-    
-    if (*vta != NULL) { // print current point
-        vr = get_vr_vta(*vta);
-        cpt = get_current_idx_vta(*vta);
-        nrows = numrows_vr(vr);
-        mvprintw(line,0,"Teach Point: %d of %d      ",cpt,nrows-1);
-        line++;
+   // Show CONSTRAINT
+   if (getmode_bts(active_bts)==SCMODE_IDLE)
+      mvprintw(line, 0, "Constraint : IDLE      ");
+   else if (getmode_bts(active_bts)==SCMODE_POS)
+      mvprintw(line, 0, "Constraint : POSITION  ");
+   else if (getmode_bts(active_bts)==SCMODE_TRJ)
+      mvprintw(line, 0, "Constraint : TRAJECTORY");
+   else
+      mvprintw(line, 0, "Constraint : UNDEFINED!");
+   ++line;
 
-        mvprintw(line  , 0 , "Previous   :\t\t\t\t\t\t\t\t\t\t");
-        mvprintw(line+1, 0 , "Current    :\t\t\t\t\t\t\t\t\t\t");
-        mvprintw(line+2, 0 , "Next       :\t\t\t\t\t\t\t\t\t\t");
+   if (bth.state) {
+      mvprintw(line, 0, "Haptics    : ON    ");
+   } else {
+      mvprintw(line, 0, "Haptics    : OFF    ");
+   }
+   line+=2;
 
-        // Previous
-        if (nrows > 0 && cpt > 0)
-            mvprintw(line, 13,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt-1)));
-        
-        // Current
-        if (nrows > 0) {
-            if (nrows != cpt)
-                mvprintw(line+1, 13 , "%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt)));
-            else
-                mvprintw(line+1, 13 , "END OF LIST");
-        } else
-            mvprintw(line+1, 13 , "EMPTY LIST");
+   // Show TRAJECTORY
+   if (cteach)
+      mvprintw(line, 0, "Trajectory : Teaching continuous trajectoy");
+   else if (*vta == NULL)
+      mvprintw(line, 0, "Trajectory : NONE                         ");
+   else
+      mvprintw(line, 0, "Trajectory : %s                           ",*active_file?active_file:"NONE");
+   ++line;
+   mvprintw(line, 0, "Velocity   : %+8.4f  ",vel);
+   ++line;
+   mvprintw(line, 0, "Accel      : %+8.4f  ",acc);
+   ++line;
+   mvprintw(line, 0, "Destination: %s ",sprint_vn(vect_buf1,active_dest));
+   line+=2;
 
-        // Next
-        if (nrows > 1)
-            if (cpt < nrows-1)
-                mvprintw(line+2, 13,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt+1)));
-            else if (cpt == nrows-1)
-                mvprintw(line+2, 13, "END OF LIST");
-        line += 3;
-    } else {
-        line++;
-        line++;
-        mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
-        line += 2;
-    }
-  /*  line += 1;
-    mvprintw(line,0,"bts: state:%d",active_bts->mode);
-    mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
-    line += 1;
- */   entryLine = line;
-    refresh();
+   mvprintw(line, 0, "Position   : %s ", sprint_vn(vect_buf1,active_pos));
+   ++line;
+   mvprintw(line, 0, "Target     : %s ", sprint_vn(vect_buf1,active_bts->qref));
+   ++line;
+   mvprintw(line, 0, "Force      : %s ", sprint_vn(vect_buf1,active_trq));
+   line+=2;
+
+   if (*vta != NULL) { // print current point
+      vr = get_vr_vta(*vta);
+      cpt = get_current_idx_vta(*vta);
+      nrows = numrows_vr(vr);
+      mvprintw(line,0,"Teach Point: %d of %d      ",cpt,nrows-1);
+      line++;
+
+      mvprintw(line  , 0 , "Previous   :\t\t\t\t\t\t\t\t\t\t");
+      mvprintw(line+1, 0 , "Current    :\t\t\t\t\t\t\t\t\t\t");
+      mvprintw(line+2, 0 , "Next       :\t\t\t\t\t\t\t\t\t\t");
+
+      // Previous
+      if (nrows > 0 && cpt > 0)
+         mvprintw(line, 13,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt-1)));
+
+      // Current
+      if (nrows > 0) {
+         if (nrows != cpt)
+            mvprintw(line+1, 13 , "%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt)));
+         else
+            mvprintw(line+1, 13 , "END OF LIST");
+      } else
+         mvprintw(line+1, 13 , "EMPTY LIST");
+
+      // Next
+      if (nrows > 1)
+         if (cpt < nrows-1)
+            mvprintw(line+2, 13,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt+1)));
+         else if (cpt == nrows-1)
+            mvprintw(line+2, 13, "END OF LIST");
+      line += 3;
+   } else {
+      line++;
+      line++;
+      mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
+      line += 2;
+   }
+   /*  line += 1;
+     mvprintw(line,0,"bts: state:%d",active_bts->mode);
+     mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
+     line += 1;
+   */   entryLine = line;
+   refresh();
 }
 
-void RenderHELP_SCREEN(){
-	int cnt, line = 0;
+void RenderHELP_SCREEN()
+{
+   int cnt, line = 0;
 
-	mvprintw(line, 0, "Help Screen - (press 'h' to toggle)");	
-    line += 2;
-    for (cnt = 0; cnt < num_commands;cnt++){
-      if (cnt % 2){
-        mvprintw(line,40,"%.39s",command_help[cnt]);
-        line += 1;
-      }
-      else {
-        mvprintw(line,0,"%.39s",command_help[cnt]);
+   mvprintw(line, 0, "Help Screen - (press 'h' to toggle)");
+   line += 2;
+   for (cnt = 0; cnt < num_commands;cnt++) {
+      if (cnt % 2) {
+         mvprintw(line,40,"%.39s",command_help[cnt]);
+         line += 1;
+      } else {
+         mvprintw(line,0,"%.39s",command_help[cnt]);
 
       }
-    }
-	refresh();
+   }
+   refresh();
 }
 void clearScreen(void)
 {
-    btmutex_lock(&(disp_mutex));
-    clear();
-    btmutex_unlock(&(disp_mutex));
+   btmutex_lock(&(disp_mutex));
+   clear();
+   btmutex_unlock(&(disp_mutex));
 }
 
 /** Process user input.
@@ -592,350 +616,574 @@ void clearScreen(void)
 */
 void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate action.
 {
-    int cnt,elapsed = 0;
-    double ftmp,tacc,tvel;
-    int dtmp,status;
+   int cnt,elapsed = 0;
+   double ftmp,tacc,tvel;
+   int dtmp,status;
 
-    char fn[250],chr;
-    int ret;
-    int done1;
+   char fn[250],chr;
+   int ret;
+   int done1;
+   btreal zPos;
 
-    switch (c) {
-    case 'x'://eXit
-    case  'X'://eXit
-        done = 1;
-        break;
-    case '!'://Set puck to mode TORQ
-         if (NoSafety)
-           EnergizeActuators();
-           //setProperty(0, 1, MODE, FALSE, 2);
-         break;
-     case '@'://Set puck to mode IDLE
-         if (NoSafety)
-           IdleActuators();
-           //setProperty(0, 1, MODE, FALSE, 0);
-         break;
-    case '#'://Data logging on
+   switch (c)
+   {
+   case '4':
+      /* Move to high start position */
+      setmode_bts(&(wam->Jsc),SCMODE_IDLE);
+      setmode_bts(&(wam->Csc),SCMODE_IDLE);
+      SetJointSpace(wam);
+      active_bts = &(wam->Jsc);
+      active_pos = wam->Jpos;
+      active_trq = wam->Jtrq;
+      active_dest = jdest;
+      vta = &vt_j;
+      const_vn(active_dest, -0.6820, 0.5862, 0.7456, 2.3497, 0.0, 0.0, 0.0);
+      moveparm_bts(active_bts,vel,acc);
+      setmode_bts(active_bts,SCMODE_POS);
+      prev_mode = getmode_bts(active_bts);
+      if (prev_mode != SCMODE_POS)
+         setmode_bts(active_bts,SCMODE_POS);
+      if(moveto_bts(active_bts,active_dest))
+         syslog(LOG_ERR,"Moveto Aborted");
+
+      while(getmode_bts(active_bts)==SCMODE_TRJ) {
+         usleep(10000);
+         //sleep(1);
+      }
+      // break;
+      //     case '5':
+      serialWriteString(&p, "\r");
+      usleep(10000);
+      serialWriteString(&p, "\r4FSET DP 2500\r");
+      serialWriteString(&p, "\r12FSET DP 6000\r");
+      serialWriteString(&p, "\r3FSET DP 8500\r");
+      serialWriteString(&p, "\rM\r");
+      //   sleep(1);
+      // serialReadLine(&p, fn, &cnt, '>', 30000);
+      //break;
+
+      //  case '6':
+      /* Joint move to deck */
+      const_vn(active_dest, -0.70, 1.026, 0.7791, 2.19, 0.0, 0.0, 0.0);
+
+      if(moveto_bts(active_bts,active_dest))
+         syslog(LOG_ERR,"Moveto Aborted");
+
+      while(getmode_bts(active_bts)==SCMODE_TRJ) {
+         usleep(10000);
+         //sleep(1);
+      }
+      /* Cartesian hold in X,Y. Drop in Z */
+      setmode_bts(&(wam->Jsc),SCMODE_IDLE);
+      setmode_bts(&(wam->Csc),SCMODE_IDLE);
+      SetCartesianSpace(wam);
+      active_bts = &(wam->Csc);
+      active_pos = wam->R6pos;
+      active_trq = wam->R6force;
+      active_dest = cdest;
+      vta = &vt_c;
+      stop_btPID(&(wam->d_pos_ctl[2]));
+      setgains_btPID(&(wam->d_pos_ctl[2]),0,0,0); // Kill the z-axis gains
+      start_btPID(&(wam->d_pos_ctl[2]));
+      setmode_bts(active_bts,SCMODE_POS);
+      zDown = 1;
+      usleep(10000);
+      //sleep(1);
+      /* Slide card out */
+      const_vn(active_dest, 0.5247, -0.0794, 0.0, 0,0, 0.0, 0.0, 0.0);
+      zPos = getval_v3(wam->Cpos, 2);
+      setval_vn(active_dest, 2, zPos);
+
+      if(moveto_bts(active_bts,active_dest))
+         syslog(LOG_ERR,"Moveto Aborted");
+      while(getmode_bts(active_bts)==SCMODE_TRJ) {
+         usleep(10000);
+         //sleep(1);
+      }
+      /* Lift arm up for hand re-orientation */
+      zPos = getval_v3(wam->Cpos, 2);
+      setval_vn(active_dest, 2, zPos+0.1);
+      zDown = 0;
+      setmode_bts(&(wam->Csc),SCMODE_IDLE);
+      stop_btPID(&(wam->d_pos_ctl[2]));
+      setgains_btPID(&(wam->d_pos_ctl[2]),2000.0, 5.0, 0.0); // Set the z-axis gains
+      start_btPID(&(wam->d_pos_ctl[2]));
+      setmode_bts(&(wam->Csc),SCMODE_POS);
+      if(moveto_bts(active_bts,active_dest))
+         syslog(LOG_ERR,"Moveto Aborted");
+      while(getmode_bts(active_bts)==SCMODE_TRJ) {
+         usleep(10000);
+         //sleep(1);
+      }
+      //     break;
+      //   case '7':
+      /* Prepare hand for scoop & pick */
+      serialWriteString(&p, "\r");
+      usleep(10000);
+      serialWriteString(&p, "\r3FSET DP 4800\r");
+      serialWriteString(&p, "\r");
+      usleep(10000);
+      serialWriteString(&p, "\r12FSET DP 10800\r");
+      serialWriteString(&p, "\r");
+      usleep(10000);
+      serialWriteString(&p, "\r4FSET DP 0\r");
+      serialWriteString(&p, "\r");
+      usleep(10000);
+      serialWriteString(&p, "\rM\r");
+      //   sleep(1);
+      //      break;
+      //   case '8':
+      /* Move down below card */
+      setmode_bts(&(wam->Jsc),SCMODE_IDLE);
+      setmode_bts(&(wam->Csc),SCMODE_IDLE);
+      SetJointSpace(wam);
+      active_bts = &(wam->Jsc);
+      active_pos = wam->Jpos;
+      active_trq = wam->Jtrq;
+      active_dest = jdest;
+      vta = &vt_j;
+      const_vn(active_dest, -0.5309, 0.8837, 0.4544, 2.2215, 0.0, 0.0, 0.0);
+
+      moveparm_bts(active_bts,vel,acc);
+      setmode_bts(active_bts,SCMODE_POS);
+      prev_mode = getmode_bts(active_bts);
+      if (prev_mode != SCMODE_POS)
+         setmode_bts(active_bts,SCMODE_POS);
+
+      if(moveto_bts(active_bts,active_dest))
+         syslog(LOG_ERR,"Moveto Aborted");
+
+      while(getmode_bts(active_bts)==SCMODE_TRJ) {
+         usleep(10000);
+         //sleep(1);
+      }
+      /* Move in under card */
+      const_vn(active_dest, -0.4826, 0.8970, 0.4910, 2.2107, 0.0, 0.0, 0.0);
+      if(moveto_bts(active_bts,active_dest))
+         syslog(LOG_ERR,"Moveto Aborted");
+
+      while(getmode_bts(active_bts)==SCMODE_TRJ) {
+         usleep(10000);
+         //sleep(1);
+      }
+      /* Lift card up a little */
+      const_vn(active_dest, -0.5287, 0.880, 0.5425, 2.2148, 0.0, 0.0, 0.0);
+      if(moveto_bts(active_bts,active_dest))
+         syslog(LOG_ERR,"Moveto Aborted");
+
+      while(getmode_bts(active_bts)==SCMODE_TRJ) {
+         usleep(10000);
+         //sleep(1);
+      }
+      //     break;
+      //  case '8':
+      /* Grab card */
+      serialWriteString(&p, "\r3M 11000\r");
+      usleep(250000);
+
+      //      break;
+      //   case '9':
+
+      /* Lift card off deck */
+      const_vn(active_dest, -0.5466, 0.6972, 0.5737, 2.2891, 0.0, 0.0, 0.0);
+      if(moveto_bts(active_bts,active_dest))
+         syslog(LOG_ERR,"Moveto Aborted");
+
+      while(getmode_bts(active_bts)==SCMODE_TRJ) {
+         usleep(10000);
+         //sleep(1);
+      }
+      /* Reach out with card */
+      if(flip) {
+         flip = 0;
+         const_vn(active_dest, -0.5532, 0.2486, 0.5554, 1.6646, 0.0, 0.0, 0.0);
+         if(moveto_bts(active_bts,active_dest))
+            syslog(LOG_ERR,"Moveto Aborted");
+         while(getmode_bts(active_bts)==SCMODE_TRJ) {
+            usleep(10000);
+            //sleep(1);
+         }
+         const_vn(active_dest, 0.5597, 1.6542, -1.4126, 0.8336, 0.0, 0.0, 0.0);
+      } else {
+         flip = 1;
+         const_vn(active_dest, -0.4310, 1.6646, 1.5667, 0.6012, 0.0, 0.0, 0.0);
+      }
+      if(moveto_bts(active_bts,active_dest))
+         syslog(LOG_ERR,"Moveto Aborted");
+      while(getmode_bts(active_bts)==SCMODE_TRJ) {
+         usleep(10000);
+         //sleep(1);
+      }
+      /* Drop Card */
+
+      serialWriteString(&p, "\r");
+      usleep(10000);
+      serialWriteString(&p, "\r3FSET DP 16000\r");
+      serialWriteString(&p, "\r");
+      usleep(10000);
+      serialWriteString(&p, "\r12FSET DP 9000\r");
+      serialWriteString(&p, "\r");
+      usleep(10000);
+      serialWriteString(&p, "\r4FSET DP 1500\r");
+      serialWriteString(&p, "\r");
+      usleep(10000);
+      serialWriteString(&p, "\rM\r");
+      usleep(250000);
+      //   sleep(1);
+      if(!flip) {
+         const_vn(active_dest, -0.5532, 0.2486, 0.5554, 1.6646, 0.0, 0.0, 0.0);
+         if(moveto_bts(active_bts,active_dest))
+            syslog(LOG_ERR,"Moveto Aborted");
+         while(getmode_bts(active_bts)==SCMODE_TRJ) {
+            usleep(10000);
+            //sleep(1);
+         }
+      }
+
+      /* Move to high start position */
+      const_vn(active_dest, -0.6820, 0.5862, 0.7456, 2.3497, 0.0, 0.0, 0.0);
+      if(moveto_bts(active_bts,active_dest))
+         syslog(LOG_ERR,"Moveto Aborted");
+
+      while(getmode_bts(active_bts)==SCMODE_TRJ) {
+         usleep(10000);
+         //sleep(1);
+      }
+      break;
+   case 'x'://eXit
+   case  'X'://eXit
+      done = 1;
+      break;
+   case '!'://Set puck to mode TORQ
+      if (NoSafety)
+         EnergizeActuators();
+      //setProperty(0, 1, MODE, FALSE, 2);
+      break;
+   case '@'://Set puck to mode IDLE
+      if (NoSafety)
+         IdleActuators();
+      //setProperty(0, 1, MODE, FALSE, 0);
+      break;
+   case '#'://Data logging on
       DLon(&(wam->log));
       break;
-    case '3'://Data logging off
+   case '3'://Data logging off
       DLoff(&(wam->log));
       break;
-    case 'z'://Send home-position to WAM
-          const_vn(wv, 0.0, -1.997, 0.0, +3.14, 0.0, 0.0, 0.0); //gimbals
-          DefineWAMpos(wam,wv);
-          break;
-    case 'g'://Set gravity compensation
-        start_entry();
-        addstr("Enter scale value for gravity (1.0 = 9.8m/s^2): ");
-        refresh();
-        scanw("%lf\n",  &tvel);
-        SetGravityComp(wam,tvel);
-        finish_entry();
-        break;
-    case '_'://Refresh display
-        clearScreen();
-        break;
-    case '\t'://Toggle jointspace and cartesian space
-        destroy_vta(vta); //empty out the data if it was full
-        setmode_bts(&(wam->Jsc),SCMODE_IDLE);
-        setmode_bts(&(wam->Csc),SCMODE_IDLE);
-
-        if (active_bts == &(wam->Jsc)) { //switch to cartesian space mode.
-            SetCartesianSpace(wam);
-            active_bts = &(wam->Csc);
-            active_pos = wam->R6pos;
-            active_trq = wam->R6force;
-            active_dest = cdest;
-            vta = &vt_c;
-        } else {
-            SetJointSpace(wam);
-            active_bts = &(wam->Jsc);
-            active_pos = wam->Jpos;
-            active_trq = wam->Jtrq;
-            active_dest = jdest;
-            vta = &vt_j;
-        }
-        clearScreen();
-        break;
-    case 'D'://Haptics on
-        bth.state = 1;
-        break;
-    case 'd'://Haptics off
-        bth.state = 0;
-        break;
-    case 'p'://Turn on/off Constraint
-        if (getmode_bts(active_bts)!=SCMODE_IDLE)
-            setmode_bts(active_bts,SCMODE_IDLE);
-        else
-            setmode_bts(active_bts,SCMODE_POS);
-        break;
-
-    case '.'://Play loaded trajectory
-
-        if(getmode_bts(active_bts)!=SCMODE_TRJ) {
-        moveparm_bts(active_bts,vel,acc);
-        active_bts->loop_trj = 0;
-        prev_mode = getmode_bts(active_bts);
-        if (prev_mode != SCMODE_POS)
-            setmode_bts(active_bts,SCMODE_POS);
-        start_trj_bts(active_bts);
-        } else {
-            start_entry();
-            addstr("You must stop the running trajectory first!: ");
-            refresh();
-            sleep(1);
-            finish_entry();
-        }
-        break;
-
-    case 'b'://Simulate loaded trajectory
-
-        sim_vta(*vta,0.002,getval_vn(idx_vr(get_vr_vta(*vta),numrows_vr(get_vr_vta(*vta))-1),0),"sim.csv");
-        break;
-
-    case '?'://Loop loaded trajectory
-
-        if(getmode_bts(active_bts)!=SCMODE_TRJ) {
-        moveparm_bts(active_bts,vel,acc);
-        active_bts->loop_trj = 1;
-        prev_mode = getmode_bts(active_bts);
-        if (prev_mode != SCMODE_POS)
-            setmode_bts(active_bts,SCMODE_POS);
-        start_trj_bts(active_bts);
-        } else {
-            start_entry();
-            addstr("You must stop the running trajectory first!: ");
-            refresh();
-            sleep(1);
-            finish_entry();
-        }
-        break;
-
-    case '/'://Stop loaded trajectory
-
-        stop_trj_bts(active_bts);
-        setmode_bts(active_bts,prev_mode);
-        active_bts->loop_trj = 0;
-        break;
-    case 'Y'://Start continuos teach
-        if (active_bts == &(wam->Jsc))
-            StartContinuousTeach(wam,1,25,"teachpath");
-        else
-            StartContinuousTeach(wam,0,25,"teachpath");
-        cteach = 1;
-        break;
-    case 'y'://Stop continuos teach
-        StopContinuousTeach(wam);
-        DecodeDL("teachpath","teach.csv",0);
-        cteach = 0;
-        stop_trj_bts(active_bts);
-        /** \internal \todo sleeps that are necessary might be forgotten. Can we eliminate the need?*/
-        usleep(10000); //needed to give the command a chance to work.
-        destroy_vta(vta); //empty out the data if it was full
-        strcpy(active_file,"teach.csv");
-        *vta = read_file_vta(active_file,20);
-        register_vta(active_bts,*vta);
-        break;
-    case 'l'://Load trajectory from file
-        if(getmode_bts(active_bts)!=SCMODE_TRJ) {
-            start_entry();
-            addstr("Enter filename for trajectory: ");
-            refresh();
-            scanw("%s", active_file);
-            destroy_vta(vta); //empty out the data if it was full
-
-            *vta = read_file_vta(active_file,20);
-            register_vta(active_bts,*vta);
-            finish_entry();
-        } else {
-            start_entry();
-            addstr("You must stop the running trajectory first!: ");
-            refresh();
-            sleep(1);
-            finish_entry();
-        }
-        break;
-    case 'w'://Save trajectory to a file
-        if(getmode_bts(active_bts)!=SCMODE_TRJ) {
-            start_entry();
-            addstr("Enter filename for trajectory: ");
-            refresh();
-            scanw("%s", fn);
-            if (*vta != NULL) {
-                write_file_vta(*vta,fn);
-                strcpy(active_file,fn);
-            }
-            finish_entry();
-        } else {
-            start_entry();
-            addstr("You must stop the running trajectory first!: ");
-            refresh();
-            sleep(1);
-            finish_entry();
-        }
-        break;
-    case 'n'://Create a new trajectory
-        if(getmode_bts(active_bts)!=SCMODE_TRJ) {
-            start_entry();
-            addstr("Enter the max number of points that will be in your trajectory: ");
-            refresh();
-            ret = scanw("%d", &dtmp);
-            destroy_vta(vta);
-
-            strcpy(active_file,user_def);
-            *vta = new_vta(len_vn(active_pos),dtmp);
-            register_vta(active_bts,*vta);
-            active_file[0] = 0;
-            finish_entry();
-        } else {
-            start_entry();
-            addstr("You must stop the running trajectory first!: ");
-            refresh();
-            sleep(1);
-            finish_entry();
-        }
-        break;
-    case 'M'://Move to a location
-        if(getmode_bts(active_bts)!=SCMODE_TRJ) {
-            start_entry();
-            addstr("Enter comma seperated destination \".2,.4,...\": ");
-            refresh();
-            getstr( fn);
-            strcat(fn,"\n");
-            //syslog(LOG_ERR,"Moveto:%s",fn);
-            finish_entry();
-            fill_vn(active_dest,0.25);
-            csvto_vn(active_dest,fn);
-            moveparm_bts(active_bts,vel,acc);
-            prev_mode = getmode_bts(active_bts);
-            if (prev_mode != SCMODE_POS)
-                setmode_bts(active_bts,SCMODE_POS);
-
-            if(moveto_bts(active_bts,active_dest))
-                syslog(LOG_ERR,"Moveto Aported");
-
-        } else {
-            start_entry();
-            addstr("You must stop the running trajectory first!: ");
-            refresh();
-            sleep(1);
-            finish_entry();
-        }
-        break;
-  /*'m': Move to the presently selected trajectory point*/
-
-    case '<'://Select next trajectory point
-        prev_point_vta(*vta);
-        break;
-    case '>'://Select previous trajectory point
-        next_point_vta(*vta);
-        break;
-    case '+'://Insert a point in the trajectory
-        if(getmode_bts(active_bts)==SCMODE_IDLE) {
-            ins_point_vta(*vta,active_pos);
-        }
-        break;
-    case '-'://Remove a point in the trajectory
-        if(getmode_bts(active_bts)==SCMODE_IDLE) {
-            del_point_vta(*vta);
-        }
-        break;
-    case 's'://Adjust trj times using a velocity
-        if(getmode_bts(active_bts)==SCMODE_IDLE) {
-            start_entry();
-            addstr("Enter trajectory velocity: ");
-            refresh();
-            ret = scanw("%lf\n", &tvel);
-            if(*vta != NULL)
-                dist_adjust_vta(*vta,tvel);
-            finish_entry();
-        }
-        break;
-    case 'S'://Scale trajectory in time
-        if(getmode_bts(active_bts)==SCMODE_IDLE) {
-            start_entry();
-            addstr("Enter scale factor: ");
-            refresh();
-            ret = scanw("%lf\n", &tvel);
-            if(vta != NULL)
-                time_scale_vta(*vta,tvel);
-            finish_entry();
-        }
-        break;
-    case 'A'://Set the corner acceleration
-        if(getmode_bts(active_bts)==SCMODE_IDLE) {
-            start_entry();
-            addstr("Enter Corner Acceleration: ");
-            refresh();
-            ret = scanw("%lf\n", &tacc);
-            if(*vta != NULL)
-                set_acc_vta(*vta,tacc);
-            finish_entry();
-        }
-        break;
-    case 'a'://Set the move acceleration
-        if(getmode_bts(active_bts)==SCMODE_IDLE) {
-            start_entry();
-            addstr("Enter Move Acceleration: ");
-            refresh();
-            ret = scanw("%lf\n", &acc);
-            finish_entry();
-        }
-         break;
-    case 'v'://Set the move velocity
-        if(getmode_bts(active_bts)==SCMODE_IDLE) {
-            start_entry();
-            addstr("Enter Move Velocity: ");
-            refresh();
-            ret = scanw("%lf\n", &vel);
-            finish_entry();
-        }        
-        break;        
-    case ','://Pause/Unpause trajectory
-      status =  movestatus_bts(active_bts);
-        if (status == BTTRAJ_PAUSING || status == BTTRAJ_PAUSED)
-          unpause_trj_bts(active_bts,2);
-        else
-          pause_trj_bts(active_bts,2); 
+   case 'z'://Send home-position to WAM
+      const_vn(wv, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0); //gimbals
+      DefineWAMpos(wam,wv);
       break;
-       case 'h'://Toggle Help
-        clearScreen();
-	screen = !screen;
-	break;
- 
-    case 27://Handle and discard extended keyboard characters (like arrows)
-        if ((chr = getch()) != ERR) {
-            if (chr == 91) {
-                if ((chr = getch()) != ERR) {
-                    if (chr == 67) //Right arrow
-                    {
-                    }
-                    else if (chr == 68) //Left arrow
-                    {
-                    }
-                    else {
-                        while(getch()!=ERR) {
-                            // Do nothing
-                        }
-                    }
-                }
-            }
-            else {
-                while(getch()!=ERR) {
-                    // Do nothing
-                }
-            }
-        }
-        break;
+   case 'g'://Set gravity compensation
+      start_entry();
+      addstr("Enter scale value for gravity (1.0 = 9.8m/s^2): ");
+      refresh();
+      scanw("%lf\n",  &tvel);
+      SetGravityComp(wam,tvel);
+      finish_entry();
+      break;
+   case '_'://Refresh display
+      clearScreen();
+      break;
+   case '\t'://Toggle jointspace and cartesian space
+      destroy_vta(vta); //empty out the data if it was full
+      setmode_bts(&(wam->Jsc),SCMODE_IDLE);
+      setmode_bts(&(wam->Csc),SCMODE_IDLE);
 
-    default:
-        while(getch()!=ERR) {
-            // Do nothing
-        }
-        //syslog(LOG_ERR,"Caught unknown keyhit %d",c);
+      if (active_bts == &(wam->Jsc)) { //switch to cartesian space mode.
+         SetCartesianSpace(wam);
+         active_bts = &(wam->Csc);
+         active_pos = wam->R6pos;
+         active_trq = wam->R6force;
+         active_dest = cdest;
+         vta = &vt_c;
+      } else {
+         SetJointSpace(wam);
+         active_bts = &(wam->Jsc);
+         active_pos = wam->Jpos;
+         active_trq = wam->Jtrq;
+         active_dest = jdest;
+         vta = &vt_j;
+      }
+      clearScreen();
+      break;
+   case 'D'://Haptics on
+      bth.state = 1;
+      break;
+   case 'd'://Haptics off
+      bth.state = 0;
+      break;
+   case 'p'://Turn on/off Constraint
+      if (getmode_bts(active_bts)!=SCMODE_IDLE)
+         setmode_bts(active_bts,SCMODE_IDLE);
+      else
+         setmode_bts(active_bts,SCMODE_POS);
+      break;
 
-        break;
-    }
+   case '.'://Play loaded trajectory
+
+      if(getmode_bts(active_bts)!=SCMODE_TRJ) {
+         moveparm_bts(active_bts,vel,acc);
+         active_bts->loop_trj = 0;
+         prev_mode = getmode_bts(active_bts);
+         if (prev_mode != SCMODE_POS)
+            setmode_bts(active_bts,SCMODE_POS);
+         start_trj_bts(active_bts);
+      } else {
+         start_entry();
+         addstr("You must stop the running trajectory first!: ");
+         refresh();
+         sleep(1);
+         finish_entry();
+      }
+      break;
+
+   case 'b'://Simulate loaded trajectory
+
+      sim_vta(*vta,0.002,getval_vn(idx_vr(get_vr_vta(*vta),numrows_vr(get_vr_vta(*vta))-1),0),"sim.csv");
+      break;
+
+   case '?'://Loop loaded trajectory
+
+      if(getmode_bts(active_bts)!=SCMODE_TRJ) {
+         moveparm_bts(active_bts,vel,acc);
+         active_bts->loop_trj = 1;
+         prev_mode = getmode_bts(active_bts);
+         if (prev_mode != SCMODE_POS)
+            setmode_bts(active_bts,SCMODE_POS);
+         start_trj_bts(active_bts);
+      } else {
+         start_entry();
+         addstr("You must stop the running trajectory first!: ");
+         refresh();
+         sleep(1);
+         finish_entry();
+      }
+      break;
+
+   case '/'://Stop loaded trajectory
+
+      stop_trj_bts(active_bts);
+      setmode_bts(active_bts,prev_mode);
+      active_bts->loop_trj = 0;
+      break;
+   case 'Y'://Start continuos teach
+      if (active_bts == &(wam->Jsc))
+         StartContinuousTeach(wam,1,25,"teachpath");
+      else
+         StartContinuousTeach(wam,0,25,"teachpath");
+      cteach = 1;
+      break;
+   case 'y'://Stop continuos teach
+      StopContinuousTeach(wam);
+      DecodeDL("teachpath","teach.csv",0);
+      cteach = 0;
+      stop_trj_bts(active_bts);
+      /** \internal \todo sleeps that are necessary might be forgotten. Can we eliminate the need?*/
+      usleep(10000); //needed to give the command a chance to work.
+      destroy_vta(vta); //empty out the data if it was full
+      strcpy(active_file,"teach.csv");
+      *vta = read_file_vta(active_file,20);
+      register_vta(active_bts,*vta);
+      break;
+   case 'l'://Load trajectory from file
+      if(getmode_bts(active_bts)!=SCMODE_TRJ) {
+         start_entry();
+         addstr("Enter filename for trajectory: ");
+         refresh();
+         scanw("%s", active_file);
+         destroy_vta(vta); //empty out the data if it was full
+
+         *vta = read_file_vta(active_file,20);
+         register_vta(active_bts,*vta);
+         finish_entry();
+      } else {
+         start_entry();
+         addstr("You must stop the running trajectory first!: ");
+         refresh();
+         sleep(1);
+         finish_entry();
+      }
+      break;
+   case 'w'://Save trajectory to a file
+      if(getmode_bts(active_bts)!=SCMODE_TRJ) {
+         start_entry();
+         addstr("Enter filename for trajectory: ");
+         refresh();
+         scanw("%s", fn);
+         if (*vta != NULL) {
+            write_file_vta(*vta,fn);
+            strcpy(active_file,fn);
+         }
+         finish_entry();
+      } else {
+         start_entry();
+         addstr("You must stop the running trajectory first!: ");
+         refresh();
+         sleep(1);
+         finish_entry();
+      }
+      break;
+   case 'n'://Create a new trajectory
+      if(getmode_bts(active_bts)!=SCMODE_TRJ) {
+         start_entry();
+         addstr("Enter the max number of points that will be in your trajectory: ");
+         refresh();
+         ret = scanw("%d", &dtmp);
+         destroy_vta(vta);
+
+         strcpy(active_file,user_def);
+         *vta = new_vta(len_vn(active_pos),dtmp);
+         register_vta(active_bts,*vta);
+         active_file[0] = 0;
+         finish_entry();
+      } else {
+         start_entry();
+         addstr("You must stop the running trajectory first!: ");
+         refresh();
+         sleep(1);
+         finish_entry();
+      }
+      break;
+   case 'M'://Move to a location
+      if(getmode_bts(active_bts)!=SCMODE_TRJ) {
+         start_entry();
+         addstr("Enter comma seperated destination \".2,.4,...\": ");
+         refresh();
+         getstr( fn);
+         strcat(fn,"\n");
+         //syslog(LOG_ERR,"Moveto:%s",fn);
+         finish_entry();
+         fill_vn(active_dest,0.25);
+         csvto_vn(active_dest,fn);
+         moveparm_bts(active_bts,vel,acc);
+         prev_mode = getmode_bts(active_bts);
+         if (prev_mode != SCMODE_POS)
+            setmode_bts(active_bts,SCMODE_POS);
+
+         if(moveto_bts(active_bts,active_dest))
+            syslog(LOG_ERR,"Moveto Aported");
+
+      } else {
+         start_entry();
+         addstr("You must stop the running trajectory first!: ");
+         refresh();
+         sleep(1);
+         finish_entry();
+      }
+      break;
+      /*'m': Move to the presently selected trajectory point*/
+
+   case '<'://Select next trajectory point
+      prev_point_vta(*vta);
+      break;
+   case '>'://Select previous trajectory point
+      next_point_vta(*vta);
+      break;
+   case '+'://Insert a point in the trajectory
+      if(getmode_bts(active_bts)==SCMODE_IDLE) {
+         ins_point_vta(*vta,active_pos);
+      }
+      break;
+   case '-'://Remove a point in the trajectory
+      if(getmode_bts(active_bts)==SCMODE_IDLE) {
+         del_point_vta(*vta);
+      }
+      break;
+   case 's'://Adjust trj times using a velocity
+      if(getmode_bts(active_bts)==SCMODE_IDLE) {
+         start_entry();
+         addstr("Enter trajectory velocity: ");
+         refresh();
+         ret = scanw("%lf\n", &tvel);
+         if(*vta != NULL)
+            dist_adjust_vta(*vta,tvel);
+         finish_entry();
+      }
+      break;
+   case 'S'://Scale trajectory in time
+      if(getmode_bts(active_bts)==SCMODE_IDLE) {
+         start_entry();
+         addstr("Enter scale factor: ");
+         refresh();
+         ret = scanw("%lf\n", &tvel);
+         if(vta != NULL)
+            time_scale_vta(*vta,tvel);
+         finish_entry();
+      }
+      break;
+   case 'A'://Set the corner acceleration
+      if(getmode_bts(active_bts)==SCMODE_IDLE) {
+         start_entry();
+         addstr("Enter Corner Acceleration: ");
+         refresh();
+         ret = scanw("%lf\n", &tacc);
+         if(*vta != NULL)
+            set_acc_vta(*vta,tacc);
+         finish_entry();
+      }
+      break;
+   case 'a'://Set the move acceleration
+      if(getmode_bts(active_bts)==SCMODE_IDLE) {
+         start_entry();
+         addstr("Enter Move Acceleration: ");
+         refresh();
+         ret = scanw("%lf\n", &acc);
+         finish_entry();
+      }
+      break;
+   case 'v'://Set the move velocity
+      if(getmode_bts(active_bts)==SCMODE_IDLE) {
+         start_entry();
+         addstr("Enter Move Velocity: ");
+         refresh();
+         ret = scanw("%lf\n", &vel);
+         finish_entry();
+      }
+      break;
+   case ','://Pause/Unpause trajectory
+      status =  movestatus_bts(active_bts);
+      if (status == BTTRAJ_PAUSING || status == BTTRAJ_PAUSED)
+         unpause_trj_bts(active_bts,2);
+      else
+         pause_trj_bts(active_bts,2);
+      break;
+   case 'h'://Toggle Help
+      clearScreen();
+      screen = !screen;
+      break;
+
+   case 27://Handle and discard extended keyboard characters (like arrows)
+      if ((chr = getch()) != ERR) {
+         if (chr == 91) {
+            if ((chr = getch()) != ERR) {
+               if (chr == 67) //Right arrow
+               {
+               } else if (chr == 68) //Left arrow
+               {
+               } else {
+                  while(getch()!=ERR) {
+                     // Do nothing
+                  }
+                  syslog(LOG_ERR,"Caught unknown keyhit 27-91-%d",c);
+               }
+            }
+         } else {
+            while(getch()!=ERR) {
+               // Do nothing
+            }
+            syslog(LOG_ERR,"Caught unknown keyhit 27-%d",c);
+         }
+      }
+      break;
+
+   default:
+      while(getch()!=ERR) {
+         // Do nothing
+      }
+      syslog(LOG_ERR,"Caught unknown keyhit %d",c);
+
+      break;
+   }
 }
 
