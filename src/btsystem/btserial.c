@@ -24,18 +24,30 @@
 #include <sys/ioctl.h>
 #include <string.h>
 #include <syslog.h>
+#include <signal.h>
+#include <sys/types.h>
 
 #include "btserial.h"
+
+int got_sigio = 0;
+
+void signal_handler_IO (int status);
 
 /** Open serial port 
 
 \param port A PORT* object.
 \param portlocation The serial device you wish to open.
 */
-int serialOpen(PORT *port,char *portlocation)
+int serialOpen(PORT *port,char *devicename)
 { 
+	int fd;
     struct termios options;
-    
+       struct termios oldtio, newtio;       //place for old and new port settings for serial port
+
+       struct sigaction saio;               //definition of signal action
+
+
+#if 0    
     // Open port for reading
 //	port->ifd = open(port, 0_RDRW | 0_NOCTTY | 0_NONBLOCK);
     if ( ( port->isp=fopen(portlocation,"r") ) != NULL ) 
@@ -56,7 +68,38 @@ int serialOpen(PORT *port,char *portlocation)
         //printf("\nUnable to open port %s for output!\n", portlocation);
         return(2); /**\retval 2 Unable to open the port for output*/
     }
-    
+#endif
+    fd = open(devicename, O_RDWR | O_NOCTTY | O_NONBLOCK);
+      if (fd < 0)
+	      return(1); /**\retval 1 Unable to open the port */
+      
+      port->ifd = port->ofd = fd;
+      
+      //install the serial handler before making the device asynchronous
+      saio.sa_handler = signal_handler_IO;
+      sigemptyset(&saio.sa_mask);   //saio.sa_mask = 0;
+      saio.sa_flags = 0;
+      saio.sa_restorer = NULL;
+      //sigaction(SIGIO,&saio,NULL);
+
+      // allow the process to receive SIGIO
+      //fcntl(fd, F_SETOWN, getpid());
+
+      // Make the file descriptor asynchronous (the manual page says only
+      // O_APPEND and O_NONBLOCK, will work with F_SETFL...)
+      fcntl(fd, F_SETFL, FASYNC);
+
+      tcgetattr(fd,&oldtio); // save current port settings 
+      // set new port settings for canonical input processing 
+      newtio.c_cflag = B9600 | 0 | CS8 | 0 | 0 | 0 | CLOCAL | CREAD;
+      newtio.c_iflag = IGNPAR;
+      newtio.c_oflag = 0;
+      newtio.c_lflag = 0;       //ICANON;
+      newtio.c_cc[VMIN]=0;
+      newtio.c_cc[VTIME]=0;
+      tcflush(fd, TCIFLUSH);
+      tcsetattr(fd,TCSANOW,&newtio);
+#if 0      
     // Set port to no delay on read
     fcntl(port->ifd, F_SETFL, FNDELAY);
     
@@ -83,7 +126,7 @@ int serialOpen(PORT *port,char *portlocation)
     /* * Set the new options for the port...  */ 
     tcsetattr(port->ifd, TCSANOW, &options); 
     tcsetattr(port->ofd, TCSANOW, &options); 
-    
+#endif    
     return 0; /**\retval 0 Success */
 }
 
@@ -227,4 +270,15 @@ int serialSetBaud(PORT *port, long baud)
     tcsetattr(port->ofd, TCSANOW, &options); 
     
     return 0; 
+}
+
+/***************************************************************************
+* signal handler. sets wait_flag to FALSE, to indicate above loop that     *
+* characters have been received.                                           *
+***************************************************************************/
+
+void signal_handler_IO (int status)
+{
+//    printf("received SIGIO signal.\n");
+   got_sigio = 1;
 }
