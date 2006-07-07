@@ -38,439 +38,430 @@
 /*! Initialize the SimpleCtl structure */
 int SCinit(SimpleCtl *sc)
 {
-    int err;
+   int err;
 
-    sc->mode = SCMODE_IDLE;
-    sc->requested_torque = 0.0;
-    sc->kill_torque = 500000;
-    sc->last_dt = 1;
-    sc->command_torque = 0;
-    sc->trj.state = BTTRAJ_STOPPED;
-    sc->trj.acc = .00000001;
-    sc->trj.vel = .00000001;
-    PIDinit(&(sc->pid),0, 0, 0, 0.002);
-    
-    btmutex_init(&(sc->mutex));
+   sc->mode = SCMODE_IDLE;
+   sc->requested_torque = 0.0;
+   sc->kill_torque = 500000;
+   sc->last_dt = 1;
+   sc->command_torque = 0;
+   sc->trj.state = BTTRAJ_STOPPED;
+   sc->trj.acc = .00000001;
+   sc->trj.vel = .00000001;
+   PIDinit(&(sc->pid),0, 0, 0, 0.002);
+
+   btmutex_init(&(sc->mutex));
 }
 
 /*! Evaluate the Simple Controller
-
+ 
   See the documentation for SimpleCtl for an overview.
-
+ 
   This function takes as input the current position and the time since the last evaluation.
 It returns a torque.
-
+ 
 \param position the measured position
 \param dt the time step we want to evaluate with.
 \return Returns a torque command.
 */
 double SCevaluate(SimpleCtl *sc, double position, double dt)
 {
-    double newcommand;
-    double newtorque;
-    double cmptorque;
-    int err;
+   double newcommand;
+   double newtorque;
+   double cmptorque;
+   int err;
 
-    
-    btmutex_lock(&(sc->mutex));
-    
-    sc->position = position;
-    switch (sc->mode)
-    {
-        case SCMODE_IDLE://Idle
-            btmutex_unlock(&(sc->mutex));
-            sc->command_torque = 0.0;
-            return sc->command_torque;
-            break;
-        case SCMODE_TORQUE://Torque
-            sc->command_torque = sc->requested_torque;
-            btmutex_unlock(&(sc->mutex));
-            return sc->command_torque;
-            break;
-        case SCMODE_POS://PID
-            if (sc->trj.state == BTTRAJ_RUN)
-            {
-                newcommand = evaluate_trajectory(&(sc->trj),dt);
-                sc->pid.yref = newcommand;
-            }
-            sc->pid.y = sc->position;
-            sc->pid.dt = dt;
-            newtorque = PIDcalc(&(sc->pid));
-            
-            sc->command_torque = newtorque;
+   btmutex_lock(&(sc->mutex));
 
-            btmutex_unlock(&(sc->mutex));
-            return newtorque;
-            break;
-        default:
-            sc->error = 1;
-            btmutex_unlock(&(sc->mutex));
-            return 0.0;
-        }
+   sc->position = position;
+   switch (sc->mode) {
+   case SCMODE_IDLE://Idle
+      btmutex_unlock(&(sc->mutex));
+      sc->command_torque = 0.0;
+      return sc->command_torque;
+      break;
+   case SCMODE_TORQUE://Torque
+      sc->command_torque = sc->requested_torque;
+      btmutex_unlock(&(sc->mutex));
+      return sc->command_torque;
+      break;
+   case SCMODE_POS://PID
+      if (sc->trj.state == BTTRAJ_RUN) {
+         newcommand = evaluate_trajectory(&(sc->trj),dt);
+         sc->pid.yref = newcommand;
+      }
+      sc->pid.y = sc->position;
+      sc->pid.dt = dt;
+      newtorque = PIDcalc(&(sc->pid));
+
+      sc->command_torque = newtorque;
+
+      btmutex_unlock(&(sc->mutex));
+      return newtorque;
+      break;
+   default:
+      sc->error = 1;
+      btmutex_unlock(&(sc->mutex));
+      return 0.0;
+   }
 
 }
 
-
-
 /*! \brief Set the controller mode
-
+ 
   Sets the controller mode. To keep anything from "jumping" unexpectedly, we reset our
   pid controller whenever we switch into pidmode.
-
+ 
 */
 int SCsetmode(SimpleCtl *sc, int mode)
 {
-    int err;
-    double tmp;
+   int err;
+   double tmp;
 
-    btmutex_lock(&(sc->mutex));
-    
-    if (sc->trj.state != BTTRAJ_STOPPED) sc->trj.state = BTTRAJ_STOPPED;
-    sc->pid.y = sc->position;
-    PIDreset(&(sc->pid));
-    tmp = PIDcalc(&(sc->pid));
-    sc->mode = mode;
-    
-    btmutex_unlock(&(sc->mutex));
-    return 0;
+   btmutex_lock(&(sc->mutex));
+
+   if (sc->trj.state != BTTRAJ_STOPPED)
+      sc->trj.state = BTTRAJ_STOPPED;
+   sc->pid.y = sc->position;
+   PIDreset(&(sc->pid));
+   tmp = PIDcalc(&(sc->pid));
+   sc->mode = mode;
+
+   btmutex_unlock(&(sc->mutex));
+   return 0;
 }
-
 
 int SCsettorque(SimpleCtl *sc,double torque)
 {
-    int err;
+   int err;
 
-    btmutex_lock(&(sc->mutex));
-    
-    sc->requested_torque = torque; //use a buffer since we are not necessarily running from the same thread as evaluatecontroller
-    
-    btmutex_unlock(&(sc->mutex));
+   btmutex_lock(&(sc->mutex));
 
-    if (sc->mode != SCMODE_TORQUE)
-    {
-        return -1;
-    }
-    return 0;
+   sc->requested_torque = torque; //use a buffer since we are not necessarily running from the same thread as evaluatecontroller
+
+   btmutex_unlock(&(sc->mutex));
+
+   if (sc->mode != SCMODE_TORQUE) {
+      return -1;
+   }
+   return 0;
 }
 
-int SCsetpid(SimpleCtl *sc,double kp,double kd,double ki, double saturation) //!! not thread safe yet! We may update these in the middle of their use.
+int SCsetpid(SimpleCtl *sc,double kp,double kd,double ki, double saturation)
 {
+   //!! not thread safe yet! We may update these in the middle of their use.
+   int err;
 
-    int err;
+   //make sure we don't screw with stuff in the middle of a trajectory.
+   if (sc->trj.state == BTTRAJ_RUN || sc->mode == SCMODE_POS)
+      return -1;
 
-    if (sc->trj.state == BTTRAJ_RUN || sc->mode == SCMODE_POS) //make sure we don't screw with stuff in the middle of a trajectory.
-        return -1;
+   btmutex_lock(&(sc->mutex));
 
-    btmutex_lock(&(sc->mutex));
-    
-    sc->pid.Kp = kp;
-    sc->pid.Kd = kd;
-    sc->pid.Ki = ki;
-    sc->pid.saturation = saturation;
+   sc->pid.Kp = kp;
+   sc->pid.Kd = kd;
+   sc->pid.Ki = ki;
+   sc->pid.saturation = saturation;
 
-    btmutex_unlock(&(sc->mutex));
+   btmutex_unlock(&(sc->mutex));
 
-    return 0;
+   return 0;
 }
 
-int SCsetcmd(SimpleCtl *sc,double cmd) //sets pid command position. if in traj mode, stops trajectory
+int SCsetcmd(SimpleCtl *sc,double cmd)
 {
-    int err;
+   //sets pid command position. if in traj mode, stops trajectory
+   int err;
 
-    if (sc->trj.state != BTTRAJ_STOPPED)
-        return -1;
+   if (sc->trj.state != BTTRAJ_STOPPED)
+      return -1;
 
-    btmutex_lock(&(sc->mutex));
-    
-    sc->pid.yref = cmd;
-    
-    btmutex_unlock(&(sc->mutex));
-    return 0;
+   btmutex_lock(&(sc->mutex));
+
+   sc->pid.yref = cmd;
+
+   btmutex_unlock(&(sc->mutex));
+   return 0;
 }
 
 int SCsettrjprof(SimpleCtl *sc,double vel,double acc)
 {
-    int err;
+   int err;
 
-    if (sc->trj.state == BTTRAJ_RUN)
-        return -1;
+   if (sc->trj.state == BTTRAJ_RUN)
+      return -1;
 
-    btmutex_lock(&(sc->mutex));
-    
-    sc->trj.vel = fabs(vel);
-    sc->trj.acc = fabs(acc);
+   btmutex_lock(&(sc->mutex));
 
-    btmutex_unlock(&(sc->mutex));
-    return 0;
+   sc->trj.vel = fabs(vel);
+   sc->trj.acc = fabs(acc);
+
+   btmutex_unlock(&(sc->mutex));
+   return 0;
 
 }
+
 int SCstarttrj(SimpleCtl *sc,double end)
 {
-    int err;
-    double here;
+   int err;
+   double here;
 
-    if (sc->trj.state != BTTRAJ_STOPPED)
-        return -1;
+   if (sc->trj.state != BTTRAJ_STOPPED)
+      return -1;
 
-    btmutex_lock(&(sc->mutex));
-    
-    here = sc->pid.yref;
-    init_trajectory(&(sc->trj),here,end);
+   btmutex_lock(&(sc->mutex));
 
-    btmutex_unlock(&(sc->mutex));
-    return 0;
+   here = sc->pid.yref;
+   init_trajectory(&(sc->trj),here,end);
+
+   btmutex_unlock(&(sc->mutex));
+   return 0;
 }
 
 /*! Calculates all the variables necessary to set up a trajectory.
-
+ 
 \param start the starting position
 \param end the destination position
-
-
 */
-void init_trajectory(trajectory *traj, double start, double end) //assumes that velocity and acceleration have been set to reasonable values
+void init_trajectory(trajectory *traj, double start, double end)
 {
-    double ax; //acceleration x
-    double dist;
+   //assumes that velocity and acceleration have been set to reasonable values
+   double ax; //acceleration x
+   double dist;
 
+   traj->cmd = 0;
+   traj->start_point = start;
+   traj->end_point = end;
 
-    traj->cmd = 0;
-    traj->start_point = start;
-    traj->end_point = end;
+   traj->t1 = (traj->vel / traj->acc); //Calculate the "ramp-up" time
 
-    traj->t1 = (traj->vel / traj->acc); //Calculate the "ramp-up" time
+   dist = traj->end_point - traj->start_point;
 
-    dist = traj->end_point - traj->start_point;
+   if (dist > 0)
+      traj->sign = 1;
+   else
+      traj->sign = -1;
 
-    if (dist > 0) traj->sign = 1;
-    else traj->sign = -1;
+   //Get the point at which acceleration stops
+   ax = 0.5*traj->acc*traj->t1*traj->t1; //x = 1/2 a t^2
 
-    //Get the point at which acceleration stops
-    ax = 0.5*traj->acc*traj->t1*traj->t1; //x = 1/2 a t^2
-
-    dist = fabs(dist);
-    traj->end = dist;
-    if (ax > dist/2) //If the acceleration completion point is beyond the halfway point
-        ax = dist/2; //Stop accelerating at the halfway point
-    traj->x1 = ax;   //Set the top left point of the trapezoid
-    traj->x2 = dist - ax; //Set the top right point of the trapezoid
-    traj->t2 = (dist-(2*ax)) / traj->vel + traj->t1; //Find the time to start the "ramp-down"
-    traj->t = 0;
-    traj->state = BTTRAJ_RUN;
-    if (dist == 0.0) traj->state = BTTRAJ_STOPPED;
+   dist = fabs(dist);
+   traj->end = dist;
+   if (ax > dist/2) //If the acceleration completion point is beyond the halfway point
+      ax = dist/2; //Stop accelerating at the halfway point
+   traj->x1 = ax;   //Set the top left point of the trapezoid
+   traj->x2 = dist - ax; //Set the top right point of the trapezoid
+   traj->t2 = (dist-(2*ax)) / traj->vel + traj->t1; //Find the time to start the "ramp-down"
+   traj->t = 0;
+   traj->state = BTTRAJ_RUN;
+   if (dist == 0.0)
+      traj->state = BTTRAJ_STOPPED;
 }
 
 double calc_traj_time(trajectory *traj, double start, double end, double vel, double acc)
 {
-    double ax; //acceleration x
-    double dist,t1,t2,time;
+   double ax; //acceleration x
+   double dist,t1,t2,time;
 
+   t1 = (vel / acc); //Calculate the "ramp-up" time
+   dist = end - start;
 
-    t1 = (vel / acc); //Calculate the "ramp-up" time
+   //Get the point at which acceleration stops
+   ax = 0.5*acc*t1*t1; //x = 1/2 a t^2
+   dist = fabs(dist);
 
-    dist = end - start;
-
-    //Get the point at which acceleration stops
-    ax = 0.5*acc*t1*t1; //x = 1/2 a t^2
-    dist = fabs(dist);
-
-    if (ax > dist/2) //If we never reach max velacity, back calculate for time
-    {
-        ax = dist/2; //Stop accelerating at the halfway point
-        time = 2*sqrt(2*ax/acc);
-    }
-    else
-    {
-        time = (dist-(2*ax)) / vel + 2*t1;
-    }
-    return time;
+   //If we never reach max velacity, back calculate for time
+   if (ax > dist/2) {
+      ax = dist/2; //Stop accelerating at the halfway point
+      time = 2*sqrt(2*ax/acc);
+   } else {
+      time = (dist-(2*ax)) / vel + 2*t1;
+   }
+   return time;
 }
 
 void sync_trajectory(trajectory *traj, double start, double end, double vel, double acc, double t)
 {
-    double ax; //acceleration x
-    double dist,t1,t2,time;
+   double ax; //acceleration x
+   double dist,t1,t2,time;
 
+   t1 = (vel / acc); //Calculate the "ramp-up" time
+   if (2*t1 > t)
+      t1 = t;
+   t2 = t - 2*t1;
+   dist = fabs(end - start);
 
-    t1 = (vel / acc); //Calculate the "ramp-up" time
-    if (2*t1 > t) t1 = t;
-    t2 = t - 2*t1;
-    dist = fabs(end - start);
-
-    traj->acc= dist/(t1*t1+t1*t2);
-    traj->vel= traj->acc*t1;
+   traj->acc= dist/(t1*t1+t1*t2);
+   traj->vel= traj->acc*t1;
 }
 
 double scale_vel(trajectory *traj, double start, double end, double vel, double acc, double t)
 {
-    double ax; //acceleration x
-    double dist,t1,t2,time,acc1;
+   double ax; //acceleration x
+   double dist,t1,t2,time,acc1;
 
+   t1 = (vel / acc); //Calculate the "ramp-up" time
+   if (2*t1 > t)
+      t1 = t;
+   t2 = t - 2*t1;
+   dist = fabs(end - start);
 
-    t1 = (vel / acc); //Calculate the "ramp-up" time
-    if (2*t1 > t) t1 = t;
-    t2 = t - 2*t1;
-    dist = fabs(end - start);
-
-    acc1= dist/(t1*t1+t1*t2);
-    return (acc1*t1);
+   acc1= dist/(t1*t1+t1*t2);
+   return (acc1*t1);
 }
+
 double scale_acc(trajectory *traj, double start, double end, double vel, double acc, double t)
 {
-    double ax; //acceleration x
-    double dist,t1,t2,time,acc1;
+   double ax; //acceleration x
+   double dist,t1,t2,time,acc1;
 
 
-    t1 = (vel / acc); //Calculate the "ramp-up" time
-    if (2*t1 > t) t1 = t;
-    t2 = t - 2*t1;
-    dist = fabs(end - start);
-    acc1 = dist/(t1*t1+t1*t2);
-    return(acc1);
+   t1 = (vel / acc); //Calculate the "ramp-up" time
+   if (2*t1 > t)
+      t1 = t;
+   t2 = t - 2*t1;
+   dist = fabs(end - start);
+   acc1 = dist/(t1*t1+t1*t2);
+   return(acc1);
 }
 
 /*! Calculate next position on the trajectory
-
+ 
 evaluate_trajectory generates points on a trapezoidal velocity trajectory. The points accerate with
 constant acceleration specified by acc up to a maximum velocity specified by vel. The max velocity
 is maintained until approximately the time it will take to decellerate at acc to a velocity of zero.
-
+ 
 \param *traj pointer to the trajectory structure
 \param dt the time step to take (in the same units as vel and acc)
-
+ 
 \return The value returned is the next point on the trajectory after a step of dt.
-
-
 */
 double evaluate_trajectory(trajectory *traj,double dt)
 {
-    double remaining_time,newtime,result;
+   double remaining_time,newtime,result;
 
-    if (traj->state == BTTRAJ_RUN)
-    {
-        traj->t += dt;
-        if (traj->cmd < traj->x1) //If we are in "accel" stage
-            traj->cmd = 0.5 * traj->acc * traj->t * traj->t;  //x = 1/2 a t^2
-        else if (traj->cmd < traj->x2) //If we are in "cruise" stage
-            traj->cmd = traj->x1 + traj->vel * (traj->t - traj->t1); //x = x + v t
-        else //We are in "decel" stage
-        {
-            /* time to hit zero = sqrt( (target position - current position)*2/a)
-                                 new position = 1/2 acc * (time to hit zero - dt)^2 */
-            remaining_time = sqrt((traj->end - traj->cmd)*2/traj->acc);
-            if (dt > remaining_time)
-            {
-                traj->cmd = traj->end;
-                traj->state = BTTRAJ_STOPPED;
-            }
+   if (traj->state == BTTRAJ_RUN) {
+      traj->t += dt;
 
-            newtime = (remaining_time-dt);
-            if(newtime <= 0)
-            {
-                traj->cmd = traj->end;
-                traj->state = BTTRAJ_STOPPED;
-            }
-            traj->cmd =  traj->end - 0.5 * traj->acc * newtime * newtime;
-        }
+      if (traj->cmd < traj->x1) {
+         //If we are in "accel" stage
+         traj->cmd = 0.5 * traj->acc * traj->t * traj->t;  //x = 1/2 a t^2
+      } else if (traj->cmd < traj->x2) {
+         //If we are in "cruise" stage
+         traj->cmd = traj->x1 + traj->vel * (traj->t - traj->t1); //x = x + v t
+      } else {
+         //We are in "decel" stage
+         /* time to hit zero = sqrt( (target position - current position)*2/a)
+                              new position = 1/2 acc * (time to hit zero - dt)^2 */
+         remaining_time = sqrt((traj->end - traj->cmd)*2/traj->acc);
+         if (dt > remaining_time) {
+            traj->cmd = traj->end;
+            traj->state = BTTRAJ_STOPPED;
+         }
 
-    }
-    result = (traj->start_point + traj->sign*traj->cmd);
+         newtime = (remaining_time-dt);
+         if(newtime <= 0) {
+            traj->cmd = traj->end;
+            traj->state = BTTRAJ_STOPPED;
+         }
+         traj->cmd =  traj->end - 0.5 * traj->acc * newtime * newtime;
+      }
 
-    if (isnan(result))
-    {
-        syslog(LOG_ERR, "nan in eval_traj");
-        traj->cmd = traj->end;
-        traj->state = BTTRAJ_STOPPED;
-        return traj->end_point;
-    }
-    return (traj->start_point + traj->sign*traj->cmd);
+   }
+   result = (traj->start_point + traj->sign*traj->cmd);
+
+   if (isnan(result)) {
+      syslog(LOG_ERR, "nan in eval_traj");
+      traj->cmd = traj->end;
+      traj->state = BTTRAJ_STOPPED;
+      return traj->end_point;
+   }
+   return (traj->start_point + traj->sign*traj->cmd);
 }
 
 
 /*! Initializes the PIDregulator data structure
-
+ 
 The function sets the main parameters of a PID regulator. You
 will only have to use this function a single time when you create the variable. Before
 you start using PIDcalc, remember to set y and yref.
 */
 void PIDinit(PIDregulator *pid,double Kp, double Kd, double Ki, double dt)
 {
-    pid->Kp = Kp;
-    pid->Kd = Kd;
-    pid->Ki = Ki;
-    pid->dt = dt;
-    pid->filter_de = 0;
-    pid->se = 0;
-    pid->e = 0;
-    pid->laste = 0;
-    pid->de = 0;
-    pid->firsttick = 1;
-    pid->y = 0;
-    pid->yref = 0;
-    pid->lastresult = 0;
-    
-    pid->de_filter = new_btfilter(5);
-    init_btfilter_diff(pid->de_filter, 2, dt, 10);
-    
-    pid->se_filter = new_btfilter(5);
-    init_btfilter_diff(pid->se_filter, 2, dt, 10);
-    
+   pid->Kp = Kp;
+   pid->Kd = Kd;
+   pid->Ki = Ki;
+   pid->dt = dt;
+   pid->filter_de = 0;
+   pid->se = 0;
+   pid->e = 0;
+   pid->laste = 0;
+   pid->de = 0;
+   pid->firsttick = 1;
+   pid->y = 0;
+   pid->yref = 0;
+   pid->lastresult = 0;
 
+   pid->de_filter = new_btfilter(5);
+   init_btfilter_diff(pid->de_filter, 2, dt, 10);
+
+   pid->se_filter = new_btfilter(5);
+   init_btfilter_diff(pid->se_filter, 2, dt, 10);
 
 }
-/** Reset the state parameters of the PID regulator
 
+/** Reset the state parameters of the PID regulator
+ 
   Sets the accumulated error to zero, the reference value to the present value, and notifies
   the algorithm that it is re-starting.
 */
 void PIDreset(PIDregulator *pid)
 {
-    pid->se = 0;
-    pid->firsttick = 1;
-    pid->yref = pid->y;
+   pid->se = 0;
+   pid->firsttick = 1;
+   pid->yref = pid->y;
 }
 
 /** Increments the state by dt and returns the output of the regulator.
-
+ 
 PIDcalc updates the PIDregulator state variable by incrementing the time by dt
 and then calculates the error between y and yref.
-
+ 
 \param *pid A pointer to the pre-allocated and initialized PIDregulator structure.
-
+ 
 \return The regulator output for the present dt, y, and yref.
 */
 double PIDcalc(PIDregulator *pid)
 {
-    pid->e = pid->yref - pid->y;
+   pid->e = pid->yref - pid->y;
 
-    if (pid->firsttick)
-    {
-        pid->laste = pid->e;
-        pid->firsttick = 0;
-    }
+   if (pid->firsttick) {
+      pid->laste = pid->e;
+      pid->firsttick = 0;
+   }
 
-    pid->de = (pid->e-pid->laste)/pid->dt;  //Backward euler
-    if (pid->filter_de)
-        pid->de = eval_btfilter(pid->de_filter,pid->e);
-    pid->laste = pid->e;
+   pid->de = (pid->e-pid->laste)/pid->dt;  //Backward euler
+   if (pid->filter_de)
+      pid->de = eval_btfilter(pid->de_filter,pid->e);
+   pid->laste = pid->e;
 
-    pid->se += pid->e;
-    //pid->fe = eval_btfilter(pid->se_filter,pid->se);
-    if (pid->saturation != 0)
-        if ((fabs(pid->se)*pid->Ki) > pid->saturation)
-        pid->se = sign(pid->se)*pid->saturation;
+   pid->se += pid->e;
+   //pid->fe = eval_btfilter(pid->se_filter,pid->se);
+   if (pid->saturation != 0)
+      if ((fabs(pid->se)*pid->Ki) > pid->saturation)
+         pid->se = sign(pid->se)*pid->saturation;
 
-    pid->lastresult = pid->Kp*pid->e+pid->Kd*pid->de+pid->Ki*pid->se;
+   pid->lastresult = pid->Kp*pid->e+pid->Kd*pid->de+pid->Ki*pid->se;
 
-    return(pid->lastresult); //bz
+   return(pid->lastresult); //bz
 }
 
 double linterp(double x1, double y1, double x2, double y2, double x)
 {
-    if ((x2-x1) != 0.0)
-        return (x*(y2-y1)/(x2-x1));
-    else
-        return (y2+y1)/2;
+   if ((x2-x1) != 0.0)
+      return (x*(y2-y1)/(x2-x1));
+   else
+      return (y2+y1)/2;
 }
 
 
