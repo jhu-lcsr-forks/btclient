@@ -692,23 +692,26 @@ int firmwareDL(void)
 void tensionCable(void)
 {
   int motor;
+  int cmd;
+
+  cmd = V;
 
   printf("\nTension Cable\nTension which motor: ");
   scanf("%d", &motor);
-  setProperty(0,GROUPID(0),TORQ,FALSE,0);
+  setProperty(0,GROUPID(0),cmd,FALSE,0);
   wakePuck(0,GROUPID(0));
   setProperty(0,GROUPID(0),MODE,FALSE,MODE_TORQUE);
   printf("\nPlease move cable to shaft end, then press <Enter>");
   mygetch();
   setProperty(0,motor,TENSION,FALSE,1);
-  setProperty(0,motor,TORQ,FALSE,500);
+  setProperty(0,motor,cmd,FALSE,500);
   printf("\nPlease rotate shaft until tensioner engages, "
          "then press <Enter>");
   mygetch();
   setProperty(0,motor,TENSION,FALSE,0);
-  setProperty(0,motor,TORQ,FALSE,2500);
+  setProperty(0,motor,cmd,FALSE,2500);
   usleep(5000000);
-  setProperty(0,motor,TORQ,FALSE,0);
+  setProperty(0,motor,cmd,FALSE,0);
   printf("\nPlease work the tension through the cable, "
          "then press <Enter>");
   mygetch();
