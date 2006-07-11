@@ -114,6 +114,7 @@ int num_commands;
 double wamdata[8];
 int NoSafety;
 
+int angular = 0;
 int zDown = 0;
 PORT p;
 int flip = 0;
@@ -246,8 +247,8 @@ int main(int argc, char **argv)
    //syslog(LOG_ERR, "chkpt 4");
 
    /* Set the safety limits */
-   setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
-   setProperty(0,10,TL2,FALSE,5400); //Eliminate torque faults in silly places
+   setSafetyLimits(2.0, 3.0, 3.0);  // ooh dangerous
+   setProperty(0,10,TL2,FALSE,8200); //Eliminate torque faults in silly places
    setProperty(0,10,TL1,FALSE,1800); //Eliminate torque faults in silly places
 
 
@@ -1043,6 +1044,16 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          refresh();
          sleep(1);
          finish_entry();
+      }
+      break;
+   case 'N'://Toggle angular hold
+      if(angular){
+         angular = 0;
+         stop_btPID(&(wam->pid[3]));
+      }else{
+         angular = 1;
+         set_q(wam->qref,wam->qact);
+         start_btPID(&(wam->pid[3]));
       }
       break;
    case 'M'://Move to a location

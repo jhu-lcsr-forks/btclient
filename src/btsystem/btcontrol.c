@@ -592,7 +592,6 @@ double eval_via_trj(via_trj *trj,double dt)
       trj->t += dt;  //increment time
 
       if ((trj->segment == VTS_IN_ACC) && (trj->t > trj->t_acc)) { //done with acc, set up vel
-
          if (trj->idx >= trj->n-1 && trj->idx != 0) {
             trj->state = BTTRAJ_STOPPED;
          } else {
@@ -641,7 +640,6 @@ double eval_via_trj(via_trj *trj,double dt)
             CalcSegment(&(trj->seg),trj->qp, trj->qn,
                         trj->tp,trj->tn,trj->t3,trj->v_prev,trj->v_next,trj->trj_acc, end);
 
-
             trj->segment = 0;//acc first
             trj->acc = trj->seg.acc1;
             trj->dt_acc = trj->seg.dt_acc1;
@@ -654,10 +652,7 @@ double eval_via_trj(via_trj *trj,double dt)
             trj->v_prev = trj->seg.vel;
          }
 
-
       }
-
-
 
       if (trj->segment == 0) {//in acceleration segment
          et = trj->t - trj->t0;
@@ -716,6 +711,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
 #endif
 
    use_acc = fabs(seg_acc); //Force to positive
+
 
    if (end == 0) {
       //Starting segment (Accelerate to the next point)
@@ -879,11 +875,13 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
    seg->dt_vel = dt_vel;
    seg->dt_acc1 = dt_acc1;
    seg->dt_acc2 = dt_acc2;
+
 #if 0
 
    syslog(LOG_ERR, "CalcSeg: Time: dt_acc1: %f dt_vel: %f dt_acc2: %f",dt_acc1,dt_vel,dt_acc2);
    syslog(LOG_ERR, "CalcSeg: val: acc1: %f vel: %f  acc2: %f",acc1,vel,acc2);
    syslog(LOG_ERR, "CalcSeg: ");
+
 #endif
 }
 
@@ -893,7 +891,6 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
 void SetAcc_vt(via_trj *trj,double acc)
 {
    trj->trj_acc = acc;
-
 }
 
 /**
@@ -904,7 +901,6 @@ via_trj_array* malloc_vta(int num_columns)
 {
    void *vmem;
    via_trj_array* vt;
-
 
    vmem = btmalloc(sizeof(via_trj_array) + (size_t)num_columns * sizeof(via_trj));
 
@@ -929,8 +925,8 @@ Example file (with 3 element vectors as via points)
 \param filename Name of the file you wish to read.
  
 \return 
- - Returns a pointer to a via_trj_array object.
- - Return NULL if there was a problem.
+- Returns a pointer to a via_trj_array object.
+- Return NULL if there was a problem.
 \internal chk'd TH 051103 
 */
 via_trj_array* read_file_vta(char* filename,int extrapoints)
@@ -993,6 +989,7 @@ vect_n* sim_vta(via_trj_array* vt,double dt,double duration,char*filename)
 }
 
 /** set acceleration on corners of via trajectory
+
 \internal chk'd TH 051103
 */
 void set_acc_vta(via_trj_array* vt,btreal acc)
@@ -1264,7 +1261,6 @@ vect_n* reset_vta(via_trj_array* vt,double dt,vect_n* qref)
    if (vt == NULL)
       return qref;
 
-
    destroy_pavn(&vt->pavn);
    vt->pavn = vr2pararray(vt->vr,vt->acc);
 
@@ -1307,7 +1303,6 @@ int bttrajectory_interface_getstate_vt(struct bttrajectory_interface_struct *btt
    via_trj_array* vt;
    vt = (via_trj_array*)btt->dat;
 #ifdef BT_NULL_PTR_GUARD
-
    if(!btptr_ok(vt,"bttrajectory_interface_getstate_vt"))
       return  BTTRAJ_OFF;
 #endif
@@ -1332,14 +1327,12 @@ vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *bt
    via_trj_array* vt;
    vt = (via_trj_array*)btt->dat;
 #ifdef BT_NULL_PTR_GUARD
-
    if(!btptr_ok(vt,"bttrajectory_interface_reset_vt"))
       return btt->qref;
 #endif
 
    if (numrows_vr(vt->vr) <= 0)
       return NULL;
-
 
    destroy_pavn(&vt->pavn);
    vt->pavn = vr2pararray(vt->vr,vt->acc);
@@ -1364,7 +1357,6 @@ vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt
    via_trj_array* vt;
    vt = (via_trj_array*)btt->dat;
 #ifdef BT_NULL_PTR_GUARD
-
    if(!btptr_ok(vt,"bttrajectory_interface_eval_vt"))
       return btt->qref;
 #endif
@@ -1379,6 +1371,7 @@ vect_n* bttrajectory_interface_eval_vt(struct bttrajectory_interface_struct *btt
 }
 
 /** Registers the necessary data and function pointers with the
+
 btstatecontrol object 
 \internal chk'd TH 051103
 */

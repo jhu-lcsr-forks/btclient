@@ -28,34 +28,35 @@
 */
 typedef struct
 {
-  double pos;
-  double vel;
-  double acc;
+   double pos;
+   double vel;
+   double acc;
 }
 move_info;
 /** Data to maintain and process a playlist of points.
-
+ 
 */
 typedef struct
 {
-  move_info *list;  /**< Array of move_info arrays */
-  int Nmoves;       /**< Number of moves currently stored in the playlist */
-  int MaxMoves;     /**< Maximum number of moves allowed for this playlist */
-  int Cmove; /**< array index of the selected point starting with 0 */
-  move_info *next; /**< A move_info array that contains the selected leg. */
-  int loop; /**< 0: don't loop, 1: loop */
-  int normalize; /**< if true, scale all trajectory accelerations and velocities to match slowest*/
-  int play; /**< 0:stopped 1:play back trajectories */
-  SimpleCtl *sc; /**< Pointer to the user created array of simple controllers */
-  int Nsc;       /**< Number of simple controllers (number of motors or joints) */
-}SC_move_list;
+   move_info *list;  /**< Array of move_info arrays */
+   int Nmoves;       /**< Number of moves currently stored in the playlist */
+   int MaxMoves;     /**< Maximum number of moves allowed for this playlist */
+   int Cmove; /**< array index of the selected point starting with 0 */
+   move_info *next; /**< A move_info array that contains the selected leg. */
+   int loop; /**< 0: don't loop, 1: loop */
+   int normalize; /**< if true, scale all trajectory accelerations and velocities to match slowest*/
+   int play; /**< 0:stopped 1:play back trajectories */
+   SimpleCtl *sc; /**< Pointer to the user created array of simple controllers */
+   int Nsc;       /**< Number of simple controllers (number of motors or joints) */
+}
+SC_move_list;
 
 int MLcontruct(SC_move_list *ml, SimpleCtl *sc, int n_sc, int max_moves);
 int MLdestroy(SC_move_list *ml);
 void MLeval(SC_move_list *ml);
 void MLloadnext(SC_move_list *ml);
 int MLadd(SC_move_list *ml, move_info *points); //points is move_info[Nsc] in size
-int MLaddSC(SC_move_list *ml); 
+int MLaddSC(SC_move_list *ml);
 int MLdel(SC_move_list *ml);
 int MLfirst(SC_move_list *ml);
 int MLnext(SC_move_list *ml);

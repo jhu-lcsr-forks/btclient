@@ -40,7 +40,7 @@ extern "C"
 #endif
 /* #define D(x) <blank> ...for no debug info */
 /* #define D(x) x       ...for debug info */
-#define D(x) 
+#define D(x)
 #define SAFETY_MODULE (10)
 #define MAX_NODES    (31)
 
@@ -77,198 +77,198 @@ int Name2Prop(char *name);
 
 /*! bcastGroup */
 enum {
-    WHOLE_ARM = 0,
-    LOWER_ARM = -1,
-    UPPER_ARM = -2
+   WHOLE_ARM = 0,
+   LOWER_ARM = -1,
+   UPPER_ARM = -2
 };
 
 enum {
-    ROLE_TATER,
-    ROLE_GIMBALS,
-    ROLE_SAFETY,
-    ROLE_WRAPTOR
+   ROLE_TATER,
+   ROLE_GIMBALS,
+   ROLE_SAFETY,
+   ROLE_WRAPTOR
 };
 
 /*! Control_mode states */
 enum {
-    MODE_IDLE,
-    MODE_DUTY,
-    MODE_TORQUE,
-    MODE_PID,
-    MODE_VELOCITY,
-    MODE_TRAPEZOIDAL
+   MODE_IDLE,
+   MODE_DUTY,
+   MODE_TORQUE,
+   MODE_PID,
+   MODE_VELOCITY,
+   MODE_TRAPEZOIDAL
 };
 
 enum {
-    STATUS_OFFLINE = -1,
-    STATUS_RESET,
-    STATUS_ERR,
-    STATUS_READY
+   STATUS_OFFLINE = -1,
+   STATUS_RESET,
+   STATUS_ERR,
+   STATUS_READY
 };
 
 enum {
-    DEG,        /* 0-360        */
-    RAD,        /* 0-6.28       */
-    GRAD,       /* 0-400        */
-    PERCENT,    /* 0-100        */
-    NATIVE      /* 0-CTS*RATIO  */
+   DEG,        /* 0-360        */
+   RAD,        /* 0-6.28       */
+   GRAD,       /* 0-400        */
+   PERCENT,    /* 0-100        */
+   NATIVE      /* 0-CTS*RATIO  */
 };
 
 enum {
-    SAVED_ERR = 7,
-    IGNORE_ERR,
-    IS_ACTIVE
-    
+   SAVED_ERR = 7,
+   IGNORE_ERR,
+   IS_ACTIVE
+
 };
 
 
 enum {
-	VERS,
-	ROLE,
-	SN,
-	ID,
-	ERROR,
-	STAT,
-	ADDR,
-	VALUE,
-	MODE,
-	TORQ,
-	V,
-	B,
-	P,
-	P2,
-	E,
-	E2,
-	MT,
-	MV,
-	MCV,
-	MOV,
-	MOFST,
-	IOFST,
-	PTEMP,
-	UPSECS,
-	OD,
-	MDS,
-	AP,
-	AP2,
-	MECH,
-	MECH2,
-	CTS,
-	CTS2,
-	DP,
-	DP2,
-	OT,
-	OT2,
-	CT,
-	CT2,
-	BAUD,
-	TEMP,
-	OTEMP,
-	_LOCK,
-	DIG0,
-	DIG1,
-	ANA0,
-	ANA1,
-	THERM,
-	VBUS,
-	IMOTOR,
-	VLOGIC,
-	ILOGIC,
-	GRPA,
-	GRPB,
-	GRPC,
-	PIDX,
-	ZERO,
-	SG,
-	HSG,
-	LSG,
-	_DS,
-	IVEL,
-	IOFF,
-	MPE,
-	EN,
-	TSTOP,
-	KP,
-	KD,
-	KI,
-	SAMPLE,
-	ACCEL,
-	TENSION,
-	UNITS,
-	RATIO,
-	LOG,
-	DUMP,
-	LOG1,
-	LOG2,
-	LOG3,
-	LOG4,
-	GAIN1,
-	GAIN2,
-	GAIN3,
-	OFFSET1,
-	OFFSET2,
-	OFFSET3,
-	PEN,
-	SAFE,
-	SAVE,
-	LOAD,
-	DEF,
-	VL1,
-	VL2,
-	TL1,
-	TL2,
-	VOLTL1,
-	VOLTL2,
-	VOLTH1,
-	VOLTH2,
-	MAXPWR,
-	PWR,
-	IFAULT,
-	IKP,
-	IKI,
-	IKCOR,
-	VNOM,
-	TENST,
-	TENSO,
-	JIDX,
-	IPNM,
-	HALLS,
-	HALLH,
-	HALLH2,
-	POLES,
-	ECMAX,
-	ECMIN,
-	ISQ,
-	TETAE,
-	FIND,
-	LCV,
-	LCVC,
-	LFV,
-	LFS,
-	LFAP,
-	LFDP,
-	LFT,
-	VALUE32,
-	
-    PROP_END
-}; 
+   VERS,
+   ROLE,
+   SN,
+   ID,
+   ERROR,
+   STAT,
+   ADDR,
+   VALUE,
+   MODE,
+   TORQ,
+   V,
+   B,
+   P,
+   P2,
+   E,
+   E2,
+   MT,
+   MV,
+   MCV,
+   MOV,
+   MOFST,
+   IOFST,
+   PTEMP,
+   UPSECS,
+   OD,
+   MDS,
+   AP,
+   AP2,
+   MECH,
+   MECH2,
+   CTS,
+   CTS2,
+   DP,
+   DP2,
+   OT,
+   OT2,
+   CT,
+   CT2,
+   BAUD,
+   TEMP,
+   OTEMP,
+   _LOCK,
+   DIG0,
+   DIG1,
+   ANA0,
+   ANA1,
+   THERM,
+   VBUS,
+   IMOTOR,
+   VLOGIC,
+   ILOGIC,
+   GRPA,
+   GRPB,
+   GRPC,
+   PIDX,
+   ZERO,
+   SG,
+   HSG,
+   LSG,
+   _DS,
+   IVEL,
+   IOFF,
+   MPE,
+   EN,
+   TSTOP,
+   KP,
+   KD,
+   KI,
+   SAMPLE,
+   ACCEL,
+   TENSION,
+   UNITS,
+   RATIO,
+   LOG,
+   DUMP,
+   LOG1,
+   LOG2,
+   LOG3,
+   LOG4,
+   GAIN1,
+   GAIN2,
+   GAIN3,
+   OFFSET1,
+   OFFSET2,
+   OFFSET3,
+   PEN,
+   SAFE,
+   SAVE,
+   LOAD,
+   DEF,
+   VL1,
+   VL2,
+   TL1,
+   TL2,
+   VOLTL1,
+   VOLTL2,
+   VOLTH1,
+   VOLTH2,
+   MAXPWR,
+   PWR,
+   IFAULT,
+   IKP,
+   IKI,
+   IKCOR,
+   VNOM,
+   TENST,
+   TENSO,
+   JIDX,
+   IPNM,
+   HALLS,
+   HALLH,
+   HALLH2,
+   POLES,
+   ECMAX,
+   ECMIN,
+   ISQ,
+   TETAE,
+   FIND,
+   LCV,
+   LCVC,
+   LFV,
+   LFS,
+   LFAP,
+   LFDP,
+   LFT,
+   VALUE32,
+
+   PROP_END
+};
 
 struct propTxtStruct {
-	char	key[8];
-	int	idx;
+   char key[8];
+   int idx;
 };
 
 enum bus_status_enum{
-    BUS_ERROR = -1,
-    BUS_OFF,
-    BUS_ON
+   BUS_ERROR = -1,
+   BUS_OFF,
+   BUS_ON
 };
 
 
 enum {
-	ERR_NONE,
-	ERR_READ_ONLY,
-	ERR_OUT_OF_RANGE
+   ERR_NONE,
+   ERR_READ_ONLY,
+   ERR_OUT_OF_RANGE
 };
 
 

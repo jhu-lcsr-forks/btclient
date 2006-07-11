@@ -548,6 +548,21 @@ void WAMControlThread(void *data)
 
       set_v3(wam->Cforce,(vect_3*)wam->R6force);
       //setrange_vn((vect_n*)wam->Ctrq,wam->R6force,0,2,3);
+      
+      //Cartesian angular constraint
+      R_to_q(wam->qact,T_to_W_trans_bot(&wam->robot));
+      set_q(wam->qaxis,mul_q(wam->qact,conj_q(wam->qref)));
+      set_q(wam->forced,force_closest_q(wam->qaxis));
+      
+      syslog_vn("qref: ", (vect_n*)wam->qref);
+      syslog_vn("qact: ", (vect_n*)wam->qact);
+      
+      wam->qerr = GCdist_q(wam->qref,wam->qact); 
+      set_v3(wam->Ctrq,scale_v3(eval_err_btPID(&(wam->pid[3]),wam->qerr,dt),GCaxis_q(wam->Ctrq,wam->qref,wam->qact)));
+      
+      //syslog(LOG_ERR, "qerr: %f", wam->qerr);
+      //syslog_vn("Ctrq: ", (vect_n*)wam->Ctrq);
+      
       //Force application
       apply_tool_force_bot(&wam->robot, wam->Cpoint, wam->Cforce, wam->Ctrq);
 

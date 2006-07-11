@@ -275,17 +275,18 @@ void setMofst(int newID)
   getProperty(0,newID,MOFST,&dat);
   printf("\n The old MOFST was:%d\n",dat);
 
-  //setProperty(0,newID,ADDR,0,32971);
-  //setProperty(0,newID,VALUE,0,1);
-  setProperty(0,newID,FIND,0,MOFST);
+  setProperty(0,newID,ADDR,0,32971);
+  setProperty(0,newID,VALUE,0,1);
+  //setProperty(0,newID,FIND,0,MOFST);
   printf("\nPress enter when the index pulse is found: ");
   mygetch();
   mygetch();
-  //setProperty(0,newID,ADDR,0,32970);
-  getProperty(0,newID,MOFST,&dat);
+  setProperty(0,newID,ADDR,0,32970);
+  getProperty(0,newID,VALUE,&dat);
+  //getProperty(0,newID,MOFST,&dat);
   printf("\n The MOFST new is:%d\n",dat);
-  //setProperty(0,newID,MOFST,0,dat);
-  //setProperty(0,newID,SAVE,0,MOFST);
+  setProperty(0,newID,MOFST,0,dat);
+  setProperty(0,newID,SAVE,0,MOFST);
   printf("\nDone: ");
   printf("\n");
 }
