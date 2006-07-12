@@ -61,34 +61,35 @@ void SetJointTorques();
 void DumpWAM2Syslog();
 int BlankWAMcallback(struct btwam_struct *wam);
 
+#define VN_SIZE (8)
 /*==============================*
  * Functions                    *
  *==============================*/
 void InitVectors(wam_struct *wam)
 {
-   wam->zero_offsets = new_vn(7);
-   wam->stop_torque = new_vn(7);
-   wam->park_location = new_vn(7);
-   wam->Mpos = new_vn(7);
-   wam->N = new_vn(7);
-   wam->n = new_vn(7);
-   wam->M2JP = new_mn(7,7);
-   wam->J2MT = new_mn(7,7);
-   wam->J2MP = new_mn(7,7);
-   wam->Mtrq  = new_vn(7);
-   wam->Jpos = new_vn(7);
-   wam->Jvel = new_vn(7);
-   wam->Jacc = new_vn(7);
-   wam->Jref = new_vn(7);
-   wam->Jtref = new_vn(7);
-   wam->Jtrq = new_vn(7);
-   wam->Ttrq = new_vn(7);
-   wam->Kp = new_vn(7);
-   wam->Kd = new_vn(7);
-   wam->Ki = new_vn(7);
-   wam->saturation = new_vn(7);
-   wam->vel = new_vn(7);
-   wam->acc = new_vn(7);
+   wam->zero_offsets = new_vn(VN_SIZE);
+   wam->stop_torque = new_vn(VN_SIZE);
+   wam->park_location = new_vn(VN_SIZE);
+   wam->Mpos = new_vn(VN_SIZE);
+   wam->N = new_vn(VN_SIZE);
+   wam->n = new_vn(VN_SIZE);
+   wam->M2JP = new_mn(VN_SIZE,VN_SIZE);
+   wam->J2MT = new_mn(VN_SIZE,VN_SIZE);
+   wam->J2MP = new_mn(VN_SIZE,VN_SIZE);
+   wam->Mtrq  = new_vn(VN_SIZE);
+   wam->Jpos = new_vn(VN_SIZE);
+   wam->Jvel = new_vn(VN_SIZE);
+   wam->Jacc = new_vn(VN_SIZE);
+   wam->Jref = new_vn(VN_SIZE);
+   wam->Jtref = new_vn(VN_SIZE);
+   wam->Jtrq = new_vn(VN_SIZE);
+   wam->Ttrq = new_vn(VN_SIZE);
+   wam->Kp = new_vn(VN_SIZE);
+   wam->Kd = new_vn(VN_SIZE);
+   wam->Ki = new_vn(VN_SIZE);
+   wam->saturation = new_vn(VN_SIZE);
+   wam->vel = new_vn(VN_SIZE);
+   wam->acc = new_vn(VN_SIZE);
    wam->Cpos = new_v3();
    wam->Cpoint = new_v3();
    wam->Cref = new_v3();
@@ -146,11 +147,11 @@ wam_struct* OpenWAM(char *fn, char *rName)
    InitVectors(wam);
 
    /* Joint Control plugin initialization */
-   for (cnt = 0; cnt < 7; cnt ++) {
+   for (cnt = 0; cnt < VN_SIZE; cnt ++) {
       init_btPID(&(wam->d_jpos_ctl[cnt]));
    }
    wam->d_jpos_array.pid = wam->d_jpos_ctl;
-   wam->d_jpos_array.elements = 7;
+   wam->d_jpos_array.elements = VN_SIZE;
    init_bts(&wam->Jsc);
    map_btstatecontrol(&wam->Jsc, wam->Jpos, wam->Jvel, wam->Jacc,
                       wam->Jref, wam->Jtref,wam->Jtrq, &wam->dt);
@@ -374,7 +375,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
    wam->Gcomp = 0;
    set_gravity_bot(&wam->robot, 0.0);
 
-   for(cnt = 0; cnt < 7; cnt++) {
+   for(cnt = 0; cnt < VN_SIZE; cnt++) {
       SCinit(&(wam->sc[cnt]));
       SCsetpid(&(wam->sc[cnt]),getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt),getval_vn(wam->saturation,cnt));
       SCsettrjprof(&(wam->sc[cnt]),getval_vn(wam->vel,cnt),getval_vn(wam->acc,cnt));
@@ -554,8 +555,8 @@ void WAMControlThread(void *data)
       set_q(wam->qaxis,mul_q(wam->qact,conj_q(wam->qref)));
       set_q(wam->forced,force_closest_q(wam->qaxis));
       
-      syslog_vn("qref: ", (vect_n*)wam->qref);
-      syslog_vn("qact: ", (vect_n*)wam->qact);
+      //syslog_vn("qref: ", (vect_n*)wam->qref);
+      //syslog_vn("qact: ", (vect_n*)wam->qact);
       
       wam->qerr = GCdist_q(wam->qref,wam->qact); 
       set_v3(wam->Ctrq,scale_v3(eval_err_btPID(&(wam->pid[3]),wam->qerr,dt),GCaxis_q(wam->Ctrq,wam->qref,wam->qact)));
@@ -579,6 +580,10 @@ void WAMControlThread(void *data)
       }
 
       Jtrq2Mtrq(wam,(wam->Jtrq), (wam->Mtrq));  //Convert from joint torques to motor torques
+      if(getmode_bts(&wam->Jsc) == SCMODE_IDLE)
+	 setval_vn(wam->Mtrq, 7, 0);
+      else
+	 setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
       Mtrq2ActTrq(wam,wam->Mtrq); //Move motor torques from wam_vector variable into actuator database
 #ifdef BTDOUBLETIME
 
@@ -747,7 +752,7 @@ void DefineWAMpos(wam_struct *wam,vect_n *wv)
    vect_n *motor_angle;
    double result;
 
-   motor_angle = new_vn(7);
+   motor_angle = new_vn(VN_SIZE);
    /* Tell the safety logic to ignore the next faults */
    SetByID(SAFETY_MODULE, IFAULT, 8);
 

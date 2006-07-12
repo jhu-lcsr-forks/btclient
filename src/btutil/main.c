@@ -326,7 +326,7 @@ void paramDefaults(int newID,int targID)
 	}
     }
   else if(targID <= 8){//Gimbals
-	  setProperty(0,newID,CTS,0,25736);
+	  setProperty(0,newID,CTS,0,1);
 	  setProperty(0,newID,OFFSET1,0,-11447);
 	  setProperty(0,newID,OFFSET2,0,-19834);
 	  setProperty(0,newID,OFFSET3,0,-12606);
