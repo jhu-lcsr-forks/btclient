@@ -107,6 +107,7 @@ static struct argp_option options[] = {
 	{"dlpuck", 'd', "DL_FILE", 0, "Download puck firmware over CAN"},
 	{"tension", 't', "pID_tension", 0, "Tension Cable (not active yet)"},
 	{"dlhand", 'b', 0, 0, "Download firmware to Barrett Hand"},
+	{"changeID", 'i', "pID", OPTION_ARG_OPTIONAL, "Change puck ID"},
 	{ 0 }
 };
 
@@ -129,6 +130,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
   struct arguments *arguments = state->input;
   
   switch (key){
+	  case 'i':
+	  arguments->cmd = 'I';
+	  break;
   case 'c':
     arguments->cmd = 'C';
     break;
@@ -461,6 +465,18 @@ allParams(int newID)
   }
 }
 
+void changeID(oldID, newID){
+	wakePuck(0,oldID);
+	setProperty(0, oldID, _LOCK, 0, 18384);
+	setProperty(0, oldID, _LOCK, 0, 23);
+	setProperty(0, oldID, _LOCK, 0, 3145);
+	setProperty(0, oldID, _LOCK, 0, 1024);
+	setProperty(0, oldID, _LOCK, 0, 1);
+	setProperty(0, oldID, ID, 0, newID);
+	setProperty(0, oldID, SAVE, 0, ID);
+}
+
+
 void handleMenu(char c)
 {
   long        status[MAX_NODES];
@@ -471,7 +487,19 @@ void handleMenu(char c)
 
   switch(c)
   {
-  case 'C':
+	  case 'I':
+    printf("\n\nChange puck ID: "); 
+    if (arguments.pID < 0){
+    scanf("%d", &newID);
+    }else{newID = arguments.pID;printf("%d\n",newID);}
+    if (arguments.tID < 0){
+    printf("\n\nNew ID: "); 
+    scanf("%d", &targID);
+    }else{targID = arguments.tID;printf("Using target id %d\n",targID);}
+    changeID(newID,targID);
+    break;
+	  
+	  case 'C':
     calibrateGimbals();
     break;
   case 'E':
@@ -702,6 +730,7 @@ void tensionCable(void)
   wakePuck(0,GROUPID(0));
   setProperty(0,GROUPID(0),MODE,FALSE,MODE_TORQUE);
   printf("\nPlease move cable to shaft end, then press <Enter>");
+  mygetch();
   mygetch();
   setProperty(0,motor,TENSION,FALSE,1);
   setProperty(0,motor,cmd,FALSE,500);
