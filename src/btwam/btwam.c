@@ -61,7 +61,7 @@ void SetJointTorques();
 void DumpWAM2Syslog();
 int BlankWAMcallback(struct btwam_struct *wam);
 
-#define VN_SIZE (8)
+
 /*==============================*
  * Functions                    *
  *==============================*/
@@ -580,10 +580,11 @@ void WAMControlThread(void *data)
       }
 
       Jtrq2Mtrq(wam,(wam->Jtrq), (wam->Mtrq));  //Convert from joint torques to motor torques
-      if(getmode_bts(&wam->Jsc) == SCMODE_IDLE)
-	 setval_vn(wam->Mtrq, 7, 0);
-      else
-	 setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
+      //8-DOF paint spraying demo code
+      //if(getmode_bts(&wam->Jsc) == SCMODE_IDLE)
+      //setval_vn(wam->Mtrq, 7, 0);
+      //else
+      //setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
       Mtrq2ActTrq(wam,wam->Mtrq); //Move motor torques from wam_vector variable into actuator database
 #ifdef BTDOUBLETIME
 

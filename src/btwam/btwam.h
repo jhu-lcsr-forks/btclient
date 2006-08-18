@@ -41,6 +41,8 @@ See #btwam_struct
 #include "btparser.h"
 #include "btmath.h"
 
+#define VN_SIZE (7)
+
 #define WAM2004
 
 #ifndef BTINLINE
@@ -130,10 +132,10 @@ typedef struct btwam_struct{
 //Actuator info
   actuator_struct *act;
   int num_actuators;
-  int motor_position[8];
+  int motor_position[VN_SIZE];
 
 //Automatic zero finding
-  int zero_order[8];
+  int zero_order[VN_SIZE];
   vect_n *zero_offsets;
   vect_n *stop_torque;
   vect_n *park_location;  
@@ -153,7 +155,7 @@ typedef struct btwam_struct{
   
   btstatecontrol Jsc;
   
-  btPID d_jpos_ctl[8];
+  btPID d_jpos_ctl[VN_SIZE];
   btPID_array d_jpos_array;
   //JointSpace Position control
   vect_n *Kp,*Kd,*Ki,*saturation;
@@ -162,7 +164,7 @@ typedef struct btwam_struct{
   vect_n *vel,*acc;
   
   //CartesianSpace Position control
-  SimpleCtl sc[8];
+  SimpleCtl sc[VN_SIZE];
   btPID pid[6]; //  x,y,z,quat
   quat *qref,*qact,*qaxis,*forced; //reference and actual orientations for quaternion control
   vect_n *Ttrq;
