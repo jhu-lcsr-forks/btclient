@@ -1379,7 +1379,7 @@ int read_csv_file_vr(char *fileName, vectray **vr)
       columns = strcount_vn(&linedummy," \n\r");
 
       if(columns > 1) {
-         syslog(LOG_ERR, "Read row %d with %d columns", rows, columns);
+         //syslog(LOG_ERR, "Read row %d with %d columns", rows, columns);
          if (mincols > columns)
             mincols = columns;
          if (maxcols < columns)

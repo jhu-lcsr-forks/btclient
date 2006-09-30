@@ -341,6 +341,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
    }
 
    /* If the WAM is already zeroed, note it- else, zero it */
+   reply = 0;
    getProperty(wam->act[SAFETY_MODULE].bus, SAFETY_MODULE, ZERO, &reply);
    if(reply) {
       wam->isZeroed = TRUE;

@@ -382,7 +382,7 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
       //Make sure initial acceleration is fast enough
       if (acc < min_acc) {
          acc = min_acc;
-         syslog(LOG_ERR,"vr2pararray: Boosting initial acc to %f",acc);
+         //syslog(LOG_ERR,"vr2pararray: Boosting initial acc to %f",acc);
       }
       tacc = dt - sqrt(dt*dt - 2*fabs(dx)/acc);
 
@@ -412,7 +412,7 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
       //Make sure final acceleration is fast enough
       if (acc < min_acc) {
          acc = min_acc;
-         syslog(LOG_ERR,"vr2pararray: Boosting final acc to %f",acc);
+         //syslog(LOG_ERR,"vr2pararray: Boosting final acc to %f",acc);
       }
       tacc = dt - sqrt(dt*dt - 2*fabs(dx)/acc);
       sa0_last = x2 - 0.5*acc*tacc*tacc*Sgn(dx); //Final x
@@ -435,8 +435,8 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
 
 
          /* Calc some useful values */
-         if ((t2-t1) <= 0.0 || (t3-t2) <= 0.0)
-            syslog(LOG_ERR,"vr2pararray: Equal time points and unsortet times are not supported.",tacc,idx);
+         //if ((t2-t1) <= 0.0 || (t3-t2) <= 0.0)
+            //syslog(LOG_ERR,"vr2pararray: Equal time points and unsortet times are not supported.",tacc,idx);
          v1 = (x2-x1)/(t2-t1);
          v2 = (x3-x2)/(t3-t2);
          t1p2 = (t1 + t2)/2;
