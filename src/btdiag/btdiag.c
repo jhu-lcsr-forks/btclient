@@ -247,9 +247,9 @@ int main(int argc, char **argv)
    //syslog(LOG_ERR, "chkpt 4");
 
    /* Set the safety limits */
-   setSafetyLimits(2.0, 3.0, 3.0);  // ooh dangerous
-   setProperty(0,10,TL2,FALSE,8200); //Eliminate torque faults in silly places
-   setProperty(0,10,TL1,FALSE,1800); //Eliminate torque faults in silly places
+   setSafetyLimits(1.5, 1.5, 1.5);  // Limit to 1.5 m/s 
+   setProperty(0,10,TL2,FALSE,4700); 
+   setProperty(0,10,TL1,FALSE,1800);
 
 
    /* Prepare MODE */
