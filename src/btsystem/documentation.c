@@ -39,7 +39,7 @@ The following is an overview of the library functionality and what code files pr
   
   \dot
   digraph Structure {
-      node [shape=record, fontname=Helvetica, fontsize=10];
+      node [shape=record];
       vn [label="{{<p1> btwam}|{<p2>btrobot|<p3>btstatecontrol|<p4>btcontrol|<p5>bthaptics}|{btos|btmath|btcan}}"];
 
   }
