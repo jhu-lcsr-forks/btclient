@@ -332,9 +332,9 @@ void eval_fj_bot(btrobot* robot)
             
       add_mn(robot->M, robot->M, 
          mul_mn(robot->M->ret, robot->Jw, 
-            mul_mn(robot->Jv->ret, T_mn(robot->Ro), 
+            mul_mn(robot->Jv->ret, T_mn(robot->links[cnt].Ro), 
                mul_mn(robot->Jw->ret, robot->links[cnt].I, 
-                  mul_mn(robot->Jv->ret, robot->Ro, T_mn(robot->Jw))))));
+                  mul_mn(robot->Jv->ret, robot->links[cnt].Ro, T_mn(robot->Jw))))));
    }
 }
 
