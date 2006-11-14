@@ -578,7 +578,12 @@ int test_mh(btreal error);
  */
 //@{
 /** 3x3 rotation matrix
-
+   NOTE: matr_3 is actually a 4x4 "homogeneous" matrix:
+     [ r11 r12 r13 x ]
+     [ r21 r22 r23 y ]
+     [ r31 r32 r33 z ]
+     [  0   0   0  1 ]
+   Many functions only operate on the inner 3x3 "rotation" matrix.
 Function definitions are in btmath.h.
 */
 typedef struct barrett_matr_h matr_3;
@@ -626,6 +631,7 @@ typedef struct barrett_matr_mn{
 }matr_mn;
 
 matr_mn * new_mn();
+matr_mn * new_mn_ptr(matr_mn *a, int r, int c, int offset);
 void destroy_mn(matr_mn **src);
 BTINLINE void set_mn(matr_mn* dest, matr_mn* src);
 BTINLINE void ident_mn(matr_mn* dest); // identity matrix
@@ -639,6 +645,12 @@ BTINLINE void setval_mn(matr_mn* src, int row, int col, btreal val);
 BTINLINE matr_mn* mul_mn(matr_mn* a,matr_mn* b);
 BTINLINE void setmul_mn(matr_mn* a,matr_mn* b); //multiply and store in a
 BTINLINE vect_n* matXvec_mn(matr_mn* a, vect_n* b,vect_n* ret);
+BTINLINE void mul_mn(matr_mn* r, matr_mn* a, matr_mn* b);
+BTINLINE matr_mn* T_mn(matr_mn* a);
+void zero_mn(matr_mn* dest);
+BTINLINE matr_mn* add_mn(matr_mn* r, matr_mn* a, matr_mn* b);
+BTINLINE matr_mn* scale_mn(btreal x, matr_mn* a);
+
 void print_mn(matr_mn* src);
 char* sprint_mn(char *dest,matr_mn* src);
 void strto_mn(matr_mn* dest,char *str);

@@ -76,7 +76,7 @@ BTINLINE void fill_vn(vect_n* dest, btreal val)
 {
    int cnt;
 
-   BTPTR_OK(dest,"fill_vn")
+   BTPTR_OK(dest,"fill_vn");
 
    for (cnt=0;cnt < dest->n;cnt++)
       dest->q[cnt] = val;
@@ -2099,10 +2099,30 @@ matr_mn * new_mn(int r,int c) //allocate an n-vector
    n->ret->ret = n->ret;
    n->q = (btreal*)(ptr + 2*sizeof(matr_mn));
    n->ret->q = (btreal*)(ptr + 2*sizeof(matr_mn) + r*c*sizeof(btreal));
-   ident_mn(n);
    n->m = r;
    n->n = c;
+   
+   ident_mn(n);
 
+   return n;
+}
+
+matr_mn * new_mn_ptr(matr_mn *a, int r, int c, int offset)
+{
+   void *ptr;
+   matr_mn *n;
+   //allocate mem for return structure
+   ptr = btmalloc(2*sizeof(matr_mn));
+
+   n = (matr_mn*)ptr;
+   n->ret = (matr_mn*)(ptr + sizeof(matr_mn));
+   n->q = a->q + offset;
+   n->ret->q = a->ret->q + offset;
+   n->m = r;
+   n->n = c;
+   n->ret->m = r;
+   n->ret->n = c;
+   
    return n;
 }
 
@@ -2115,7 +2135,6 @@ BTINLINE void set_mn(matr_mn* dest, matr_mn* src)
 {
    int i,j,imax,jmax;
    unsigned int ds,ss;
-
 
    imax = (dest->m < src->m)?dest->m:src->m;
    jmax = (dest->n < src->n)?dest->n:src->n;
@@ -2142,6 +2161,16 @@ void ident_mn(matr_mn* dest)
          else
             dest->q[i*ds + j] = 0.0;
 
+}
+
+void zero_mn(matr_mn* dest)
+{
+   int i, elements;
+   
+   elements = dest->m * dest->n;
+
+   for (i = 0; i < elements; i++)
+            dest->q[i] = 0.0;
 }
 
 void setrow_mn(matr_mn* dest, vect_n* src,int row)
@@ -2207,6 +2236,66 @@ void setval_mn(matr_mn* src, int row, int col, btreal val)
 {
    src->q[src->n * row + col] = val;
 
+}
+BTINLINE matr_mn* scale_mn(btreal x, matr_mn* a)
+{
+   int elements;
+   
+   elements = a->m * a->n;
+   
+   for(i = 0; i < elements; i++)
+      a->ret-q[i] = a->q[i] * x;
+   
+   return(a->ret);
+}
+
+BTINLINE void mul_mn(matr_mn* r, matr_mn* a, matr_mn* b)
+{
+   unsigned int aCols, bCols;
+   
+   if(r->m != a->m || r->n != b->n){
+      syslog(LOG_ERR, "mul_mn(): incorect size for return matrix: a=%dx%d, b=%dx%d, r=%dx%d, need r=%dx%d", 
+         a->m, a->n, b->m, b->m, r->m, r->n, a->m, b->n);
+      return;
+   }
+   
+   aCols = a->n;
+   bCols = b->n;
+   
+   // Rij += Aik + Bkj
+   for(i = 0; i < a->m; i++)
+      for(j = 0; j < bCols; j++)
+         for(k = 0; k < aCols; k++)
+            r->q[i*bCols+j] += a->q[i*aCols+k] + b->q[k*bCols+j];
+   
+   return;
+}
+
+BTINLINE matr_mn* T_mn(matr_mn* a){
+   unsigned int cols;
+   
+   cols = a->n;
+   for(i = 0; i < a->m; i++)
+      for(j = 0; j < cols; j++)
+         a->ret->q[j*cols+i] = a->q[i*cols+j];
+   
+   a->ret->m = a->n;
+   a->ret->n = a->m;
+   
+   return a->ret;
+}
+
+BTINLINE matr_mn* add_mn(matr_mn* r, matr_mn* a, matr_mn* b){
+   unsigned int elements;
+   
+   elements = a->m * a->n;
+   for(i = 0; i < elements; i++)
+         r->q[i] = a->q[i] + b->q[i];
+   
+   r->m = a->m;
+   r->n = a->n;
+   
+   return r;
 }
 
 /** Multiply a matrix by a vector.
@@ -2362,10 +2451,11 @@ matr_h * new_mh()
    n->ret->ret = n->ret;
    n->q = n->data;
    n->ret->q = n->ret->data;
-   ident_mh(n);
    n->m = 4;
    n->n = 4;
 
+   ident_mh(n);
+   
    return n;
 }
 
@@ -2448,7 +2538,7 @@ BTINLINE matr_h* mul_mh(matr_h* a,matr_h* b)
    ret[6] = a->q[4]*b->q[2] + a->q[5]*b->q[6] + a->q[6]*b->q[10];
    ret[10] = a->q[8]*b->q[2] + a->q[9]*b->q[6] + a->q[10]*b->q[10];
 
-   //col 1
+   //col 4
    ret[3] = a->q[0]*b->q[3] + a->q[1]*b->q[7] + a->q[2]*b->q[11] + a->q[3];
    ret[7] = a->q[4]*b->q[3] + a->q[5]*b->q[7] + a->q[6]*b->q[11] + a->q[7];
    ret[11] = a->q[8]*b->q[3] + a->q[9]*b->q[7] + a->q[10]*b->q[11] + a->q[11];
@@ -2679,7 +2769,7 @@ BTINLINE matr_h* mul_m3(matr_3* a,matr_3* b)
    ret[6] = a->q[4]*b->q[2] + a->q[5]*b->q[6] + a->q[6]*b->q[10];
    ret[10] = a->q[8]*b->q[2] + a->q[9]*b->q[6] + a->q[10]*b->q[10];
 
-   //col 1
+   //col 4
    ret[3] = 0.0;
    ret[7] = 0.0;
    ret[11] = 0.0;
@@ -2773,6 +2863,10 @@ BTINLINE vect_3* matXvec_m3(matr_3* a, vect_3* b)
    return b->ret;
 }
 
+/** Multiply the transpose of a 3x3 matrix by a 3-element vector 
+   \param a 3x3 matr_3 matrix to be transposed then multiplied
+   \param b 3-element vect_3 to multiply against the transposed matrix
+   */
 BTINLINE vect_3* matTXvec_m3(matr_3* a, vect_3* b)
 {
    //matXvec_m3(T_m3(a),b);

@@ -32,6 +32,7 @@ int new_btlink(btlink* link,int type)
 {
    link->trans = new_mh();
    link->origin = new_mh();
+   link->Ro = new_mn(3,3);
    link->w = new_v3();
    link->dw = new_v3();
    link->ae = new_v3();
@@ -104,6 +105,9 @@ int new_bot(btrobot* robot, int nlinks)
    const_v3(robot->G,0.0,0.0,-9.8);
 
    robot->J = new_mn(6,nlinks);
+   robot->Jv = new_mn_ptr(robot->J, 3, nlinks, 0);
+   robot->Jw = new_mn_ptr(robot->J, 3, nlinks, (sizeof(btreal) * nlinks * 3));
+   robot->M = new_mn(nlinks,nlinks);
    return 0;
 }
 
@@ -262,6 +266,18 @@ void eval_fk_bot(btrobot* robot)
       make_transform_btlink(&(robot->links[cnt]),robot->q->q[cnt]);
       //calc transform to origin for present q
       set_mh(robot->links[cnt].origin,mul_mh(robot->links[cnt-1].origin,robot->links[cnt].trans));
+      
+      // Copy the transform to a 3x3 rot matrix
+      robot->links[cnt].Ro->q[0] = robot->links[cnt].origin->q[0];
+      robot->links[cnt].Ro->q[1] = robot->links[cnt].origin->q[1];
+      robot->links[cnt].Ro->q[2] = robot->links[cnt].origin->q[2];
+      robot->links[cnt].Ro->q[3] = robot->links[cnt].origin->q[4];
+      robot->links[cnt].Ro->q[4] = robot->links[cnt].origin->q[5];
+      robot->links[cnt].Ro->q[5] = robot->links[cnt].origin->q[6];
+      robot->links[cnt].Ro->q[6] = robot->links[cnt].origin->q[8];
+      robot->links[cnt].Ro->q[7] = robot->links[cnt].origin->q[9];
+      robot->links[cnt].Ro->q[8] = robot->links[cnt].origin->q[10];
+      
       //get z axis vector for later calculations
       getcol_mh(robot->links[cnt].z,robot->links[cnt].origin,2);
       //get frame location in world frame coordinates for use in later calculations
@@ -286,11 +302,39 @@ void eval_fj_bot(btrobot* robot)
    // Ji(1-3) = [z(i-1)X(On - O(i-1)]
    // Ji(4-6) = [z(i-1)]
    int cnt;
-
+   
+   zero_mn(robot->J);
+   zero_mn(robot->M);
+   
    for (cnt = 0;cnt < robot->num_links;cnt++) {
       set_vn(robot->links[cnt].J,(vect_n*)cross_v3(robot->links[cnt-1].z,sub_v3(robot->links[robot->num_links-1].o,robot->links[cnt-1].o)));
       setrange_vn(robot->links[cnt].J,(vect_n*)robot->links[cnt-1].z,3,0,3);
       setcol_mn(robot->J,robot->links[cnt].J,cnt);
+      
+      /* Find the mass/inertia matrix
+      
+         Transpose Jv(3xL) => Jv->ret(Lx3)
+         Scale Jv->ret(Lx3) by m => Jv->ret(Lx3)
+         Mult Jv->ret(Lx3) by Jv(3xL) => M->ret(LxL)
+         Add M->ret(LxL) to M(LxL) => M(LxL)
+         
+         Transpose Jw(3xL) => Jw->ret(Lx3)
+         Mult Jw->ret(Lx3) by origin(3x3) => Jv->ret(Lx3)
+         Mult Jv->ret(Lx3) by I(3x3) => Jw->ret(Lx3)
+         Transpose origin(3x3) => origin->ret(3x3)
+         Mult Jw->ret(Lx3) by origin->ret(3x3) => Jv->ret(Lx3)
+         Mult Jv-ret(Lx3) by Jw(3xL) => M->ret(LxL)
+         Add M->ret(LxL) to M(LxL) => M(LxL)
+      */
+      add_mn(robot->M,robot->M,
+         mul_mn(robot->M->ret,robot->Jv,
+            scale_mn(robot->links[cnt].m, T_mn(robot->Jv))));
+            
+      add_mn(robot->M, robot->M, 
+         mul_mn(robot->M->ret, robot->Jw, 
+            mul_mn(robot->Jv->ret, T_mn(robot->Ro), 
+               mul_mn(robot->Jw->ret, robot->links[cnt].I, 
+                  mul_mn(robot->Jv->ret, robot->Ro, T_mn(robot->Jw))))));
    }
 }
 
@@ -356,6 +400,7 @@ void eval_fd_bot(btrobot* robot)
       const_v3(robot->links[cnt].eforce.t,0.0,0.0,0.0);
       const_v3(robot->links[cnt].eforce.f,0.0,0.0,0.0);
       //calc tranform for present q
+      /* Spong, eqn 7.150 */
       set_v3(robot->links[cnt].b,matTXvec_m3(robot->links[cnt].trans,C_v3(0.0,0.0,1.0)));
       //set_v3(robot->links[cnt].b,matTXvec_m3(robot->links[cnt].origin,C_v3(0.0,0.0,1.0)));
 
@@ -363,6 +408,7 @@ void eval_fd_bot(btrobot* robot)
       printf("\nLink %d Rl: ",cnt);print_v3(robot->links[cnt].Rl);printf("\n");
       printf("\nLink %d Rm: ",cnt);print_v3(robot->links[cnt].Rm);printf("\n");
       */
+      /* Spong, eqn 7.149 */
       set_v3(robot->links[cnt].w,
              add_v3(matTXvec_m3(robot->links[cnt].trans,robot->links[cnt-1].w),
                     scale_v3(getval_vn(robot->dq,cnt),robot->links[cnt].b)));
@@ -373,6 +419,7 @@ void eval_fd_bot(btrobot* robot)
       print_v3(robot->links[cnt].w);
       printf("\n");
       */
+      /* Spong, eqn 7.153 */
       set_v3(robot->links[cnt].dw,
              add_v3(matTXvec_m3(robot->links[cnt].trans,robot->links[cnt-1].dw),
                     add_v3(scale_v3(getval_vn(robot->ddq,cnt),robot->links[cnt].b),

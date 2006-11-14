@@ -89,24 +89,42 @@ This object is used internally to btrobot.
 */
 typedef struct {
   //physical info
-  double m,Gscale; //mass, percent of gravity to use
+  double m; //!< Link mass
+  double Gscale; // Percent of gravity to use (normally 0.0->1.0)
   vect_3 *cog; //Mass center, gravity vector in base frame
   matr_3 *I; //Inertial matrix
   
   //geometry info
-  double Alpha,Theta,A,D;
+  double Alpha,Theta,A,D; //!< Denavit-Hartenberg link parameters
   int type;
   double R,P; //Joint type multipliers to avoid decision
   
   //storage for dynamic info
   matr_h* trans; //last computed transform
   matr_h* origin; //transform to origin
-  vect_3 *w,*dw,*ac,*ae; //forward dynamics results
-  vect_3 *f,*t,*fi; //backward dynamics results
-  vect_3 *b,*z,*o,*g; //for jacobian & forward dynamics
-  vect_3 *Rl,*Rm; //backward dynamics results
+  matr_mn* Ro; // True 3x3 rot matrix from link to origin
+  
+  //forward dynamics results
+  vect_3 *w; //!< Angular velocity of link frame wrt frame 0
+  vect_3 *dw; //!< Angular acceleration of link frame wrt frame 0
+  vect_3 *ac; //!< Acceleration of the center of mass of link
+  vect_3 *ae; //!< Acceleration of end of link (i.e. origin of next frame)
+  
+  //backward dynamics results
+  vect_3 *f; //!< Force exerted by previous link on this link (f_i in Spong 7.146 pg 277)
+  vect_3 *t; //!< Torque exerted by previous link on this link
+  vect_3 *fi; //!< R^i_{i+1} * f_{i+1} (intermediate value used in Spong 7.146 pg 277)
+  
+  //for jacobian & forward dynamics
+  vect_3 *b; //!< Axis of rotation of this link in this frame
+  vect_3 *z;
+  vect_3 *o;
+  vect_3 *g; //for jacobian & forward dynamics
+  vect_3 *Rl; //!< Vector from the origin of the first link to the COM of this link (Spong: ri+1,ci)
+  vect_3 *Rm; //!< Vector from the origin of this link to the COM of this link (Spong: ri,ci)
   vect_3 *Rp; //vector from external force point to cog
   vect_n *J; 
+  
   double sinAlpha,cosAlpha,sinTheta,cosTheta; //last computed sin and cos for alpha,theta
   
   //force info
@@ -132,15 +150,18 @@ typedef struct {
     
 */
 typedef struct {
- int num_links;  //Duh
+ int num_links;  //<! Robot link count
  btlink* user;  //user frame
  btlink* world;  //!< World frame - gravity is referenced from this frame
- btlink* links;  //Pointer to the start of the array of links
- btlink* tool;   //Joint frame
- vect_n *q,*dq,*ddq; //Joint state inputs
- vect_n *t;      //Joint torque outputs
- vect_3 *G;      //Gravity vector
- matr_mn *J; //Jacobian
+ btlink* links;  //<! Pointer to the start of the array of links
+ btlink* tool;   //<! Joint frame
+ vect_n *q,*dq,*ddq; //<! Joint state inputs
+ vect_n *t;      //<! Joint torque outputs
+ vect_3 *G;      //<! Gravity vector
+ matr_mn *J; //<! Full Jacobian
+ matr_mn *Jv; //<! Upper Jacobian
+ matr_mn *Jw; //<! Lower Jacobian
+ matr_mn *M; //<! Mass (inertial) matrix
 }btrobot;
 
 //an array of links define a robot
