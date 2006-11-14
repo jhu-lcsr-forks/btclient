@@ -583,7 +583,7 @@ void RenderMAIN_SCREEN()
    line += 1;
    mvprintw(line, 0, "Mass Matrix:");
    line++;
-   mvprintw(line, 0, "%s", sprint_mn(vect_buf1, wam->robot.M);
+   mvprintw(line, 0, "%s", sprint_mn(vect_buf1, wam->robot.M));
    /*  line += 1;
      mvprintw(line,0,"bts: state:%d",active_bts->mode);
      mvprintw(line,20,"trj: state:%d",active_bts->btt.state);

@@ -642,10 +642,9 @@ void getcol_mn(vect_n* dest, matr_mn* src, int col); //get the specified column
 BTINLINE btreal getval_mn(matr_mn* src, int row, int col);
 BTINLINE void setval_mn(matr_mn* src, int row, int col, btreal val);
 
-BTINLINE matr_mn* mul_mn(matr_mn* a,matr_mn* b);
 BTINLINE void setmul_mn(matr_mn* a,matr_mn* b); //multiply and store in a
 BTINLINE vect_n* matXvec_mn(matr_mn* a, vect_n* b,vect_n* ret);
-BTINLINE void mul_mn(matr_mn* r, matr_mn* a, matr_mn* b);
+BTINLINE matr_mn* mul_mn(matr_mn* r, matr_mn* a, matr_mn* b);
 BTINLINE matr_mn* T_mn(matr_mn* a);
 void zero_mn(matr_mn* dest);
 BTINLINE matr_mn* add_mn(matr_mn* r, matr_mn* a, matr_mn* b);

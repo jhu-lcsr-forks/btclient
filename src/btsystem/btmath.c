@@ -2249,7 +2249,7 @@ BTINLINE matr_mn* scale_mn(btreal x, matr_mn* a)
    return(a->ret);
 }
 
-BTINLINE void mul_mn(matr_mn* r, matr_mn* a, matr_mn* b)
+BTINLINE matr_mn* mul_mn(matr_mn* r, matr_mn* a, matr_mn* b)
 {
    unsigned int aCols, bCols;
    
@@ -2268,7 +2268,7 @@ BTINLINE void mul_mn(matr_mn* r, matr_mn* a, matr_mn* b)
          for(k = 0; k < aCols; k++)
             r->q[i*bCols+j] += a->q[i*aCols+k] + b->q[k*bCols+j];
    
-   return;
+   return r;
 }
 
 BTINLINE matr_mn* T_mn(matr_mn* a){
