@@ -132,10 +132,10 @@ typedef struct btwam_struct{
 //Actuator info
   actuator_struct *act;
   int num_actuators;
-  int motor_position[VN_SIZE];
+  int *motor_position;
 
 //Automatic zero finding
-  int zero_order[VN_SIZE];
+  int *zero_order;
   vect_n *zero_offsets;
   vect_n *stop_torque;
   vect_n *park_location;  
@@ -155,7 +155,7 @@ typedef struct btwam_struct{
   
   btstatecontrol Jsc;
   
-  btPID d_jpos_ctl[VN_SIZE];
+  btPID *d_jpos_ctl;
   btPID_array d_jpos_array;
   //JointSpace Position control
   vect_n *Kp,*Kd,*Ki,*saturation;
@@ -164,7 +164,7 @@ typedef struct btwam_struct{
   vect_n *vel,*acc;
   
   //CartesianSpace Position control
-  SimpleCtl sc[VN_SIZE];
+  SimpleCtl *sc;
   btPID pid[6]; //  x,y,z,quat
   quat *qref,*qact,*qaxis,*forced; //reference and actual orientations for quaternion control
   vect_n *Ttrq;
@@ -213,6 +213,7 @@ typedef struct btwam_struct{
   
   btthread maint;
 }wam_struct;
+
 
 
 /*************  WAM  API  ******************/

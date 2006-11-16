@@ -2252,6 +2252,9 @@ BTINLINE matr_mn* scale_mn(btreal x, matr_mn* a)
    return(a->ret);
 }
 
+/** Multiply two matrices of type matr_mn
+   \note Result matrix "r" must not point to the same location as input matrix "a"
+   */
 BTINLINE matr_mn* mul_mn(matr_mn* r, matr_mn* a, matr_mn* b)
 {
    unsigned int i, j, k, aCols, bCols;
@@ -2283,8 +2286,8 @@ BTINLINE matr_mn* T_mn(matr_mn* a){
    unsigned int i, j, cols;
    
    cols = a->n;
-   for(i = 0; i < a->m; i++)
-      for(j = 0; j < cols; j++)
+   for(i = 0; i < a->n; i++)
+      for(j = 0; j < a->m; j++)
          a->ret->q[j*cols+i] = a->q[i*cols+j];
    
    a->ret->m = a->n;

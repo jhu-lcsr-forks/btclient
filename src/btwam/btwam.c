@@ -67,29 +67,29 @@ int BlankWAMcallback(struct btwam_struct *wam);
  *==============================*/
 void InitVectors(wam_struct *wam)
 {
-   wam->zero_offsets = new_vn(VN_SIZE);
-   wam->stop_torque = new_vn(VN_SIZE);
-   wam->park_location = new_vn(VN_SIZE);
-   wam->Mpos = new_vn(VN_SIZE);
-   wam->N = new_vn(VN_SIZE);
-   wam->n = new_vn(VN_SIZE);
-   wam->M2JP = new_mn(VN_SIZE,VN_SIZE);
-   wam->J2MT = new_mn(VN_SIZE,VN_SIZE);
-   wam->J2MP = new_mn(VN_SIZE,VN_SIZE);
-   wam->Mtrq  = new_vn(VN_SIZE);
-   wam->Jpos = new_vn(VN_SIZE);
-   wam->Jvel = new_vn(VN_SIZE);
-   wam->Jacc = new_vn(VN_SIZE);
-   wam->Jref = new_vn(VN_SIZE);
-   wam->Jtref = new_vn(VN_SIZE);
-   wam->Jtrq = new_vn(VN_SIZE);
-   wam->Ttrq = new_vn(VN_SIZE);
-   wam->Kp = new_vn(VN_SIZE);
-   wam->Kd = new_vn(VN_SIZE);
-   wam->Ki = new_vn(VN_SIZE);
-   wam->saturation = new_vn(VN_SIZE);
-   wam->vel = new_vn(VN_SIZE);
-   wam->acc = new_vn(VN_SIZE);
+   wam->zero_offsets = new_vn(wam->dof);
+   wam->stop_torque = new_vn(wam->dof);
+   wam->park_location = new_vn(wam->dof);
+   wam->Mpos = new_vn(wam->dof);
+   wam->N = new_vn(wam->dof);
+   wam->n = new_vn(wam->dof);
+   wam->M2JP = new_mn(wam->dof,wam->dof);
+   wam->J2MT = new_mn(wam->dof,wam->dof);
+   wam->J2MP = new_mn(wam->dof,wam->dof);
+   wam->Mtrq  = new_vn(wam->dof);
+   wam->Jpos = new_vn(wam->dof);
+   wam->Jvel = new_vn(wam->dof);
+   wam->Jacc = new_vn(wam->dof);
+   wam->Jref = new_vn(wam->dof);
+   wam->Jtref = new_vn(wam->dof);
+   wam->Jtrq = new_vn(wam->dof);
+   wam->Ttrq = new_vn(wam->dof);
+   wam->Kp = new_vn(wam->dof);
+   wam->Kd = new_vn(wam->dof);
+   wam->Ki = new_vn(wam->dof);
+   wam->saturation = new_vn(wam->dof);
+   wam->vel = new_vn(wam->dof);
+   wam->acc = new_vn(wam->dof);
    wam->Cpos = new_v3();
    wam->Cpoint = new_v3();
    wam->Cref = new_v3();
@@ -114,6 +114,12 @@ void InitVectors(wam_struct *wam)
    wam->js_or_cs = 0;
    wam->idle_when_done = 0;
    wam->active_sc = &wam->Jsc;
+   
+   wam->motor_position = (int*)btmalloc(wam->dof * sizeof(int));
+   wam->zero_order = (int*)btmalloc(wam->dof * sizeof(int));
+   wam->d_jpos_ctl = (btPID*)btmalloc(wam->dof * sizeof(btPID));
+   wam->sc = (SimpleCtl*)btmalloc(wam->dof * sizeof(SimpleCtl));
+   
 }
 
 /** Initialize a WAM
@@ -142,24 +148,51 @@ wam_struct* OpenWAM(char *fn, char *rName)
    char robotName[256];
    int actcnt = 0;
 
+   // Carve out some memory for the main data structure
    wam = (wam_struct*)btmalloc(sizeof(wam_struct));
+   
+   // Parse config file
+   if(!*fn) { // If no config file was given
+      strcpy(fn, "wam.conf"); // Default to wam.conf
+   }
+   err = parseFile(fn);
+   if(err) {
+      syslog(LOG_ERR, "OpenWAM: Error parsing config file- %s", fn);
+      return(NULL);
+   }
+   //strcpy(robotName, buses[0].device_name);
+
+   if(!*rName) { // If no robot name was given
+      // Extract it from the config file
+      sprintf(key, "system.bus[0].name");
+      parseGetVal(STRING, key, (void*)robotName);
+   } else {
+      strcpy(robotName, rName);
+   }
+
+   syslog(LOG_ERR, "robotName=%s", robotName);
+
+   // Read Degrees of Freedom
+   sprintf(key, "%s.dof", robotName);
+   parseGetVal(INT, key, (void*)&wam->dof);
+   
    // Allocate memory for the WAM vectors
    InitVectors(wam);
 
-   /* Joint Control plugin initialization */
-   for (cnt = 0; cnt < VN_SIZE; cnt ++) {
+   /* START of Joint Control plugin initialization */
+   for (cnt = 0; cnt < wam->dof; cnt ++) {
       init_btPID(&(wam->d_jpos_ctl[cnt]));
    }
    wam->d_jpos_array.pid = wam->d_jpos_ctl;
-   wam->d_jpos_array.elements = VN_SIZE;
+   wam->d_jpos_array.elements = wam->dof;
    init_bts(&wam->Jsc);
    map_btstatecontrol(&wam->Jsc, wam->Jpos, wam->Jvel, wam->Jacc,
                       wam->Jref, wam->Jtref,wam->Jtrq, &wam->dt);
    btposition_interface_mapf_btPID(&wam->Jsc, &(wam->d_jpos_array));
-   /* Joint Control plugin initialization */
+   /* END of Joint Control plugin initialization */
 
 
-   /* Control plugin initialization */
+   /* START of Control plugin initialization */
    for (cnt = 0; cnt < 3; cnt ++) {
       init_btPID(&(wam->d_pos_ctl[cnt]));
       setgains_btPID(&(wam->d_pos_ctl[cnt]),2000.0,5.0,0.0);
@@ -170,8 +203,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
    map_btstatecontrol(&wam->Csc, wam->R6pos, wam->R6vel, wam->R6acc,
                       wam->R6ref, wam->R6tref, wam->R6force, &wam->dt);
    btposition_interface_mapf_btPID(&wam->Csc, &(wam->d_pos_array));
-
-   /* Control plugin initialization */
+   /* END of Control plugin initialization */
 
    init_pwl(&wam->pth,3,2); //Cartesian move path
 
@@ -214,37 +246,9 @@ wam_struct* OpenWAM(char *fn, char *rName)
 #endif
    wam->act = GetActuators(&(wam->num_actuators));
 
-
-
-
    com = new_v3();
 
-
-   // Parse config file
-   if(!*fn) { // If no config file was given
-      strcpy(fn, "wam.conf"); // Default to wam.conf
-   }
-   err = parseFile(fn);
-   if(err) {
-      syslog(LOG_ERR, "OpenWAM: Error parsing config file- %s", fn);
-      return(NULL);
-   }
-   //strcpy(robotName, buses[0].device_name);
-
-   if(!*rName) { // If no robot name was given
-      // Extract it from the config file
-      sprintf(key, "system.bus[0].name");
-      parseGetVal(STRING, key, (void*)robotName);
-   } else {
-      strcpy(robotName, rName);
-   }
-
-   syslog(LOG_ERR, "robotName=%s", robotName);
-
-   // Read Degrees of Freedom
-   sprintf(key, "%s.dof", robotName);
-   parseGetVal(INT, key, (void*)&wam->dof);
-
+   // Initialize the generic robot data structure
    new_bot(&wam->robot,wam->dof);
 
    // Read park_location
@@ -304,7 +308,11 @@ wam_struct* OpenWAM(char *fn, char *rName)
       parseGetVal(VECTOR, key, (void*)com);
       sprintf(key, "%s.link[%d].mass", robotName, link);
       parseGetVal(DOUBLE, key, (void*)&mass);
-
+      
+      // Get inertia matrix
+      sprintf(key, "%s.link[%d].I", robotName, link);
+      parseGetVal(MATRIX, key, (void*)wam->robot.links[link].I);
+      
       if(link != wam->dof) {
          // Query for motor_position (JIDX)
 
@@ -334,10 +342,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
       } else {
          tool_geom_bot(&wam->robot, theta * pi, d, a, alpha * pi);
          tool_mass_bot(&wam->robot, com, mass);
-
-
       }
-
    }
 
    /* If the WAM is already zeroed, note it- else, zero it */
@@ -376,7 +381,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
    wam->Gcomp = 0;
    set_gravity_bot(&wam->robot, 0.0);
 
-   for(cnt = 0; cnt < VN_SIZE; cnt++) {
+   for(cnt = 0; cnt < wam->dof; cnt++) {
       SCinit(&(wam->sc[cnt]));
       SCsetpid(&(wam->sc[cnt]),getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt),getval_vn(wam->saturation,cnt));
       SCsettrjprof(&(wam->sc[cnt]),getval_vn(wam->vel,cnt),getval_vn(wam->acc,cnt));
@@ -538,6 +543,7 @@ void WAMControlThread(void *data)
       set_vn(wam->robot.q,wam->Jpos);
 
       eval_fk_bot(&wam->robot);
+      eval_fj_bot(&wam->robot);
       eval_fd_bot(&wam->robot);
 
       set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));
@@ -550,7 +556,7 @@ void WAMControlThread(void *data)
 
       set_v3(wam->Cforce,(vect_3*)wam->R6force);
       //setrange_vn((vect_n*)wam->Ctrq,wam->R6force,0,2,3);
-      
+#if 0 
       //Cartesian angular constraint
       R_to_q(wam->qact,T_to_W_trans_bot(&wam->robot));
       set_q(wam->qaxis,mul_q(wam->qact,conj_q(wam->qref)));
@@ -564,7 +570,9 @@ void WAMControlThread(void *data)
       
       //syslog(LOG_ERR, "qerr: %f", wam->qerr);
       //syslog_vn("Ctrq: ", (vect_n*)wam->Ctrq);
-      
+#endif  
+      //syslog_vn("qref: ", (vect_n*)wam->qref);
+      //syslog_vn("qact: ", (vect_n*)wam->qact);
       //Force application
       apply_tool_force_bot(&wam->robot, wam->Cpoint, wam->Cforce, wam->Ctrq);
 
@@ -582,10 +590,10 @@ void WAMControlThread(void *data)
 
       Jtrq2Mtrq(wam,(wam->Jtrq), (wam->Mtrq));  //Convert from joint torques to motor torques
       //8-DOF paint spraying demo code
-      //if(getmode_bts(&wam->Jsc) == SCMODE_IDLE)
-      //setval_vn(wam->Mtrq, 7, 0);
-      //else
-      //setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
+      if(getmode_bts(&wam->Jsc) == SCMODE_IDLE)
+      setval_vn(wam->Mtrq, 7, 0);
+      else
+      setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
       Mtrq2ActTrq(wam,wam->Mtrq); //Move motor torques from wam_vector variable into actuator database
 #ifdef BTDOUBLETIME
 
@@ -624,7 +632,7 @@ void WAMControlThread(void *data)
    syslog(LOG_ERR, "WAM Control Thread: exiting");
    syslog(LOG_ERR, "----------WAM Control Thread Statistics:--------------");
    syslog(LOG_ERR,"WAMControl Skipped cycles %d, Max dt: %f",skipcnt,skipmax);
-   syslog(LOG_ERR,"WAMControl Times: Readpos: %f, Calcs: %f, SendTrq: %f",wam->readpos_time,wam->loop_time-wam->writetrq_time-wam->readpos_time,wam->writetrq_time);
+   syslog(LOG_ERR,"WAMControl Times: Readpos: %lld, Calcs: %lld, SendTrq: %lld",wam->readpos_time,wam->loop_time-wam->writetrq_time-wam->readpos_time,wam->writetrq_time);
    rt_make_soft_real_time();
    rt_task_delete(WAMControlThreadTask);
    pthread_exit(NULL);
@@ -754,7 +762,7 @@ void DefineWAMpos(wam_struct *wam,vect_n *wv)
    vect_n *motor_angle;
    double result;
 
-   motor_angle = new_vn(VN_SIZE);
+   motor_angle = new_vn(wam->dof);
    /* Tell the safety logic to ignore the next faults */
    SetByID(SAFETY_MODULE, IFAULT, 8);
 

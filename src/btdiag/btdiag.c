@@ -152,6 +152,7 @@ int main(int argc, char **argv)
    char robotName[128];
 
    f1 = new_v3();
+#if 0
    j5 = new_btfilter(5);
    j6 = new_btfilter(5);
    j7 = new_btfilter(5);
@@ -161,6 +162,7 @@ int main(int argc, char **argv)
    syslog_filter(j5);
    syslog_filter(j6);
    syslog_filter(j7);
+#endif
    /* Figure out what the keys do and print it on screen */
    system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
    read_keys("keys.txt");
@@ -227,7 +229,7 @@ int main(int argc, char **argv)
 
    /* Register the ctrl-c interrupt handler */
    signal(SIGINT, sigint_handler);
-
+#if 0
    wam->logdivider = 1;
    //syslog(LOG_ERR, "chkpt 1");
    PrepDL(&(wam->log),15);
@@ -245,12 +247,14 @@ int main(int argc, char **argv)
    //AddDataDL(&(wam->log),&(Jpos_filt[4]),sizeof(btreal)*3,4,"Filt");
    InitDL(&(wam->log),1000,"datafile.dat");
    //syslog(LOG_ERR, "chkpt 4");
+#endif
 
+   if(!NoSafety){
    /* Set the safety limits */
    setSafetyLimits(1.5, 1.5, 1.5);  // Limit to 1.5 m/s 
    setProperty(0,10,TL2,FALSE,4700); 
    setProperty(0,10,TL1,FALSE,1800);
-
+   }
 
    /* Prepare MODE */
    jdest = new_vn(len_vn(wam->Jpos));
@@ -280,6 +284,7 @@ int main(int argc, char **argv)
    serialSetBaud(&p, 9600);
 
    /* Spin off the WAM control thread */
+   //wam_thd.period = 1;
    wam_thd.period = 0.002;
    btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)wam);
 
@@ -301,9 +306,9 @@ int main(int argc, char **argv)
    }
 
    btthread_stop(&wam_thd); //Kill WAMControlThread
-   syslog_filter(j5);
-   CloseDL(&(wam->log));
-   DecodeDL("datafile.dat","dat.csv",1);
+   //syslog_filter(j5);
+   //CloseDL(&(wam->log));
+   //DecodeDL("datafile.dat","dat.csv",1);
    exit(1);
 }
 int WAMcallback(struct btwam_struct *wam)
@@ -313,7 +318,7 @@ int WAMcallback(struct btwam_struct *wam)
    int cnt;
 
    static double da;
-
+#if 0
    wamdata[0]=wam->log_time;
    for(i=0;i<7;i++)
    {
@@ -323,7 +328,7 @@ int WAMcallback(struct btwam_struct *wam)
    Jpos_filt[4] = eval_btfilter(j5,wamdata[5]);
    Jpos_filt[5] = eval_btfilter(j6,wamdata[5]);
    Jpos_filt[6] = eval_btfilter(j7,wamdata[5]);
-
+#endif
 
    eval_state_btg(&(pstate),wam->Cpos);
    eval_bthaptics(&bth,(vect_n*)wam->Cpos,(vect_n*)pstate.vel,(vect_n*)zero_v3,(vect_n*)wam->Cforce);
@@ -580,10 +585,23 @@ void RenderMAIN_SCREEN()
       mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
       line += 2;
    }
+   /*
    line += 1;
    mvprintw(line, 0, "Mass Matrix:");
    line++;
    mvprintw(line, 0, "%s", sprint_mn(vect_buf1, wam->robot.M));
+   
+   line += 2;
+   mvprintw(line, 0, "O Matrix:");
+   line++;
+   mvprintw(line, 0, "%s", sprint_v3(vect_buf1, wam->robot.links[3].o));
+   
+   line += 2;
+   mvprintw(line, 0, "Z Matrix:");
+   line++;
+   mvprintw(line, 0, "%s", sprint_v3(vect_buf1, wam->robot.links[3].z));
+   
+   */
    /*  line += 1;
      mvprintw(line,0,"bts: state:%d",active_bts->mode);
      mvprintw(line,20,"trj: state:%d",active_bts->btt.state);
