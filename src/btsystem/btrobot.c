@@ -14,7 +14,7 @@
  *  REVISION HISTORY:
  *  '051107 TH Minimal documentation in place.                          *
  *======================================================================*/
-
+#include <curses.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -44,7 +44,7 @@ int new_btlink(btlink* link,int type)
    link->g = new_v3();
 
    link->cog = new_v3();
-   link->I = new_m3();
+   link->I = new_mn(3,3);
    link->f = new_v3();
    link->fi = new_v3();
    link->t = new_v3();
@@ -108,6 +108,7 @@ int new_bot(btrobot* robot, int nlinks)
    robot->Jv = new_mn_ptr(robot->J, 3, nlinks, 0);
    robot->Jw = new_mn_ptr(robot->J, 3, nlinks, (sizeof(btreal) * nlinks * 3));
    robot->M = new_mn(nlinks,nlinks);
+   
    return 0;
 }
 
@@ -302,6 +303,7 @@ void eval_fj_bot(btrobot* robot)
    // Ji(1-3) = [z(i-1)X(On - O(i-1)]
    // Ji(4-6) = [z(i-1)]
    int cnt;
+   char vect_buf1[2000];
    
    zero_mn(robot->J);
    zero_mn(robot->M);
@@ -311,6 +313,9 @@ void eval_fj_bot(btrobot* robot)
       setrange_vn(robot->links[cnt].J,(vect_n*)robot->links[cnt-1].z,3,0,3);
       setcol_mn(robot->J,robot->links[cnt].J,cnt);
       
+      //mvprintw(30, 0, "%s", sprint_mn(vect_buf1, robot->J));
+      //mvprintw(34, 0, "%s", sprint_mn(vect_buf1, robot->M));
+      //usleep(200000);
       /* Find the mass/inertia matrix
       
          Transpose Jv(3xL) => Jv->ret(Lx3)
@@ -321,20 +326,27 @@ void eval_fj_bot(btrobot* robot)
          Transpose Jw(3xL) => Jw->ret(Lx3)
          Mult Jw->ret(Lx3) by origin(3x3) => Jv->ret(Lx3)
          Mult Jv->ret(Lx3) by I(3x3) => Jw->ret(Lx3)
-         Transpose origin(3x3) => origin->ret(3x3)
+           Transpose origin(3x3) => origin->ret(3x3)
          Mult Jw->ret(Lx3) by origin->ret(3x3) => Jv->ret(Lx3)
          Mult Jv-ret(Lx3) by Jw(3xL) => M->ret(LxL)
          Add M->ret(LxL) to M(LxL) => M(LxL)
       */
-      add_mn(robot->M,robot->M,
-         mul_mn(robot->M->ret,robot->Jv,
-            scale_mn(robot->links[cnt].m, T_mn(robot->Jv))));
-            
+      add_mn(robot->M, robot->M,
+         mul_mn(robot->M->ret, scale_mn(robot->links[cnt].m, T_mn(robot->Jv)), robot->Jv));
+      
       add_mn(robot->M, robot->M, 
-         mul_mn(robot->M->ret, robot->Jw, 
-            mul_mn(robot->Jv->ret, T_mn(robot->links[cnt].Ro), 
+      mul_mn(robot->M->ret, T_mn(robot->Jw), 
+      mul_mn(robot->Jv->ret, robot->links[cnt].Ro,    
+      mul_mn(robot->Jw->ret, robot->links[cnt].I,
+         mul_mn(robot->Jv->ret, T_mn(robot->links[cnt].Ro), robot->Jw)))));
+      /*  
+      add_mn(robot->M, robot->M, 
+         mul_mn(robot->M->ret, T_mn(robot->Jw), 
+            mul_mn(robot->Jv->ret, robot->links[cnt].Ro, 
                mul_mn(robot->Jw->ret, robot->links[cnt].I, 
-                  mul_mn(robot->Jv->ret, robot->links[cnt].Ro, T_mn(robot->Jw))))));
+                  mul_mn(robot->Jv->ret, T_mn(robot->links[cnt].Ro), robot->Jw)))));
+                  */
+              
    }
 }
 
@@ -484,7 +496,7 @@ void eval_bd_bot(btrobot* robot)
                         add_v3(neg_v3(robot->tool->eforce.t),
                                add_v3(robot->tool->dw,
                                       cross_v3(robot->tool->w,
-                                               matXvec_m3(robot->tool->I,robot->tool->w)))))));
+                                               matr_mnXvect_3(robot->tool->I,robot->tool->w)))))));
 
    for (cnt = robot->num_links-1;cnt >= 0;cnt--) {
       set_v3(robot->links[cnt].g,matTXvec_m3(robot->links[cnt].origin,scale_v3(robot->links[cnt].Gscale,robot->G)));
@@ -515,7 +527,7 @@ void eval_bd_bot(btrobot* robot)
                                   add_v3(neg_v3(robot->links[cnt].eforce.t),
                                          add_v3(robot->links[cnt].dw,
                                                 cross_v3(robot->links[cnt].w,
-                                                         matXvec_m3(robot->links[cnt].I,robot->links[cnt].w))))))));
+                                                         matr_mnXvect_3(robot->links[cnt].I,robot->links[cnt].w))))))));
 
       /*
       printf("\nLink %d torque: ",cnt);

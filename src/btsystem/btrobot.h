@@ -92,7 +92,7 @@ typedef struct {
   double m; //!< Link mass
   double Gscale; // Percent of gravity to use (normally 0.0->1.0)
   vect_3 *cog; //Mass center, gravity vector in base frame
-  matr_3 *I; //Inertial matrix
+  matr_mn *I; //Inertial matrix
   
   //geometry info
   double Alpha,Theta,A,D; //!< Denavit-Hartenberg link parameters
@@ -162,6 +162,7 @@ typedef struct {
  matr_mn *Jv; //<! Upper Jacobian
  matr_mn *Jw; //<! Lower Jacobian
  matr_mn *M; //<! Mass (inertial) matrix
+ vect_n *vv; // Row interchange scaling vector for matrix inverse
 }btrobot;
 
 //an array of links define a robot

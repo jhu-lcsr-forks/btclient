@@ -2101,6 +2101,8 @@ matr_mn * new_mn(int r,int c) //allocate an n-vector
    n->ret->q = (btreal*)(ptr + 2*sizeof(matr_mn) + r*c*sizeof(btreal));
    n->m = r;
    n->n = c;
+   n->ret->m = r;
+   n->ret->n = c;
    
    ident_mn(n);
 
@@ -2116,6 +2118,7 @@ matr_mn * new_mn_ptr(matr_mn *a, int r, int c, int offset)
 
    n = (matr_mn*)ptr;
    n->ret = (matr_mn*)(ptr + sizeof(matr_mn));
+   n->ret->ret = n->ret;
    n->q = a->q + offset;
    n->ret->q = a->ret->q + offset;
    n->m = r;
@@ -2239,28 +2242,30 @@ void setval_mn(matr_mn* src, int row, int col, btreal val)
 }
 BTINLINE matr_mn* scale_mn(btreal x, matr_mn* a)
 {
-   int elements;
+   int i, elements;
    
    elements = a->m * a->n;
    
    for(i = 0; i < elements; i++)
-      a->ret-q[i] = a->q[i] * x;
+      a->ret->q[i] = a->q[i] * x;
    
    return(a->ret);
 }
 
 BTINLINE matr_mn* mul_mn(matr_mn* r, matr_mn* a, matr_mn* b)
 {
-   unsigned int aCols, bCols;
+   unsigned int i, j, k, aCols, bCols;
    
-   if(r->m != a->m || r->n != b->n){
+   if((r->m * r->n) != (a->m * b->n)){
       syslog(LOG_ERR, "mul_mn(): incorect size for return matrix: a=%dx%d, b=%dx%d, r=%dx%d, need r=%dx%d", 
-         a->m, a->n, b->m, b->m, r->m, r->n, a->m, b->n);
-      return;
+         a->m, a->n, b->m, b->n, r->m, r->n, a->m, b->n);
+      return r;
    }
    
    aCols = a->n;
    bCols = b->n;
+   
+   zero_mn(r);
    
    // Rij += Aik + Bkj
    for(i = 0; i < a->m; i++)
@@ -2268,11 +2273,14 @@ BTINLINE matr_mn* mul_mn(matr_mn* r, matr_mn* a, matr_mn* b)
          for(k = 0; k < aCols; k++)
             r->q[i*bCols+j] += a->q[i*aCols+k] + b->q[k*bCols+j];
    
+   r->m = a->m;
+   r->n = b->n;
+   
    return r;
 }
 
 BTINLINE matr_mn* T_mn(matr_mn* a){
-   unsigned int cols;
+   unsigned int i, j, cols;
    
    cols = a->n;
    for(i = 0; i < a->m; i++)
@@ -2286,9 +2294,13 @@ BTINLINE matr_mn* T_mn(matr_mn* a){
 }
 
 BTINLINE matr_mn* add_mn(matr_mn* r, matr_mn* a, matr_mn* b){
-   unsigned int elements;
+   unsigned int i, elements;
+   
+   if((r->m != a->m) || (r->n != a->n))
+      syslog(LOG_ERR, "add_mn: Matrices not same size. r=%dx%d, a=%dx%d", r->m, r->n, a->m, a->n);
    
    elements = a->m * a->n;
+   //syslog(LOG_ERR, "r->q[0] = %f", r->q[0]);
    for(i = 0; i < elements; i++)
          r->q[i] = a->q[i] + b->q[i];
    
@@ -2327,6 +2339,29 @@ vect_n* matXvec_mn(matr_mn* a, vect_n* b,vect_n* ret)
 Uses barretts <<>> delimited format.
 */
 char* sprint_mn(char *dest,matr_mn* src)
+{
+   int i,j;
+
+   if (btptr_ok(src,"sprint_vn")) {
+      dest[0] = '<';
+      dest[1] = 0;
+      for (i = 0;i<src->m;i++) {
+         sprintf(dest+strlen(dest),"<");
+         for(j = 0;j<src->n;j++) {
+            sprintf(dest+strlen(dest),"%8.4f,",src->q[i*src->n+j]);
+         }
+         sprintf(dest+strlen(dest),">,");
+      }
+      dest[strlen(dest)-1] = 0;
+      strcat(dest,">");
+   }
+   return dest;
+}
+
+/** Print a matrix to a string
+Uses barretts <<>> delimited format.
+*/
+char* sprint_mh(char *dest,matr_h* src)
 {
    int i,j;
 
@@ -2846,6 +2881,19 @@ BTINLINE matr_3* T_m3(matr_3* a)
    a->ret->q[8] = ret[2];
    a->ret->q[9] = ret[6];
    return a->ret;
+}
+
+/** Multiply a 3x3 matrix by a 3-element vector
+   \param a 3x3 matr_mn matrix to be multiplied
+   \param b 3-element vect_3 to multiply against the matrix
+   */
+BTINLINE vect_3* matr_mnXvect_3(matr_mn* a, vect_3* b)
+{
+   b->ret->q[0] = a->q[0]*b->q[0] + a->q[1]*b->q[1] + a->q[2]*b->q[2];
+   b->ret->q[1] = a->q[3]*b->q[0] + a->q[4]*b->q[1] + a->q[5]*b->q[2];
+   b->ret->q[2] = a->q[6]*b->q[0] + a->q[7]*b->q[1] + a->q[8]*b->q[2];
+   
+   return b->ret;
 }
 
 BTINLINE vect_3* matXvec_m3(matr_3* a, vect_3* b)
@@ -3413,4 +3461,134 @@ btreal min_bt(btreal x,btreal y)
 
 }
 
+#define TINY 1.0e-20
+
+/** LU-Decomposition of a matrix.
+   \param a Input matrix, overwritten by the LU-Decomposition
+   \param indx Output vector of row permutations
+   \param d Output +1 for even permutation count, else -1
+   */
+matr_mn* ludcmp(matr_mn *a, vect_n *indx, btreal *d)
+{
+   int i, imax, j, k;
+   btreal big, dum, sum, temp;
+   btreal *vv;
+   
+   vv = a->ret->q; // Using a->m elements of the scratch space of matrix a
+   
+   *d = 1.0;
+   for(i = 0; i < a->m; i++){
+      big = 0.0;
+      for(j = 0; j < a->m; j++)
+         if((temp = fabs(getval_mn(a, i, j))) > big) 
+            big = temp;
+      if(big == 0.0)
+         syslog(LOG_ERR, "Singular matrix in ludcmp");
+      vv[i] = 1.0 / big;
+   }
+   for(j = 0; j < a->m; j++){
+      for(i = 0; i < j; i++){
+         sum = getval_mn(a,i,j);
+         for(k = 0; k < i; k++)
+            sum -= getval_mn(a,i,k) * getval_mn(a,k,j);
+         setval_mn(a,i,j,sum);
+      }
+      big = 0.0;
+      for(i = j; i < a->m; i++){
+         sum = getval_mn(a,i,j);
+         for(k = 0; k < j; k++)
+            sum -= getval_mn(a,i,k) * getval_mn(a,k,j);
+         setval_mn(a,i,j,sum);
+         if((dum = vv[i] * fabs(sum)) >= big){
+            big = dum;
+            imax = i;
+         }
+      }
+      if(j != imax){
+         for(k = 0; k < a->m; k++){
+            dum = getval_mn(a,imax,k);
+            setval_mn(a,imax,k,getval_mn(a,j,k));
+            setval_mn(a,j,k,dum);
+         }
+         *d = -(*d);
+         vv[imax] = vv[j];
+      }
+      setval_vn(indx,j,imax);
+      if(getval_mn(a,j,j) == 0.0)
+         setval_mn(a,j,j,TINY);
+      if(j != a->m-1){
+         dum = 1.0 / getval_mn(a,j,j);
+         for(i = j+1; i < a->m; i++)
+            setval_mn(a,i,j,getval_mn(a,i,j) * dum);
+      }
+   }
+   return(a);
+}
+
+vect_n* lubksb(matr_mn *a, vect_n *indx, vect_n *b)
+{
+   int i, ii = 0, ip, j;
+   float sum;
+   
+   for(i = 0; i < a->m; i++){
+      ip=getval_vn(indx,i);
+      sum = getval_vn(b,ip);
+      setval_vn(b,ip,getval_vn(b,i));
+      if(ii)
+         for(j = 0; j < i; j++)
+            sum -= getval_mn(a,i,j) * getval_vn(b,j);
+      else if (sum)
+         ii = 1;
+      setval_vn(b,i,sum);
+   }
+   for(i = a->m-1; i >= 0; i--){
+      sum = getval_vn(b,i);
+      for(j = i+1; j < a->m; j++)
+         sum -= getval_mn(a,i,j) * getval_vn(b,j);
+      setval_vn(b,i,sum / getval_mn(a,i,i));
+   }
+}
+
+/** Invert a square matrix
+   \param a Input square matrix to invert
+   \param indx Output vector of row permutations
+   \param col Output column selection
+   
+   \note Input matrix will be destroyed
+   */
+matr_mn* inv_mn(matr_mn *a, vect_n *indx, vect_n *col)
+{
+   btreal d;
+   int i, j;
+   
+   ludcmp(a, indx, &d);
+   for(j = 0; j < a->m; j++){
+      for(i = 0; i < a->m; i++)
+         setval_vn(col, i, 0.0);
+      setval_vn(col, j, 1.0);
+      lubksb(a, indx, col);
+      setcol_mn(a->ret, col, j);
+      //for(i = 0; i < a->m; i++)
+      //   setval_mn(a->ret, i, j, getval_vn(col, i));
+   }
+   return a->ret;
+}
+
+/** Find the determinant of a square matrix
+   \param a Input square matrix
+   \param indx Output vector of row permutations
+   
+   \note Input matrix will be destroyed
+   */
+btreal det_mn(matr_mn *a, vect_n *indx)
+{
+   btreal d;
+   int j;
+   
+   ludcmp(a, indx, &d);
+   for(j = 0; j < a->m; j++)
+      d *= getval_mn(a,j,j);
+   
+   return d;
+}
 

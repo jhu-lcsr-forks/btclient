@@ -649,9 +649,17 @@ BTINLINE matr_mn* T_mn(matr_mn* a);
 void zero_mn(matr_mn* dest);
 BTINLINE matr_mn* add_mn(matr_mn* r, matr_mn* a, matr_mn* b);
 BTINLINE matr_mn* scale_mn(btreal x, matr_mn* a);
+BTINLINE vect_3* matr_mnXvect_3(matr_mn* a, vect_3* b); // matr_mn must be 3x3!
+
+/* Matrix inversion functions */
+matr_mn* ludcmp(matr_mn *a, vect_n *indx, btreal *d);
+vect_n* lubksb(matr_mn *a, vect_n *indx, vect_n *b);
+matr_mn* inv_mn(matr_mn *a, vect_n *indx, vect_n *col);
+btreal det_mn(matr_mn *a, vect_n *indx);
 
 void print_mn(matr_mn* src);
 char* sprint_mn(char *dest,matr_mn* src);
+char* sprint_mh(char *dest,matr_h* src);
 void strto_mn(matr_mn* dest,char *str);
 int test_mn(btreal error);
 //@}
