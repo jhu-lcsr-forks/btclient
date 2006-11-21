@@ -2288,7 +2288,7 @@ BTINLINE matr_mn* T_mn(matr_mn* a){
    cols = a->n;
    for(i = 0; i < a->n; i++)
       for(j = 0; j < a->m; j++)
-         a->ret->q[j*cols+i] = a->q[i*cols+j];
+         a->ret->q[i*a->m+j] = a->q[j*cols+i];
    
    a->ret->m = a->n;
    a->ret->n = a->m;

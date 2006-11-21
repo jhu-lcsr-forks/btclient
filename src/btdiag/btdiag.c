@@ -73,6 +73,8 @@ int useGimbals      = FALSE;
 int done            = FALSE;
 
 btstatecontrol *active_bts;
+int push = 0;
+btreal newt = 1;
 
 vect_n* active_pos;
 vect_n* active_dest;
@@ -107,6 +109,8 @@ btgeom_box boxs[10];
 bteffect_global myglobal;
 vect_3 *p1,*p2,*p3,*zero_v3;
 vect_3 *f1;
+vect_n *jf;
+vect_n *f;
 bthaptic_scene bth;
 btgeom_state pstate;
 char *command_help[100];
@@ -152,6 +156,8 @@ int main(int argc, char **argv)
    char robotName[128];
 
    f1 = new_v3();
+   jf = new_vn(4);
+   f = new_vn(6);
 #if 0
    j5 = new_btfilter(5);
    j6 = new_btfilter(5);
@@ -337,6 +343,13 @@ int WAMcallback(struct btwam_struct *wam)
       set_v3(wam->Cforce, add_v3(wam->Cforce, const_v3(f1,0,0,-1.5)));
 
    apply_tool_force_bot(&(wam->robot), wam->Cpoint, wam->Cforce, wam->Ctrq);
+   
+   if(push){
+      
+      matXvec_mn(T_mn(wam->robot.J), const_vn(f, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0),jf);
+      set_vn(wam->Jtrq,add_vn(wam->Jtrq,jf));
+   }
+      
    return 0;
 }
 void read_keys(char *filename)
@@ -585,12 +598,15 @@ void RenderMAIN_SCREEN()
       mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
       line += 2;
    }
-   /*
-   line += 1;
-   mvprintw(line, 0, "Mass Matrix:");
-   line++;
-   mvprintw(line, 0, "%s", sprint_mn(vect_buf1, wam->robot.M));
    
+   line += 2;
+   mvprintw(line, 0, "Jacobian Matrix:");
+   line++;
+   mvprintw(line, 0, "%s", sprint_mn(vect_buf1, wam->robot.J));
+   
+   line+=5;
+   mvprintw(line,0,"%s",sprint_vn(vect_buf1,jf));
+   /*
    line += 2;
    mvprintw(line, 0, "O Matrix:");
    line++;
@@ -650,6 +666,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
    switch (c)
    {
+   case '5':
+      push = !push;
+      //newt *= 10;
+      break;
+      
    case '4':
       /* Move to high start position */
       setmode_bts(&(wam->Jsc),SCMODE_IDLE);
