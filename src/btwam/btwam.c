@@ -292,6 +292,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
       syslog(LOG_ERR,"Motor[%d] is joint %d",actcnt,wam->motor_position[actcnt]);
    }
 
+   syslog(LOG_ERR,"OpenWAM(): for link from 0 to %d", wam->dof);
    for(link = 0; link <= wam->dof; link++) {
       // Get the DH parameters
       sprintf(key, "%s.link[%d].dh.theta", robotName, link);
@@ -589,11 +590,13 @@ void WAMControlThread(void *data)
       }
 
       Jtrq2Mtrq(wam,(wam->Jtrq), (wam->Mtrq));  //Convert from joint torques to motor torques
-      //8-DOF paint spraying demo code
-      if(getmode_bts(&wam->Jsc) == SCMODE_IDLE)
-      setval_vn(wam->Mtrq, 7, 0);
-      else
-      setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
+      if(wam->dof == 8){
+         //8-DOF paint spraying demo code
+         if(getmode_bts(&wam->Jsc) == SCMODE_IDLE)
+         setval_vn(wam->Mtrq, 7, 0);
+         else
+         setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
+      }
       Mtrq2ActTrq(wam,wam->Mtrq); //Move motor torques from wam_vector variable into actuator database
 #ifdef BTDOUBLETIME
 
@@ -719,9 +722,11 @@ void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos)
    setval_vn(Mpos,1, (pos[1] * mN[1]) - (pos[2] * mN[2] / mn[2]));
    setval_vn(Mpos,2, ( -pos[1] * mN[1]) - ( pos[2] * mN[2] / mn[2]));
    setval_vn(Mpos,3, (pos[3] * mN[3]));
-   setval_vn(Mpos,4,pos[4] * mN[4] - pos[5] * mN[4] / mn[5]);
-   setval_vn(Mpos,5, pos[4] * mN[4] + pos[5] * mN[4] / mn[5]);
-   setval_vn(Mpos,6, -pos[6] / mN[6]);
+   if(wam->dof > 4){
+      setval_vn(Mpos,4,pos[4] * mN[4] - pos[5] * mN[4] / mn[5]);
+      setval_vn(Mpos,5, pos[4] * mN[4] + pos[5] * mN[4] / mn[5]);
+      setval_vn(Mpos,6, -pos[6] / mN[6]);
+   }
 }
 
 /** Transform wam_vector Joint torques to Motor torques

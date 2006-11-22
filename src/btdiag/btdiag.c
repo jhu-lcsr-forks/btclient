@@ -598,16 +598,20 @@ void RenderMAIN_SCREEN()
       mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
       line += 2;
    }
-   
+   /*
    line += 2;
    mvprintw(line, 0, "Jacobian Matrix:");
    line++;
    mvprintw(line, 0, "%s", sprint_mn(vect_buf1, wam->robot.J));
    
-   line+=5;
+   line+=7;
+   mvprintw(line, 0, "Mass Matrix:");
+   line++;
+   mvprintw(line, 0, "%s", sprint_mn(vect_buf1, wam->robot.M));
+   
+   
    mvprintw(line,0,"%s",sprint_vn(vect_buf1,jf));
-   /*
-   line += 2;
+   
    mvprintw(line, 0, "O Matrix:");
    line++;
    mvprintw(line, 0, "%s", sprint_v3(vect_buf1, wam->robot.links[3].o));

@@ -27,6 +27,15 @@
 #define MAX_LINE_LENGTH     255
 #define MAX_BTPTRS 1000
 #define MAX_VECTOR_SIZE 1000
+
+/* ELEM(m,r,c) evaluates to m[r][c] for matrix m.
+   Unfortunately, addressing a matrix as m[r][c] requires the dimensions
+   to be defined at compile time. Since we define matrices dynamically at
+   run-time, we must use this function to access matrix elements by row and
+   column. This is what the compiler does when it sees m[r][c], anyway.
+   */
+#define ELEM(m,r,c) ((m)->q[(r) * (m)->n + (c)])
+
 //#DEFINE VECT_N_DEBUG
 //#DEFINE VECT_N_BOUNDS  //perform bounds checking
 //#DEFINE MATR_N_DEBUG
@@ -2267,6 +2276,9 @@ BTINLINE matr_mn* mul_mn(matr_mn* r, matr_mn* a, matr_mn* b)
    
    aCols = a->n;
    bCols = b->n;
+
+   r->m = a->m;
+   r->n = b->n;  
    
    zero_mn(r);
    
@@ -2274,24 +2286,23 @@ BTINLINE matr_mn* mul_mn(matr_mn* r, matr_mn* a, matr_mn* b)
    for(i = 0; i < a->m; i++)
       for(j = 0; j < bCols; j++)
          for(k = 0; k < aCols; k++)
-            r->q[i*bCols+j] += a->q[i*aCols+k] + b->q[k*bCols+j];
-   
-   r->m = a->m;
-   r->n = b->n;
+            ELEM(r,i,j) += ELEM(a,i,k) * ELEM(b,k,j);
+            //r->q[i*bCols+j] += a->q[i*aCols+k] + b->q[k*bCols+j];
    
    return r;
 }
 
 BTINLINE matr_mn* T_mn(matr_mn* a){
-   unsigned int i, j, cols;
-   
-   cols = a->n;
-   for(i = 0; i < a->n; i++)
-      for(j = 0; j < a->m; j++)
-         a->ret->q[i*a->m+j] = a->q[j*cols+i];
+   unsigned int i, j;
    
    a->ret->m = a->n;
    a->ret->n = a->m;
+   
+   for(i = 0; i < a->n; i++)
+      for(j = 0; j < a->m; j++)
+         ELEM(a->ret,i,j) = ELEM(a,j,i);
+         //setval_mn(a->ret, i, j, getval_mn(a, j, i));
+         //a->ret->q[i*a->m+j] = a->q[j*a->n+i];
    
    return a->ret;
 }
@@ -2301,14 +2312,14 @@ BTINLINE matr_mn* add_mn(matr_mn* r, matr_mn* a, matr_mn* b){
    
    if((r->m != a->m) || (r->n != a->n))
       syslog(LOG_ERR, "add_mn: Matrices not same size. r=%dx%d, a=%dx%d", r->m, r->n, a->m, a->n);
+
+   r->m = a->m;
+   r->n = a->n;
    
    elements = a->m * a->n;
    //syslog(LOG_ERR, "r->q[0] = %f", r->q[0]);
    for(i = 0; i < elements; i++)
          r->q[i] = a->q[i] + b->q[i];
-   
-   r->m = a->m;
-   r->n = a->n;
    
    return r;
 }
@@ -2353,7 +2364,7 @@ char* sprint_mn(char *dest,matr_mn* src)
          for(j = 0;j<src->n;j++) {
             sprintf(dest+strlen(dest),"%8.4f,",src->q[i*src->n+j]);
          }
-         sprintf(dest+strlen(dest),">,");
+         sprintf(dest+strlen(dest),">,\n");
       }
       dest[strlen(dest)-1] = 0;
       strcat(dest,">");

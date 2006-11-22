@@ -451,7 +451,7 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
          if (tmax < tacc) {
             //Need to increase acceleration to make corner
             tacc = tmax;
-            syslog(LOG_ERR,"vr2pararray: Forcing acc time decrease to %f at point %d.",tacc,idx);
+            //syslog(LOG_ERR,"vr2pararray: Forcing acc time decrease to %f at point %d.",tacc,idx);
          }
 
          /* Calc : tf_prev & saf carry history from prev loops */
