@@ -1,5 +1,5 @@
 /*======================================================================*
- *  Module .............libbt
+ *  Module .............libbtsystem
  *  File ...............btmath.c
  *  Author .............Traveler Hauptman
  *  Creation Date ......18 Feb 2005

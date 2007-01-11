@@ -1,5 +1,5 @@
 /*======================================================================*
- *  Module .............libbt
+ *  Module .............libbtsystem
  *  File ...............bthaptics.h
  *  Author .............Traveler Hauptman
  *  Creation Date ......29 Apr 2005

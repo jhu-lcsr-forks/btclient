@@ -1,6 +1,6 @@
 /*======================================================================*
  *  Module .............libbtsystem
- *  File ...............btcan.c
+ *  File ...............btcan_esd.c
  *  Author .............Brian Zenowich
  *  Creation Date ......24 Mar 2003
  *  Addtl Authors ......Traveler Hauptman

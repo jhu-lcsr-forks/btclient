@@ -1,6 +1,6 @@
 /*======================================================================*
- *  Module .............libbt
- *  File ...............btmath.h
+ *  Module .............libbtsystem
+ *  File ...............btlogger.h
  *  Author .............Traveler Hauptman
  *  Creation Date ......18 Feb 2005
  *                                                                      *

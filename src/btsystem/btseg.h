@@ -1,3 +1,21 @@
+/*======================================================================*
+ *  Module .............libbtsystem
+ *  File ...............btseg.h
+ *  Author .............Traveler Hauptman
+ *  Creation Date ......Oct 20, 2005
+ *                                                                      *
+ *  ******************************************************************  *
+ *
+ * Copyright (C) 2005   Barrett Technology <support@barrett.com>
+ *
+ *
+ *  NOTES:
+ *   
+ *
+ *  REVISION HISTORY:
+ *
+ *======================================================================*/
+ 
 #ifndef _BTSEG_H
 #define _BTSEG_H
 #ifdef __cplusplus

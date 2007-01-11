@@ -1,6 +1,6 @@
 /*======================================================================*
- *  Module .............btsystem
- *  File ...............btsystem.c
+ *  Module .............libbtsystem
+ *  File ...............btsystem.h
  *  Author .............Traveler Hauptman
  *  Creation Date ......15 Feb 2003
  *                                                                      *

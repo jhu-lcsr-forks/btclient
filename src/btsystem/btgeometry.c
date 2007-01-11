@@ -1,6 +1,6 @@
 /*======================================================================*
- *  Module .............libbt
- *  File ...............bthaptics.c
+ *  Module .............libbtsystem
+ *  File ...............btgeometry.c
  *  Author .............Traveler Hauptman
  *  Creation Date ......29 Apr 2005
  *                                                                      *

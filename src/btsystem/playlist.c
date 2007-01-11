@@ -1,7 +1,7 @@
 /*======================================================================*
  *  Module .............libbtsystem
- *  File ...............control_loop.h
- *  Author .............playlist.c    
+ *  File ...............playlist.c
+ *  Author .............Traveler Hauptman  
  *  Creation Date ......March 18, 2003 
  *  Addtl Authors ......Brian Zenowich
  *                                                                      *

@@ -1,6 +1,6 @@
 /*======================================================================*
  *  Module .............libbtsystem
- *  File ...............SimpleControl.h
+ *  File ...............btjointcontrol.h
  *  Author .............Traveler Hauptman
  *  Creation Date ......Nov 24, 2002 
  *  Addtl Authors ......Brian Zenowich, Sam Clanton

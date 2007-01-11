@@ -1,6 +1,6 @@
 /*======================================================================*
- *  Module .............libbt
- *  File ...............btmath.c
+ *  Module .............libbtsystem
+ *  File ...............btrobot.c
  *  Author .............Traveler Hauptman
  *  Creation Date ......18 Feb 2005
  *                                                                      *
@@ -303,10 +303,10 @@ void eval_fj_bot(btrobot* robot)
    // Ji(1-3) = [z(i-1)X(On - O(i-1)]
    // Ji(4-6) = [z(i-1)]
    int cnt;
-   char vect_buf1[2000];
+   //char vect_buf1[2000];
    
    zero_mn(robot->J);
-   zero_mn(robot->M);
+   //zero_mn(robot->M);
    
    for (cnt = 0;cnt < robot->num_links;cnt++) {
       set_vn(robot->links[cnt].J,(vect_n*)cross_v3(robot->links[cnt-1].z,sub_v3(robot->links[robot->num_links-1].o,robot->links[cnt-1].o)));
@@ -331,21 +331,16 @@ void eval_fj_bot(btrobot* robot)
          Mult Jv-ret(Lx3) by Jw(3xL) => M->ret(LxL)
          Add M->ret(LxL) to M(LxL) => M(LxL)
       */
+      /*
       add_mn(robot->M, robot->M,
          mul_mn(robot->M->ret, scale_mn(robot->links[cnt].m, T_mn(robot->Jv)), robot->Jv));
       
-      add_mn(robot->M, robot->M, 
-      mul_mn(robot->M->ret, T_mn(robot->Jw), 
-      mul_mn(robot->Jv->ret, robot->links[cnt].Ro,    
-      mul_mn(robot->Jw->ret, robot->links[cnt].I,
-         mul_mn(robot->Jv->ret, T_mn(robot->links[cnt].Ro), robot->Jw)))));
-      /*  
       add_mn(robot->M, robot->M, 
          mul_mn(robot->M->ret, T_mn(robot->Jw), 
             mul_mn(robot->Jv->ret, robot->links[cnt].Ro, 
                mul_mn(robot->Jw->ret, robot->links[cnt].I, 
                   mul_mn(robot->Jv->ret, T_mn(robot->links[cnt].Ro), robot->Jw)))));
-                  */
+      */
               
    }
 }

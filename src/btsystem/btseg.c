@@ -1,3 +1,21 @@
+/*======================================================================*
+ *  Module .............libbtsystem
+ *  File ...............btseg.c
+ *  Author .............Traveler Hauptman
+ *  Creation Date ......Oct 20, 2005
+ *                                                                      *
+ *  ******************************************************************  *
+ *
+ * Copyright (C) 2005   Barrett Technology <support@barrett.com>
+ *
+ *
+ *  NOTES:
+ *   
+ *
+ *  REVISION HISTORY:
+ *
+ *======================================================================*/
+ 
 #include <math.h>
 #include "btseg.h"
 #include "btmath.h"
