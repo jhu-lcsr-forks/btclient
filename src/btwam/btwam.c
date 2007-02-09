@@ -261,6 +261,11 @@ wam_struct* OpenWAM(char *fn, char *rName)
    sprintf(key, "%s.world", robotName);
    parseGetVal(MATRIX, key, (void*)wam->robot.world->origin);
 
+   // Read whether M4 is reversed (new as of 2007 WAMs)
+   sprintf(key, "%s.M4_2007", robotName);
+   wam->M4_reversed = 0; // Default to "pre-2007"
+   parseGetVal(INT, key, (void*)&wam->M4_reversed);
+
    //Read transmission matrix
    sprintf(key, "%s.m2jp", robotName);
    parseGetVal(MATRIX, key, (void*)wam->M2JP);
@@ -276,7 +281,7 @@ wam_struct* OpenWAM(char *fn, char *rName)
    // Read the transmission ratios
    sprintf(key, "%s.n", robotName);
    parseGetVal(VECTOR, key, (void*)wam->n);
-
+   
    // Find motor positions
    for (actcnt = 0;actcnt < wam->num_actuators;actcnt++) {
 #ifdef BTOLDCONFIG
@@ -315,6 +320,13 @@ wam_struct* OpenWAM(char *fn, char *rName)
       // Get inertia matrix
       sprintf(key, "%s.link[%d].I", robotName, link);
       parseGetVal(MATRIX, key, (void*)wam->robot.links[link].I);
+      
+      sprintf(key, "%s.link[%d].rotorI", robotName, link);
+      parseGetVal(VECTOR, key, (void*)wam->robot.links[link].rotorI);
+      
+      // Add the rotor inertia to the link inertia
+      for(cnt = 0; cnt < 3; cnt++)
+              ELEM(wam->robot.links[link].I, cnt, cnt) += wam->robot.links[link].rotorI->q[cnt];
       
       if(link != wam->dof) {
          // Query for motor_position (JIDX)
@@ -725,6 +737,9 @@ void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos)
    setval_vn(Mpos,0, ( -pos[0] * mN[0]));
    setval_vn(Mpos,1, (pos[1] * mN[1]) - (pos[2] * mN[2] / mn[2]));
    setval_vn(Mpos,2, ( -pos[1] * mN[1]) - ( pos[2] * mN[2] / mn[2]));
+   if(wam->M4_reversed)
+   setval_vn(Mpos,3, (-pos[3] * mN[3]));
+   else
    setval_vn(Mpos,3, (pos[3] * mN[3]));
    if(wam->dof > 4){
       setval_vn(Mpos,4,pos[4] * mN[4] - pos[5] * mN[4] / mn[5]);
