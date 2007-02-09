@@ -48,7 +48,7 @@ it to properly establish the time values.
 #include "btwam.h"
 #include "bthaptics.h"
 #include "btserial.h"
-#include "dynfcn.h"
+//#include "dynfcn.h"
 #include "aob.h"
 
 /*==============================*
