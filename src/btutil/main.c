@@ -319,7 +319,7 @@ void paramDefaults(int newID,int targID)
       setProperty(0,newID,IKCOR,0,1638);
       setProperty(0,newID,IKP,0,8192);
       setProperty(0,newID,IKI,0,3276);
-      setProperty(0,newID,IPNM,0,2755);
+      setProperty(0,newID,IPNM,0,2755);//2755);
       setProperty(0,newID,POLES,0,12);
       setProperty(0,newID,GRPA,0,0);
       setProperty(0,newID,GRPB,0,1);

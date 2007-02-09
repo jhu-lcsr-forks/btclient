@@ -642,7 +642,7 @@ matr_mn * new_mn();
 matr_mn * new_mn_ptr(matr_mn *a, int r, int c, int offset);
 void destroy_mn(matr_mn **src);
 BTINLINE void set_mn(matr_mn* dest, matr_mn* src);
-BTINLINE void ident_mn(matr_mn* dest); // identity matrix
+BTINLINE matr_mn* ident_mn(matr_mn* dest); // identity matrix
 BTINLINE void setrow_mn(matr_mn* dest, vect_n* src,int row);
 BTINLINE void setcol_mn(matr_mn* dest, vect_n* src,int col);
 void getcol_mn(vect_n* dest, matr_mn* src, int col); //get the specified column

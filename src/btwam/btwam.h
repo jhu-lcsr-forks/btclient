@@ -144,6 +144,7 @@ typedef struct btwam_struct{
   vect_n *Mpos,*Mtrq,*Jpos,*Jvel,*Jacc,*Jref,*Jtref,*Jtrq;
   vect_n *N,*n;
   matr_mn *M2JP,*J2MT,*J2MP;
+  vect_n *motorInertias;
 //Kinematics & Dynamics
   double sample_rate;
   btrobot robot;
@@ -214,7 +215,8 @@ typedef struct btwam_struct{
   
   btthread maint;
   vect_n *G; //!< Torques due to gravity
-  
+  int M4_reversed;
+
 }wam_struct;
 
 

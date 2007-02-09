@@ -93,6 +93,7 @@ typedef struct {
   double Gscale; // Percent of gravity to use (normally 0.0->1.0)
   vect_3 *cog; //Mass center, gravity vector in base frame
   matr_mn *I; //Inertial matrix
+  vect_3 *rotorI;
   
   //geometry info
   double Alpha,Theta,A,D; //!< Denavit-Hartenberg link parameters

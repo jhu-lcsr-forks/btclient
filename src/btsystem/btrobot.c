@@ -46,6 +46,7 @@ int new_btlink(btlink* link,int type)
 
    link->cog = new_v3();
    link->I = new_mn(3,3);
+   link->rotorI = new_v3();
    link->f = new_v3();
    link->fi = new_v3();
    link->t = new_v3();
@@ -328,12 +329,12 @@ void eval_fj_bot(btrobot* robot)
    zero_mn(robot->M);
    
    for (cnt = 0;cnt < robot->num_links;cnt++) {
-      // Jacobian at the frame
+      // Jacobian at the tool
       set_vn(robot->links[cnt].J,(vect_n*)cross_v3(robot->links[cnt-1].z,sub_v3(robot->links[robot->num_links].o,robot->links[cnt-1].o)));
       setrange_vn(robot->links[cnt].J,(vect_n*)robot->links[cnt-1].z,3,0,3);
       setcol_mn(robot->J,robot->links[cnt].J,cnt);
       
-      // Jacobian at the COM
+      // Jacobian at the COM of each link
       for(i = robot->num_links-1; i >= cnt; i--){
          setcol_mn(robot->links[i].Jcom,(vect_n*)cross_v3(robot->links[cnt-1].z,sub_v3(robot->links[i].como,robot->links[cnt-1].o)), cnt);
       }

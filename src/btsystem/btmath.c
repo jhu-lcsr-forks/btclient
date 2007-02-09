@@ -2149,7 +2149,7 @@ BTINLINE void set_mn(matr_mn* dest, matr_mn* src)
          dest->q[i*ds + j] = src->q[i*ss + j];
 }
 
-void ident_mn(matr_mn* dest)
+matr_mn* ident_mn(matr_mn* dest)
 {
    int i,j,imax,jmax;
    unsigned int ds;
@@ -2165,6 +2165,7 @@ void ident_mn(matr_mn* dest)
          else
             dest->q[i*ds + j] = 0.0;
 
+   return(dest);
 }
 
 void zero_mn(matr_mn* dest)
