@@ -1,5 +1,5 @@
-LIB_OBJS =  btwam.o gimbals.o  
-INCL_FILES = btwam.h gimbals.h 
+LIB_OBJS =  btwam.o gimbals.o dynfcn.o
+INCL_FILES = btwam.h gimbals.h dynfcn.h
 LIB_TARG = ./libbtwam.a
 SLIB_TARG = ./libbtwam.so
 CC = gcc
@@ -12,7 +12,8 @@ CFLAGS += -g -DUSE_RTAI31  ${PATH_INCLUDE} ${BTOLDCFG}
 #CFLAGS += -g -DUSE_RTAI31  ${PATH_INCLUDE} -DBTOLDCONFIG
 
 #Replace -lrtai with -llxrt
-LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L/usr/local/lib -L./lib -lm -lpthread -llxrt -lntcan
+LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L/usr/local/lib -L./lib 
+LDFLAGS += -lm -lpthread -llxrt -lntcan -lgsl
 
 #Make *.o files rebuild on any change to *.h
 $(LIB_OBJS) : $(INCL_FILES)

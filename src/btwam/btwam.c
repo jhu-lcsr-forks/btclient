@@ -1,6 +1,6 @@
 /*======================================================================*
  *  Module .............libbtwam
- *  File ...............btwamctl.c
+ *  File ...............btwam.c
  *  Author .............Traveler Hauptman
  *  Creation Date ......15 Feb 2003
  *                                                                      *
@@ -54,7 +54,7 @@ int ActAngle2Mpos(wam_struct *wam,vect_n *Mpos); //Extracts actuators 0 thru 6 i
 int Mtrq2ActTrq(wam_struct *wam,vect_n *Mtrq);  //Packs vect_n of torques into actuator array
 void Mpos2Jpos(wam_struct *wam,vect_n * Mpos, vect_n * Jpos); //convert motor angle to joint angle
 void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos);
-void Jtrq2Mtrq(wam_struct *wam,vect_n * Jtrq, vect_n * Mtrq); //conbert joint torque to motor torque
+void Jtrq2Mtrq(wam_struct *wam,vect_n * Jtrq, vect_n * Mtrq); //convert joint torque to motor torque
 void InitVectors(wam_struct *wam);
 void GetJointPositions();
 void SetJointTorques();
@@ -91,6 +91,7 @@ void InitVectors(wam_struct *wam)
    wam->vel = new_vn(wam->dof);
    wam->acc = new_vn(wam->dof);
    wam->Cpos = new_v3();
+   wam->Cvel = new_v3();
    wam->Cpoint = new_v3();
    wam->Cref = new_v3();
    wam->Cforce = new_v3();
@@ -120,6 +121,7 @@ void InitVectors(wam_struct *wam)
    wam->d_jpos_ctl = (btPID*)btmalloc(wam->dof * sizeof(btPID));
    wam->sc = (SimpleCtl*)btmalloc(wam->dof * sizeof(SimpleCtl));
    
+   wam->G = new_vn(wam->dof);
 }
 
 /** Initialize a WAM
@@ -530,8 +532,10 @@ void WAMControlThread(void *data)
 
       rt_make_hard_real_time();
 #endif
-
+        
+        
       ActAngle2Mpos(wam,(wam->Mpos)); //Move motor angles into a wam_vector variable
+      //const_vn(wam->Mpos, 0.0, 0.0, 0.0, 0.0);
       Mpos2Jpos(wam,(wam->Mpos), (wam->Jpos)); //Convert from motor angles to joint angles
 
       // Joint space stuff

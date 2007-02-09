@@ -170,6 +170,7 @@ typedef struct btwam_struct{
   vect_n *Ttrq;
   vect_3 *Cpos,*Cforce,*Ctrq,*Cref;
   vect_3 *Ckp,*Ckd,*Cki,*Cpoint;
+  vect_n *Cvel;
   btreal qerr;
   
   //CartesianSpace Moves
@@ -212,6 +213,8 @@ typedef struct btwam_struct{
   int idle_when_done; //!< !0 = When done with the present move switch to idle mode
   
   btthread maint;
+  vect_n *G; //!< Torques due to gravity
+  
 }wam_struct;
 
 

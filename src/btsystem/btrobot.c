@@ -39,6 +39,7 @@ int new_btlink(btlink* link,int type)
    link->ac = new_v3();
    link->b = new_v3();
    link->o = new_v3();
+   link->como = new_v3();
    link->z = new_v3();
    const_v3(link->z,0.0,0.0,1.0);
    link->g = new_v3();
@@ -61,7 +62,9 @@ int new_btlink(btlink* link,int type)
    link->tmpforce.f = new_v3();
    link->tmpforce.t = new_v3();
    link->tmpforce.p = new_v3();
+   
    link->J = new_vn(6);
+   
    link->Gscale = 1;
    if (type) {
       link->type = 1;
@@ -93,8 +96,13 @@ int new_bot(btrobot* robot, int nlinks)
 
    new_btlink(robot->user,0);
    new_btlink(robot->world,0);
-   for (cnt = 0;cnt < robot->num_links;cnt++)
+   for (cnt = 0;cnt < robot->num_links;cnt++){
       new_btlink(&(robot->links[cnt]),0);
+      robot->links[cnt].Jcom = new_mn(6, nlinks);
+      robot->links[cnt].Jvcom = new_mn_ptr(robot->links[cnt].Jcom, 3, nlinks, 0);
+      robot->links[cnt].Jwcom = new_mn_ptr(robot->links[cnt].Jcom, 3, nlinks,  nlinks * 3);
+      zero_mn(robot->links[cnt].Jcom);
+   }
    new_btlink(robot->tool,0);
 
    robot->q = new_vn(nlinks);
@@ -106,8 +114,14 @@ int new_bot(btrobot* robot, int nlinks)
 
    robot->J = new_mn(6,nlinks);
    robot->Jv = new_mn_ptr(robot->J, 3, nlinks, 0);
-   robot->Jw = new_mn_ptr(robot->J, 3, nlinks, (sizeof(btreal) * nlinks * 3));
+   robot->Jw = new_mn_ptr(robot->J, 3, nlinks, (/*sizeof(btreal) * */ (nlinks) * 3));
+   
+   robot->Jcom = new_mn(6,nlinks);
+   robot->Jvcom = new_mn_ptr(robot->Jcom, 3, nlinks, 0);
+   robot->Jwcom = new_mn_ptr(robot->Jcom, 3, nlinks, (/*sizeof(btreal) * */ (nlinks) * 3));
    robot->M = new_mn(nlinks,nlinks);
+   
+
    
    return 0;
 }
@@ -283,11 +297,16 @@ void eval_fk_bot(btrobot* robot)
       getcol_mh(robot->links[cnt].z,robot->links[cnt].origin,2);
       //get frame location in world frame coordinates for use in later calculations
       getcol_mh(robot->links[cnt].o,robot->links[cnt].origin,3);
+      //get link center of mass location in world frame coordinates for use in later calculations
+      set_v3(robot->links[cnt].como, 
+        matXvec_mh(robot->links[cnt].origin, robot->links[cnt].cog));
    }
    //repeat for the tool frame
    set_mh(robot->tool->origin,mul_mh(robot->links[robot->num_links-1].origin,robot->tool->trans));
    getcol_mh(robot->tool->z,robot->tool->origin,2);
    getcol_mh(robot->tool->o,robot->tool->origin,3);
+   set_v3(robot->tool->como, 
+        matXvec_mh(robot->tool->origin, robot->tool->cog));
 }
 
 /** Extract the jacobian from the eval_fk_bot() calcs.
@@ -302,22 +321,32 @@ void eval_fj_bot(btrobot* robot)
    // J = [J1J2J3J4J5...]
    // Ji(1-3) = [z(i-1)X(On - O(i-1)]
    // Ji(4-6) = [z(i-1)]
-   int cnt;
+   int cnt, i;
    //char vect_buf1[2000];
    
    zero_mn(robot->J);
-   //zero_mn(robot->M);
+   zero_mn(robot->M);
    
    for (cnt = 0;cnt < robot->num_links;cnt++) {
-      set_vn(robot->links[cnt].J,(vect_n*)cross_v3(robot->links[cnt-1].z,sub_v3(robot->links[robot->num_links-1].o,robot->links[cnt-1].o)));
+      // Jacobian at the frame
+      set_vn(robot->links[cnt].J,(vect_n*)cross_v3(robot->links[cnt-1].z,sub_v3(robot->links[robot->num_links].o,robot->links[cnt-1].o)));
       setrange_vn(robot->links[cnt].J,(vect_n*)robot->links[cnt-1].z,3,0,3);
       setcol_mn(robot->J,robot->links[cnt].J,cnt);
       
-      //mvprintw(30, 0, "%s", sprint_mn(vect_buf1, robot->J));
-      //mvprintw(34, 0, "%s", sprint_mn(vect_buf1, robot->M));
-      //usleep(200000);
-      /* Find the mass/inertia matrix
+      // Jacobian at the COM
+      for(i = robot->num_links-1; i >= cnt; i--){
+         setcol_mn(robot->links[i].Jcom,(vect_n*)cross_v3(robot->links[cnt-1].z,sub_v3(robot->links[i].como,robot->links[cnt-1].o)), cnt);
+      }
       
+      /* Find the mass/inertia matrix (Spong pg 254)
+         M = Sum(m_i * T(Jv_i) * Jv_i + T(Jw_i) * R_i * I * T(R_i) * Jw_i)
+           ...with i from 1 to num_links
+           m_i = mass of link i
+           Jv_i = Upper 3 rows of Jacobian (linear velocity ) calculated at COM of link i
+           T(x) = Transpose of matrix x
+           R_i = Rotation matrix from link i to Origin
+           Jw_i = Lower 3 rows of Jacobian (angular velocity) for link i
+           
          Transpose Jv(3xL) => Jv->ret(Lx3)
          Scale Jv->ret(Lx3) by m => Jv->ret(Lx3)
          Mult Jv->ret(Lx3) by Jv(3xL) => M->ret(LxL)
@@ -331,17 +360,16 @@ void eval_fj_bot(btrobot* robot)
          Mult Jv-ret(Lx3) by Jw(3xL) => M->ret(LxL)
          Add M->ret(LxL) to M(LxL) => M(LxL)
       */
-      /*
+      
       add_mn(robot->M, robot->M,
-         mul_mn(robot->M->ret, scale_mn(robot->links[cnt].m, T_mn(robot->Jv)), robot->Jv));
+         mul_mn(robot->M->ret, scale_mn(robot->links[cnt].m, T_mn(robot->links[cnt].Jvcom)), robot->links[cnt].Jvcom));
       
       add_mn(robot->M, robot->M, 
          mul_mn(robot->M->ret, T_mn(robot->Jw), 
             mul_mn(robot->Jv->ret, robot->links[cnt].Ro, 
                mul_mn(robot->Jw->ret, robot->links[cnt].I, 
-                  mul_mn(robot->Jv->ret, T_mn(robot->links[cnt].Ro), robot->Jw)))));
-      */
-              
+                  mul_mn(robot->Jv->ret, T_mn(robot->links[cnt].Ro), robot->Jw))))); 
+      
    }
 }
 

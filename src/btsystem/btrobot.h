@@ -124,6 +124,10 @@ typedef struct {
   vect_3 *Rm; //!< Vector from the origin of this link to the COM of this link (Spong: ri,ci)
   vect_3 *Rp; //vector from external force point to cog
   vect_n *J; 
+  vect_3 *como;
+  matr_mn *Jcom;
+  matr_mn *Jvcom;
+  matr_mn *Jwcom;
   
   double sinAlpha,cosAlpha,sinTheta,cosTheta; //last computed sin and cos for alpha,theta
   
@@ -161,6 +165,9 @@ typedef struct {
  matr_mn *J; //<! Full Jacobian
  matr_mn *Jv; //<! Upper Jacobian
  matr_mn *Jw; //<! Lower Jacobian
+ matr_mn *Jcom; //<! Full Jacobian
+ matr_mn *Jvcom; //<! Upper Jacobian
+ matr_mn *Jwcom; //<! Lower Jacobian
  matr_mn *M; //<! Mass (inertial) matrix
  vect_n *vv; // Row interchange scaling vector for matrix inverse
 }btrobot;

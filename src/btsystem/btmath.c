@@ -28,14 +28,6 @@
 #define MAX_BTPTRS 1000
 #define MAX_VECTOR_SIZE 1000
 
-/* ELEM(m,r,c) evaluates to m[r][c] for matrix m.
-   Unfortunately, addressing a matrix as m[r][c] requires the dimensions
-   to be defined at compile time. Since we define matrices dynamically at
-   run-time, we must use this function to access matrix elements by row and
-   column. This is what the compiler does when it sees m[r][c], anyway.
-   */
-#define ELEM(m,r,c) ((m)->q[(r) * (m)->n + (c)])
-
 //#DEFINE VECT_N_DEBUG
 //#DEFINE VECT_N_BOUNDS  //perform bounds checking
 //#DEFINE MATR_N_DEBUG

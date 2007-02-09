@@ -1,4 +1,4 @@
-OBJS = btdiag.o
+OBJS = btdiag.o aob.o
 TARG = btdiag
 CC = gcc 
 PATH_INCLUDE = -I/usr/realtime/include -I../../include
@@ -7,8 +7,8 @@ PATH_INCLUDE = -I/usr/realtime/include -I../../include
 #set BTOLDCFG to -DBTOLDCONFIG for RIC,MIT,Ualberta,BPW
 #ex: #export BTOLDCFG=-DBTOLDCONFIG
 CFLAGS =  -g -DUSE_RTAI31  ${PATH_INCLUDE} ${BTOLDCFG}
-LDFLAGS = -L/usr/realtime/lib -L/usr/lib -L/usr/local/lib -L../../lib -lpthread -llxrt \
-          -lncurses -lm -lbtwam -lbtsystem -lntcan
+LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L/usr/local/lib -L../../lib 
+LDFLAGS += -lpthread -llxrt -lncurses -lm -lbtwam -lbtsystem -lntcan -lgsl -lgslcblas
 
 
 default: btdiag

@@ -90,6 +90,14 @@ extern "C"
 //#define BTINLINE  
 #define BTINLINE inline
 
+/* ELEM(m,r,c) evaluates to m[r][c] for matrix m. Zero-based.
+   Unfortunately, addressing a matrix as m[r][c] requires the dimensions
+   to be defined at compile time. Since we define matrices dynamically at
+   run-time, we must use this function to access matrix elements by row and
+   column. This is what the compiler does when it sees m[r][c], anyway.
+   */
+#define ELEM(m,r,c) ((m)->q[(r) * (m)->n + (c)])
+
 typedef double btreal; //<! Typedef floating point type
 
 /** The list of all pointers allocated by btmath
