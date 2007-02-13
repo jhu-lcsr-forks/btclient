@@ -1,0 +1,9 @@
+# Parameters for cycling & tensioning
+
+J3_Amplitude = 150.0 # degrees
+J3_Period = 10.0 # seconds
+J3_Shift = 0.0 # degrees
+   
+J4_Amplitude = 115 # degrees
+J4_Period = 9.5 # seconds
+J4_Shift = 65 # degrees
