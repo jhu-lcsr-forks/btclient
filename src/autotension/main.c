@@ -44,16 +44,16 @@
 int useGimbals  = FALSE;
 int done        = FALSE;
 
-wam_struct      *wam;
-btthread        wam_thd;
-int      i3 = 0, i4 = 0;
-long     t = 0;
-double   x3 = 0.0, x4 = 0.0;
-double   A3, A4, P3, P4, S3, S4;
-double   Tt, Ts, m3, m4;
-btPID* jPID;
+wam_struct  *wam;
+btthread    wam_thd;
+int         i3 = 0, i4 = 0;
+long        t = 0;
+double      x3 = 0.0, x4 = 0.0;
+double      A3, A4, P3, P4, S3, S4;
+double      Tt = 1.0, Ts = 0.002, m3, m4;
+btPID*      jPID;
 via_trj_array *vt_j = NULL;
-int   cycle = 0;
+int         cycle = 0;
 
 #define pi (3.14159)
 
@@ -63,6 +63,7 @@ int   cycle = 0;
 void sigint_handler();
 int mygetch();
 int WAMcallback(struct btwam_struct *wam);
+void readParameters(char *fn);
 
 /*==============================*
  * Functions                    *
@@ -124,38 +125,22 @@ int main(int argc, char **argv)
       }
    }
 
-   parseFile("param.txt");
-   Tt = 1.0; // Time between tensioning (hrs)
-   Ts = 0.002; // (s)
+   // Set up data logger
+   wam->logdivider = 1;
+   PrepDL(&(wam->log),35); // Allocate space for up to 35 variables
+   AddDataDL(&(wam->log),&(wam->log_time),sizeof(double),2,"Time");
+   AddDataDL(&(wam->log),valptr_vn(wam->Jtrq),sizeof(btreal)*7,BTLOG_BTREAL,"Jtrq");
+   AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,BTLOG_BTREAL,"Jpos");
+   InitDL(&(wam->log),1000,"datafile.dat");
 
-   sprintf(key, "J3_Amplitude");
-   parseGetVal(DOUBLE, key, (void*)&A3);
-   
-   sprintf(key, "J4_Amplitude");
-   parseGetVal(DOUBLE, key, (void*)&A4);
-   
-   sprintf(key, "J3_Period");
-   parseGetVal(DOUBLE, key, (void*)&P3);
-   
-   sprintf(key, "J4_Period");
-   parseGetVal(DOUBLE, key, (void*)&P4);
-   
-   sprintf(key, "J3_Shift");
-   parseGetVal(DOUBLE, key, (void*)&S3);
-   
-   sprintf(key, "J4_Shift");
-   parseGetVal(DOUBLE, key, (void*)&S4);
-
-   A3 = A3 * pi / 180;
-   A4 = A4 * pi / 180;
-   S3 = S3 * pi / 180;
-   S4 = S4 * pi / 180;
+   // Read the tensioning/cycling parameters from a file
+   readParameters("param.txt")
    m3 = Ts/P3;
    m4 = Ts/P4;
    Tt = Tt * 3600 / Ts;
 
-   printf("\nA3 = %lf, A4 = %lf, P3 = %lf, P4 = %lf, S3 = %lf, S4 = %lf\n",
-      A3, A4, P3, P4, S3, S4);
+   //printf("\nA3 = %lf, A4 = %lf, P3 = %lf, P4 = %lf, S3 = %lf, S4 = %lf\n",
+   //   A3, A4, P3, P4, S3, S4);
       
    /* Register the ctrl-c interrupt handler */
    signal(SIGINT, sigint_handler);
@@ -171,6 +156,7 @@ int main(int argc, char **argv)
    vt_j = new_vta(wam->dof,50);
    register_vta(&(wam->Jsc),vt_j);
    
+   /* Initialize the jointspace PID controllers */
    jPID = (btPID*)btmalloc(wam->dof * sizeof(btPID));
    for(i = 0; i < wam->dof; i++){
       init_btPID(&jPID[i]);
@@ -197,10 +183,12 @@ int main(int argc, char **argv)
    // Allocate and zero a 7 element vector
    jdest = new_vn(7);
 
+   // Move to initial position
    MoveWAM(wam, const_vn(jdest, 0.0, 0.0, A3*sin(x3)+S3, A4*sin(x4)+S4, 0.0, 0.0, 0.0));
    while(!MoveIsDone(wam)) 
       usleep(1000);
 
+   // Start the local PID controller
    sety_btPID(&jPID[2], wam->Jpos->q[2]);
    sety_btPID(&jPID[3], wam->Jpos->q[3]);
    start_btPID(&jPID[2]);
@@ -300,7 +288,6 @@ int WAMcallback(struct btwam_struct *wam)
          i4 = 0;
       x4 = 2 * pi * i4 * m4;
       
-      
       j3 = A3*sin(x3)+S3;
       j4 = A4*sin(x4)+S4;
       //printf("\rj3 = %lf, j4 = %lf", j3, j4);
@@ -352,49 +339,6 @@ int mygetch()
 }
 
 #if 0
-A*sin(Px)+S;
-A = Amplitude (deg)
-    P = Period (s)
-        S = Shift (deg)
-
-            Ts = 0.002 (s)
-                 Tt = 1.0 (hrs)
-
-                      INIT
-                      int i3 = i4 = 0;
-long t = 0;
-double x3 = x4 = 0.0;
-Start in home position
-Hold Position
-S3 = S3 * pi / 180;
-S4 = S4 * pi / 180;
-m3 = Ts/P3;
-m4 = Ts/P4;
-Tt = Tt * 3600 / Ts;
-
-Move to start (0, -2pi, A3*sin(x3)+S3, A4*sin(x4)+S4);
-
-RUN
-i3++;
-if(i3*Ts > P3)
-   i3 = 0;
-x3 = 2pi * i3 * m3;
-
-i4++;
-if(i4*Ts > P4)
-   i4 = 0;
-x4 = 2pi * i4 * m4;
-
-set_yref(J3pid, A3*sin(x3)+S3);
-set_yref(J4pid, A4*sin(x4)+S4);
-
-t++;
-if(t > Tt)
-{
-   t = 0;
-   Tension(M4);
-   Move to start (0, -2pi, A3*sin(x3)+S3, A4*sin(x4)+S4);
-}
 
 Tension(M){
    M1(-J1, 0, 0, pi/2);
@@ -408,3 +352,30 @@ Tension(M){
    Record
 }
 #endif
+
+void readParameters(char *fn){
+   parseFile(fn);
+   
+   sprintf(key, "J3_Amplitude");
+   parseGetVal(DOUBLE, key, (void*)&A3);
+   
+   sprintf(key, "J4_Amplitude");
+   parseGetVal(DOUBLE, key, (void*)&A4);
+   
+   sprintf(key, "J3_Period");
+   parseGetVal(DOUBLE, key, (void*)&P3);
+   
+   sprintf(key, "J4_Period");
+   parseGetVal(DOUBLE, key, (void*)&P4);
+   
+   sprintf(key, "J3_Shift");
+   parseGetVal(DOUBLE, key, (void*)&S3);
+   
+   sprintf(key, "J4_Shift");
+   parseGetVal(DOUBLE, key, (void*)&S4);
+
+   A3 = A3 * pi / 180;
+   A4 = A4 * pi / 180;
+   S3 = S3 * pi / 180;
+   S4 = S4 * pi / 180;
+}
