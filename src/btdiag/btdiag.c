@@ -38,6 +38,7 @@ it to properly establish the time values.
 #include <curses.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 #include <rtai_lxrt.h>
 #include <rtai_sem.h>
@@ -166,7 +167,7 @@ via_trj_array **vta = NULL,*vt_j = NULL,*vt_c = NULL;
 int cteach = 0;
 extern int isZeroed;
 static RT_TASK *mainTask;
-btthread disp_thd,wam_thd;
+btthread audio_thd,disp_thd,wam_thd;
 double sample_rate;
 btreal Jpos_filt[7];
 btfilter *j5,*j6,*j7;
@@ -187,6 +188,8 @@ bthaptic_scene bth;
 btgeom_state pstate;
 //vect_3 *f1;
 //vect_n *jf;
+extern btreal extVel;
+extern int audio;
 
 char *command_help[100];
 int num_commands;
@@ -214,6 +217,7 @@ void RenderCARTSPACE_SCREEN(void);
 void ProcessInput(int c);
 void Shutdown(void);
 void DisplayThread(void);
+void AudioThread(void);
 void StartDisplayThread(void);
 void clearScreen(void);
 void finish_entry(void);
@@ -460,6 +464,9 @@ int main(int argc, char **argv)
 
    /* Spin off the display thread */
    btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
+   
+   /* Spin off the audio thread */
+   btthread_create(&audio_thd,0,(void*)AudioThread,NULL);
 
    while (!done) {
       /* Check the active trajectory for completion */
@@ -545,7 +552,7 @@ int WAMcallback(struct btwam_struct *wam)
       //fstar->q[2] = 0.0;
       //fstar->q[3] = 0.0;
       //fstar->q[4] = 0.0;
-      //const_vn(fstar, 10.0, 0.0, 0.0);
+      const_vn(fstar, 10.0, 0.0, 0.0);
 
       // Calc x,y control force for null space
       fstar_n->q[0] = rk_xn - eval_aob(&aob_xn, rk_xn, yk_xn);
@@ -643,8 +650,9 @@ int WAMcallback(struct btwam_struct *wam)
       //mul_mn(Jptemp, Jptemp->ret, Fptemp->ret);
       mul_mn(Jptemp, Jptemp->ret, Fptemp->ret); // A * B => C
       matXvec_mn(Jptemp, fstar_n, torq_p);
+
+      set_vn(wam->Jtrq, add_vn(wam->Jtrq, torq_p)); // Add the null torque to the Joint Torque
    }
-   set_vn(wam->Jtrq, add_vn(wam->Jtrq, torq_p)); // Add the null torque to the Joint Torque
 
    // Save the present outputs for next time
    set_vn(qLast, wam->Jpos);
@@ -712,21 +720,22 @@ void init_haptics(void)
    init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
    init_normal_box_bth(&objects[objectCount],&boxs[0],(void*)&bpwall[0],bulletproofwall_nf);
    addobject_bth(&bth,&objects[objectCount++]);
-
+   /*
    // Create nested spheres
-   init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.4,0.0,zorig+0.0),0);
-   //  init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.42,0.0,zorig+0.0),1);
-   init_sp_btg( &spheres[2],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.3,0.0,zorig+0.0),0);
-   init_sp_btg( &spheres[3],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.32,0.0,zorig+0.0),1);
-   init_wickedwall(&wickedwalls[0],500.0, 2.0,0.5,0.1,0.01);
-   init_normal_sphere_bth(&objects[objectCount],&spheres[0],(void*)&wickedwalls[0],wickedwall_nf);
-   addobject_bth(&bth,&objects[objectCount++]);
-   for(cnt = 2;cnt < 4;cnt++) {
+   init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.4,0.0,zorig+0.0),0); // Inner sphere, outer wall
+   init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.42,0.0,zorig+0.0),1); // Inner sphere, inner wall
+   init_sp_btg( &spheres[2],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.3,0.0,zorig+0.0),0); // Outer sphere, outer wall
+   init_sp_btg( &spheres[3],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.32,0.0,zorig+0.0),1); // Outer sphere, inner wall
+   //init_wickedwall(&wickedwalls[0],500.0, 2.0,0.5,0.1,0.01);
+   //init_normal_sphere_bth(&objects[objectCount],&spheres[0],(void*)&wickedwalls[0],wickedwall_nf);
+   //addobject_bth(&bth,&objects[objectCount++]);
+   for(cnt = 0;cnt < 4;cnt++) {
       init_wickedwall(&wickedwalls[cnt],3000.0, 10.0,5.0,0.020,0.01);
       init_normal_sphere_bth(&objects[objectCount],&spheres[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
       addobject_bth(&bth,&objects[objectCount++]);
    }
-
+   */
+   
    const_v3(wam->Cpoint, 0.0, 0.0, 0.0);
 }
 
@@ -754,7 +763,15 @@ void sigint_handler()
 void DisplayThread()
 {
    int cnt,err;
-
+   int volume;
+   char volStr[64];
+   char *argv[4];
+   int status;
+   
+   argv[0] = "aplay";
+   argv[1] = "SOUND34.WAV";
+   argv[2] = NULL;
+   
    clear();
    refresh();
    while (!done) {
@@ -769,11 +786,95 @@ void DisplayThread()
          break;
       }
       pthread_mutex_unlock(&(disp_mutex));
+      
       usleep(100000);
    }
 
 }
 
+/** Spins in a loop, handles audio cues.
+    Runs as its own thread, handles audio cues.
+*/
+void AudioThread()
+{
+   int volume;
+   char volStr[64];
+   char *aplay[4], *amixer[6];
+   char mixerVol[64];
+   int status;
+   pid_t pID;
+   
+   aplay[0] = "aplay";
+   aplay[1] = "-q";
+   aplay[2] = "SOUND34.WAV";
+   aplay[3] = NULL;
+   
+   amixer[0] = "amixer";
+   amixer[1] = "-q";
+   amixer[2] = "cset";
+   amixer[3] = "numid=2";
+   amixer[4] = mixerVol;
+   amixer[5] = NULL;
+   
+   while (!done) {
+      if(audio == 2){
+         audio = 0;
+         volume = abs((int)(extVel * 100));
+         if(volume > 100)
+            volume = 100;
+         syslog(LOG_ERR, "Volume = %d", volume);
+         sprintf(mixerVol, "%d%%", volume);
+         if(!(pID=vfork())){
+            execvp(amixer[0], amixer);
+            exit(0);
+         }
+         //waitpid (pID, &status, 0);
+         if(!vfork()){
+            execvp(aplay[0], aplay);
+            exit(0);
+         }
+         
+         
+         /*
+         pid_t pID = vfork();
+         if (pID == 0)                // child
+         {
+            // Code only executed by child process
+            //syslog(LOG_ERR, "Child about to aplay");
+            execvp(argv[0], argv);
+            exit(0);
+            //sIdentifier = "Child Process: ";
+            //globalVariable++;
+            //iStackVariable++;
+          }
+          else if (pID < 0)            // failed to fork
+          {
+              syslog(LOG_ERR, "Failed to fork()");
+              exit(1);
+              // Throw exception
+          }
+          else                                   // parent
+          {
+            // Code only executed by parent process
+            //waitpid (pID, &status, 0);
+            //sIdentifier = "Parent Process:";
+          }
+         */
+         /*
+         if (!fork()){
+            //sprintf(volStr, "cset iface=MIXER,name='PCM Playback Volume' %d%%", volume);
+            //execvp("amixer", volStr);
+            execvp("aplay", "SOUND34.WAV");
+            exit(0);
+         }
+         */
+            
+      }
+      usleep(10000);
+   }
+}
+      
+     
 /** Locks the display mutex.
     Allows the user to enter on-screen data without fear of display corruption.
 */

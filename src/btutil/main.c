@@ -333,7 +333,7 @@ void paramDefaults(int newID,int targID)
       setProperty(0,newID,GRPB,0,2);
       setProperty(0,newID,GRPC,0,5);
       if(targID != 7) {
-         setProperty(0,newID,IPNM,0,4100);
+         setProperty(0,newID,IPNM,0,5000);
          setProperty(0,newID,POLES,0,8);
       } else {
          setProperty(0,newID,IPNM,0,21400);

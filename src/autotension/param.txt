@@ -7,3 +7,11 @@ J3_Shift = 0.0 # degrees
 J4_Amplitude = 115 # degrees
 J4_Period = 9.5 # seconds
 J4_Shift = 65 # degrees
+
+Buffer_Zone = 60 # degrees
+KT = 0.4 # Nm/Amp
+
+Normal_Torque = 
+JointStop_Torque = 
+Tension_Torque = 
+

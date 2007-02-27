@@ -54,6 +54,9 @@ double      Tt = 1.0, Ts = 0.002, m3, m4;
 btPID*      jPID;
 via_trj_array *vt_j = NULL;
 int         cycle = 0;
+int	    dir = +1;
+double	    buffer, nt, jst, tt, kt;
+vect_n*     jdest;
 
 #define pi (3.14159)
 
@@ -64,6 +67,7 @@ void sigint_handler();
 int mygetch();
 int WAMcallback(struct btwam_struct *wam);
 void readParameters(char *fn);
+void Tension();
 
 /*==============================*
  * Functions                    *
@@ -77,8 +81,6 @@ int main(int argc, char **argv)
    int      i;
    char     robotName[128];
    char     vect_buf1[250];
-   vect_n*  jdest;
-   char     key[255];
 
    /* Initialize syslog */
    openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
@@ -134,7 +136,7 @@ int main(int argc, char **argv)
    InitDL(&(wam->log),1000,"datafile.dat");
 
    // Read the tensioning/cycling parameters from a file
-   readParameters("param.txt")
+   readParameters("param.txt");
    m3 = Ts/P3;
    m4 = Ts/P4;
    Tt = Tt * 3600 / Ts;
@@ -147,7 +149,7 @@ int main(int argc, char **argv)
 
    /* Set the safety limits */
    setSafetyLimits(2.0, 2.0, 2.0);  // ooh dangerous
-   setProperty(0, 10, TL2, FALSE, 5400); //Eliminate torque faults in silly places
+   setProperty(0, 10, TL2, FALSE, 9000); //Eliminate torque faults in silly places
    setProperty(0, 10, TL1, FALSE, 1800); //Eliminate torque faults in silly places
 
    const_v3(wam->Cpoint, 0.0, 0.0, 0.0);
@@ -184,24 +186,30 @@ int main(int argc, char **argv)
    jdest = new_vn(7);
 
    // Move to initial position
-   MoveWAM(wam, const_vn(jdest, 0.0, 0.0, A3*sin(x3)+S3, A4*sin(x4)+S4, 0.0, 0.0, 0.0));
+   MoveWAM(wam, const_vn(jdest, 0.0, pi/2, pi/2, pi/2, 0.0, 0.0, 0.0));
    while(!MoveIsDone(wam)) 
-      usleep(1000);
+      usleep(10000);
 
+   setProperty(0, 4, MT, FALSE, nt);
+   
    // Start the local PID controller
+   /*
    sety_btPID(&jPID[2], wam->Jpos->q[2]);
    sety_btPID(&jPID[3], wam->Jpos->q[3]);
    start_btPID(&jPID[2]);
    start_btPID(&jPID[3]);
+   */
    cycle = 1;
+   DLon(&wam->log);
    while(1){
-      
-      
-      
       if(t > Tt)
       {
          t = 0;
-         //Tension(M4);
+         setmode_bts(wam->active_sc,SCMODE_IDLE);
+         cycle = 0;
+         setmode_bts(wam->active_sc,SCMODE_POS);
+         
+         Tension();
          //Move to start (0, -2pi, A3*sin(x3)+S3, A4*sin(x4)+S4);
       }
    }
@@ -210,63 +218,7 @@ int main(int argc, char **argv)
    //MoveWAM(wam, jdest);
 
    //mygetch();
-#if 0
-   // Set low max torque
 
-   // MoveWAM to initial tensioning position
-   MoveWAM(wam, const_vn(jdest, -3.14, +2.2, -3.14, +3.5, 0.0, 0.0, 0.0));
-   while(!MoveIsDone(wam))
-      usleep(100000); // Sleep for 0.1s
-
-   // MoveWAM to present position (stop pushing)
-   MoveWAM(wam, wam->Jpos);
-   while(!MoveIsDone(wam))
-      usleep(100000); // Sleep for 0.1s
-
-   // Back off J1 by the tension offset (TENSO) of M1
-
-   // Back off J2 by the tension offset of M2
-
-   // Back off J4 by the tension offset of M4
-
-   // Activate solenoids M1, M2, M4
-   setProperty(0, 1, TENSION, FALSE, 1);
-   setProperty(0, 2, TENSION, FALSE, 1);
-   setProperty(0, 4, TENSION, FALSE, 1);
-
-   // Set tensioning max torque
-
-   // MoveWAM to apply tension
-   MoveWAM(wam, const_vn(jdest, -3.14, +2.2, <no change>, +3.5, 0.0, 0.0, 0.0));
-   while(!MoveIsDone(wam))
-      usleep(100000); // Sleep for 0.1s
-
-   // Release solenoids M1, M2, M4
-   setProperty(0, 1, TENSION, FALSE, 0);
-   setProperty(0, 2, TENSION, FALSE, 0);
-   setProperty(0, 4, TENSION, FALSE, 0);
-
-   // Record tension totals
-
-   // MoveWAM to present position (stop pushing)
-   MoveWAM(wam, wam->Jpos);
-   while(!MoveIsDone(wam))
-      usleep(100000); // Sleep for 0.1s
-
-   // Set normal max torque
-
-   // Work the tension through
-   for(i = 0; i < 8; i++)
-   {
-      MoveWAM(wam, const_vn(jdest, +2.5, -1.8, +2.5, -0.7, 0.0, 0.0, 0.0));
-      while(!MoveIsDone(wam))
-         usleep(100000); // Sleep for 0.1s
-      MoveWAM(wam, const_vn(jdest, -2.5, +1.8, -2.5, +3.0, 0.0, 0.0, 0.0));
-      while(!MoveIsDone(wam))
-         usleep(100000); // Sleep for 0.1s
-   }
-
-#endif
 
    printf("\n\nExiting...\n\n");
    btthread_stop(&wam_thd); //Kill WAMControlThread
@@ -278,6 +230,18 @@ int WAMcallback(struct btwam_struct *wam)
    btreal j3, j4;
    
    if(cycle){
+      /*
+      if(wam->Jpos->q[3] < -50*pi/180+buffer)
+         dir = +1;
+      if(wam->Jpos->q[3] > pi-buffer) 
+         dir = -1;
+      
+      if(dir == +1)
+         wam->Jtrq->q[3] = +10.0;
+      if(dir == -1)
+         wam->Jtrq->q[3] = -10.0;
+      */
+      
       i3++;
       if(i3*Ts > P3)
          i3 = 0;
@@ -296,6 +260,7 @@ int WAMcallback(struct btwam_struct *wam)
       wam->Jtrq->q[3] = eval_btPID(&jPID[3], wam->Jpos->q[3], j4, Ts);
       
       t++;
+      
       //cycle = 0;
    }
    return 0;
@@ -310,6 +275,9 @@ void sigint_handler()
    
    printf("\n\nExiting...\n\n");
    btthread_stop(&wam_thd); //Kill WAMControlThread
+   DLoff(&wam->log);
+   CloseDL(&wam->log);
+   DecodeDL("datafile.dat", "dat.csv", 1);
    exit(1);
 }
 
@@ -338,22 +306,116 @@ int mygetch()
    return ch;
 }
 
-#if 0
+void Tension(){
+   long cts;
+   long tenso, tenst, mStart, mEnd;
+   btreal pos, end;
+   int i;
+   
+   //M1(-J1, 0, 0, pi/2);
+   //M2(0, J2, -J3, pi/4);
+   //M3(0, -J2, -J3, pi/4);
+   //M4(0, 0, 0, -J4);
 
-Tension(M){
-   M1(-J1, 0, 0, pi/2);
-   M2(0, J2, -J3, pi/4);
-   M3(0, -J2, -J3, pi/4);
-   M4(0, 0, 0, -J4);
+   // Set low max torque
+   setProperty(0, 4, MT, FALSE, jst);
+   
+   // MoveWAM to initial tensioning position
+   MoveWAM(wam, const_vn(jdest, 0.0, 0.0, 0.0, -50*pi/180, 0.0, 0.0, 0.0));
+   //MoveWAM(wam, const_vn(jdest, -3.14, +2.2, -3.14, +3.5, 0.0, 0.0, 0.0));
+   while(!MoveIsDone(wam))
+      usleep(100000); // Sleep for 0.1s
 
-   Move to Mx();
-   Activate tensioner
-   Rotate until engaged
-   Record
+   // MoveWAM to present position (stop pushing)
+   MoveWAM(wam, wam->Jpos);
+   while(!MoveIsDone(wam))
+      usleep(100000); // Sleep for 0.1s
+
+   // Back off J1 by the tension offset (TENSO) of M1
+
+   // Back off J2 by the tension offset of M2
+
+   // Back off J4 by the tension offset of M4
+   // rad = TENSO / CTS * 2 * pi
+   getProperty(0, 4, TENSO, &tenso);
+   getProperty(0, 4, TENST, &tenst);
+   getProperty(0, 4, CTS, &cts);
+   pos = wam->Jpos->q[3] + 2 * pi + tenso + cts / 2;
+   MoveWAM(wam, const_vn(jdest, 0.0, 0.0, 0.0, pos, 0.0, 0.0, 0.0));
+   while(!MoveIsDone(wam))
+      usleep(100000); // Sleep for 0.1s
+
+   mStart = (wam->Mpos->q[3] * cts) / (2 * pi);
+   
+   // Activate solenoids M1, M2, M4
+   //setProperty(0, 1, TENSION, FALSE, 1);
+   //setProperty(0, 2, TENSION, FALSE, 1);
+   setProperty(0, 4, TENSION, FALSE, 1);
+
+   // Set tensioning max torque
+   setProperty(0, 4, MT, FALSE, tt);
+   
+   // MoveWAM to apply tension
+   pos = wam->Jpos->q[3] + 2.0; // Try to move +2 rad
+   MoveWAM(wam, const_vn(jdest, 0.0, 0.0, 0.0, pos, 0.0, 0.0, 0.0));
+   //MoveWAM(wam, const_vn(jdest, -3.14, +2.2, <no change>, +3.5, 0.0, 0.0, 0.0));
+   while(!MoveIsDone(wam))
+      usleep(100000); // Sleep for 0.1s
+
+   // Release solenoids M1, M2, M4
+   //setProperty(0, 1, TENSION, FALSE, 0);
+   //setProperty(0, 2, TENSION, FALSE, 0);
+   setProperty(0, 4, TENSION, FALSE, 0);
+
+   // Record tension totals
+   mEnd = (wam->Mpos->q[3] * cts) / (2 * pi);
+   tenst += abs(mEnd - mStart) - cts / 2;
+   setProperty(0, 4, TENST, FALSE, tenst);
+   
+   // MoveWAM to present position (stop pushing)
+   //MoveWAM(wam, wam->Jpos);
+   //while(!MoveIsDone(wam))
+   //   usleep(100000); // Sleep for 0.1s
+
+   // Set low max torque
+   setProperty(0, 4, MT, FALSE, jst);
+   
+   // MoveWAM to initial tensioning position
+   MoveWAM(wam, const_vn(jdest, 0.0, 0.0, 0.0, -50*pi/180, 0.0, 0.0, 0.0));
+   //MoveWAM(wam, const_vn(jdest, -3.14, +2.2, -3.14, +3.5, 0.0, 0.0, 0.0));
+   while(!MoveIsDone(wam))
+      usleep(100000); // Sleep for 0.1s
+
+   // MoveWAM to present position (stop pushing)
+   MoveWAM(wam, wam->Jpos);
+   while(!MoveIsDone(wam))
+      usleep(100000); // Sleep for 0.1s
+   
+   mStart = (wam->Mpos->q[3] * cts) / (2 * pi);
+   tenso = abs(mEnd - mStart) % cts;
+   setProperty(0, 4, TENSO, FALSE, tenso);
+   
+   // Set normal max torque
+   setProperty(0, 4, MT, FALSE, nt);
+   
+   // Work the tension through
+   for(i = 0; i < 8; i++)
+   {
+      //MoveWAM(wam, const_vn(jdest, -2.5, +1.8, -2.5, +3.0, 0.0, 0.0, 0.0));
+      MoveWAM(wam, const_vn(jdest, +0.0, -0.0, +0.0, +3.0, 0.0, 0.0, 0.0));
+      while(!MoveIsDone(wam))
+         usleep(100000); // Sleep for 0.1s
+      
+      //MoveWAM(wam, const_vn(jdest, +2.5, -1.8, +2.5, -0.7, 0.0, 0.0, 0.0));
+      MoveWAM(wam, const_vn(jdest, +0.0, -0.0, +0.0, -0.7, 0.0, 0.0, 0.0));
+      while(!MoveIsDone(wam))
+         usleep(100000); // Sleep for 0.1s
+   }
 }
-#endif
 
 void readParameters(char *fn){
+   char     key[255];
+   
    parseFile(fn);
    
    sprintf(key, "J3_Amplitude");
@@ -378,4 +440,28 @@ void readParameters(char *fn){
    A4 = A4 * pi / 180;
    S3 = S3 * pi / 180;
    S4 = S4 * pi / 180;
+
+   sprintf(key, "Buffer_Zone");
+   parseGetVal(DOUBLE, key, (void*)&buffer);
+   buffer = buffer * pi / 180;
+
+   sprintf(key, "KT");
+   parseGetVal(DOUBLE, key, (void*)&kt);
+   
+   sprintf(key, "Normal_Torque");
+   parseGetVal(DOUBLE, key, (void*)&nt);
+   // CommandTorque = 1024 * Nm / KT * sqrt(2) / 1.01
+   nt = 1024 * nt / kt * 1.414 / 1.01; 
+   
+   sprintf(key, "JointStop_Torque");
+   parseGetVal(DOUBLE, key, (void*)&jst);
+   // CommandTorque = 1024 * Nm / KT * sqrt(2) / 1.01
+   jst = 1024 * jst / kt * 1.414 / 1.01; 
+   
+   sprintf(key, "Tension_Torque");
+   parseGetVal(DOUBLE, key, (void*)&tt);
+   // CommandTorque = 1024 * Nm / KT * sqrt(2) / 1.01
+   tt = 1024 * tt / kt * 1.414 / 1.01; 
+   
+   
 }

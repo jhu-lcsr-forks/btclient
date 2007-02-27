@@ -20,6 +20,9 @@
 #include <syslog.h>
 #include "bthaptics.h"
 
+int audio = 0;
+btreal extVel;
+
 /** Allocate and initialize memory for a haptic scene.
  
 \param size The maximimum number of objects in the scene.
@@ -264,8 +267,7 @@ int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n 
 {
    btreal WallStiff,WallDamp,Vel;
    bteffect_bulletproofwall *norm_eff;
-
-
+   
    WallStiff = 0.0;
    WallDamp = 0.0;
 
@@ -279,11 +281,19 @@ int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n 
       if (depth < -1.0*norm_eff->K2offset)
          WallStiff += -1.0*norm_eff->K2*(depth+norm_eff->K2offset);
    }
+   else
+      audio = 1;
 
    if (depth - norm_eff->Boffset < 0.0)
    {
-      if(Vel < 0.0)
+      if(Vel < 0.0){
          WallDamp = -1.0*norm_eff->Bin*Vel;
+         // Play sound
+         if(audio == 1){
+            audio = 2;
+            extVel = Vel;
+         }
+      }
       else if (Vel > 0.0)
          WallDamp = -1.0*norm_eff->Bout*Vel;
    }

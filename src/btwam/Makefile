@@ -1,5 +1,5 @@
-LIB_OBJS =  btwam.o gimbals.o dynfcn.o
-INCL_FILES = btwam.h gimbals.h dynfcn.h
+LIB_OBJS =  btwam.o gimbals.o 
+INCL_FILES = btwam.h gimbals.h
 LIB_TARG = ./libbtwam.a
 SLIB_TARG = ./libbtwam.so
 CC = gcc
