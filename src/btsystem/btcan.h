@@ -74,6 +74,7 @@ int getPositions(int bus, int group, int howMany, long *pos);
 int setTorques(int bus, int group, int *values);
 const char* Prop2Name(int prop);
 int Name2Prop(char *name);
+void initPropertyDefs(int firmwareVersion);
 
 /*! bcastGroup */
 enum {
@@ -83,193 +84,205 @@ enum {
 };
 
 enum {
-   ROLE_TATER,
-   ROLE_GIMBALS,
-   ROLE_SAFETY,
-   ROLE_WRAPTOR
+   ROLE_TATER = 0,
+   ROLE_GIMBALS = 1,
+   ROLE_SAFETY = 2,
+   ROLE_WRAPTOR = 3
 };
 
 /*! Control_mode states */
 enum {
-   MODE_IDLE,
-   MODE_DUTY,
-   MODE_TORQUE,
-   MODE_PID,
-   MODE_VELOCITY,
-   MODE_TRAPEZOIDAL
+   MODE_IDLE = 0,
+   MODE_DUTY = 1,
+   MODE_TORQUE = 2,
+   MODE_PID = 3,
+   MODE_VELOCITY = 4,
+   MODE_TRAPEZOIDAL = 5
 };
 
 enum {
    STATUS_OFFLINE = -1,
-   STATUS_RESET,
-   STATUS_ERR,
-   STATUS_READY
+   STATUS_RESET = 0,
+   STATUS_ERR = 1,
+   STATUS_READY = 2
 };
 
 enum {
-   DEG,        /* 0-360        */
-   RAD,        /* 0-6.28       */
-   GRAD,       /* 0-400        */
-   PERCENT,    /* 0-100        */
-   NATIVE      /* 0-CTS*RATIO  */
+   DEG = 0,        /* 0-360        */
+   RAD = 1,        /* 0-6.28       */
+   GRAD = 2,       /* 0-400        */
+   PERCENT = 3,    /* 0-100        */
+   NATIVE =4     /* 0-CTS*RATIO  */
 };
 
 enum {
    SAVED_ERR = 7,
-   IGNORE_ERR,
-   IS_ACTIVE
-
+   IGNORE_ERR = 8,
+   IS_ACTIVE = 9
 };
-
 
 enum {
-   VERS,
-   ROLE,
-   SN,
-   ID,
-   ERROR,
-   STAT,
-   ADDR,
-   VALUE,
-   MODE,
-   TORQ,
-   V,
-   B,
-   P,
-   P2,
-   E,
-   E2,
-   MT,
-   MV,
-   MCV,
-   MOV,
-   MOFST,
-   IOFST,
-   PTEMP,
-   UPSECS,
-   OD,
-   MDS,
-   AP,
-   AP2,
-   MECH,
-   MECH2,
-   CTS,
-   CTS2,
-   DP,
-   DP2,
-   OT,
-   OT2,
-   CT,
-   CT2,
-   BAUD,
-   TEMP,
-   OTEMP,
-   _LOCK,
-   DIG0,
-   DIG1,
-   ANA0,
-   ANA1,
-   THERM,
-   VBUS,
-   IMOTOR,
-   VLOGIC,
-   ILOGIC,
-   GRPA,
-   GRPB,
-   GRPC,
-   PIDX,
-   ZERO,
-   SG,
-   HSG,
-   LSG,
-   _DS,
-   IVEL,
-   IOFF,
-   MPE,
-   EN,
-   TSTOP,
-   KP,
-   KD,
-   KI,
-   SAMPLE,
-   ACCEL,
-   TENSION,
-   UNITS,
-   RATIO,
-   LOG,
-   DUMP,
-   LOG1,
-   LOG2,
-   LOG3,
-   LOG4,
-   GAIN1,
-   GAIN2,
-   GAIN3,
-   OFFSET1,
-   OFFSET2,
-   OFFSET3,
-   PEN,
-   SAFE,
-   SAVE,
-   LOAD,
-   DEF,
-   VL1,
-   VL2,
-   TL1,
-   TL2,
-   VOLTL1,
-   VOLTL2,
-   VOLTH1,
-   VOLTH2,
-   MAXPWR,
-   PWR,
-   IFAULT,
-   IKP,
-   IKI,
-   IKCOR,
-   VNOM,
-   TENST,
-   TENSO,
-   JIDX,
-   IPNM,
-   HALLS,
-   HALLH,
-   HALLH2,
-   POLES,
-   ECMAX,
-   ECMIN,
-   ISQ,
-   TETAE,
-   FIND,
-   LCV,
-   LCVC,
-   LFV,
-   LFS,
-   LFAP,
-   LFDP,
-   LFT,
-   VALUE32,
-
-   PROP_END
-};
-
-struct propTxtStruct {
-   char key[8];
-   int idx;
-};
-
-enum bus_status_enum{
    BUS_ERROR = -1,
-   BUS_OFF,
-   BUS_ON
+   BUS_OFF = 0,
+   BUS_ON = 1
 };
-
 
 enum {
-   ERR_NONE,
-   ERR_READ_ONLY,
-   ERR_OUT_OF_RANGE
+   ERR_NONE = 0,
+   ERR_READ_ONLY = 0,
+   ERR_OUT_OF_RANGE = 1
 };
+
+int VERS;
+int ROLE;
+int SN;
+int ID;
+int ERROR;
+int STAT;
+int ADDR;
+int VALUE;
+int MODE;
+int TORQ;
+int V;
+int B;
+int P;
+int P2;
+int E;
+int E2;
+int MT;
+int MV;
+int MCV;
+int MOV;
+int MOFST;
+int IOFST;
+int PTEMP;
+int UPSECS;
+int OD;
+int MDS;
+int AP;
+int AP2;
+int MECH;
+int MECH2;
+int CTS;
+int CTS2;
+int DP;
+int DP2;
+int OT;
+int OT2;
+int CT;
+int CT2;
+int BAUD;
+int TEMP;
+int OTEMP;
+int _LOCK;
+int DIG0;
+int DIG1;
+int ANA0;
+int ANA1;
+int THERM;
+int VBUS;
+int IMOTOR;
+int VLOGIC;
+int ILOGIC;
+int GRPA;
+int GRPB;
+int GRPC;
+int PIDX;
+int ZERO;
+int SG;
+int HSG;
+int LSG;
+int _DS;
+int IVEL;
+int IOFF;
+int MPE;
+int EN;
+int TSTOP;
+int KP;
+int KD;
+int KI;
+int SAMPLE;
+int ACCEL;
+int TENSION;
+int UNITS;
+int  RATIO;
+int LOG;
+int DUMP;
+int LOG1;
+int LOG2;
+int LOG3;
+int LOG4;
+int GAIN1;
+int GAIN2;
+int GAIN3;
+int OFFSET1;
+int OFFSET2;
+int OFFSET3;
+int PEN;
+int SAFE;
+int SAVE;
+int LOAD;
+int DEF;
+int VL1;
+int VL2;
+int TL1;
+int TL2;
+int VOLTL1;
+int VOLTL2;
+int VOLTH1;
+int VOLTH2;
+int MAXPWR;
+int PWR;
+int IFAULT;
+int IKP;
+int IKI;
+int IKCOR;
+int VNOM;
+int TENST;
+int TENSO;
+int JIDX;
+int IPNM;
+int HALLS;
+int HALLH;
+int HALLH2;
+int POLES;
+int ECMAX;
+int ECMIN;
+int ISQ;
+int TETAE;
+int FIND;
+int LCV;
+int LCVC;
+int LFV;
+int LFS;
+int LFAP;
+int LFDP;
+int LFT;
+int VALUE32;
+int PROP_END;
+
+int LOCK;
+int FET0;
+int FET1;
+int CMD;
+int X0;
+int X1;
+int X2;
+int X3;
+int X4;
+int X5;
+int X6;
+int X7;
+int COMMON_END;
+int SAFETY_END;
+int T;
+int M;
+int M2;
+int IOFF2;
+int HOLD;
+int TIE;
+int LFLAGS;
+int LCTC;
 
 
 #ifdef __cplusplus

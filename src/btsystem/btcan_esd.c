@@ -73,151 +73,7 @@ typedef unsigned long DWORD;
 HANDLE              canDev[MAX_BUS];
 pthread_mutex_t     commMutex;
 
-/* keyword, index */
-const struct propTxtStruct propTxt[]={
-   { "OFFSET1", OFFSET1 }, /* Gimbals offset 1 (Q4.12 rad) */
-   { "OFFSET2", OFFSET2 }, /* Gimbals offset 2 (Q4.12 rad) */
-   { "OFFSET3", OFFSET3 }, /* Gimbals offset 3 (Q4.12 rad) */
-   { "TENSION", TENSION }, /* Tensioner output: 0=Off, 1=On */
-   { "VALUE32", VALUE32 }, /* 32-bit value to poke/peek */
-   { "IFAULT", IFAULT }, /* Ignore fault count */
-   { "ILOGIC", ILOGIC }, /* Logic current (tbd) */
-   { "IMOTOR", IMOTOR }, /* Motor current (mA) */
-   { "MAXPWR", MAXPWR }, /* Max allowed power (tbd) */
-   { "SAMPLE", SAMPLE }, /* Sample time (tbd) */
-   { "UPSECS", UPSECS }, /* Up seconds in operation (tbd) */
-   { "VLOGIC", VLOGIC }, /* Logic voltage (tbd) */
-   { "VOLTH1", VOLTH1 }, /* Voltage high warning level (safety) */
-   { "VOLTH2", VOLTH2 }, /* Voltage high critical level (safety) */
-   { "VOLTL1", VOLTL1 }, /* Voltage low warning level (safety) */
-   { "VOLTL2", VOLTL2 }, /* Voltage low critical level (safety) */
-   { "ACCEL", ACCEL }, /* Acceleration (Q8.8 cts/ms/ms) */
-   { "ECMAX", ECMAX }, /* Encoder correction max value */
-   { "ECMIN", ECMIN }, /* Encoder correction min value */
-   { "ERROR", ERROR }, /* Error (tbd) */
-   { "GAIN1", GAIN1 }, /* Gimbals/safety gain 1 (Q4.12 rad/3V) */
-   { "GAIN2", GAIN2 }, /* Gimbals/safety gain 2 (Q4.12 rad/3V) */
-   { "GAIN3", GAIN3 }, /* Gimbals/safety gain 3 (Q4.12 rad/3V) */
-   { "HALLH", HALLH }, /* Hall history bitfield */
-   { "HALLS", HALLS }, /* Hall feedback bitfield: CBA */
-   { "IKCOR", IKCOR }, /* Current sense correction factor */
-   { "IOFST", IOFST }, /* Current offset calibration */
-   { "MOFST", MOFST }, /* Mechanical offset calibration */
-   { "OTEMP", OTEMP }, /* Over temperature alarm (tbd) */
-   { "POLES", POLES }, /* Number of magnets on rotor */
-   { "PTEMP", PTEMP }, /* Peak temperature recorded (tbd) */
-   { "RATIO", RATIO }, /* Output angle multiplier (tbd) */
-   { "TENST", TENST }, /* Tension total (tbd) */
-   { "TENSO", TENSO }, /* Tension offset (tbd) */
-   { "TETAE", TETAE }, /* Motor electrical angle (write requires LOCK) */
-   { "THERM", THERM }, /* Thermistor (motor) temperature */
-   { "TSTOP", TSTOP }, /* Time until considered stopped */
-   { "UNITS", UNITS }, /* Units of input angle (tbd) */
-   { "VALUE", VALUE }, /* Value to poke/peek */
-   { "ADDR", ADDR }, /* Address to peek/poke */
-   { "ANA0", ANA0 }, /* Analog input (pin 4:0-3V, 3:Gnd) */
-   { "ANA1", ANA1 }, /* Analog input (pin 2:0-3V, 3:Gnd) */
-   { "BAUD", BAUD }, /* Baud rate */
-   { "DIG0", DIG0 }, /* Dig I/O: -1=In,0=Lo,1=Hi,2-100=%PWM (pin 41:0-3.3V, 44:Gnd) */
-   { "DIG1", DIG1 }, /* Dig I/O: -1=In,0=Lo,1=Hi (pin 43:0-3.3V, 44:Gnd) */
-   { "DUMP", DUMP }, /* Log dump mode: 0=Manual, 1=Auto */
-   { "FIND", FIND }, /* Find command for CAN */
-   { "GRPA", GRPA }, /* Comm group A */
-   { "GRPB", GRPB }, /* Comm group B */
-   { "GRPC", GRPC }, /* Comm group C */
-   { "IOFF", IOFF }, /* Initialization offset */
-   { "IPNM", IPNM }, /* CommandedCurrent / Nm (ratio) */
-   { "IVEL", IVEL }, /* Initialization velocity (tbd) */
-   { "JIDX", JIDX }, /* Joint index */
-   { "LCVC", LCVC }, /* Loop control velocity coefficient */
-   { "LFAP", LFAP }, /* Loop feedback block contains absolute position */
-   { "LFDP", LFDP }, /* Loop feedback block contains delta position */
-   { "LOAD", LOAD }, /* Load command for CAN */
-   { "LOCK", _LOCK }, /* Lock */
-   { "LOG1", LOG1 }, /* Log variable address 1 */
-   { "LOG2", LOG2 }, /* Log variable address 2 */
-   { "LOG3", LOG3 }, /* Log variable address 3 */
-   { "LOG4", LOG4 }, /* Log variable address 4 */
-   { "MECH", MECH }, /* Mechanical angle (cts) */
-   { "MODE", MODE }, /* Mode: 0=Idle, 2=Torque, 3=PID, 4=Vel, 5=Trap */
-   { "PIDX", PIDX }, /* Puck index for torque */
-   { "ROLE", ROLE }, /* Role: 0=Tater, 1=Gimbals, 2=Safety, 3=Wraptor */
-   { "SAFE", SAFE }, /* Safety debug bitfield: Safe/Shunt/Bus (safety) */
-   { "SAVE", SAVE }, /* Save command for CAN */
-   { "STAT", STAT }, /* Status: 0=Reset/Monitor, 2=Ready/Main */
-   { "TEMP", TEMP }, /* Temperature (puck internal) */
-   { "TORQ", TORQ }, /* Torque command */
-   { "VBUS", VBUS }, /* Bus voltage (V) */
-   { "VERS", VERS }, /* Firmware version */
-   { "VNOM", VNOM }, /* Nominal voltage (safety) */
-   { "ZERO", ZERO }, /* Zeroed status */
-   { "CTS", CTS }, /* Counts per revolution */
-   { "DEF", DEF }, /* Default command for CAN */
-   { "HSG", HSG }, /* High strain gage (tbd) */
-   { "IKI", IKI }, /* Current sense integral gain */
-   { "IKP", IKP }, /* Current sense proportional gain */
-   { "ISQ", ISQ }, /* iSq current sense for debugging */
-   { "LCV", LCV }, /* Loop control block contains velocity */
-   { "LFS", LFS }, /* Loop feedback block contains strain */
-   { "LFT", LFT }, /* Loop feedback block contains temperature */
-   { "LFV", LFV }, /* Loop feedback block contains velocity */
-   { "LOG", LOG }, /* Log status: 0=Off, 1=Once, 2=Continuous */
-   { "LSG", LSG }, /* Low strain gage (tbd) */
-   { "MCV", MCV }, /* Max close velocity (cts/ms) */
-   { "MDS", MDS }, /* Max duty sum for power limiting (tbd) */
-   { "MOV", MOV }, /* Max open velocity (cts/ms) */
-   { "MPE", MPE }, /* Max position error (tbd) */
-   { "PEN", PEN }, /* Pendant: -65='A', -2=Reset, -1=Clear, >0=Light */
-   { "PWR", PWR }, /* Observed power (tbd) */
-   { "TL1", TL1 }, /* Torque warning level (safety) */
-   { "TL2", TL2 }, /* Torque critical level (safety) */
-   { "VL1", VL1 }, /* Velocity warning level (safety, Q4.12 m/s, rad/s) */
-   { "VL2", VL2 }, /* Velocity critical level (safety, Q4.12 m/s, rad/s) */
-   { "AP", AP }, /* Actual position (cts) */
-   { "CT", CT }, /* Close torque */
-   { "DP", DP }, /* Default position */
-   { "DS", _DS }, /* Default step */
-   { "EN", EN }, /* Enable bitfield */
-   { "ID", ID }, /* CANbus ID */
-   { "KD", KD }, /* Differential gain */
-   { "KI", KI }, /* Integral gain */
-   { "KP", KP }, /* Proportional gain */
-   { "MT", MT }, /* Max torque */
-   { "MV", MV }, /* Max velocity (cts/ms) */
-   { "OD", OD }, /* Odometer (tbd) */
-   { "OT", OT }, /* Open torque */
-   { "SG", SG }, /* Strain gage (tbd) */
-   { "SN", SN }, /* Serial number */
-   { "B", B }, /* Brake: 0=Off, 1=On */
-   { "E", E }, /* Endpoint target (cts) */
-   { "P", P }, /* Position command (cts) */
-   { "V", V }, /* Velocity command (cts/ms) */
 
-   { "",  0  }
-};
-
-
-const char* Prop2Name(int prop)
-{
-   int cnt;
-
-   cnt = 0;
-   while (cnt < PROP_END && prop != propTxt[cnt].idx) {
-      cnt++;
-   }
-   return propTxt[cnt].key;
-}
-
-int Name2Prop(char *name)
-{
-   int cnt;
-
-   cnt = 0;
-   while (cnt < PROP_END && strcmp(propTxt[cnt].key,name)!= 0) {
-      cnt++;
-   }
-   return propTxt[cnt].idx;
-}
 
 /* keyword, index, readFunction, writeFunction, defaultVal, type */
 const int dataType[]=
@@ -614,13 +470,15 @@ int getBusStatus(int bus, long *status)
    int len_in;
    int id_in;
    int property_in;
+   int firstFound = 0;
+   long fw_vers;
 
    pthread_mutex_lock(&commMutex);
    //err = canReadMsg(bus, &id_in, &len_in, data, FALSE);
 
    for(id = 0; id < MAX_NODES; id++) {
       // Compile the packet
-      data[0] = (unsigned char)STAT;
+      data[0] = 5; // STAT = 5
 
       // Initialize status to "NOT_FOUND"
       status[id] = -1;
@@ -643,6 +501,16 @@ int getBusStatus(int bus, long *status)
 
          err = parseMessage(id_in, len_in, data, &id_in, &property_in, &status[id]);
 #endif
+         // If this is the first puck found, initialize the property definitions
+         if(!firstFound){
+            firstFound = 1;
+            pthread_mutex_unlock(&commMutex);
+            wakePuck(bus, id_in); // Wake this puck
+            err = getProperty(bus, id_in, 0, &fw_vers); // Get the firmware version
+            setProperty(bus, id_in, 5, FALSE, 0); // Reset this puck
+            pthread_mutex_lock(&commMutex);
+            initPropertyDefs(fw_vers);
+         }
 
       } else
          syslog(LOG_ERR, "getBusStatus(): canReadMsg returned error");
@@ -783,4 +651,270 @@ int compile(
 
    return (0);
 }
+
+void initPropertyDefs(int firmwareVersion){
+   int i = 0;
+   if(firmwareVersion < 40){
+      VERS = i++;
+      ROLE = i++;
+      SN = i++;
+      ID = i++;
+      ERROR = i++;
+      STAT = i++;
+      ADDR = i++;
+      VALUE = i++;
+      MODE = i++;
+      TORQ = i++;
+      V = i++;
+      B = i++;
+      P = i++;
+      P2 = i++;
+      E = i++;
+      E2 = i++;
+      MT = i++;
+      MV = i++;
+      MCV = i++;
+      MOV = i++;
+      MOFST = i++;
+      IOFST = i++;
+      PTEMP = i++;
+      UPSECS = i++;
+      OD = i++;
+      MDS = i++;
+      AP = i++;
+      AP2 = i++;
+      MECH = i++;
+      MECH2 = i++;
+      CTS = i++;
+      CTS2 = i++;
+      DP = i++;
+      DP2 = i++;
+      OT = i++;
+      OT2 = i++;
+      CT = i++;
+      CT2 = i++;
+      BAUD = i++;
+      TEMP = i++;
+      OTEMP = i++;
+      _LOCK = i++;
+      DIG0 = i++;
+      DIG1 = i++;
+      ANA0 = i++;
+      ANA1 = i++;
+      THERM = i++;
+      VBUS = i++;
+      IMOTOR = i++;
+      VLOGIC = i++;
+      ILOGIC = i++;
+      GRPA = i++;
+      GRPB = i++;
+      GRPC = i++;
+      PIDX = i++;
+      ZERO = i++;
+      SG = i++;
+      HSG = i++;
+      LSG = i++;
+      _DS = i++;
+      IVEL = i++;
+      IOFF = i++;
+      MPE = i++;
+      EN = i++;
+      TSTOP = i++;
+      KP = i++;
+      KD = i++;
+      KI = i++;
+      SAMPLE = i++;
+      ACCEL = i++;
+      TENSION = i++;
+      UNITS = i++;
+       RATIO = i++;
+      LOG = i++;
+      DUMP = i++;
+      LOG1 = i++;
+      LOG2 = i++;
+      LOG3 = i++;
+      LOG4 = i++;
+      GAIN1 = i++;
+      GAIN2 = i++;
+      GAIN3 = i++;
+      OFFSET1 = i++;
+      OFFSET2 = i++;
+      OFFSET3 = i++;
+      PEN = i++;
+      SAFE = i++;
+      SAVE = i++;
+      LOAD = i++;
+      DEF = i++;
+      VL1 = i++;
+      VL2 = i++;
+      TL1 = i++;
+      TL2 = i++;
+      VOLTL1 = i++;
+      VOLTL2 = i++;
+      VOLTH1 = i++;
+      VOLTH2 = i++;
+      MAXPWR = i++;
+      PWR = i++;
+      IFAULT = i++;
+      IKP = i++;
+      IKI = i++;
+      IKCOR = i++;
+      VNOM = i++;
+      TENST = i++;
+      TENSO = i++;
+      JIDX = i++;
+      IPNM = i++;
+      HALLS = i++;
+      HALLH = i++;
+      HALLH2 = i++;
+      POLES = i++;
+      ECMAX = i++;
+      ECMIN = i++;
+      ISQ = i++;
+      TETAE = i++;
+      FIND = i++;
+      LCV = i++;
+      LCVC = i++;
+      LFV = i++;
+      LFS = i++;
+      LFAP = i++;
+      LFDP = i++;
+      LFT = i++;
+      VALUE32 = i++;
+      PROP_END = i++;
+   }
+   else
+   {
+   /* Common */
+      VERS = i++;
+      ROLE = i++; /* P=PRODUCT, R=ROLE: XXXX PPPP XXXX RRRR */
+      SN = i++;
+      ID = i++;
+      ERROR = i++;
+      STAT = i++;
+      ADDR = i++;
+      VALUE = i++;
+      MODE = i++;
+      TEMP = i++;
+      PTEMP = i++;
+      OTEMP = i++;
+      BAUD = i++;
+      _LOCK = i++;
+      DIG0 = i++;
+      DIG1 = i++;
+      FET0 = i++;
+      FET1 = i++;
+      ANA0 = i++;
+      ANA1 = i++;
+      THERM = i++;
+      VBUS = i++;
+      IMOTOR = i++;
+      VLOGIC = i++;
+      ILOGIC = i++;
+      SG = i++;
+      GRPA = i++;
+      GRPB = i++;
+      GRPC = i++;
+      CMD = i++; /* For commands w/o values: RESET,HOME,KEEP,PASS,LOOP,HI,IC,IO,TC,TO,C,O,T */
+      SAVE = i++;
+      LOAD = i++;
+      DEF = i++;
+      FIND = i++;
+      X0 = i++;
+      X1 = i++;
+      X2 = i++;
+      X3 = i++;
+      X4 = i++;
+      X5 = i++;
+      X6 = i++;
+      X7 = i++;
+      
+      COMMON_END = i++;
+   
+   /* Safety */
+      i = COMMON_END;
+      ZERO = i++;
+      PEN = i++;
+      SAFE = i++;
+      VL1 = i++;
+      VL2 = i++;
+      TL1 = i++;
+      TL2 = i++;
+      VOLTL1 = i++;
+      VOLTL2 = i++;
+      VOLTH1 = i++;
+      VOLTH2 = i++;
+      PWR = i++;
+      MAXPWR = i++;
+      IFAULT = i++;
+      VNOM = i++;
+      
+      SAFETY_END = i++;
+   
+   /* Tater */
+      i = COMMON_END;
+      T = i++;
+      MT = i++;
+      V = i++;
+      MV = i++;
+      MCV = i++;
+      MOV = i++;
+      P = i++; /* 32-Bit Present Position */
+      P2 = i++;
+      DP = i++; /* 32-Bit Default Position */
+      DP2 = i++;
+      E = i++; /* 32-Bit Endpoint */
+      E2 = i++;
+      OT = i++; /* 32-Bit Open Target */
+      OT2 = i++;
+      CT = i++; /* 32-Bit Close Target */
+      CT2 = i++;
+      M = i++; /* 32-Bit Move command for CAN*/
+      M2 = i++;
+      _DS = i++;
+      MOFST = i++;
+      IOFST = i++;
+      UPSECS = i++;
+      OD = i++;
+      MDS = i++;
+      MECH = i++; /* 32-Bit */
+      MECH2 = i++;
+      CTS = i++; /* 32-Bit */
+      CTS2 = i++;
+      PIDX = i++;
+      HSG = i++;
+      LSG = i++;
+      IVEL = i++;
+      IOFF = i++; /* 32-Bit */
+      IOFF2 = i++;
+      MPE = i++;
+      EN = i++;
+      TSTOP = i++;
+      KP = i++;
+      KD = i++;
+      KI = i++;
+      ACCEL = i++;
+      TENST = i++;
+      TENSO = i++;
+      JIDX = i++;
+      IPNM = i++;
+      HALLS = i++;
+      HALLH = i++; /* 32-Bit */
+      HALLH2 = i++;
+      POLES = i++;
+      IKP = i++;
+      IKI = i++;
+      IKCOR = i++;
+      HOLD = i++;
+      TIE = i++;
+      ECMAX = i++;
+      ECMIN = i++;
+      LFLAGS = i++;
+      LCTC = i++;
+      LCVC = i++;
+      
+      PROP_END = i++;
+   }
+}
+
 

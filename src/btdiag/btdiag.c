@@ -190,6 +190,9 @@ btgeom_state pstate;
 //vect_n *jf;
 extern btreal extVel;
 extern int audio;
+extern int brake;
+extern btreal setBrake;
+extern btreal relBrake;
 
 char *command_help[100];
 int num_commands;
@@ -457,6 +460,10 @@ int main(int argc, char **argv)
    }
    serialSetBaud(&p, 9600);
 
+   serialWriteString(&p, "set stat 2\r");
+   usleep(500000);
+   serialWriteString(&p, "set mode 2\r");
+   
    /* Spin off the WAM control thread */
    wam_thd.period = Ts;
    registerWAMcallback(wam, WAMcallback);
@@ -716,8 +723,10 @@ void init_haptics(void)
    init_state_btg(&pstate,0.002,30.0);
 
    // Create workspace bounding box
+   //init_pl_btg(&planes[0], const_v3(p1, 0.7, 0.0, 0.0), const_v3(p1, 0.7, 0.0, 0.1), const_v3(p1, 0.7, 0.1, 0.1));
    init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,zorig+0.0),const_v3(p2,0.7,0.01,zorig+0.0),const_v3(p3,0.7,0.0,zorig+0.01),1.0,0.6,0.4,1);
    init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
+   //init_normal_plane_bth(&objects[objectCount],&planes[0],(void*)&bpwall[0],bulletproofwall_nf);
    init_normal_box_bth(&objects[objectCount],&boxs[0],(void*)&bpwall[0],bulletproofwall_nf);
    addobject_bth(&bth,&objects[objectCount++]);
    /*
@@ -737,6 +746,11 @@ void init_haptics(void)
    */
    
    const_v3(wam->Cpoint, 0.0, 0.0, 0.0);
+   
+   brake = 0;
+   setBrake = 0.15;
+   relBrake = 0.0;
+   
 }
 
 /* Initialize the ncurses screen library */
@@ -763,14 +777,6 @@ void sigint_handler()
 void DisplayThread()
 {
    int cnt,err;
-   int volume;
-   char volStr[64];
-   char *argv[4];
-   int status;
-   
-   argv[0] = "aplay";
-   argv[1] = "SOUND34.WAV";
-   argv[2] = NULL;
    
    clear();
    refresh();
@@ -806,7 +812,7 @@ void AudioThread()
    
    aplay[0] = "aplay";
    aplay[1] = "-q";
-   aplay[2] = "SOUND34.WAV";
+   aplay[2] = "hitSounds/hit1.wav";
    aplay[3] = NULL;
    
    amixer[0] = "amixer";
@@ -817,6 +823,26 @@ void AudioThread()
    amixer[5] = NULL;
    
    while (!done) {
+      switch(brake){
+         case 0:
+         brake = 1;
+         // Release the brake
+         serialWriteString(&p, "set torq 0\r");
+         break;
+         case 2:
+         brake = 3;
+         // Activate the brake
+         serialWriteString(&p, "set torq 10\r");
+         break;
+         case 4:
+         brake = 5;
+         // Release the brake
+         serialWriteString(&p, "set torq 0\r");
+         break;
+         default:
+         break;
+      }
+      
       if(audio == 2){
          audio = 0;
          volume = abs((int)(extVel * 100));

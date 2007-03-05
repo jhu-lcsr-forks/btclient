@@ -22,6 +22,8 @@
 
 int audio = 0;
 btreal extVel;
+int brake;
+btreal setBrake, relBrake;
 
 /** Allocate and initialize memory for a haptic scene.
  
@@ -274,7 +276,23 @@ int bulletproofwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n 
    norm_eff = (bteffect_bulletproofwall*)obj->norm_eff;
    Vel = dot_v3((vect_3*)norm,(vect_3*)vel);
 
-
+   switch(brake){
+      case 0: case 1:
+      if(depth < setBrake)
+         brake = 2;
+      break;
+      case 2: case 3:
+      if(depth > setBrake)
+         brake = 0;
+      if(depth < relBrake)
+         brake = 4;
+      break;
+      case 4: case 5:
+      if(depth > setBrake)
+         brake = 0;
+      break;
+   }
+   
    if (depth < 0.0)
    {
       WallStiff = -1.0*norm_eff->K1*depth;
