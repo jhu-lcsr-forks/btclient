@@ -309,8 +309,9 @@ int main(int argc, char **argv)
    test_and_log(
       pthread_mutex_init(&(disp_mutex),NULL),
       "Could not initialize mutex for displays.");
-
-   for(i = 1; i < argc-1; i++) {
+//mvprintw(18,0,"argc=%d",argc);
+//for(i = 0; i < argc; i++) mvprintw(20+i,0,"%s",argv[i]);
+   for(i = 1; i < argc; i++) {
       if(!strcmp(argv[i],"-q"))
          quiet = TRUE;
    }
@@ -336,14 +337,14 @@ int main(int argc, char **argv)
 #endif //BTOLDCONFIG
    /* If the robot name was given on the command line, use it */
    *robotName = 0;
-   for(i = 1; i < argc-1; i++) {
+   for(i = 1; i < argc; i++) {
       if(!strcmp(argv[i],"-n"))
          strcpy(robotName, argv[i+1]);
    }
 
    /* Do we want to bypass the safety circuit + pendant? */
    NoSafety = 0;
-   for(i = 1; i < argc-1; i++) {
+   for(i = 1; i < argc; i++) {
       if(!strcmp(argv[i],"-ns"))
          NoSafety = 1;
    }
@@ -394,7 +395,7 @@ int main(int argc, char **argv)
    ident_mn(I7);
    
    /* Check and handle any additional command line arguments */
-   for(i = 1; i < argc-1; i++) {
+   for(i = 1; i < argc; i++) {
       if(!strcmp(argv[i],"-g")) // If gimbals are being used
       {
          initGimbals(wam);
@@ -460,9 +461,9 @@ int main(int argc, char **argv)
    }
    serialSetBaud(&p, 9600);
 
-   serialWriteString(&p, "set stat 2\r");
-   usleep(500000);
-   serialWriteString(&p, "set mode 2\r");
+   //serialWriteString(&p, "set stat 2\r");
+   //usleep(500000);
+   //serialWriteString(&p, "set mode 2\r");
    
    /* Spin off the WAM control thread */
    wam_thd.period = Ts;
@@ -1328,6 +1329,7 @@ void RenderHELP_SCREEN()
    }
    refresh();
 }
+
 void clearScreen(void)
 {
    btmutex_lock(&(disp_mutex));

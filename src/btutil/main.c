@@ -222,27 +222,27 @@ char *statusTxt[] = {
 
 struct
 {
-   int key;
+   int *key;
    long val;
 }
 defaults[] = {
-                ACCEL, 32,
-                AP, 0,
-                CT, 750,
-                CTS, 40960,
-                DP, 0,
+                &ACCEL, 32,
+                &AP, 0,
+                &CT, 750,
+                &CTS, 40960,
+                &DP, 0,
                 //         EN, 0x00EE,
-                MT, 990,
-                MV, 1500,
-                MCV, 1500,
-                MOV, 1500,
-                DP, 0,
-                OT, 0,
-                CT, 1E6,
-                _DS, 2560,
-                KP, 2000,
-                KD, 8000,
-                KI, 0,
+                &MT, 990,
+                &MV, 1500,
+                &MCV, 1500,
+                &MOV, 1500,
+                &DP, 0,
+                &OT, 0,
+                &CT, 1E6,
+                &_DS, 2560,
+                &KP, 2000,
+                &KD, 8000,
+                &KI, 0,
 
                 0, 0
              };
@@ -313,7 +313,7 @@ void paramDefaults(int newID,int targID)
 
    wakePuck(0,newID);
    for(i = 0; defaults[i].key; i++)
-      setProperty(0, newID, defaults[i].key, 0, defaults[i].val);
+      setProperty(0, newID, *defaults[i].key, 0, defaults[i].val);
 
    if(targID <= 4) { //4DOF
       setProperty(0,newID,IKCOR,0,1638);
@@ -672,17 +672,18 @@ int main( int argc, char **argv )
    if(argc > 1) {
       handleMenu(arguments.cmd);
    } else {
+      
       done = FALSE;
-      //while(!done){
-      /* Show Menu */
-      showMenu();
-
-      /* Get Choice */
-      c = mygetch();
-
-      /* Handle Menu */
-      handleMenu(toupper(c));
-      //}
+      while(!done){
+         /* Show Menu */
+         showMenu();
+   
+         /* Get Choice */
+         c = mygetch();
+   
+         /* Handle Menu */
+         handleMenu(toupper(c));
+      }
    }
 
    exit(0);

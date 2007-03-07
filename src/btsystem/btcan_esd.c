@@ -248,6 +248,11 @@ int initCAN(int bus)
    allowMessage(bus, 0x0403, 0x03E0); // Group 3 messages
    allowMessage(bus, 0x0406, 0x03E0); // Group 6 messages
 
+   // Set minimum required parameter values
+   VERS = 0;
+   STAT = 5;
+   PROP_END = 10;
+            
    return(0);
 }
 
@@ -313,7 +318,7 @@ int canSendMsg(int bus, int id, char len, unsigned char *data, int blocking)
 
 int wakePuck(int bus, int who)
 {
-   setProperty(bus, who, STAT, FALSE, STATUS_READY);
+   setProperty(bus, who, 5, FALSE, STATUS_READY); // Must use '5' for STAT
    usleep(300000); // Wait 300ms for puck to initialize
 
    return(0);
@@ -507,7 +512,8 @@ int getBusStatus(int bus, long *status)
             pthread_mutex_unlock(&commMutex);
             wakePuck(bus, id_in); // Wake this puck
             err = getProperty(bus, id_in, 0, &fw_vers); // Get the firmware version
-            setProperty(bus, id_in, 5, FALSE, 0); // Reset this puck
+            //setProperty(bus, id_in, 5, FALSE, 0); // Reset this puck
+            //usleep(500000);
             pthread_mutex_lock(&commMutex);
             initPropertyDefs(fw_vers);
          }
