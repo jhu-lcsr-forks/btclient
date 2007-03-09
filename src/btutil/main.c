@@ -699,7 +699,7 @@ int firmwareDL(void)
    unsigned char data[8];
    unsigned char sendData[8];
    int msgID;
-   int i;
+   int i, who;
    int cnt;
    long status[MAX_NODES];
    char line[100];
@@ -725,14 +725,19 @@ int firmwareDL(void)
    if(!(strcmp(which, "all"))) {
       // FlashErase takes a varying amount of time
       // Puck's download timeout is only 0.1s
-      printf("\n'All' download not yet supported\n");
-      exit(0);
+      //printf("\n'All' download not yet supported\n");
+      //exit(0);
       //msgID = GROUPID(0);
+      who = 0;
+      cnt = 1;
    } else {
-      msgID = atoi(which);
+      who = atoi(which);
       cnt = 1;
    }
 
+   for(msgID = 1; msgID < MAX_NODES; msgID++){
+	   if(msgID == who || (!who && (status[msgID]>=0 &&
+					   msgID!=SAFETY_MODULE))){
    // Open the file
    if((fp=fopen(fn, "r"))==NULL) {
       return(1);
@@ -759,6 +764,8 @@ int firmwareDL(void)
       }
    }
    fclose(fp);
+	   }
+   }
    return(0);
 }
 
