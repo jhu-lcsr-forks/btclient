@@ -5,7 +5,14 @@
 '#'://Data logging on
 '3'://Data logging off
  /*'z'://Send home-position to WAM
-  */'[':
+'4'://BHand GC
+'5'://BHand GO
+'6'://BHand SC
+'7'://BHand SO
+'8'://BHand SM 1000
+'9'://BHand SM 1500
+'0'://BHand HI
+'[':
 ']':
 't':// Set trocar
 'z':// Toggle rk
@@ -21,8 +28,8 @@
 'b'://Simulate loaded trajectory
 '?'://Loop loaded trajectory
 '/'://Stop loaded trajectory
-'Y'://Start continuos teach
-'y'://Stop continuos teach
+'Y'://Start continuous teach
+'y'://Stop continuous teach
 'l'://Load trajectory from file
 'w'://Save trajectory to a file
 'n'://Create a new trajectory

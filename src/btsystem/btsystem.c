@@ -344,14 +344,25 @@ int InitializeSystem(void)
 
                   // Query for various info
                   act[num_actuators].puck.ID = id;
-                  getProperty(canAddr, id, CTS, &reply);
-                  act[num_actuators].motor.counts_per_rev = reply;
-                  getProperty(canAddr, id, IPNM, &reply);
-                  act[num_actuators].motor.puckI_per_Nm = reply;
-                  getProperty(canAddr, id, PIDX, &reply);
-                  act[num_actuators].puck.order = reply-1;
-                  getProperty(canAddr, id, GRPB, &reply);
-                  act[num_actuators].puck.group = reply;
+                  switch(id){
+                     case -1: //case 1: case 4: // xxx Remove me
+                     act[num_actuators].motor.counts_per_rev = 40960;
+                     act[num_actuators].motor.puckI_per_Nm = 2755;
+                     act[num_actuators].puck.order = id-1;
+                     act[num_actuators].puck.group = 1;
+                     break;
+                     default:
+                     getProperty(canAddr, id, CTS, &reply);
+                     act[num_actuators].motor.counts_per_rev = reply;
+                     getProperty(canAddr, id, IPNM, &reply);
+                     act[num_actuators].motor.puckI_per_Nm = reply;
+                     getProperty(canAddr, id, PIDX, &reply);
+                     act[num_actuators].puck.order = reply-1;
+                     getProperty(canAddr, id, GRPB, &reply);
+                     act[num_actuators].puck.group = reply;
+                     break;
+                  }
+                  
                   syslog(LOG_ERR,"Puck: ID=%d CTS=%d IPNM=%.2lf PIDX=%d GRPB=%d",
                          act[num_actuators].puck.ID,
                          act[num_actuators].motor.counts_per_rev,

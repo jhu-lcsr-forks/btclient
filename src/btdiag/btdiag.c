@@ -209,6 +209,17 @@ int flip = 0;
 // Serial port
 PORT p;
 
+// Event logger
+int eventIdx;
+RTIME eventStart;
+typedef struct {
+   RTIME t;
+   char c;
+}keyEventStruct;
+
+keyEventStruct keyEvent[500];
+int cplay = 0;
+
 /*==============================*
  * PRIVATE Function Prototypes  *
  *==============================*/
@@ -421,7 +432,6 @@ int main(int argc, char **argv)
    //AddDataDL(&(wam->log),&x_forceDeriv,sizeof(btreal),BTLOG_BTREAL,"x_forceDeriv");
    //AddDataDL(&(wam->log),&x_vel,sizeof(btreal),BTLOG_BTREAL,"Xvel");
    AddDataDL(&(wam->log),valptr_vn(wam->Jpos),sizeof(btreal)*7,BTLOG_BTREAL,"Jpos");
-
    InitDL(&(wam->log),1000,"datafile.dat");
 
    if(!NoSafety) {
@@ -453,8 +463,6 @@ int main(int argc, char **argv)
 
    init_haptics();
 
-
-
    /* Open serial port */
    if(err = serialOpen(&p, "/dev/ttyS0")) {
       syslog(LOG_ERR, "Error opening serial port: %d", err);
@@ -481,12 +489,22 @@ int main(int argc, char **argv)
       if (get_trjstate_bts(active_bts) == BTTRAJ_DONE && !active_bts->loop_trj) {  // BZ-16Nov2005
          stop_trj_bts(active_bts);
          setmode_bts(active_bts,prev_mode);
+         cplay = 0;
       }
 
       /* Check and handle user keypress */
       if ((chr = getch()) != ERR)
          ProcessInput(chr);
       evalDL(&(wam->log));
+      
+      if(cplay){
+         if(keyEvent[eventIdx].c){
+            if((rt_get_cpu_time_ns() - eventStart) > keyEvent[eventIdx].t){
+               ProcessInput(keyEvent[eventIdx].c);
+               ++eventIdx;  
+            }
+         }
+      }
       usleep(100000); // Sleep for 0.1s
    }
 
@@ -707,6 +725,7 @@ void read_keys(char *filename)
    fclose(inf);
 
 }
+
 void init_haptics(void)
 {
    int cnt;
@@ -720,8 +739,11 @@ void init_haptics(void)
    yorig = 0.0;
    zorig = 0.10;
 
+   // Allocate a scene with space for 10 objects
    new_bthaptic_scene(&bth,10);
-   init_state_btg(&pstate,0.002,30.0);
+   
+   // Initialize a structure to track velocity and accel, given position
+   init_state_btg(&pstate, Ts, 30.0); // Update rate, filter cutoff Hz
 
    // Create workspace bounding box
    //init_pl_btg(&planes[0], const_v3(p1, 0.7, 0.0, 0.0), const_v3(p1, 0.7, 0.0, 0.1), const_v3(p1, 0.7, 0.1, 0.1));
@@ -1378,7 +1400,73 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       const_vn(wv, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0); //gimbals
       DefineWAMpos(wam,wv);
       break;
-  */ case '[':
+  */ 
+   case '4'://BHand GC
+      serialWriteString(&p, "\rGC\r");
+      if(cteach){
+         keyEvent[eventIdx].c = c;
+         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         syslog(LOG_ERR, "keyEvent[%d].c = %d, keyEvent[%d].t = %lld", eventIdx, c, eventIdx, keyEvent[eventIdx].t);
+         eventIdx++;
+         keyEvent[eventIdx].c = 0;
+      }
+      break;
+   case '5'://BHand GO
+      serialWriteString(&p, "\rGO\r");
+      if(cteach){
+         keyEvent[eventIdx].c = c;
+         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         syslog(LOG_ERR, "keyEvent[%d].c = %d, keyEvent[%d].t = %lld", eventIdx, c, eventIdx, keyEvent[eventIdx].t);
+         eventIdx++;
+         keyEvent[eventIdx].c = 0;
+      }
+      break;
+   case '6'://BHand SC
+      serialWriteString(&p, "\rSC\r");
+      if(cteach){
+         keyEvent[eventIdx].c = c;
+         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         eventIdx++;
+         keyEvent[eventIdx].c = 0;
+      }
+      break;
+   case '7'://BHand SO
+      serialWriteString(&p, "\rSO\r");
+      if(cteach){
+         keyEvent[eventIdx].c = c;
+         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         eventIdx++;
+         keyEvent[eventIdx].c = 0;
+      }
+      break;
+   case '8'://BHand SM 1000
+      serialWriteString(&p, "\rSM 1000\r");
+      if(cteach){
+         keyEvent[eventIdx].c = c;
+         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         eventIdx++;
+         keyEvent[eventIdx].c = 0;
+      }
+      break;
+   case '9'://BHand SM 1500
+      serialWriteString(&p, "\rSM 1500\r");
+      if(cteach){
+         keyEvent[eventIdx].c = c;
+         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         eventIdx++;
+         keyEvent[eventIdx].c = 0;
+      }
+      break;
+   case '0'://BHand HI
+      serialWriteString(&p, "\rHI\r");
+      if(cteach){
+         keyEvent[eventIdx].c = c;
+         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         eventIdx++;
+         keyEvent[eventIdx].c = 0;
+      }
+      break;
+   case '[':
       fsc *= 0.5;
       break;
    case ']':
@@ -1508,14 +1596,20 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       break;
 
    case '.'://Play loaded trajectory
-
       if(getmode_bts(active_bts)!=SCMODE_TRJ) {
+
+         cplay = 1;
+         eventStart = rt_get_cpu_time_ns();
+         eventIdx = 0;
+         
          moveparm_bts(active_bts,vel,acc);
          active_bts->loop_trj = 0;
          prev_mode = getmode_bts(active_bts);
          if (prev_mode != SCMODE_POS)
             setmode_bts(active_bts,SCMODE_POS);
+         
          start_trj_bts(active_bts);
+         
       } else {
          start_entry();
          addstr("You must stop the running trajectory first!: ");
@@ -1554,14 +1648,21 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       setmode_bts(active_bts,prev_mode);
       active_bts->loop_trj = 0;
       break;
-   case 'Y'://Start continuos teach
+   case 'Y'://Start continuous teach
+
+      
       if (active_bts == &(wam->Jsc))
          StartContinuousTeach(wam,1,25,"teachpath");
       else
          StartContinuousTeach(wam,0,25,"teachpath");
-      cteach = 1;
+      
+            cteach = 1;
+      eventIdx = 0;
+      eventStart = rt_get_cpu_time_ns()-750000000L;
+      keyEvent[eventIdx].c = 0;
+      
       break;
-   case 'y'://Stop continuos teach
+   case 'y'://Stop continuous teach
       StopContinuousTeach(wam);
       DecodeDL("teachpath","teach.csv",0);
       cteach = 0;

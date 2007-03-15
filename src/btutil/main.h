@@ -12,10 +12,11 @@ struct
    long val;
 }defaults[] = 
 {
+   &TIE, 0,
    &ACCEL, 32,
    &AP, 0,
    &CT, 750,
-   &CTS, 40960,
+   &CTS, 4096,
    &DP, 0,
    //         EN, 0x00EE,
    &MT, 990,
@@ -30,11 +31,12 @@ struct
    &KD, 8000,
    &KI, 0,
    
+   
    NULL, 0
 };
 
 struct fcnStruct{
-   void (*f)(void);
+   void (*f)(void *data);
    char title[64];
 };
 

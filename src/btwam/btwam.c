@@ -292,8 +292,15 @@ wam_struct* OpenWAM(char *fn, char *rName)
       if (reply == 1) {
          wam->motor_position[actcnt] = wam->act[actcnt].puck.ID - 1;
       } else {
-         getProperty(wam->act[actcnt].bus, wam->act[actcnt].puck.ID, JIDX, &reply);
-         wam->motor_position[actcnt] = reply-1;
+         switch(wam->act[actcnt].puck.ID){
+            case -1: //case 1: case 4: // xxx Remove me
+            wam->motor_position[actcnt] = wam->act[actcnt].puck.ID-1;
+            break;
+            default:
+            getProperty(wam->act[actcnt].bus, wam->act[actcnt].puck.ID, JIDX, &reply);
+            wam->motor_position[actcnt] = reply-1;
+            break;
+         }
       }
 #endif
       syslog(LOG_ERR,"Motor[%d] is joint %d",actcnt,wam->motor_position[actcnt]);
@@ -606,6 +613,7 @@ void WAMControlThread(void *data)
       }
 
       Jtrq2Mtrq(wam,(wam->Jtrq), (wam->Mtrq));  //Convert from joint torques to motor torques
+#if 0
       if(wam->dof == 8){
          //8-DOF paint spraying demo code
          if(getmode_bts(&wam->Jsc) == SCMODE_IDLE)
@@ -613,6 +621,8 @@ void WAMControlThread(void *data)
          else
          setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
       }
+#endif
+      
       Mtrq2ActTrq(wam,wam->Mtrq); //Move motor torques from wam_vector variable into actuator database
 #ifdef BTDOUBLETIME
 

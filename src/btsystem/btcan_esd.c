@@ -372,6 +372,8 @@ int getPositions(int bus, int group, int howMany, long *pos)
    // Send the packet
    err = canSendMsg(bus, GROUPID(group), 1, data, TRUE);
 
+   //howMany = 2; // xxx Remove me
+   
    // Wait for each reply
    while(howMany) {
       err = canReadMsg(bus, &msgID, &len, data, TRUE);
@@ -920,6 +922,8 @@ void initPropertyDefs(int firmwareVersion){
       LCVC = i++;
       
       PROP_END = i++;
+      
+      AP = P; // Handle parameter name change
    }
 }
 

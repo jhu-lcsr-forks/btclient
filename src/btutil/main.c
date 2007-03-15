@@ -653,7 +653,8 @@ int main( int argc, char **argv )
    char            c;
    int             err;
    int pID;
-
+   long status[MAX_NODES];
+   
    arguments.pID = -1;
    arguments.tID = -1;
    arguments.dl_file = NULL;
@@ -668,7 +669,8 @@ int main( int argc, char **argv )
    /* Parse our arguments; every option seen by parse_opt will
            be reflected in arguments. */
    argp_parse (&argp, argc, argv, 0, 0, &arguments);
-
+   getBusStatus(0, status);
+   
    if(argc > 1) {
       handleMenu(arguments.cmd);
    } else {

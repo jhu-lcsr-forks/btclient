@@ -123,17 +123,17 @@ void clearScreen(void);
 void finish_entry(void);
 void start_entry(void);
 void init_ncurses(void);
-void enumeratePucks(void);
 
-void activePuck(void);
-void firmwarePuck(void); int firmwareDL(int id, char *fn);
-void terminalMode(void);
-void watchProperty(void);
-void setDefaults(void); void paramDefaults(int newID,int targID);
-void hallCheck(void);
-void tensionCable(void);
-void findOffset(void);
-void exitProgram(void);
+void enumeratePucks(void *data);
+void activePuck(void *data);
+void firmwarePuck(void *data); int firmwareDL(int id, char *fn);
+void terminalMode(void *data);
+void watchProperty(void *data);
+void setDefaults(void *data); void paramDefaults(int newID,int targID);
+void hallCheck(void *data);
+void tensionCable(void *data);
+void findOffset(void *data);
+void exitProgram(void *data);
 
 struct fcnStruct fcn[] = { 
    activePuck, "Change active puck",
@@ -154,7 +154,7 @@ struct fcnStruct fcn[] = {
  * Functions                    *
  *==============================*/
 
-void enumeratePucks(void){
+void enumeratePucks(void *data){
    int id;
    int x;
    int y;
@@ -165,7 +165,7 @@ void enumeratePucks(void){
    
    clearScreen();
    getBusStatus(0, status);
-   //usleep(500000);
+   usleep(500000);
    mvprintw(y++, x, "PUCK  MON MAIN");
    mvprintw(y++, x, "---- ---- ----");
    for(id = 0; id < MAX_NODES; id++) {
@@ -196,7 +196,7 @@ void enumeratePucks(void){
    }
 }
  
-void activePuck(void){
+void activePuck(void *data){
    start_entry();
    addstr("Change active puck to: ");
    refresh();
@@ -204,7 +204,7 @@ void activePuck(void){
    finish_entry();
 }
 
-void firmwarePuck(void){
+void firmwarePuck(void *data){
    char fn[64];
    
    start_entry();
@@ -214,14 +214,30 @@ void firmwarePuck(void){
    finish_entry();
    
    firmwareDL(id, fn);
-   enumeratePucks();
+   enumeratePucks(NULL);
 }
 
-void terminalMode(void){
+void terminalMode(void *data){
+   int prop;
+   long val;
+   
+   start_entry();
+   addstr("Which property: ");
+   refresh();
+   scanw("%d\n", &prop);
+   finish_entry();
+   
+   start_entry();
+   addstr("What value: ");
+   refresh();
+   scanw("%ld\n", &val);
+   finish_entry();
+   
+   setProperty(0, id, prop, FALSE, val);
    
 }
 
-void watchProperty(void){
+void watchProperty(void *data){
    char prop[64];
    
    start_entry();
@@ -233,7 +249,7 @@ void watchProperty(void){
    
 }
 
-void setDefaults(void){
+void setDefaults(void *data){
    int altID;
    char questionTxt[256];
    
@@ -249,19 +265,19 @@ void setDefaults(void){
    mvprintw(entryLine, 1, "Done setting defaults                                          ");
 }
 
-void hallCheck(void){
+void hallCheck(void *data){
    
 }
 
-void tensionCable(void){
+void tensionCable(void *data){
    
 }
 
-void findOffset(void){
+void findOffset(void *data){
    
 }
 
-void exitProgram(void){
+void exitProgram(void *data){
    done = 1;
 }
 
@@ -387,18 +403,6 @@ static struct argp argp =
    
 struct arguments arguments;
 /******************************************************************************/
-
-
-
-
-
-   
-void PuckControlThread(void *data);
-
-void handleMenu(char c);
-void showMenu(void);
-void tensionCable(void);
-void tensionCable2(void);
 
 
 
