@@ -576,7 +576,8 @@ void WAMControlThread(void *data)
       set_vn(wam->robot.q,wam->Jpos);
 
       eval_fk_bot(&wam->robot);
-      eval_fj_bot(&wam->robot);
+      //eval_fj_bot(&wam->robot); // Uncomment for inertia matrix calc
+      //(requires powerful CPU)
       eval_fd_bot(&wam->robot);
 
       set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));

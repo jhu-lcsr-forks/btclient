@@ -49,7 +49,6 @@ it to properly establish the time values.
 #include "btwam.h"
 #include "bthaptics.h"
 #include "btserial.h"
-//#include "dynfcn.h"
 #include "aob.h"
 
 /*==============================*
@@ -92,7 +91,7 @@ btreal maxVel;
 int whip = 0;
 long temperature, ot, mt;
 
-// Rui vars
+// AOB vars
 matr_mn *Jtemp, *Ftemp;
 vect_n *vn1, *vn2;
 matr_mn *Js, *Ms;
@@ -264,14 +263,6 @@ int main(int argc, char **argv)
    //f1 = new_v3();
    //jf = new_vn(4);
 
-   //readRuiParams("MedStiffKo50AOB.txt","FastForceSensorAOB.txt");
-   //readRuiParams("StiffnessBarrettFast.txt","FastForceSensorAOB.txt");
-   //readRuiParams("HighStiffKo50000AOB.txt","FastForceSensorAOB.txt");
-   //readRuiParams("MedStiffKo500NoActive.txt","FastForceSensorAOB.txt");
-   //readRuiParams("ImpedanceBarrett.txt");
-   //readRuiParams("AccelerationBarrett.txt");
-   //readRuiParams("HighStiffKo50000AOB.txt","ForceSensorAOB.txt");
-
    nout = new_aob("ImpedanceBarrett.txt", &aob_x, &Lc_x, &m_x, &Ko_x, &K2_x);
    yk_x = new_vn(nout);
 
@@ -442,6 +433,11 @@ int main(int argc, char **argv)
    if(!NoSafety) {
       /* Set the safety limits */
       setSafetyLimits(1.5, 1.5, 1.5);  // Limit to 1.5 m/s
+
+      // Set the puck torque safety limits (TL1 = Warning, TL2 = Critical)
+      // Note: The pucks are limited internally to 3441 (see 'MT' in btsystem.c) 
+      // Note: btsystem.c bounds the outbound torque to 8191, so 9000
+      // tell the safety system to never register a critical fault
       setProperty(0,10,TL2,FALSE,9000);//4700);
       setProperty(0,10,TL1,FALSE,3441);//1800
    }
@@ -487,7 +483,7 @@ int main(int argc, char **argv)
    btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
    
    /* Spin off the audio thread */
-   btthread_create(&audio_thd,0,(void*)AudioThread,NULL);
+   //btthread_create(&audio_thd,0,(void*)AudioThread,NULL);
 
    while (!done) {
       /* Check the active trajectory for completion */
@@ -528,16 +524,6 @@ int WAMcallback(struct btwam_struct *wam)
    int cnt;
 
 #if 0
-   if(whip){
-         if(wam->Jpos->q[0] < -1.5)
-            wam->Jtrq->q[0] = 8192;
-         else if(wam->Jpos->q[0] > -1.4)
-            wam->Jtrq->q[0] = -8192;
-         else
-            wam->Jtrq->q[0] = 0;
-   }else
-      wam->Jtrq->q[0] = 0;
-#endif      
    //calcMatrix(wam->dof, wam->Jpos, Ms, Gs, Js);
 
    // qVel = (wam->Jpos - qLast) / Ts;
@@ -545,7 +531,7 @@ int WAMcallback(struct btwam_struct *wam)
 
    // wam->Cvel = Js_v * qVel;
    matXvec_mn(wam->robot.Jv, qVel, wam->Cvel);
-#if 1
+
    // Get the location of the frame where the tool is attached in world coordinates
    set_v3(p_init, Ln_to_W_bot(&wam->robot, wam->dof-1, const_v3(p_init, 0.0, 0.0, 0.0)));
 
@@ -564,7 +550,7 @@ int WAMcallback(struct btwam_struct *wam)
    {
       setcol_mn(Jp, (vect_n*)cross_v3(wam->robot.links[cnt-1].z,sub_v3(p_null, wam->robot.links[cnt-1].o)), cnt);
    }
-#endif
+
    // Find task space outputs
    yk_x->q[0] = Ko_x * (wam->Cpos->q[0] - startPos_x);
    yk_y->q[0] = Ko_y * (wam->Cpos->q[1] - startPos_y);
@@ -705,6 +691,7 @@ int WAMcallback(struct btwam_struct *wam)
    set_vn(yk_z->ret, yk_z);
    set_vn(yk_xn->ret, yk_xn);
    set_vn(yk_yn->ret, yk_yn);
+#endif
 
    // Handle haptic scene
    eval_state_btg(&(pstate),wam->Cpos);
@@ -980,6 +967,7 @@ void RenderMAIN_SCREEN()
    vectray* vr;
    char vect_buf1[2500];
 
+   /*
    wam->Jvel->q[0] = (wam->act[0].puck.position - lastPos[0]) * 10 * 60.0 / 4096;
    wam->Jvel->q[1] = (wam->act[1].puck.position - lastPos[1]) * 10 * 60.0 / 4096;
    wam->Jvel->q[2] = (wam->act[2].puck.position - lastPos[2]) * 10 * 60.0 / 4096;
@@ -997,6 +985,7 @@ void RenderMAIN_SCREEN()
    lastPos[1] = wam->act[1].puck.position;
    lastPos[2] = wam->act[2].puck.position;
    lastPos[3] = wam->act[3].puck.position;
+   */
    
    /***** Display the interface text *****/
    line = 0;
@@ -1091,7 +1080,7 @@ void RenderMAIN_SCREEN()
       mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
       line += 2;
    }
-  
+ /* 
       mvprintw(line, 0, "Jvel:");
    line++;
    mvprintw(line, 0, "%s", sprint_vn(vect_buf1, (vect_n*)wam->Jvel));
@@ -1113,6 +1102,7 @@ void RenderMAIN_SCREEN()
    line++;
    mvprintw(line, 0, "%ld     ", mt);
    line+= 1;
+   */
 /*
    mvprintw(line, 0, "p_tool:");
    line++;
@@ -1953,90 +1943,4 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
    }
 }
 
-#if 0
-void readRuiParams(char *aobControl)
-{
-   FILE *inp;
-   int i;
-   char buf[2000];
-
-   // Rui vars
-
-   Ftemp = new_mn(3,3);
-   vn1 = new_vn(7);
-   vn2 = new_vn(7);
-   fstar = new_vn(3);
-   Js = new_mn(3,4);
-
-   if((inp = fopen(aobControl, "r")) == NULL) {
-      printf("\nCould not open file: %s\n", aobControl);
-      exit(0);
-   }
-   fscanf(inp, "%*s%d %*s%d %*s%lf %*s%lf %*s%lf %*s%lf", &sd, &nout, &mass, &Lc, &Ko, &K2);
-
-   // State vars
-   S_x = new_mn(sd, 1);
-   S_y = new_mn(sd, 1);
-   S_z = new_mn(sd, 1);
-
-   yk_x = new_mn(nout,1);
-   yk_y = new_mn(nout,1);
-   yk_z = new_mn(nout,1);
-   yhk_x = new_mn(nout, 1);
-   yhk_y = new_mn(nout, 1);
-   yhk_z = new_mn(nout, 1);
-
-   Mscalar = new_mn(1,1);
-
-   Fc = new_mn(sd, sd);
-   Fo = new_mn(sd, sd);
-   Pzero =  new_mn(sd, sd);
-   Qnoise =  new_mn(sd, sd);
-   Gama = new_mn(sd, 1);
-   Ca = new_mn(nout, sd);
-   Kk = new_mn(sd, nout);
-   L_NAOB = new_mn(1, sd);
-   Rnoise = new_mn(nout,nout);
-
-   fscanf(inp, "%*s");
-   for(i = 0; i < (sd*sd); i++)
-      fscanf(inp, "%lf", &Fo->q[i]);
-
-   fscanf(inp, "%*s");
-   for(i = 0; i < (sd*sd); i++)
-      fscanf(inp, "%lf", &Fc->q[i]);
-
-   fscanf(inp, "%*s");
-   for(i = 0; i < (sd*nout); i++)
-      fscanf(inp, "%lf", &Ca->q[i]);
-
-   fscanf(inp, "%*s");
-   for(i = 0; i < (sd*sd); i++)
-      fscanf(inp, "%lf", &Pzero->q[i]);
-
-   fscanf(inp, "%*s");
-   for(i = 0; i < (sd*sd); i++)
-      fscanf(inp, "%lf", &Qnoise->q[i]);
-
-   fscanf(inp, "%*s");
-   for(i = 0; i < (nout*nout); i++)
-      fscanf(inp, "%lf", &Rnoise->q[i]);
-
-   fscanf(inp, "%*s");
-   for(i = 0; i < sd; i++)
-      fscanf(inp, "%lf", &L_NAOB->q[i]);
-
-   fscanf(inp, "%*s");
-   for(i = 0; i < sd; i++)
-      fscanf(inp, "%lf", &Gama->q[i]);
-
-   fscanf(inp, "%*s");
-   for(i = 0; i < (sd*nout); i++)
-      fscanf(inp, "%lf", &Kk->q[i]);
-
-   fclose(inp);
-
-   //usleep(10000000);
-}
-#endif
 

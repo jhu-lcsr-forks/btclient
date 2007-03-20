@@ -8,7 +8,7 @@ PATH_INCLUDE = -I/usr/realtime/include -I../../include
 #ex: #export BTOLDCFG=-DBTOLDCONFIG
 CFLAGS =  -g -DUSE_RTAI31  ${PATH_INCLUDE} ${BTOLDCFG}
 LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L/usr/local/lib -L../../lib 
-LDFLAGS += -lpthread -llxrt -lncurses -lm -lbtwam -lbtsystem -lntcan -lgsl -lgslcblas
+LDFLAGS += -lpthread -llxrt -lncurses -lm -lbtwam -lbtsystem -lntcan
 
 
 default: btdiag
