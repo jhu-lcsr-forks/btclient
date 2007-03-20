@@ -87,6 +87,11 @@ vect_n* jdest,*cdest;
 vect_n* active_trq;
 vect_n *wv;
 
+long lastPos[4];
+btreal maxVel;
+int whip = 0;
+long temperature, ot, mt;
+
 // Rui vars
 matr_mn *Jtemp, *Ftemp;
 vect_n *vn1, *vn2;
@@ -437,8 +442,8 @@ int main(int argc, char **argv)
    if(!NoSafety) {
       /* Set the safety limits */
       setSafetyLimits(1.5, 1.5, 1.5);  // Limit to 1.5 m/s
-      setProperty(0,10,TL2,FALSE,4700);
-      setProperty(0,10,TL1,FALSE,1800);
+      setProperty(0,10,TL2,FALSE,9000);//4700);
+      setProperty(0,10,TL1,FALSE,3441);//1800
    }
 
    /* Prepare MODE */
@@ -505,6 +510,8 @@ int main(int argc, char **argv)
             }
          }
       }
+      
+      
       usleep(100000); // Sleep for 0.1s
    }
 
@@ -520,6 +527,17 @@ int WAMcallback(struct btwam_struct *wam)
    btreal rho;
    int cnt;
 
+#if 0
+   if(whip){
+         if(wam->Jpos->q[0] < -1.5)
+            wam->Jtrq->q[0] = 8192;
+         else if(wam->Jpos->q[0] > -1.4)
+            wam->Jtrq->q[0] = -8192;
+         else
+            wam->Jtrq->q[0] = 0;
+   }else
+      wam->Jtrq->q[0] = 0;
+#endif      
    //calcMatrix(wam->dof, wam->Jpos, Ms, Gs, Js);
 
    // qVel = (wam->Jpos - qLast) / Ts;
@@ -962,6 +980,24 @@ void RenderMAIN_SCREEN()
    vectray* vr;
    char vect_buf1[2500];
 
+   wam->Jvel->q[0] = (wam->act[0].puck.position - lastPos[0]) * 10 * 60.0 / 4096;
+   wam->Jvel->q[1] = (wam->act[1].puck.position - lastPos[1]) * 10 * 60.0 / 4096;
+   wam->Jvel->q[2] = (wam->act[2].puck.position - lastPos[2]) * 10 * 60.0 / 4096;
+   wam->Jvel->q[3] = (wam->act[3].puck.position - lastPos[3]) * 10 * 60.0 / 4096;
+   
+   if(fabs(wam->Jvel->q[0]) > maxVel)
+      maxVel = fabs(wam->Jvel->q[0]);
+   
+   //wam->Jvel->q[0] = (wam->Jpos->q[0] - lastPos[0]) / 0.1 * 60 / 6.28;
+   //wam->Jvel->q[1] = (wam->Jpos->q[1] - lastPos[1]) / 0.1 * 60 / 6.28;
+   //wam->Jvel->q[2] = (wam->Jpos->q[2] - lastPos[2]) / 0.1 * 60 / 6.28;
+   //wam->Jvel->q[3] = (wam->Jpos->q[3] - lastPos[3]) / 0.1 * 60 / 6.28;
+   
+   lastPos[0] = wam->act[0].puck.position;
+   lastPos[1] = wam->act[1].puck.position;
+   lastPos[2] = wam->act[2].puck.position;
+   lastPos[3] = wam->act[3].puck.position;
+   
    /***** Display the interface text *****/
    line = 0;
 
@@ -1056,7 +1092,27 @@ void RenderMAIN_SCREEN()
       line += 2;
    }
   
+      mvprintw(line, 0, "Jvel:");
+   line++;
+   mvprintw(line, 0, "%s", sprint_vn(vect_buf1, (vect_n*)wam->Jvel));
+   line+= 1;
    
+      mvprintw(line, 0, "maxVel:");
+   line++;
+   mvprintw(line, 0, "%+8.4f    ", maxVel);
+   line+= 1;
+         mvprintw(line, 0, "temperature:");
+   line++;
+   mvprintw(line, 0, "%ld     ", temperature);
+   line+= 1;
+            mvprintw(line, 0, "peak t:");
+   line++;
+   mvprintw(line, 0, "%ld     ", ot);
+   line+= 1;
+            mvprintw(line, 0, "mt:");
+   line++;
+   mvprintw(line, 0, "%ld     ", mt);
+   line+= 1;
 /*
    mvprintw(line, 0, "p_tool:");
    line++;
@@ -1375,7 +1431,19 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
    switch (c)
    {
-
+   case '1': //Turn off puck
+	   //setProperty(0, 2, MODE, FALSE, MODE_IDLE);
+	   //setProperty(0, 3, MODE, FALSE, MODE_IDLE);
+      getProperty(0, 1, TEMP, &temperature);
+      getProperty(0, 1, PTEMP, &ot);
+      getProperty(0, 1, MT, &mt);
+	   break;
+   case '2': //Whip
+   maxVel = 0.0;   
+   whip = !whip;
+      
+      break;
+      
    case 'x'://eXit
    case  'X'://eXit
       done = 1;

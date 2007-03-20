@@ -370,7 +370,8 @@ int InitializeSystem(void)
                          act[num_actuators].puck.order,
                          act[num_actuators].puck.group);
                   // Set MaxTorque to 3.3A
-                  setProperty(canAddr, id, MT, FALSE, 4731);
+		  // 2.4A = 1/4 breaking strength = 3441
+                  setProperty(canAddr, id, MT, FALSE, 3441);//4731);
                   ++num_actuators; // Update the number of actuators
                   break;
                default:

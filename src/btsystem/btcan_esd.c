@@ -274,7 +274,7 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
       retvalue = canTake(canDev[bus], &msg, &msgCt);
    }
    if(retvalue != NTCAN_SUCCESS) {
-      syslog(LOG_ERR, "canReadMsg(): canRead/canTake error: %ld", retvalue);
+      //syslog(LOG_ERR, "canReadMsg(): canRead/canTake error: %ld", retvalue);
       if(retvalue == NTCAN_RX_TIMEOUT)
          return(1);
       else
@@ -650,7 +650,7 @@ int compile(
    }
 
    /* Record the proper data length */
-   *dataLen = (dataType[property] & 0x0007) + 2;
+   *dataLen = 6; //(dataType[property] & 0x0007) + 2;
 
    //if (i & 0x0003) *dataLen = 3; /* 8-bits */
    //else if (i & 0x000C) *dataLen = 4; /* 16-bits */

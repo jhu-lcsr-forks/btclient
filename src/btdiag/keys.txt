@@ -1,4 +1,6 @@
    system("grep \"'\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
+'1': //Turn off puck
+'2': //Whip
 'x'://eXit
 '!'://Set puck to mode TORQ
 '@'://Set puck to mode IDLE

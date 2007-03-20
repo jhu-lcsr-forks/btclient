@@ -229,10 +229,10 @@ defaults[] = {
                 &ACCEL, 32,
                 &AP, 0,
                 &CT, 750,
-                &CTS, 40960,
+                &CTS, 4096,
                 &DP, 0,
                 //         EN, 0x00EE,
-                &MT, 990,
+                &MT, 3441,
                 &MV, 1500,
                 &MCV, 1500,
                 &MOV, 1500,
@@ -319,7 +319,7 @@ void paramDefaults(int newID,int targID)
       setProperty(0,newID,IKCOR,0,1638);
       setProperty(0,newID,IKP,0,8192);
       setProperty(0,newID,IKI,0,3276);
-      setProperty(0,newID,IPNM,0,2755);//2755);
+      setProperty(0,newID,IPNM,0,2755);
       setProperty(0,newID,POLES,0,12);
       setProperty(0,newID,GRPA,0,0);
       setProperty(0,newID,GRPB,0,1);
@@ -486,6 +486,7 @@ void changeID(oldID, newID)
    setProperty(0, oldID, _LOCK, 0, 1);
    setProperty(0, oldID, ID, 0, newID);
    setProperty(0, oldID, SAVE, 0, ID);
+   setProperty(0, oldID, PTEMP, 0, 0);
 }
 
 
@@ -776,7 +777,7 @@ void tensionCable(void)
    int motor;
    int cmd;
 
-   cmd = V;
+   cmd = T;
 
    printf("\nTension Cable\nTension which motor: ");
    scanf("%d", &motor);
@@ -786,13 +787,13 @@ void tensionCable(void)
    printf("\nPlease move cable to shaft end, then press <Enter>");
    mygetch();
    mygetch();
-   setProperty(0,motor,TENSION,FALSE,1);
+   setProperty(0,motor,FET1,FALSE,1);
    setProperty(0,motor,cmd,FALSE,500);
    printf("\nPlease rotate shaft until tensioner engages, "
           "then press <Enter>");
    mygetch();
-   setProperty(0,motor,TENSION,FALSE,0);
-   setProperty(0,motor,cmd,FALSE,2500);
+   setProperty(0,motor,FET1,FALSE,0);
+   setProperty(0,motor,cmd,FALSE,4500);
    usleep(5000000);
    setProperty(0,motor,cmd,FALSE,0);
    printf("\nPlease work the tension through the cable, "

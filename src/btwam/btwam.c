@@ -496,7 +496,10 @@ void WAMControlThread(void *data)
    double thisperiod;
    RTIME rtime_period,sampleCount;
    wam_struct *wam;
-
+   unsigned char CANdata[8];
+   int len_in;
+   int id_in;
+      
    /* Set up timer*/
    this_thd = (btthread*)data;
    wam = this_thd->data;
@@ -543,6 +546,12 @@ void WAMControlThread(void *data)
 
       pos1_time = rt_get_cpu_time_ns(); //th prof
 
+      // Try to get messages (non-blocking read) to clear the bus
+      while(!canReadMsg(0, &id_in, &len_in, CANdata, FALSE)){
+	syslog(LOG_ERR, "Cleared unexpected message from CANbus");
+        usleep(1);
+      }
+      
       GetPositions();
 
       pos2_time = rt_get_cpu_time_ns(); //th prof
