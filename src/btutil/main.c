@@ -229,7 +229,7 @@ defaults[] = {
                 &ACCEL, 32,
                 &AP, 0,
                 &CT, 750,
-                &CTS, 4096,
+                &CTS, 40960,
                 &DP, 0,
                 //         EN, 0x00EE,
                 &MT, 3441,
@@ -775,27 +775,25 @@ int firmwareDL(void)
 void tensionCable(void)
 {
    int motor;
-   int cmd;
 
-   cmd = T;
-
+   printf("\nTORQ = %d\nT = %d\n", TORQ, T);
    printf("\nTension Cable\nTension which motor: ");
    scanf("%d", &motor);
-   setProperty(0,GROUPID(0),cmd,FALSE,0);
    wakePuck(0,GROUPID(0));
    setProperty(0,GROUPID(0),MODE,FALSE,MODE_TORQUE);
    printf("\nPlease move cable to shaft end, then press <Enter>");
    mygetch();
    mygetch();
    setProperty(0,motor,FET1,FALSE,1);
-   setProperty(0,motor,cmd,FALSE,500);
+   setProperty(0,motor,MT,FALSE,5000);
+   setProperty(0,motor,T,FALSE,500);
    printf("\nPlease rotate shaft until tensioner engages, "
           "then press <Enter>");
    mygetch();
    setProperty(0,motor,FET1,FALSE,0);
-   setProperty(0,motor,cmd,FALSE,4500);
-   usleep(5000000);
-   setProperty(0,motor,cmd,FALSE,0);
+   setProperty(0,motor,T,FALSE,4500);
+   usleep(1000000);
+   setProperty(0,motor,T,FALSE,0);
    printf("\nPlease work the tension through the cable, "
           "then press <Enter>");
    mygetch();

@@ -87,6 +87,7 @@ const int dataType[]=
    /* ADDR */ L16 ,
    /* VALUE */ L16 ,
    /* MODE */ L16 ,
+   /* D */ L16 ,
    /* TORQ */ L16 ,
    /* V */ L16 ,
    /* B */ L16 ,
@@ -672,13 +673,13 @@ void initPropertyDefs(int firmwareVersion){
       ADDR = i++;
       VALUE = i++;
       MODE = i++;
+      D = i++;
       TORQ = i++;
-      V = i++;
-      B = i++;
       P = i++;
-      P2 = i++;
+      V = i++;
       E = i++;
-      E2 = i++;
+      B = i++;
+      MD = i++;
       MT = i++;
       MV = i++;
       MCV = i++;
@@ -772,6 +773,13 @@ void initPropertyDefs(int firmwareVersion){
       TENSO = i++;
       JIDX = i++;
       IPNM = i++;
+      
+      PROP_END = i++;
+
+      T = TORQ;
+      FET0 = B;
+      FET1 = TENSION;
+      /*
       HALLS = i++;
       HALLH = i++;
       HALLH2 = i++;
@@ -789,7 +797,7 @@ void initPropertyDefs(int firmwareVersion){
       LFDP = i++;
       LFT = i++;
       VALUE32 = i++;
-      PROP_END = i++;
+      */
    }
    else
    {
