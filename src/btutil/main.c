@@ -98,8 +98,7 @@ static char args_doc[] = "[PuckID]";
 /* The options we understand. */
 static struct argp_option options[] =
    {
-      {"verbose",  'v', 0,      0,  "Produce verbose output"
-      },
+      {"verbose",  'v', 0,      0,  "Produce verbose output"},
       {"enumerate",'e', 0,      0,  "Enumerate the bus" },
       {"mofst",   'f', "pID_mofst",OPTION_ARG_OPTIONAL, "Find motor offset" },
       {"defaults",   'p', "pID_def", OPTION_ARG_OPTIONAL, "Set parameter defaults" },
@@ -111,6 +110,8 @@ static struct argp_option options[] =
       {"dlhand", 'b', 0, 0, "Download firmware to Barrett Hand"},
       {"changeID", 'i', "pID", OPTION_ARG_OPTIONAL, "Change puck ID"},
       {"checkHalls", 'h', "pID", OPTION_ARG_OPTIONAL, "Check hall feedback"},
+      {"wraptor",   'w', "pID_wraptor", OPTION_ARG_OPTIONAL, "Get wraptor parameters" },
+      {"wraptorCycle",   'y', "pID_wraptorCycle", OPTION_ARG_OPTIONAL, "Cycle wraptor (torque)" },
       { 0 }
    };
 
@@ -160,8 +161,18 @@ parse_opt (int key, char *arg, struct argp_state *state)
       if (arg)
          arguments->pID = atoi(arg);
       break;
+   case 'w':
+      arguments->cmd = 'W';
+      if (arg)
+         arguments->pID = atoi(arg);
+      break;
    case 'a':
       arguments->cmd = 'A';
+      if (arg)
+         arguments->pID = atoi(arg);
+      break;
+   case 'y':
+      arguments->cmd = 'Y';
       if (arg)
          arguments->pID = atoi(arg);
       break;
@@ -243,6 +254,7 @@ defaults[] = {
                 &KP, 2000,
                 &KD, 8000,
                 &KI, 0,
+		&TIE, 0,
 
                 0, 0
              };
@@ -306,6 +318,114 @@ void setMofst(int newID)
    printf("\n");
 }
 
+void cycleWraptor(int j)
+{
+   int i;
+   
+   for(i = 1; i <= 7; i++){
+      wakePuck(0, i);
+      setProperty(0, i, MODE, 0, MODE_TORQUE);
+   }
+   
+   while(j){
+      j--;
+      for(i = 1; i <= 7; i++)
+         setProperty(0, i, T, 0, 1500);
+      usleep(10000000);
+      for(i = 1; i <= 7; i++)
+         setProperty(0, i, T, 0, -1500);
+      usleep(10000000);
+   }
+   
+   for(i = 1; i <= 7; i++)
+      setProperty(0, i, MODE, 0, MODE_IDLE);
+}
+   
+void paramWraptor(int newID)
+{
+   wakePuck(0,newID);
+   setProperty(0, newID, _LOCK, 0, 18384);
+   setProperty(0, newID, _LOCK, 0, 23);
+   setProperty(0, newID, _LOCK, 0, 3145);
+   setProperty(0, newID, _LOCK, 0, 1024);
+   setProperty(0, newID, _LOCK, 0, 1);
+   
+   setProperty(0,newID,TIE,0,0);
+   setProperty(0,newID,ACCEL,0,100);
+   setProperty(0,newID,CTS,0,4096);
+   setProperty(0,newID,DP,0,0);
+   setProperty(0,newID,IKP,0,4096);
+   setProperty(0,newID,IKI,0,819);
+   setProperty(0,newID,IKCOR,0,819);
+   setProperty(0,newID,KP,0,12000);
+   setProperty(0,newID,KD,0,0);
+   setProperty(0,newID,KI,0,0);
+   setProperty(0,newID,MT,0,4096);
+   setProperty(0,newID,PTEMP,0,0);
+   setProperty(0,newID,POLES,0,6);
+   setProperty(0,newID,GRPA,0,0);
+   setProperty(0,newID,GRPB,0,1);
+   setProperty(0,newID,GRPC,0,4);
+   setProperty(0,newID,_DS,0,4096);
+   
+   setProperty(0,newID,OT,0,0);
+   setProperty(0,newID,IPNM,0,21400);
+   setProperty(0,newID,JIDX,0,newID);
+   setProperty(0,newID,PIDX,0,newID%4);
+   setProperty(0,newID,MCV,0,50);
+   setProperty(0,newID,MOV,0,50);
+   setProperty(0,newID,MV,0,50);
+   
+   switch(newID)
+   {
+      case 1: case 2: case 3:
+      setProperty(0,newID,ROLE,0,259);
+      setProperty(0,newID,IVEL,0,-15);
+      setProperty(0,newID,IOFF,0,5500);
+      setProperty(0,newID,CT,0,72000);
+      break;
+      case 4:
+      setProperty(0,newID,ROLE,0,3);
+      setProperty(0,newID,MOFST,0,-2);
+      setProperty(0,newID,IVEL,0,-15);
+      setProperty(0,newID,IOFF,0,0);
+      setProperty(0,newID,CT,0,0);
+      break;
+      case 5: case 6: case 7:
+      setProperty(0,newID,ROLE,0,259);
+      setProperty(0,newID,IVEL,0,10);
+      setProperty(0,newID,IOFF,0,-80100);
+      setProperty(0,newID,CT,0,50000);
+      break;
+   }
+   
+   setProperty(0,newID,SAVE,0,-1); // Save all
+   usleep(1000000);
+   
+   setProperty(0,newID,STAT,0,STATUS_RESET); // Reset
+   usleep(1000000);
+   setProperty(0,newID,STAT,0,STATUS_READY);
+   usleep(1000000);
+   
+   setProperty(0,newID,FIND,0,IOFST);
+   usleep(1000000);
+   
+   setProperty(0,newID,STAT,0,STATUS_RESET); // Reset
+   usleep(1000000);
+   
+   if(newID != 4){ // Find MOFST (P4 runs off halls only)
+      setProperty(0,newID,STAT,0,STATUS_READY);
+      usleep(1000000);
+      
+      setProperty(0,newID,MODE,0,MODE_TORQUE);
+      setProperty(0,newID,FIND,0,MOFST);
+      usleep(10000000);
+      
+      setProperty(0,newID,MODE,0,MODE_IDLE);
+      
+      setProperty(0,newID,STAT,0,0); // Reset
+   }
+}
 
 void paramDefaults(int newID,int targID)
 {
@@ -417,6 +537,10 @@ getParams(int newID)
    printf("Serial Number = %ld\n",reply);
    getProperty(0,newID,VERS,&reply);
    printf("VERS = %ld\n",reply);
+   getProperty(0,newID,ROLE,&reply);
+   printf("ROLE = %ld\n",reply);
+   getProperty(0,newID,TIE,&reply);
+   printf("TIE = %ld\n",reply);
    getProperty(0,newID,ACCEL,&reply);
    printf("ACCEL = %ld\n",reply);
    getProperty(0,newID,AP,&reply);
@@ -461,6 +585,8 @@ getParams(int newID)
    printf("PIDX = %ld\n",reply);
    getProperty(0,newID,PTEMP,&reply);
    printf("PTEMP = %ld\n",reply);
+   getProperty(0,newID,OTEMP,&reply);
+   printf("OTEMP = %ld\n",reply);
    getProperty(0,newID,POLES,&reply);
    printf("POLES = %ld\n",reply);
 }
@@ -484,6 +610,8 @@ void changeID(oldID, newID)
    setProperty(0, oldID, _LOCK, 0, 3145);
    setProperty(0, oldID, _LOCK, 0, 1024);
    setProperty(0, oldID, _LOCK, 0, 1);
+   setProperty(0, oldID, ROLE, 0, 3);
+   setProperty(0, oldID, SAVE, 0, ROLE);
    setProperty(0, oldID, ID, 0, newID);
    setProperty(0, oldID, SAVE, 0, ID);
    setProperty(0, oldID, PTEMP, 0, 0);
@@ -597,6 +725,15 @@ void handleMenu(char c)
       }
       allParams(newID);
       break;
+   case 'Y':
+      printf("\n\nHow many cycles: ");
+      if (arguments.pID < 0) {
+         scanf("%d", &newID);
+      } else {
+         newID = arguments.pID;
+         printf("%d\n",newID);
+      }
+      cycleWraptor(newID);
       break;
    case 'G':
       printf("\n\nGet params from puck ID: ");
@@ -623,6 +760,16 @@ void handleMenu(char c)
    case 'Q':
       printf("\n\n");
       done = TRUE;
+      break;
+   case 'W':
+      printf("\n\nSet WRAPTOR defaults for puck ID: ");
+      if (arguments.pID < 0) {
+         scanf("%d", &newID);
+      } else {
+         newID = arguments.pID;
+         printf("%d\n",newID);
+      }
+      paramWraptor(newID);
       break;
    default:
       printf("\n\nInvalid choice.");
