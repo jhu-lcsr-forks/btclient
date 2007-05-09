@@ -489,7 +489,7 @@ int main(int argc, char **argv)
       /* Check the active trajectory for completion */
       if (get_trjstate_bts(active_bts) == BTTRAJ_DONE && !active_bts->loop_trj) {  // BZ-16Nov2005
          stop_trj_bts(active_bts);
-         setmode_bts(active_bts,prev_mode);
+         //setmode_bts(active_bts,prev_mode);
          cplay = 0;
       }
 
@@ -1703,7 +1703,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
    case '/'://Stop loaded trajectory
 
       stop_trj_bts(active_bts);
-      setmode_bts(active_bts,prev_mode);
+      //setmode_bts(active_bts,prev_mode);
       active_bts->loop_trj = 0;
       break;
    case 'Y'://Start continuous teach
