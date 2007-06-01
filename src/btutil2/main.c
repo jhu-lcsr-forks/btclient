@@ -871,12 +871,12 @@ void setMofst(int newID)
    getProperty(0,newID,VERS,&vers);
 
    getProperty(0,newID,IOFST,&dat);
-   printf("\n The old IOFST was:%d\n",dat);
+   printf("\nThe old IOFST was: %d",dat);
    
    // Get a valid IOFST
    #define IOFST_MIN (1950)
    #define IOFST_MAX (2150)
-   #define IOFST_STDEV (6)
+   #define IOFST_STDEV (3)
    
    // Collect stats
 	sumX = sumX2 = 0;
@@ -909,13 +909,13 @@ void setMofst(int newID)
       printf(" -- FAIL");
       ++err;
    }
-   
-   printf("\n The new IOFST is:%d\n",dat);
+   setProperty(0, newID, IOFST, 0, (long)mean);
+   printf("\nThe new IOFST is:%d\n",(int)mean);
    
    if(!err){
       setProperty(0,newID,MODE,0,MODE_TORQUE);
       getProperty(0,newID,MOFST,&dat);
-      printf("\n The old MOFST was:%d\n",dat);
+      printf("\nThe old MOFST was:%d\n",dat);
    
       if(vers <= 39){
          setProperty(0,newID,ADDR,0,32971);
@@ -934,7 +934,7 @@ void setMofst(int newID)
       }else{
          getProperty(0,newID,MOFST,&dat);
       }
-      printf("\n The new MOFST is:%d\n",dat);
+      printf("\nThe new MOFST is:%d\n",dat);
       setProperty(0,newID,MODE,0,MODE_IDLE);
       if(vers <= 39){
          setProperty(0,newID,MOFST,0,dat);
@@ -1072,7 +1072,7 @@ void handleMenu(int argc, char **argv)
       printf("\n");
       break;
    case 'F':
-      printf("\n\nFind MOFST for puck: ");
+      printf("\n\nFind offsets for puck: ");
       if(argc >= 3){
          arg1 = atol(argv[2]);
          printf("%d", arg1);
