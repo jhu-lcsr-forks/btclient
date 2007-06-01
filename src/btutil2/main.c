@@ -294,8 +294,10 @@ void checkHalls(int arg1){
    do{
       getProperty(0, arg1, VALUE, &reply);
       reply = (reply >> 8) & 0x00000007;
-      if(reply != vers)
+      if(reply != vers){
          printf("%d, ", vers = reply);
+	 fflush(stdout);
+      }
       getProperty(0, arg1, AP, &reply);
       if(abs(reply-startPos) > cts)
          break;
@@ -403,6 +405,7 @@ int main( int argc, char **argv )
    btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
    
    if(argc > 1){
+      getBusStatus(0, status);
       handleMenu(argc, argv);
    } else {
       /* Initialize the ncurses screen library */
@@ -418,7 +421,7 @@ int main( int argc, char **argv )
       for(i = 0; i < MAX_WATCH; i++)
          watch[i].puckID = 0;
       //enumeratePucks(NULL);
-      //getBusStatus(0, status);
+      getBusStatus(0, status);
       
       while (!done) {
          /* Check and handle user keypress */
@@ -674,11 +677,19 @@ int firmwareDL(int id, char *fn)
    //sendData[0] = 0x80 | VERS;
    //sendData[1] = 0x00;
    lineCt = 0;
+   if(!curses) printf("\n\n");
    while(fgets(line, 99, fp) != NULL) {
       i = 1;
       ++lineCt;
       //printf("%s", line);
+      if(curses){
       mvprintw(entryLine, 1, "Download progress: %d%%", (int)(100.0 * lineCt / lineTotal));
+
+      }else{
+	      printf("\rDownload progress: %d%%   ", (int)(100.0 * lineCt /
+				      lineTotal));
+	      fflush(stdout);
+      }
       while(line[i] >= '0') {
          // Wait for n "Get VERS"
          for(rcpt = 0; rcpt < cnt; rcpt++) {
@@ -692,7 +703,10 @@ int firmwareDL(int id, char *fn)
       }
    }
    fclose(fp);
+   if(curses)
    mvprintw(entryLine, 1, "Download complete!               ");
+   else
+	   printf("\nDownload complete!   ");
    
    return(0);
 }
@@ -813,31 +827,42 @@ void setMofst(int newID)
 
    wakePuck(0,newID);
    getProperty(0,newID,VERS,&vers);
+
+   // Get a valid IOFST
+   getProperty(0,newID,IOFST,&dat);
+   printf("\n The old IOFST was:%d\n",dat);
+   setProperty(0,newID,FIND,0,IOFST);
+   getProperty(0,newID,IOFST,&dat);
+   printf("\n The new IOFST is:%d\n",dat);
+   
    setProperty(0,newID,MODE,0,MODE_TORQUE);
    getProperty(0,newID,MOFST,&dat);
    printf("\n The old MOFST was:%d\n",dat);
 
-   if(dat <= 39){
+   if(vers <= 39){
       setProperty(0,newID,ADDR,0,32971);
       setProperty(0,newID,VALUE,0,1);
    }else{
       setProperty(0,newID,FIND,0,MOFST);
    }
-   printf("\nPress enter when the index pulse is found: ");
-   mygetch();
-   mygetch();
-   if(dat <= 39){
+   //printf("\nPress enter when the index pulse is found: ");
+   //mygetch();
+   //mygetch();
+   printf("\nPlease wait (10 sec)...\n");
+   usleep(10000000); // Sleep for 10 sec
+   if(vers <= 39){
       setProperty(0,newID,ADDR,0,32970);
       getProperty(0,newID,VALUE,&dat);
    }else{
       getProperty(0,newID,MOFST,&dat);
    }
-   printf("\n The MOFST new is:%d\n",dat);
-   if(dat <= 39){
+   printf("\n The new MOFST is:%d\n",dat);
+   setProperty(0,newID,MODE,0,MODE_IDLE);
+   if(vers <= 39){
       setProperty(0,newID,MOFST,0,dat);
       setProperty(0,newID,SAVE,0,MOFST);
    }
-   printf("\nDone: ");
+   printf("\nDone. ");
    printf("\n");
 }
 
@@ -852,6 +877,8 @@ getParams(int newID)
    printf("Serial Number = %ld\n",reply);
    getProperty(0,newID,VERS,&reply);
    printf("VERS = %ld\n",reply);
+   getProperty(0,newID,ROLE,&reply);
+   printf("ROLE = %ld\n",reply);
    getProperty(0,newID,ACCEL,&reply);
    printf("ACCEL = %ld\n",reply);
    getProperty(0,newID,AP,&reply);
@@ -1005,6 +1032,7 @@ void handleMenu(int argc, char **argv)
       getParams(arg1);
       break;
    case 'D':
+      printf("\n\nDownload firmware to puck ID: "); 
       if(argc >= 3){
          arg1 = atol(argv[2]);
          printf("%d", arg1);
@@ -1013,7 +1041,7 @@ void handleMenu(int argc, char **argv)
       }
       if(argc >= 5){
          //arg2 = atol(argv[4]);
-         printf("\nFile: %d", argv[4]);
+         printf("\nFile: %s", argv[4]);
          firmwareDL(arg1, argv[4]);
       }else{
          printf("\nFile: ");
@@ -1039,7 +1067,7 @@ void handleMenu(int argc, char **argv)
    //   BHandDL();
    //   break;
    case 'Q':
-      printf("\n\n");
+   //   printf("\n\n");
       done = TRUE;
       break;
    default:
@@ -1055,6 +1083,7 @@ void handleMenu(int argc, char **argv)
       printf("\n");
       break;
    }
+   printf("\n\n");
 }
 
 #if 0
