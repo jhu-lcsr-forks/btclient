@@ -739,9 +739,9 @@ void checkAutotensioner(int puckID){
    wakePuck(0, puckID);
    
    while(cycles--){
-      setProperty(0, puckID, FET0, 0, 1);
+      setProperty(0, puckID, FET1, 0, 1);
       usleep(250000);
-      setProperty(0, puckID, FET0, 0, 0);
+      setProperty(0, puckID, FET1, 0, 0);
       usleep(250000);
    }
    
