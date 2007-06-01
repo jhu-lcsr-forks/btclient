@@ -722,12 +722,14 @@ void checkTemp(int puckID){
       printf(" -- FAIL");
       err++;
    }
+   /*
    getProperty(0, puckID, THERM, &dat);
    printf("\nTHERM = %ld", dat);
    if(dat < 15 || dat > 60){
       printf(" -- FAIL");
       err++;
    }
+   */
    
    printf("\nDone. ");
    printf("\n");
