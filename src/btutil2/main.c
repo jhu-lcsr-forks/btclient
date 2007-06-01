@@ -711,6 +711,44 @@ int firmwareDL(int id, char *fn)
    return(0);
 }
 
+void checkTemp(int puckID){
+   long dat;
+   int err = 0;
+   
+   wakePuck(0, puckID);
+   getProperty(0, puckID, TEMP, &dat);
+   printf("\nTEMP = %ld", dat);
+   if(dat < 15 || dat > 60){
+      printf(" -- FAIL");
+      err++;
+   }
+   getProperty(0, puckID, THERM, &dat);
+   printf("\nTHERM = %ld", dat);
+   if(dat < 15 || dat > 60){
+      printf(" -- FAIL");
+      err++;
+   }
+   
+   printf("\nDone. ");
+   printf("\n");
+}
+
+void checkAutotensioner(int puckID){
+   int i, cycles = 8;
+   
+   wakePuck(0, puckID);
+   
+   while(cycles--){
+      setProperty(0, puckID, FET0, 0, 1);
+      usleep(250000);
+      setProperty(0, puckID, FET0, 0, 0);
+      usleep(250000);
+   }
+   
+   printf("\nDone. ");
+   printf("\n");
+}
+
 void paramDefaults(int newID,int targID)
 {
    int i;
@@ -823,45 +861,87 @@ void changeID(int oldID, int newID, int role)
 void setMofst(int newID)
 {
    long dat, vers;
-   int dummy;
-
+   int dummy, i, samples = 16;
+   
+	long	max, min;
+	double	sumX, sumX2, mean, stdev;
+   int err = 0;
+   
    wakePuck(0,newID);
    getProperty(0,newID,VERS,&vers);
 
-   // Get a valid IOFST
    getProperty(0,newID,IOFST,&dat);
    printf("\n The old IOFST was:%d\n",dat);
-   setProperty(0,newID,FIND,0,IOFST);
-   getProperty(0,newID,IOFST,&dat);
+   
+   // Get a valid IOFST
+   #define IOFST_MIN (1950)
+   #define IOFST_MAX (2150)
+   #define IOFST_STDEV (6)
+   
+   // Collect stats
+	sumX = sumX2 = 0;
+	max = -2E9;
+	min = +2E9;
+	for(i = 0; i < samples; i++){
+		setProperty(0,newID,FIND,0,IOFST);
+      getProperty(0,newID,IOFST,&dat);
+		if(dat > max) max = dat;
+		if(dat < min) min = dat;
+		sumX += dat;
+		sumX2 += dat * dat;
+      usleep(1000000/16);
+	}
+	mean = 1.0 * sumX / samples;
+	stdev = sqrt((1.0 * samples * sumX2 - sumX * sumX) / (samples * samples - samples));
+   printf("\nMIN IOFST = %ld", min);
+   if(min < IOFST_MIN){
+      printf(" -- FAIL");
+      ++err;
+   } 
+   printf("\nMAX IOFST = %ld", max);
+   if(max > IOFST_MAX){
+      printf(" -- FAIL");
+      ++err;
+   }
+	printf("\nMEAN IOFST = %.2f", mean);
+	printf("\nSTDEV IOFST = %.2f", stdev);
+   if(stdev > IOFST_STDEV){
+      printf(" -- FAIL");
+      ++err;
+   }
+   
    printf("\n The new IOFST is:%d\n",dat);
    
-   setProperty(0,newID,MODE,0,MODE_TORQUE);
-   getProperty(0,newID,MOFST,&dat);
-   printf("\n The old MOFST was:%d\n",dat);
-
-   if(vers <= 39){
-      setProperty(0,newID,ADDR,0,32971);
-      setProperty(0,newID,VALUE,0,1);
-   }else{
-      setProperty(0,newID,FIND,0,MOFST);
-   }
-   //printf("\nPress enter when the index pulse is found: ");
-   //mygetch();
-   //mygetch();
-   printf("\nPlease wait (10 sec)...\n");
-   usleep(10000000); // Sleep for 10 sec
-   if(vers <= 39){
-      setProperty(0,newID,ADDR,0,32970);
-      getProperty(0,newID,VALUE,&dat);
-   }else{
+   if(!err){
+      setProperty(0,newID,MODE,0,MODE_TORQUE);
       getProperty(0,newID,MOFST,&dat);
+      printf("\n The old MOFST was:%d\n",dat);
+   
+      if(vers <= 39){
+         setProperty(0,newID,ADDR,0,32971);
+         setProperty(0,newID,VALUE,0,1);
+      }else{
+         setProperty(0,newID,FIND,0,MOFST);
+      }
+      //printf("\nPress enter when the index pulse is found: ");
+      //mygetch();
+      //mygetch();
+      printf("\nPlease wait (10 sec)...\n");
+      usleep(10000000); // Sleep for 10 sec
+      if(vers <= 39){
+         setProperty(0,newID,ADDR,0,32970);
+         getProperty(0,newID,VALUE,&dat);
+      }else{
+         getProperty(0,newID,MOFST,&dat);
+      }
+      printf("\n The new MOFST is:%d\n",dat);
+      setProperty(0,newID,MODE,0,MODE_IDLE);
+      if(vers <= 39){
+         setProperty(0,newID,MOFST,0,dat);
+         setProperty(0,newID,SAVE,0,MOFST);
+      }
    }
-   printf("\n The new MOFST is:%d\n",dat);
-   setProperty(0,newID,MODE,0,MODE_IDLE);
-   if(vers <= 39){
-      setProperty(0,newID,MOFST,0,dat);
-      setProperty(0,newID,SAVE,0,MOFST);
-   }
+   
    printf("\nDone. ");
    printf("\n");
 }
@@ -1060,6 +1140,26 @@ void handleMenu(int argc, char **argv)
       }
       cableTension(arg1);
       break;
+   case 'S': // Temperature Sensors
+      printf("\n\nCheck temperature sensors for puck ID: ");
+      if(argc >= 3){
+         arg1 = atol(argv[2]);
+         printf("%d", arg1);
+      }else{
+         scanf("%d", &arg1);
+      }
+      checkTemp(arg1);
+      break;
+   case 'A': // Autotensioner test
+      printf("\n\nAutotensioner test for puck ID: ");
+      if(argc >= 3){
+         arg1 = atol(argv[2]);
+         printf("%d", arg1);
+      }else{
+         scanf("%d", &arg1);
+      }
+      checkAutotensioner(arg1);
+      break;
    //case 'R':
    //   tensionCable2();
    //   break;
@@ -1080,6 +1180,8 @@ void handleMenu(int argc, char **argv)
       printf("\nbtutil -d 1 -f x.tek  Download x.tek firmware to puck 1");
       printf("\nbtutil -p 5 -l 1      Set puck 5 defaults to puck 1 defaults");
       printf("\nbtutil -t 1           Tension cable, motor 1");
+      printf("\nbtutil -a 1           Autotensioner test, motor 1");
+      printf("\nbtutil -s 1           Temperature sensor test, motor 1");
       printf("\n");
       break;
    }
