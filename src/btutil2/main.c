@@ -313,7 +313,9 @@ void hallCheck(void *data){
 cableTension(int motor){
    int cmd;
    int tens;
-
+   long startPos, endPos;
+   double nm;
+   
    cmd = T;
    switch(motor){
 	   case 1: case 2: case 3: case 4:
@@ -328,6 +330,17 @@ cableTension(int motor){
    //scanf("%d", &motor);
    setProperty(0,GROUPID(0),cmd,FALSE,0);
    wakePuck(0,GROUPID(0));
+   printf("\nHow much tension (Nm): ");
+   scanf("%lf", &nm);
+   switch(motor){
+	   case 1: case 2: case 3: case 4:
+		   tens = nm * 2700;
+	break;
+	   case 5: case 6:
+	tens = nm * 5000;
+	break;
+   }
+   
    setProperty(0,GROUPID(0),MODE,FALSE,MODE_TORQUE);
    printf("\nPlease move cable to shaft end, then press <Enter>");
    mygetch();
@@ -338,9 +351,12 @@ cableTension(int motor){
           "then press <Enter>");
    mygetch();
    setProperty(0,motor,TENSION,FALSE,0);
+   getProperty(0,motor,AP,&startPos);
    setProperty(0,motor,cmd,FALSE,tens);
-   usleep(5000000);
+   usleep(1000000);
+   getProperty(0,motor,AP,&endPos);
    setProperty(0,motor,cmd,FALSE,0);
+   printf("\nTook up %ld encoder cts of cable", abs(startPos-endPos));
    printf("\nPlease work the tension through the cable, "
           "then press <Enter>");
    mygetch();
