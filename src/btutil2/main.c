@@ -312,8 +312,17 @@ void hallCheck(void *data){
 
 cableTension(int motor){
    int cmd;
+   int tens;
 
-   cmd = V;
+   cmd = T;
+   switch(motor){
+	   case 1: case 2: case 3: case 4:
+		   tens = 2500;
+	break;
+	   case 5: case 6:
+	tens = 1500;
+	break;
+   }
 
    //printf("\nTension Cable\nTension which motor: ");
    //scanf("%d", &motor);
@@ -329,7 +338,7 @@ cableTension(int motor){
           "then press <Enter>");
    mygetch();
    setProperty(0,motor,TENSION,FALSE,0);
-   setProperty(0,motor,cmd,FALSE,2500);
+   setProperty(0,motor,cmd,FALSE,tens);
    usleep(5000000);
    setProperty(0,motor,cmd,FALSE,0);
    printf("\nPlease work the tension through the cable, "
