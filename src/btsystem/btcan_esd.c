@@ -932,6 +932,7 @@ void initPropertyDefs(int firmwareVersion){
       PROP_END = i++;
       
       AP = P; // Handle parameter name change
+      TENSION = FET1;
    }
 }
 
