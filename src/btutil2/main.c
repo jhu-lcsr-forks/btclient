@@ -794,7 +794,8 @@ void paramDefaults(int newID,int targID)
          setProperty(0,newID,IKCOR,0,1638);
          setProperty(0,newID,IKP,0,8192);
          setProperty(0,newID,IKI,0,3276);
-         setProperty(0,newID,IPNM,0,2562);//2755);
+         setProperty(0,newID,IPNM,0,2700);//2755);
+         //setProperty(0,newID,IPNM,0,2562);//2755);
          setProperty(0,newID,POLES,0,12);
          setProperty(0,newID,GRPA,0,0);
          setProperty(0,newID,GRPB,0,1);
@@ -808,7 +809,8 @@ void paramDefaults(int newID,int targID)
          setProperty(0,newID,GRPB,0,2);
          setProperty(0,newID,GRPC,0,5);
          if(targID != 7) {
-            setProperty(0,newID,IPNM,0,4961);
+            setProperty(0,newID,IPNM,0,6500);
+            //setProperty(0,newID,IPNM,0,4961);
             setProperty(0,newID,POLES,0,8);
          } else {
             setProperty(0,newID,IPNM,0,17474);

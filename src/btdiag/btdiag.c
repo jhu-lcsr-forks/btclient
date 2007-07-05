@@ -124,6 +124,7 @@ btreal dtr;
 vect_n *torq_t, *torq_p;
 matr_mn *J5, *aux, *J5temp, *Jaux2, *I7;
 
+int pauseCnt = 0;
 
 int null = 0;
 /*
@@ -432,14 +433,14 @@ int main(int argc, char **argv)
 
    if(!NoSafety) {
       /* Set the safety limits */
-      setSafetyLimits(1.5, 1.5, 1.5);  // Limit to 1.5 m/s
+      setSafetyLimits(1.0, 1.0, 1.0);  // Limit to 1.5 m/s
 
       // Set the puck torque safety limits (TL1 = Warning, TL2 = Critical)
       // Note: The pucks are limited internally to 3441 (see 'MT' in btsystem.c) 
       // Note: btsystem.c bounds the outbound torque to 8191, so 9000
       // tell the safety system to never register a critical fault
       setProperty(0,10,TL2,FALSE,9000);//4700);
-      setProperty(0,10,TL1,FALSE,3441);//1800
+      setProperty(0,10,TL1,FALSE,2000);//1800
    }
 
    /* Prepare MODE */
@@ -506,6 +507,21 @@ int main(int argc, char **argv)
             }
          }
       }
+      if(pauseCnt > 0){
+	      pauseCnt--;
+	      if(pauseCnt == 0){
+		      unpause_trj_bts(active_bts,0.125);
+	      }
+      }
+   for(cnt=0;cnt<wam->dof;cnt++){
+	   if(fabs(getval_vn(wam->Jtrq,cnt) - getval_vn(wam->Gtrq,cnt)) >
+			   getval_vn(wam->torq_limit,cnt)){
+		pauseCnt = 50;
+		//Pause
+         pause_trj_bts(active_bts,5);
+		break;
+	   }
+   }
       
       
       usleep(100000); // Sleep for 0.1s
@@ -757,7 +773,7 @@ void init_haptics(void)
    //init_normal_plane_bth(&objects[objectCount],&planes[0],(void*)&bpwall[0],bulletproofwall_nf);
    init_normal_box_bth(&objects[objectCount],&boxs[0],(void*)&bpwall[0],bulletproofwall_nf);
    addobject_bth(&bth,&objects[objectCount++]);
-   /*
+   
    // Create nested spheres
    init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.4,0.0,zorig+0.0),0); // Inner sphere, outer wall
    init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.42,0.0,zorig+0.0),1); // Inner sphere, inner wall
@@ -771,7 +787,7 @@ void init_haptics(void)
       init_normal_sphere_bth(&objects[objectCount],&spheres[cnt],(void*)&wickedwalls[cnt],wickedwall_nf);
       addobject_bth(&bth,&objects[objectCount++]);
    }
-   */
+   
    
    const_v3(wam->Cpoint, 0.0, 0.0, 0.0);
    
@@ -1080,6 +1096,25 @@ void RenderMAIN_SCREEN()
       mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
       line += 2;
    }
+         mvprintw(line, 0, "pauseCnt:");
+   line++;
+   mvprintw(line, 0, "%d     ", pauseCnt);
+   line+= 1;
+   /*
+   mvprintw(line, 0, "Gtrq:");
+   line++;
+   mvprintw(line, 0, "%s", sprint_vn(vect_buf1, (vect_n*)wam->Gtrq));
+   line+= 1;
+   mvprintw(line, 0, "%s", sprint_vn(vect_buf1, (vect_n*)wam->torq_limit));
+   line+= 1;
+   */
+/*
+   for(cnt=0;cnt<=wam->dof;cnt++){
+	   mvprintw(line, 0, "g[%d] = %+8.4f    ", cnt,
+			   getval_v3(wam->robot.links[cnt].g,2));
+	   line++;
+   }
+   */
  /* 
       mvprintw(line, 0, "Jvel:");
    line++;

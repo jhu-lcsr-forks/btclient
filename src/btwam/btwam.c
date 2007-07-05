@@ -84,10 +84,12 @@ void InitVectors(wam_struct *wam)
    wam->Jtref = new_vn(wam->dof);
    wam->Jtrq = new_vn(wam->dof);
    wam->Ttrq = new_vn(wam->dof);
+   wam->Gtrq = new_vn(wam->dof);
    wam->Kp = new_vn(wam->dof);
    wam->Kd = new_vn(wam->dof);
    wam->Ki = new_vn(wam->dof);
    wam->saturation = new_vn(wam->dof);
+   wam->torq_limit = new_vn(wam->dof);
    wam->vel = new_vn(wam->dof);
    wam->acc = new_vn(wam->dof);
    wam->Cpos = new_v3();
@@ -256,6 +258,10 @@ wam_struct* OpenWAM(char *fn, char *rName)
    // Read park_location
    sprintf(key, "%s.home", robotName);
    parseGetVal(VECTOR, key, (void*)wam->park_location);
+
+   // Read torq_limit
+   sprintf(key, "%s.tlimit", robotName);
+   parseGetVal(VECTOR, key, (void*)wam->torq_limit);
 
    // Read the worldframe->origin transform matrix
    sprintf(key, "%s.world", robotName);
@@ -579,6 +585,9 @@ void WAMControlThread(void *data)
       //eval_fj_bot(&wam->robot); // Uncomment for inertia matrix calc
       //(requires powerful CPU)
       eval_fd_bot(&wam->robot);
+
+      eval_bd_bot(&wam->robot);
+      get_t_bot(&wam->robot, wam->Gtrq);
 
       set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));
       set_vn(wam->R6pos,(vect_n*)wam->Cpos);

@@ -371,7 +371,20 @@ int InitializeSystem(void)
                          act[num_actuators].puck.group);
                   // Set MaxTorque to 3.3A
 		  // 2.4A = 1/4 breaking strength = 3441
+		  switch(id){
+			  case 1: case 2: case 3:
+                  setProperty(canAddr, id, MT, FALSE, 2300);//4731);
+			  break;
+			  case 4:
+                  setProperty(canAddr, id, MT, FALSE, 2050);//4731);
+			  break;
+			  case 5: case 6: 
+                  setProperty(canAddr, id, MT, FALSE, 1500);//4731);
+			  break;
+			  default:
                   setProperty(canAddr, id, MT, FALSE, 3441);//4731);
+			  break;
+		  }
                   ++num_actuators; // Update the number of actuators
                   break;
                default:

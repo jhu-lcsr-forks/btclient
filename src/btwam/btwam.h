@@ -139,6 +139,7 @@ typedef struct btwam_struct{
   vect_n *zero_offsets;
   vect_n *stop_torque;
   vect_n *park_location;  
+  vect_n *torq_limit;  
 
 //Motor <-> Joint State
   vect_n *Mpos,*Mtrq,*Jpos,*Jvel,*Jacc,*Jref,*Jtref,*Jtrq;
@@ -172,6 +173,7 @@ typedef struct btwam_struct{
   vect_3 *Cpos,*Cforce,*Ctrq,*Cref;
   vect_3 *Ckp,*Ckd,*Cki,*Cpoint;
   vect_n *Cvel;
+  vect_n *Gtrq;
   btreal qerr;
   
   //CartesianSpace Moves
