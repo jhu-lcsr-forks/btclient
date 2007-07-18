@@ -116,6 +116,7 @@ may be in mid-update.
 */
 typedef struct btwam_struct{
   int id;
+  char name[256];
 //State Variables
   int Gcomp; // 0 = no gravity comp, 1 = gravity comp
   int wrist_attached; //0 no wrist, 1 yes wrist is attached.
@@ -225,11 +226,13 @@ typedef struct btwam_struct{
 
 /*************  WAM  API  ******************/
 
-wam_struct* OpenWAM(char *wamfile, char *robotName); //NULL -> wam.conf
+wam_struct* OpenWAM(char *wamfile, int bus); //NULL -> wam.conf
 void CloseWAM(wam_struct* wam); //Cleanupint BlankWAMcallback(struct btwam_struct *wam);
 
 void registerWAMcallback(wam_struct* wam,void *func);
 void WAMControlThread(void *data); //data points to wam_struct* wam
+void WAMControlThread1(void *data); //data points to wam_struct* wam
+void WAMControlThread2(void *data); //data points to wam_struct* wam
 
 void DefineWAMpos(wam_struct *w,vect_n *wv);
 
@@ -251,6 +254,7 @@ void StartContinuousTeach(wam_struct* wam,int Joint,int Div,char *filename); //j
 void StopContinuousTeach(wam_struct* wam); 
 void ServiceContinuousTeach(wam_struct* wam);
 
+void setSafetyLimits(int bus, double jointVel, double tipVel, double elbowVel);
 
 /******************************************/
 /** \internal Below this line all functions need work 

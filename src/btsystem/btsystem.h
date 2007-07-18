@@ -102,7 +102,7 @@ typedef struct
 typedef struct
 {
   int bus; /*!< The CAN bus this actuator is on. This is an index into the buses array. */
-
+  
   puck_struct puck;
   motor_struct motor;  
   
@@ -176,7 +176,7 @@ extern "C"
 #endif/* __cplusplus */
 //Top level functions-----------------------------
 int DiscoverSystem(void); // Automatically discover the robotic systems connected to this computer
-int ReadSystemFromConfig(char *fn); // Use a config file to determine the robotic systems connected to this computer
+int ReadSystemFromConfig(char *fn, int *busCount); // Use a config file to determine the robotic systems connected to this computer
 #ifdef BTOLDCONFIG
 int InitializeSystem(char *actuatorfile,char *busfile,char *motorfile,char *puckfile); //Global bus variables, global actuator variable, load data from files, open can bus
 #else
@@ -186,19 +186,20 @@ int InitializeSystem(void);
 void CloseSystem(); //
   //private 
 void DumpData2Syslog();  
-actuator_struct * GetActuators(int *Num_actuators); // returns a pointer to the actuator data
+//actuator_struct * GetActuators(int *Num_actuators); // returns a pointer to the actuator data
+int GetActuators(int bus, actuator_struct **a, int *Num_actuators);
 bus_struct * GetBuses(int *Num_buses);
 
 //COMM functions-----------------------------
 long GetProp(int actuator_id, int property);
 int SetProp(int actuator_id, int property, long data);
-int SetByID(int CANid, int property, long data);
+int SetByID(int bus, int CANid, int property, long data);
 
 int EnumerateSystem();
 
 //control functions-----------------------------
-void GetPositions(); //Global broadcasts
-void SetTorques();
+void GetPositions(int bus); //Global broadcasts
+void SetTorques(int bus);
 int AllIndexed();
 
 

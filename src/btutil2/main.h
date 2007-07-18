@@ -18,7 +18,7 @@ struct defaultStruct taterDefs[] =
    &ACCEL, 100,
    &AP, 0,
    &CT, 4096,
-   &CTS, 4096,
+   &CTS, 40960,
    &DP, 0,
    &MT, 3300,
    &MV, 100,

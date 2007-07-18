@@ -46,7 +46,7 @@ extern pthread_mutex_t commMutex;
  * GLOBAL file-scope variables  *
  *==============================*/
 actuator_struct *act; //**< Array of actuator data (dynamically allocated at program start)
-struct timeval timev, timezonev; /* for actuator timing */
+struct timeval timev; /* for actuator timing */
 int num_actuators;    //**< Number of actuators
 int act_data_valid = 0; //**< Used to make sure programmer did things right
 int extra_pucks=0; //**< If there are more pucks on the bus than we expect we may have problems getting broadcast positions.
@@ -72,10 +72,10 @@ int DiscoverSystem(void)
 {}
 
 /** Use a config file to determine the robotic systems connected to this computer */
-int ReadSystemFromConfig(char *fn)
+int ReadSystemFromConfig(char *fn, int *busCount)
 {
    int err;
-   int busCount;
+   //int busCount;
    char key[256];
    char tmpstr[256];
    int i;
@@ -86,21 +86,21 @@ int ReadSystemFromConfig(char *fn)
       syslog(LOG_ERR, "ReadSystemFromConfig- Unable to parse file: %s", fn);
       return(-1);
    }
-   err = parseGetVal(INT, "system.busCount", &busCount);
+   err = parseGetVal(INT, "system.busCount", &num_buses);
    if(err) {
       syslog(LOG_ERR, "ReadSystemFromConfig- Could not find 'system.busCount' in %s", fn);
       return(-1);
    }
-   if(busCount > MAX_BUSES) {
-      syslog(LOG_ERR, "ReadSystemFromConfig- Error: busCount (%d) > MAX_BUSES (%d)", busCount, MAX_BUSES);
+   if(num_buses > MAX_BUSES) {
+      syslog(LOG_ERR, "ReadSystemFromConfig- Error: busCount (%d) > MAX_BUSES (%d)", num_buses, MAX_BUSES);
       return(-1);
    }
-   buses = (bus_struct*)malloc(busCount * sizeof(bus_struct));
+   buses = (bus_struct*)malloc(num_buses * sizeof(bus_struct));
    if(buses == NULL) {
-      syslog(LOG_ERR, "ReadSystemFromConfig- Could not malloc() space for %d buses", busCount);
+      syslog(LOG_ERR, "ReadSystemFromConfig- Could not malloc() space for %d buses", num_buses);
       return(-1);
    }
-   for(i = 0; i < busCount; i++) {
+   for(i = 0; i < num_buses; i++) {
       sprintf(key, "system.bus[%d].type", i);
       parseGetVal(STRING, key, tmpstr);
       sprintf(key, "system.bus[%d].device", i);
@@ -121,7 +121,9 @@ int ReadSystemFromConfig(char *fn)
          return(-1);
       }
    }
-   num_buses = busCount;
+   *busCount = num_buses;
+   //num_buses = busCount;
+   return(0);
 }
 
 #ifdef BTOLDCONFIG
@@ -253,7 +255,8 @@ int InitializeSystem(char *actuatorfile,char *busfile,char *motorfile,char *puck
 */
 int InitializeSystem(void)
 {
-   int err, bus_number, id;
+   int err, id;
+   int bus_number;
    char key[256], valStr[256];
    //int num_buses;
    int canAddr;
@@ -267,7 +270,8 @@ int InitializeSystem(void)
    int i,j,k,l;
    int min, max, min_idx, max_idx, act_cnt, grp_cnt;
    int group_cnt[65];
-
+   //actuator_struct *act;
+   
    /* Goals:
        Initialize and enumerate each bus (bus_struct buses should already be filled in). 
        Fill in actuator/motor/puck data structures 
@@ -281,7 +285,7 @@ int InitializeSystem(void)
    // For each bus, initialize
    //err = parseGetVal(INT, "system.busCount", (void*)&num_buses);
    //syslog(LOG_ERR, "Bus count = %d", num_buses);
-   num_actuators = 0;
+   cnt = 0;
    for(bus_number = 0; bus_number < num_buses; bus_number++) {
       // Initialize the bus[] structure
       buses[bus_number].num_pucks = 0;
@@ -303,98 +307,23 @@ int InitializeSystem(void)
       // If this is a CANbus
       if(buses[bus_number].type == CAN) {
          //err = parseGetVal(INT, key, (void*)&canAddr);
-         canAddr = buses[bus_number].address;
          // Initialize the hardware channel
-         /** \bug Should have a commMutex for each device.*/
-         if(err = pthread_mutex_init(&commMutex, NULL))
-            syslog(LOG_ERR, "Could not initialize can mutex for bus %d.", canAddr);
-         if(err = initCAN(canAddr))
-            syslog(LOG_ERR, "Could not initialize can bus %d, err = %d", canAddr, err);
+         ///** \bug Should have a commMutex for each device.*/
+         //if(err = pthread_mutex_init(&commMutex, NULL))
+         //   syslog(LOG_ERR, "Could not initialize can mutex for bus %d.", bus_number);
+         if(err = initCAN(bus_number, buses[bus_number].address))
+            syslog(LOG_ERR, "Could not initialize can bus %d, err = %d", bus_number, err);
          syslog(LOG_ERR, "Waking all pucks");
-         wakePuck(canAddr, GROUPID(WHOLE_ARM));
+         wakePuck(bus_number, GROUPID(WHOLE_ARM));
 
          // Enumerate nodes on the bus
-         err = getBusStatus(canAddr, status);
-         for(id = cnt = 0; id < MAX_NODES; cnt += status[id++] >= 0)
+         err = getBusStatus(bus_number, status);
+         for(id = 0; id < MAX_NODES; cnt += status[id++] >= 0)
             ; // Count responding nodes
-         syslog(LOG_ERR, "About to allocate space for %d nodes", cnt);
-         act = malloc(sizeof(actuator_struct) * (cnt + 3));
-         if (act == NULL) {
-            syslog(LOG_ERR, "Actuator Memory allocation failed. Tried to allocate %d actuators.", cnt);
-            return -1;
-         }
-         // Query each node for ID, CPR, IPNM, PIDX, GRPx
-         for(id = 0; id < MAX_NODES; id++) {
-            if(id == SAFETY_MODULE) {
-               if(status[id] != STATUS_READY) {
-                  syslog(LOG_ERR, "The safety module on bus %d is not functioning properly", canAddr);
-               }
-            } else {
-               switch(status[id]) {
-               case STATUS_RESET: // Get the puck out of reset
-                  syslog(LOG_ERR, "Waking puck %d", id);
-                  wakePuck(canAddr, id);
-
-               case STATUS_READY:
-                  // Make sure the puck is in IDLE mode
-                  setProperty(canAddr, id, MODE, FALSE, MODE_IDLE);
-
-                  // Assign the bus
-                  act[num_actuators].bus = canAddr;
-
-                  // Query for various info
-                  act[num_actuators].puck.ID = id;
-                  switch(id){
-                     case -1: //case 1: case 4: // xxx Remove me
-                     act[num_actuators].motor.counts_per_rev = 40960;
-                     act[num_actuators].motor.puckI_per_Nm = 2755;
-                     act[num_actuators].puck.order = id-1;
-                     act[num_actuators].puck.group = 1;
-                     break;
-                     default:
-                     getProperty(canAddr, id, CTS, &reply);
-                     act[num_actuators].motor.counts_per_rev = reply;
-                     getProperty(canAddr, id, IPNM, &reply);
-                     act[num_actuators].motor.puckI_per_Nm = reply;
-                     getProperty(canAddr, id, PIDX, &reply);
-                     act[num_actuators].puck.order = reply-1;
-                     getProperty(canAddr, id, GRPB, &reply);
-                     act[num_actuators].puck.group = reply;
-                     break;
-                  }
-                  
-                  syslog(LOG_ERR,"Puck: ID=%d CTS=%d IPNM=%.2lf PIDX=%d GRPB=%d",
-                         act[num_actuators].puck.ID,
-                         act[num_actuators].motor.counts_per_rev,
-                         act[num_actuators].motor.puckI_per_Nm,
-                         act[num_actuators].puck.order,
-                         act[num_actuators].puck.group);
-                  // Set MaxTorque to 3.3A
-		  // 2.4A = 1/4 breaking strength = 3441
-		  switch(id){
-			  case 1: case 2: case 3:
-                  setProperty(canAddr, id, MT, FALSE, 2300);//4731);
-			  break;
-			  case 4:
-                  setProperty(canAddr, id, MT, FALSE, 2050);//4731);
-			  break;
-			  case 5: case 6: 
-                  setProperty(canAddr, id, MT, FALSE, 1500);//4731);
-			  break;
-			  default:
-                  setProperty(canAddr, id, MT, FALSE, 3441);//4731);
-			  break;
-		  }
-                  ++num_actuators; // Update the number of actuators
-                  break;
-               default:
-                  break;
-               }
-            }
-         }
-      }
+         
+         
       // If this is an Ethernet bus
-      else if(buses[bus_number].type == ETHERNET) {
+      }else if(buses[bus_number].type == ETHERNET) {
          //err = parseGetVal(STRING, key, (void*)ethAddr);
          syslog(LOG_ERR, "Robot on bus %d not initialized, Ethernet not supported", bus_number);
       }
@@ -403,6 +332,88 @@ int InitializeSystem(void)
          syslog(LOG_ERR, "InitializeSystem: Invalid bus type (%d)", buses[bus_number].type);
       }
    }
+   
+   /* Allocate the actuators data structure */
+   syslog(LOG_ERR, "About to allocate space for %d nodes", cnt);
+   act = malloc(sizeof(actuator_struct) * (cnt + 3));
+   if (act == NULL) {
+      syslog(LOG_ERR, "Actuator Memory allocation failed. Tried to allocate %d actuators.", cnt);
+      return -1;
+   }
+   
+   num_actuators = 0;
+   for(bus_number = 0; bus_number < num_buses; bus_number++) {
+      // Query each node for ID, CPR, IPNM, PIDX, GRPx
+      for(id = 0; id < MAX_NODES; id++) {
+         if(id == SAFETY_MODULE) {
+            if(status[id] != STATUS_READY) {
+               syslog(LOG_ERR, "The safety module on bus %d is not functioning properly", bus_number);
+            }
+         } else {
+            switch(status[id]) {
+            case STATUS_RESET: // Get the puck out of reset
+               syslog(LOG_ERR, "Waking puck %d", id);
+               wakePuck(bus_number, id);
+
+            case STATUS_READY:
+               // Make sure the puck is in IDLE mode
+               setProperty(bus_number, id, MODE, FALSE, MODE_IDLE);
+
+               // Assign the bus
+               act[num_actuators].bus = bus_number;
+
+               // Query for various info
+               act[num_actuators].puck.ID = id;
+               switch(id){
+                  case -1: //case 1: case 4: // xxx Remove me
+                  act[num_actuators].motor.counts_per_rev = 40960;
+                  act[num_actuators].motor.puckI_per_Nm = 2755;
+                  act[num_actuators].puck.order = id-1;
+                  act[num_actuators].puck.group = 1;
+                  break;
+                  default:
+                  getProperty(bus_number, id, CTS, &reply);
+                  act[num_actuators].motor.counts_per_rev = reply;
+                  getProperty(bus_number, id, IPNM, &reply);
+                  act[num_actuators].motor.puckI_per_Nm = reply;
+                  getProperty(bus_number, id, PIDX, &reply);
+                  act[num_actuators].puck.order = reply-1;
+                  getProperty(bus_number, id, GRPB, &reply);
+                  act[num_actuators].puck.group = reply;
+                  break;
+               }
+               
+               syslog(LOG_ERR,"Puck: ID=%d CTS=%d IPNM=%.2lf PIDX=%d GRPB=%d",
+                      act[num_actuators].puck.ID,
+                      act[num_actuators].motor.counts_per_rev,
+                      act[num_actuators].motor.puckI_per_Nm,
+                      act[num_actuators].puck.order,
+                      act[num_actuators].puck.group);
+                // Set MaxTorque to 3.3A
+                // 2.4A = 1/4 breaking strength = 3441
+               switch(id){
+                 case 1: case 2: case 3:
+                        setProperty(bus_number, id, MT, FALSE, 2300);//4731);
+                 break;
+                 case 4:
+                        setProperty(bus_number, id, MT, FALSE, 2050);//4731);
+                 break;
+                 case 5: case 6: 
+                        setProperty(bus_number, id, MT, FALSE, 1500);//4731);
+                 break;
+                 default:
+                        setProperty(bus_number, id, MT, FALSE, 3441);//4731);
+                 break;
+               }
+               ++num_actuators; // Update the number of actuators
+               break;
+            default:
+               break;
+            }
+         }
+      }
+   }
+      
 
    // Get the cycles per second on this machine
    CPU_cycles_per_second = sysconf(_SC_CLK_TCK);
@@ -604,11 +615,13 @@ int EnumerateSystem()
                //syslog(LOG_ERR,"Doing puck ID %d",act[cnt].puck.ID);
                //SetProp(cnt, CTS_PER_REV, act[cnt].motor.counts_per_rev);
                //SetProp(cnt, MAX_TORQUE,8191);
-               SetProp(cnt,PIDX,act[cnt].puck.order+1);
-               SetProp(cnt,MT,4731); // Set to 3.3A Max Torque
+               setProperty(busidx, act[cnt].puck.ID, PIDX, FALSE, act[cnt].puck.order+1);
+               setProperty(busidx, act[cnt].puck.ID, MT, FALSE, 4731);
+               //SetProp(cnt,MT,4731); // Set to 3.3A Max Torque
                //SetProp(cnt,GROUP_A,act[cnt].puck.group);
             } else {
-               SetProp(cnt, MODE, MODE_IDLE);
+               setProperty(busidx, act[cnt].puck.ID, MODE, FALSE, MODE_IDLE);
+               //SetProp(cnt, MODE, MODE_IDLE);
             }
             syslog(LOG_ERR, "Finished");
          }
@@ -672,14 +685,22 @@ void DumpData2Syslog()
 \param Num_actuators A pointer to the int variable you want loaded with the number of actuators.
 \return Returns an acutator_struct pointer.
 */
-actuator_struct * GetActuators(int *Num_actuators)
+int GetActuators(int bus, actuator_struct **a, int *Num_actuators)
 {
-   if(!act_data_valid) {
-      syslog(LOG_ERR,"GetActuators: Tried to do stuff with actuators before you initialized them with InitializeActuators()");
-      return NULL;
+   int i;
+   //if(!act_data_valid) {
+   //   syslog(LOG_ERR,"GetActuators: Tried to do stuff with actuators before you initialized them with InitializeActuators()");
+   //   return NULL;
+   //}
+   for(i = 0; i < num_actuators; i++){
+      if(act[i].bus == bus){
+         *a = &act[i];
+         *Num_actuators = buses[bus].num_pucks;
+         return(0);
+      }
    }
-   *Num_actuators = num_actuators;
-   return act;
+   
+   return -1;
 }
 
 /** Gets a pointer to the buses data
@@ -705,7 +726,7 @@ be converted to puck units. If UseTRC is true, the torque ripple
 cancelation value will be added if it is available.
  
 */
-void GetPositions()
+void GetPositions(int bus)
 {
    int cnt, cnt2, idx, err;
    double tmp;
@@ -717,22 +738,24 @@ void GetPositions()
    }
 
    for (cnt = 0; cnt < num_actuators; cnt++) {
-      gettimeofday(&timev, 0); /* if this segfaults put a timezone struct in here */
-      act[cnt].lastpos = timev.tv_usec + timev.tv_sec * 1000000;
+      if(act[cnt].bus == bus){
+         gettimeofday(&timev, 0); /* if this segfaults put a timezone struct in here */
+         act[cnt].lastpos = timev.tv_usec + timev.tv_sec * 1000000;
+      }
    }
    //for each bus do a broadcast get position...
-   for (cnt = 0; cnt < num_buses; cnt++) {
-      err = getPositions(cnt, 0, buses[cnt].num_pucks, data);
+   //for (cnt = 0; cnt < num_buses; cnt++) {
+      err = getPositions(bus, 0, buses[bus].num_pucks, data);
       if(err) {
          // Problem reading positions
          //syslog(LOG_ERR, "getPositions err = %d", err);
       }
       //for each puck on this bus, get your position from the return array
-      for (cnt2 = 0; cnt2 < buses[cnt].num_pucks; cnt2++) {
-         idx = buses[cnt].pucks_by_id[cnt2];
+      for (cnt2 = 0; cnt2 < buses[bus].num_pucks; cnt2++) {
+         idx = buses[bus].pucks_by_id[cnt2];
 
          if ((idx > num_actuators)|| (idx<0)) {
-            syslog(LOG_ERR, "puck %d on bus %d shows an idx %d", cnt2,cnt, idx);
+            syslog(LOG_ERR, "puck %d on bus %d shows an idx %d", cnt2,bus, idx);
             idx = 0;
          }
 
@@ -746,12 +769,12 @@ void GetPositions()
          if (act[idx].UseTRC)
             act[idx].puck.enc_pos = act[idx].puck.position + act[idx].puck.poffset;
       }
-   }
+   //}
 }
 
 /** Broadcast the torques to the actuators
 */
-void SetTorques()
+void SetTorques(int bus)
 {
    int cnt, cnt2, cnt3, idx;
    int data[MAX_NODES];
@@ -765,33 +788,36 @@ void SetTorques()
    }
    //Do engineering units conversion
    for (cnt = 0; cnt < num_actuators; cnt++) {
-      if (act[cnt].UseEngrUnits) {
-         tmp = act[cnt].torque * act[cnt].motor.puckI_per_Nm;
-         act[cnt].puck.torque_cmd = Border(tmp, -8192, 8192);
-      } else
-         act[cnt].puck.torque_cmd = Border(act[cnt].torque, -8192, 8192);
-
-      //add torque ripple cancelation if applicable
-      if ((act[cnt].UseTRC) && (act[cnt].motor.values != NULL)) {
-         TRC = 0;
-         tmp = floor(act[cnt].puck.enc_pos * act[cnt].motor.ratio); //puck.enc_pos calculated in GetPositions()
-         enc = tmp;
-         enc = enc % act[cnt].motor.num_values;
-         if(enc < 0)
-            enc += act[cnt].motor.num_values;
-         TRC = act[cnt].motor.values[enc];
-         act[cnt].puck.torque_cmd += TRC;
+      if(act[cnt].bus == bus){
+         if (act[cnt].UseEngrUnits) {
+            tmp = act[cnt].torque * act[cnt].motor.puckI_per_Nm;
+            act[cnt].puck.torque_cmd = Border(tmp, -8192, 8192);
+         } else
+            act[cnt].puck.torque_cmd = Border(act[cnt].torque, -8192, 8192);
+   
+         //add torque ripple cancellation if applicable
+         if ((act[cnt].UseTRC) && (act[cnt].motor.values != NULL)) {
+            TRC = 0;
+            tmp = floor(act[cnt].puck.enc_pos * act[cnt].motor.ratio); //puck.enc_pos calculated in GetPositions()
+            enc = tmp;
+            enc = enc % act[cnt].motor.num_values;
+            if(enc < 0)
+               enc += act[cnt].motor.num_values;
+            TRC = act[cnt].motor.values[enc];
+            act[cnt].puck.torque_cmd += TRC;
+         }
       }
    }
 
    //Pack data and send it
-   for (cnt = 0; cnt < num_buses; cnt++) {
+   //for (cnt = 0; cnt < num_buses; cnt++) {
+      cnt = bus;
       for (cnt2 = 0; cnt2 < buses[cnt].num_groups; cnt2++) {
          for (cnt3 = 0; cnt3 < 4; cnt3++) {
             idx = buses[cnt].group[cnt2].pucks_by_order[cnt3];
             if (idx == -1) {
                data[cnt3] = 0;
-            } else if ((idx > num_actuators)|| (idx<0)) {
+            } else if ((idx > num_actuators) || (idx<0)) {
                syslog(LOG_ERR, "SetTorque:bus %d, order idx %d pointed to act %d", cnt,cnt3,idx);
                idx = 0;
                data[cnt3] = 0;
@@ -801,11 +827,13 @@ void SetTorques()
          }
          setTorques(cnt, buses[cnt].group[cnt2].group_number, data);
       }
-   }
+   //}
 
    for (cnt = 0; cnt < num_actuators; cnt++) {
-      gettimeofday(&timev, 0); /* if this segfaults put a timezone struct here */
-      act[cnt].lasttrq = timev.tv_usec + timev.tv_sec * 1000000;
+      if(act[cnt].bus == bus){
+         gettimeofday(&timev, 0); /* if this segfaults put a timezone struct here */
+         act[cnt].lasttrq = timev.tv_usec + timev.tv_sec * 1000000;
+      }
    }
 }
 
@@ -885,11 +913,11 @@ int SetProp(int actuator_id, int property, long data)
  \param data The data you want to send
  
 */
-int SetByID(int CANid, int property, long data)
+int SetByID(int bus, int CANid, int property, long data)
 {
    int err;
    //syslog(LOG_ERR, "About to setProperty, property = %d", property);
-   err = setProperty(act[0].bus, CANid, property, TRUE, data);
+   err = setProperty(bus, CANid, property, TRUE, data);
 
    return(err);
 }

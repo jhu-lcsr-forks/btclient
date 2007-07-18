@@ -71,7 +71,7 @@ typedef unsigned long DWORD;
 * GLOBAL file-scope variables  *
 *==============================*/
 HANDLE              canDev[MAX_BUS];
-pthread_mutex_t     commMutex;
+pthread_mutex_t     commMutex[MAX_BUS];
 
 
 
@@ -226,13 +226,13 @@ void allowMessage(int bus, int id, int mask)
          canIdAdd(canDev[bus], i);
 }
 
-int initCAN(int bus)
+int initCAN(int bus, int port)
 {
    DWORD retvalue;
 
-   pthread_mutex_init(&commMutex, NULL);
+   pthread_mutex_init(&commMutex[bus], NULL);
 
-   retvalue = canOpen(bus, 0, TX_QUEUE_SIZE, RX_QUEUE_SIZE, TX_TIMEOUT, RX_TIMEOUT, &canDev[bus]);
+   retvalue = canOpen(port, 0, TX_QUEUE_SIZE, RX_QUEUE_SIZE, TX_TIMEOUT, RX_TIMEOUT, &canDev[bus]);
    if(retvalue != NTCAN_SUCCESS) {
       syslog(LOG_ERR, "initCAN(): canOpen() failed with error %d", retvalue);
       return(1);
@@ -350,9 +350,9 @@ int setTorques(int bus, int group, int *values)
    data[7] = (unsigned char)( values[3] & 0x00FF);
 
    // Send the data
-   pthread_mutex_lock(&commMutex);
+   pthread_mutex_lock(&commMutex[bus]);
    err = canSendMsg(bus, GROUPID(group), 8, data, TRUE);
-   pthread_mutex_unlock(&commMutex);
+   pthread_mutex_unlock(&commMutex[bus]);
 }
 
 int getPositions(int bus, int group, int howMany, long *pos)
@@ -368,7 +368,7 @@ int getPositions(int bus, int group, int howMany, long *pos)
    // Compile the packet
    data[0] = (unsigned char)AP;
 
-   pthread_mutex_lock(&commMutex);
+   pthread_mutex_lock(&commMutex[bus]);
 
    // Send the packet
    err = canSendMsg(bus, GROUPID(group), 1, data, TRUE);
@@ -391,12 +391,12 @@ int getPositions(int bus, int group, int howMany, long *pos)
          }
       } else { 
          // Timeout or other error
-         pthread_mutex_unlock(&commMutex);
+         pthread_mutex_unlock(&commMutex[bus]);
          return(err);
       }
    }
    
-   pthread_mutex_unlock(&commMutex);
+   pthread_mutex_unlock(&commMutex[bus]);
    
    return(0);
 }
@@ -416,9 +416,9 @@ int setProperty(int bus, int id, int property, int verify, long value)
    data[0] |= 0x80; // Set the 'Set' bit
 
    // Send the packet
-   pthread_mutex_lock(&commMutex);
+   pthread_mutex_lock(&commMutex[bus]);
    err = canSendMsg(bus, (id & 0x0400) ? id : NODE2ADDR(id), len, data, TRUE);
-   pthread_mutex_unlock(&commMutex);
+   pthread_mutex_unlock(&commMutex[bus]);
 
    // BUG: This will not verify properties from groups of pucks
    if(verify) {
@@ -443,7 +443,7 @@ int getProperty(int bus, int id, int property, long *reply)
    // Compile the packet
    data[0] = (unsigned char)property;
 
-   pthread_mutex_lock(&commMutex);
+   pthread_mutex_lock(&commMutex[bus]);
 
    // Send the packet
    err = canSendMsg(bus, NODE2ADDR(id), 1, data, TRUE);
@@ -451,7 +451,7 @@ int getProperty(int bus, int id, int property, long *reply)
    // Wait for 1 reply
    err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
 
-   pthread_mutex_unlock(&commMutex);
+   pthread_mutex_unlock(&commMutex[bus]);
 
    if(!err) {
       // Parse the reply
@@ -481,7 +481,7 @@ int getBusStatus(int bus, long *status)
    int firstFound = 0;
    long fw_vers;
 
-   pthread_mutex_lock(&commMutex);
+   pthread_mutex_lock(&commMutex[bus]);
    //err = canReadMsg(bus, &id_in, &len_in, data, FALSE);
 
    for(id = 0; id < MAX_NODES; id++) {
@@ -510,14 +510,15 @@ int getBusStatus(int bus, long *status)
          err = parseMessage(id_in, len_in, data, &id_in, &property_in, &status[id]);
 #endif
          // If this is the first puck found, initialize the property definitions
+         ///* \bug This is executed for each bus, but should really only be done once */
          if(!firstFound){
             firstFound = 1;
-            pthread_mutex_unlock(&commMutex);
+            pthread_mutex_unlock(&commMutex[bus]);
             wakePuck(bus, id_in); // Wake this puck
             err = getProperty(bus, id_in, 0, &fw_vers); // Get the firmware version
             //setProperty(bus, id_in, 5, FALSE, 0); // Reset this puck
             //usleep(500000);
-            pthread_mutex_lock(&commMutex);
+            pthread_mutex_lock(&commMutex[bus]);
             initPropertyDefs(fw_vers);
          }
 
@@ -525,7 +526,7 @@ int getBusStatus(int bus, long *status)
          syslog(LOG_ERR, "getBusStatus(): canReadMsg returned error");
    }
 
-   pthread_mutex_unlock(&commMutex);
+   pthread_mutex_unlock(&commMutex[bus]);
 #if BTDEBUG <= 8
 
    syslog(LOG_ERR,"getBusStatus: Only status != -1 is shown.");

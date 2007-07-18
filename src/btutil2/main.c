@@ -415,7 +415,7 @@ int main( int argc, char **argv )
    syslog(LOG_ERR, "...Starting Puck Utility Program...");
 
    /* Initialize CAN */
-   if(err = initCAN(0)) {
+   if(err = initCAN(0, 0)) {
       syslog(LOG_ERR, "initCAN returned err=%d", err);
    }
    //handleMenu('E'); // Enumeration required to populate property keys
@@ -789,6 +789,8 @@ void paramDefaults(int newID,int targID)
       case ROLE_TATER:
       for(i = 0; taterDefs[i].key; i++)
          setProperty(0, newID, *taterDefs[i].key, 0, taterDefs[i].val);
+      if(role & 0x0100)
+	 setProperty(0, newID, CTS, 0, 4096);
       
       if(targID <= 4) { //4DOF
          setProperty(0,newID,IKCOR,0,1638);
