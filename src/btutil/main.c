@@ -240,7 +240,7 @@ defaults[] = {
                 &ACCEL, 32,
                 &AP, 0,
                 &CT, 750,
-                &CTS, 40960,
+                &CTS, 4096,
                 &DP, 0,
                 //         EN, 0x00EE,
                 &MT, 3441,
@@ -589,6 +589,8 @@ getParams(int newID)
    printf("OTEMP = %ld\n",reply);
    getProperty(0,newID,POLES,&reply);
    printf("POLES = %ld\n",reply);
+   getProperty(0,newID,ROLE,&reply);
+   printf("ROLE = %ld\n",reply);
 }
 allParams(int newID)
 {
@@ -610,11 +612,12 @@ void changeID(oldID, newID)
    setProperty(0, oldID, _LOCK, 0, 3145);
    setProperty(0, oldID, _LOCK, 0, 1024);
    setProperty(0, oldID, _LOCK, 0, 1);
-   setProperty(0, oldID, ROLE, 0, 3);
+   setProperty(0, oldID, ROLE, 0, 256);
    setProperty(0, oldID, SAVE, 0, ROLE);
    setProperty(0, oldID, ID, 0, newID);
    setProperty(0, oldID, SAVE, 0, ID);
    setProperty(0, oldID, PTEMP, 0, 0);
+   setProperty(0, oldID, SAVE, 0, PTEMP);
 }
 
 
@@ -811,7 +814,7 @@ int main( int argc, char **argv )
    syslog(LOG_ERR, "syslog initalized");
 
    /* Initialize CAN */
-   if(err = initCAN(0)) {
+   if(err = initCAN(0, 0)) {
       syslog(LOG_ERR, "initCAN returned err=%d", err);
    }
    /* Parse our arguments; every option seen by parse_opt will

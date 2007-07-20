@@ -509,9 +509,7 @@ int main(int argc, char **argv)
    init_haptics();
    
    btthread_create(&wamData[0].wam_thd, 90, (void*)WAMControlThread1, (void*)wam[0]);
-   //usleep(5000000); // Sleep for 5 secs
-   btthread_create(&wamData[1].wam_thd, 90, (void*)WAMControlThread2, (void*)wam[1]);
-   //usleep(5000000); // Sleep for 5 secs
+   //btthread_create(&wamData[1].wam_thd, 90, (void*)WAMControlThread2, (void*)wam[1]);
    active_file[0] = 0;
 
    /* Open serial port */

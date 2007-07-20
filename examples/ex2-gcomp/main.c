@@ -44,27 +44,23 @@ int main(int argc, char **argv)
     char buf[80];
     int  useGimbals = 0;
     int  err, i;
-    char robotName[128];
-    
-    /* Initialize syslog */
-    openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
-    atexit((void*)closelog);
+    int  busCount;
 
-#ifndef BTOLDCONFIG
+   /* Initialize syslog */
+   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
+   atexit((void*)closelog);
 
-    err = ReadSystemFromConfig("wam.conf");
-#else //BTOLDCONFIG
-#endif //BTOLDCONFIG
-    /* If the robot name was given on the command line, use it */
-    *robotName = 0;
-    for(i = 1; i < argc-1; i++) {
-        if(!strcmp(argv[i],"-n"))
-            strcpy(robotName, argv[i+1]);
-    }
+   err = ReadSystemFromConfig("wam.conf", &busCount);
 
-    /* Initialize and get a handle to the robot */
-    if(!(wam = OpenWAM("wam.conf", robotName)))
-        exit(1);
+   err = InitializeSystem();
+   if(err) {
+      syslog(LOG_ERR, "InitializeSystem returned error: %d", err);
+      exit(1);
+   }
+
+   /* Initialize and get a handle to the robot */
+   if(!(wam = OpenWAM("wam.conf", 0)))
+      exit(1);
 
     /* Check and handle any additional command line arguments */
     for(i = 1; i < argc-1; i++) {
@@ -81,7 +77,7 @@ int main(int argc, char **argv)
 
     /* Start up wam control loop */
     wam_thd.period = 0.002;
-    btthread_create(&wam_thd,90,(void*)WAMControlThread,(void*)wam);
+    btthread_create(&wam_thd,90,(void*)WAMControlThread1,(void*)wam);
 
     printf("\nActivate the WAM, then press <Enter>");
     fflush(stdout);
