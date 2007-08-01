@@ -378,7 +378,7 @@ int main(int argc, char **argv)
          usleep(5000);
    }
 
-   err = ReadSystemFromConfig("wam.conf", &busCount);
+   err = ReadSystemFromConfig("../../wam.conf", &busCount);
    if(err) {
       syslog(LOG_ERR, "ReadSystemFromConfig returned err = %d", err);
       exit(1);
@@ -392,7 +392,7 @@ int main(int argc, char **argv)
       
    /* Initialize and get a handle to the robot(s) */
    for(i = 0; i < busCount; i++){
-      if(!(wam[i] = OpenWAM("wam.conf", i)))
+      if(!(wam[i] = OpenWAM("../../wam.conf", i)))
          exit(1);
    }
 

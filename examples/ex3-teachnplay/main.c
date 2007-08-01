@@ -153,7 +153,7 @@ int main(int argc, char **argv)
    openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
    atexit((void*)closelog);
 
-   err = ReadSystemFromConfig("wam.conf", &busCount);
+   err = ReadSystemFromConfig("../../wam.conf", &busCount);
 
    err = InitializeSystem();
    if(err) {
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
    }
 
    /* Initialize and get a handle to the robot */
-   if(!(wam = OpenWAM("wam.conf", 0)))
+   if(!(wam = OpenWAM("../../wam.conf", 0)))
       exit(1);
 
     /* Check and handle any additional command line arguments */
