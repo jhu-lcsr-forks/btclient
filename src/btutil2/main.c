@@ -345,12 +345,14 @@ cableTension(int motor){
    printf("\nPlease move cable to shaft end, then press <Enter>");
    mygetch();
    mygetch();
-   setProperty(0,motor,TENSION,FALSE,1);
+   if(motor == 6) setProperty(0,5,TENSION,FALSE,1);
+   else setProperty(0,motor,TENSION,FALSE,1);
    setProperty(0,motor,cmd,FALSE,500);
    printf("\nPlease rotate shaft until tensioner engages, "
           "then press <Enter>");
    mygetch();
-   setProperty(0,motor,TENSION,FALSE,0);
+   if(motor == 6) setProperty(0,5,TENSION,FALSE,0);
+   else setProperty(0,motor,TENSION,FALSE,0);
    getProperty(0,motor,AP,&startPos);
    setProperty(0,motor,cmd,FALSE,tens);
    usleep(1000000);
