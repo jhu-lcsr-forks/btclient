@@ -127,6 +127,12 @@ double vel = 3.0, acc = 2.0;
 char active_file[250];
 char *user_def = "User edited point list";
 
+/* Rotation control */
+vect_3 *ns, *n, *os, *o, *as, *a, *xyz, *f3, *t3;
+matr_3 *r_mat;
+vect_n *e, *ed, *last_e, *f6;
+matr_mn *kp, *kd;
+
 
 /******* Haptics *******/
 btgeom_plane planes[10];
@@ -176,6 +182,26 @@ int main(int argc, char **argv)
    int      i, nout;
    struct   sched_param mysched;
    char     robotName[128];
+
+   ns = new_v3();
+   n = new_v3();
+   os = new_v3();
+   o = new_v3();
+   as = new_v3();
+   a = new_v3();
+   xyz = new_v3();
+   r_mat = new_m3();
+   e = new_vn(6);
+   ed = new_vn(6);
+   last_e = new_vn(6);
+   kp = new_mn(6,6);
+   kd = new_mn(6,6);
+   f6 = new_vn(6);
+   f3 = new_v3();
+   t3 = new_v3();
+   
+   set_mn(kp, scale_mn(20.0, kp));
+   set_mn(kd, scale_mn(0.1, kd));
 
    /* Figure out what the keys do and print it on screen.
     * Parses this source file for lines containing "case '", because
@@ -390,7 +416,32 @@ int main(int argc, char **argv)
 int WAMcallback(struct btwam_struct *w)
 {
    int i;
-  
+  // 
+   if(getmode_bts(w->active_sc) == SCMODE_POS && w->active_sc == &w->Csc){
+      // Reference
+      //setrange_vn((vect_n*)xyz, w->R6ref, 0, 3, 3);
+      //XYZftoR_m3(r_mat, xyz);
+      getcol_m3(ns, r_mat, 0);
+      getcol_m3(os, r_mat, 1);
+      getcol_m3(as, r_mat, 2);
+      
+      // Actual
+      //setrange_vn((vect_n*)xyz, w->R6pos, 0, 3, 3);
+      //XYZftoR_m3(r_mat, xyz);
+      getcol_m3(n, w->robot.tool->origin, 0);
+      getcol_m3(o, w->robot.tool->origin, 1);
+      getcol_m3(a, w->robot.tool->origin, 2);
+      
+      setrange_vn(e, (vect_n*)/*matXvec_m3(w->robot.tool->origin,*/( scale_v3(0.5, add_v3(cross_v3(ns,n), add_v3(cross_v3(os,o), cross_v3(as,a))))), 3, 0, 3);
+      set_vn(ed, scale_vn(1/Ts, add_vn(e, scale_vn(-1.0, last_e))));
+      set_vn(f6, add_vn(matXvec_mn(kp, e, e->ret), matXvec_mn(kd, ed, ed->ret)));
+      setrange_vn(w->R6force, f6, 3, 3, 3); // Just for show
+      setrange_vn((vect_n*)t3, f6, 0, 3, 3);
+      apply_tool_force_bot(&(w->robot), w->Cpoint, f3, t3);
+      set_vn(last_e, e);
+   }
+
+   
    /* Handle haptic scene for the specified WAM */
    for(i = 0; i < busCount; i++){
       if(wam[i] == w){
@@ -650,7 +701,6 @@ void RenderMAIN_SCREEN()
       */
       mvprintw(line, 0, "Destination: %s ",sprint_vn(vect_buf1,wamData[cnt].active_dest));
       line+=1;
-   
       mvprintw(line, 0, "Position   : %s ", sprint_vn(vect_buf1,wamData[cnt].active_pos));
       ++line;
       //mvprintw(line, 0, "Target     : %s ", sprint_vn(vect_buf1,active_bts->qref));
@@ -888,7 +938,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             setmode_bts(wamData[i].active_bts,SCMODE_IDLE);
          else
             setmode_bts(wamData[i].active_bts,SCMODE_POS);
+         
+         set_m3(r_mat, wam[i]->robot.tool->origin);
       }
+      
+      
       break;
    case '.'://Play loaded trajectory
       for(i = 0; i < busCount; i++){
@@ -1050,9 +1104,9 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          }
       }
       break;
-      /*
+      
    case 'M'://Move to a location
-      if(getmode_bts(active_bts)!=SCMODE_TRJ) {
+      if(getmode_bts(wamData[0].active_bts)!=SCMODE_TRJ) {
          start_entry();
          addstr("Enter comma seperated destination \".2,.4,...\": ");
          refresh();
@@ -1060,14 +1114,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          strcat(fn,"\n");
          //syslog(LOG_ERR,"Moveto:%s",fn);
          finish_entry();
-         fill_vn(active_dest,0.25);
-         csvto_vn(active_dest,fn);
-         moveparm_bts(active_bts,vel,acc);
-         if (getmode_bts(active_bts) != SCMODE_POS)
-            setmode_bts(active_bts,SCMODE_POS);
+         fill_vn(wamData[0].active_dest,0.25);
+         csvto_vn(wamData[0].active_dest,fn);
+         moveparm_bts(wamData[0].active_bts,vel,acc);
+         if (getmode_bts(wamData[0].active_bts) != SCMODE_POS)
+            setmode_bts(wamData[0].active_bts,SCMODE_POS);
 
-         if(moveto_bts(active_bts,active_dest))
-            syslog(LOG_ERR,"Moveto Aported");
+         if(moveto_bts(wamData[0].active_bts,wamData[0].active_dest))
+            syslog(LOG_ERR,"Moveto Aborted");
 
       } else {
          start_entry();
@@ -1079,7 +1133,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       break;
       
       //'m': Move to the presently selected trajectory point
-*/
+
    case '<'://Select next trajectory point
       for(i = 0; i < busCount; i++){
          prev_point_vta(*wamData[i].vta);

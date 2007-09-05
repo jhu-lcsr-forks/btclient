@@ -314,15 +314,20 @@ cableTension(int motor){
    int cmd;
    int tens;
    long startPos, endPos;
-   double nm;
+   double nm = 0.0;
    
    cmd = T;
+   // Set the default tension
+   // Comment out this section to enter your own values
    switch(motor){
-	   case 1: case 2: case 3: case 4:
-		   tens = 2500;
+	   case 1: case 2: case 3: 
+		   nm = 0.9;
 	break;
+	   case 4:
+		nm = 0.8;
+		break;
 	   case 5: case 6:
-	tens = 1500;
+	nm = 0.3;
 	break;
    }
 
@@ -330,8 +335,10 @@ cableTension(int motor){
    //scanf("%d", &motor);
    setProperty(0,GROUPID(0),cmd,FALSE,0);
    wakePuck(0,GROUPID(0));
+   if(nm == 0.0){
    printf("\nHow much tension (Nm): ");
    scanf("%lf", &nm);
+   }
    switch(motor){
 	   case 1: case 2: case 3: case 4:
 		   tens = nm * 2700;

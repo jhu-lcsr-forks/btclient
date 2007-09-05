@@ -222,9 +222,13 @@ wam_struct* OpenWAM(char *fn, int bus)
       init_btPID(&(wam->pid[cnt]));
       setgains_btPID(&(wam->pid[cnt]),2000.0,5.0,0.0);
    }
-   setgains_btPID(&(wam->pid[3]),8.0,0.1,0.0);
+   for (cnt = 3; cnt < 6; cnt ++) {
+      init_btPID(&(wam->pid[cnt]));
+      setgains_btPID(&(wam->pid[cnt]), 200.0, 0.5, 0.0);
+   }
+   //setgains_btPID(&(wam->pid[3]),15.0,0.5,0.0);
    //setgains_btPID(&(wam->pid[3]),60.0,0.10,0.0);
-   init_err_btPID(&(wam->pid[3]));
+   //init_err_btPID(&(wam->pid[3]));
 
    wam->F = 0.0;
    wam->isZeroed = FALSE;
@@ -518,6 +522,9 @@ void WAMControlThread1(void *data)
    unsigned char CANdata[8];
    int len_in;
    int id_in;
+   vect_3 *rot;
+   
+   rot = new_v3();
       
    /* Set up timer*/
    this_thd = (btthread*)data;
@@ -610,6 +617,9 @@ void WAMControlThread1(void *data)
 
       set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));
       set_vn(wam->R6pos,(vect_n*)wam->Cpos);
+      RtoXYZf_m3(wam->robot.tool->origin, rot);
+      setrange_vn(wam->R6pos, (vect_n*)rot, 3, 0, 3);
+
 
       pos1_time = rt_get_cpu_time_ns(); //th prof
       eval_bts(&(wam->Csc));
@@ -618,6 +628,8 @@ void WAMControlThread1(void *data)
 
       set_v3(wam->Cforce,(vect_3*)wam->R6force);
       //setrange_vn((vect_n*)wam->Ctrq,wam->R6force,0,2,3);
+      
+      //vect_3* matXvec_m3((matr_3*)robot->tool->origin, const_v3(vect_3* dest, x-xhat, y-yhat, z-zhat))
 #if 0 
       //Cartesian angular constraint
       R_to_q(wam->qact,T_to_W_trans_bot(&wam->robot));

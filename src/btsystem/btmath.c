@@ -316,7 +316,7 @@ void setrange_vn(vect_n* dest, vect_n* src, int dest_start, int src_start, int n
       syslog(LOG_ERR,"btmath:set_vn:dest:pointer:%x",dest);
       return;
    }
-   if(!idx_bounds_ok(src_start,dest->n-1,"setrange_vn src")) {
+   if(!idx_bounds_ok(src_start,src->n-1,"setrange_vn src")) {
       syslog(LOG_ERR,"btmath:set_vn:src:pointer:%x:dest:pointer:%x",src,dest);
       return;
    }
