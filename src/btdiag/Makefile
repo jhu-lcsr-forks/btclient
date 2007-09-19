@@ -9,7 +9,7 @@ PATH_INCLUDE = -I/usr/realtime/include -I../../include
 CFLAGS =  -g -DUSE_RTAI31  ${PATH_INCLUDE} ${BTOLDCFG}
 LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L/usr/local/lib -L../../lib 
 LDFLAGS += -lpthread -llxrt -lncurses -lm -lbtwam -lbtsystem -lntcan
-
+LDFLAGS += -Wl,-Map=$(TARG).map,--cref
 
 default: btdiag
 

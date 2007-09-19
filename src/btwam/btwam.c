@@ -107,13 +107,18 @@ void InitVectors(wam_struct *wam)
    wam->qaxis = new_q();
    wam->forced = new_q();
    wam->qerr = 0;
-   wam->R6pos = new_vn(6);
-   wam->R6ref = new_vn(6);
-   wam->R6tref = new_vn(6);
-   wam->R6vel = new_vn(6);
-   wam->R6acc = new_vn(6);
-   wam->R6trq = new_vn(6);
-   wam->R6force = new_vn(6);
+   
+   /* The original idea was to store XYZypr in a vn(6).
+    * But ypr caused ugly discontinuous math.
+    * So now we store XYZ+rMatrix in a vn(12).
+    */
+   wam->R6pos = new_vn(12);
+   wam->R6ref = new_vn(12);
+   wam->R6tref = new_vn(12);
+   wam->R6vel = new_vn(12);
+   wam->R6acc = new_vn(12);
+   wam->R6trq = new_vn(12);
+   wam->R6force = new_vn(12);
    wam->js_or_cs = 0;
    wam->idle_when_done = 0;
    wam->active_sc = &wam->Jsc;
@@ -208,24 +213,29 @@ wam_struct* OpenWAM(char *fn, int bus)
       init_btPID(&(wam->d_pos_ctl[cnt]));
       setgains_btPID(&(wam->d_pos_ctl[cnt]),2000.0,5.0,0.0);
    }
+   for (cnt = 3; cnt < 12; cnt++) {
+      init_btPID(&(wam->d_pos_ctl[cnt]));
+      setgains_btPID(&(wam->d_pos_ctl[cnt]),0.0,0.0,0.0);
+   }
    wam->d_pos_array.pid = wam->d_pos_ctl;
-   wam->d_pos_array.elements = 6;
+   wam->d_pos_array.elements = 12;
    init_bts(&wam->Csc);
    map_btstatecontrol(&wam->Csc, wam->R6pos, wam->R6vel, wam->R6acc,
                       wam->R6ref, wam->R6tref, wam->R6force, &wam->dt);
    btposition_interface_mapf_btPID(&wam->Csc, &(wam->d_pos_array));
    /* END of Control plugin initialization */
 
-   init_pwl(&wam->pth,3,2); //Cartesian move path
+   init_pwl(&wam->pth,3,2); //Cartesian move path (unused?)
 
-   for (cnt = 0; cnt < 3; cnt ++) {
-      init_btPID(&(wam->pid[cnt]));
-      setgains_btPID(&(wam->pid[cnt]),2000.0,5.0,0.0);
-   }
-   for (cnt = 3; cnt < 6; cnt ++) {
-      init_btPID(&(wam->pid[cnt]));
-      setgains_btPID(&(wam->pid[cnt]), 200.0, 0.5, 0.0);
-   }
+   //for (cnt = 0; cnt < 3; cnt++) {
+   //   init_btPID(&(wam->pid[cnt]));
+   //   setgains_btPID(&(wam->pid[cnt]),2000.0,5.0,0.0);
+   //}
+   
+   //for (cnt = 3; cnt < 6; cnt ++) {
+   //   init_btPID(&(wam->pid[cnt]));
+   //   setgains_btPID(&(wam->pid[cnt]), 200.0, 0.5, 0.0);
+   //}
    //setgains_btPID(&(wam->pid[3]),15.0,0.5,0.0);
    //setgains_btPID(&(wam->pid[3]),60.0,0.10,0.0);
    //init_err_btPID(&(wam->pid[3]));
@@ -522,10 +532,30 @@ void WAMControlThread1(void *data)
    unsigned char CANdata[8];
    int len_in;
    int id_in;
-   vect_3 *rot;
    
-   rot = new_v3();
-      
+   /* Rotation control */
+   vect_3 *ns, *n, *os, *o, *as, *a, *f3, *t3;
+   vect_n *e, *ed, *last_e, *f6;
+   matr_mn *kp, *kd;
+   vect_3 *v3;
+   
+   v3 = new_v3();
+   ns = new_v3();
+   n = new_v3();
+   os = new_v3();
+   o = new_v3();
+   as = new_v3();
+   a = new_v3();
+   e = new_vn(6);
+   ed = new_vn(6);
+   last_e = new_vn(6);
+   kp = new_mn(6,6);
+   kd = new_mn(6,6);
+   f6 = new_vn(6);
+   
+   set_mn(kp, scale_mn(10.0, kp)); //20
+   set_mn(kd, scale_mn(0.08, kd)); //0.1
+   
    /* Set up timer*/
    this_thd = (btthread*)data;
    wam = this_thd->data;
@@ -615,11 +645,15 @@ void WAMControlThread1(void *data)
       //syslog(LOG_ERR, "C 1 12");
       get_t_bot(&wam->robot, wam->Gtrq);
 
+      /* Fill in the Cartesian XYZ */
       set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));
       set_vn(wam->R6pos,(vect_n*)wam->Cpos);
-      RtoXYZf_m3(wam->robot.tool->origin, rot);
-      setrange_vn(wam->R6pos, (vect_n*)rot, 3, 0, 3);
-
+      
+      /* Append the rMatrix to R6pos */
+      for(cnt = 0; cnt < 3; cnt++){
+         getcol_mh(v3, wam->robot.tool->origin, cnt);
+         setrange_vn(wam->R6pos, (vect_n*)v3, 3+3*cnt, 0, 3);
+      }
 
       pos1_time = rt_get_cpu_time_ns(); //th prof
       eval_bts(&(wam->Csc));
@@ -629,7 +663,27 @@ void WAMControlThread1(void *data)
       set_v3(wam->Cforce,(vect_3*)wam->R6force);
       //setrange_vn((vect_n*)wam->Ctrq,wam->R6force,0,2,3);
       
-      //vect_3* matXvec_m3((matr_3*)robot->tool->origin, const_v3(vect_3* dest, x-xhat, y-yhat, z-zhat))
+      /* Cartesian Rotation Control */
+      fill_v3(wam->Ctrq, 0.0); // Start with zero torque
+      if(getmode_bts(wam->active_sc) > SCMODE_IDLE && wam->active_sc == &wam->Csc){
+         // Reference rotation
+         setrange_vn((vect_n*)ns, wam->R6ref, 0, 3, 3);
+         setrange_vn((vect_n*)os, wam->R6ref, 0, 6, 3);
+         setrange_vn((vect_n*)as, wam->R6ref, 0, 9, 3);
+         
+         // Actual rotation
+         getcol_m3(n, wam->robot.tool->origin, 0);
+         getcol_m3(o, wam->robot.tool->origin, 1);
+         getcol_m3(a, wam->robot.tool->origin, 2);
+         
+         setrange_vn(e, (vect_n*)(scale_v3(0.5, add_v3(cross_v3(ns,n), add_v3(cross_v3(os,o), cross_v3(as,a))))), 3, 0, 3);
+         set_vn(ed, scale_vn(1.0/thisperiod, add_vn(e, scale_vn(-1.0, last_e))));
+         set_vn(f6, add_vn(matXvec_mn(kp, e, e->ret), matXvec_mn(kd, ed, ed->ret)));
+         setrange_vn(wam->R6force, f6, 3, 3, 3); // Just for show
+         setrange_vn((vect_n*)wam->Ctrq, f6, 0, 3, 3);
+         //apply_tool_force_bot(&(w->robot), w->Cpoint, f3, t3);
+         set_vn(last_e, e);
+      }
 #if 0 
       //Cartesian angular constraint
       R_to_q(wam->qact,T_to_W_trans_bot(&wam->robot));
@@ -1330,7 +1384,9 @@ void StartContinuousTeach(wam_struct *wam,int Joint,int Div,char *filename)
    if (Joint == 0) { //Just records position. No orientation
       PrepDL(&(wam->cteach),2);
       AddDataDL(&(wam->cteach),&(wam->teach_time),sizeof(btreal),4,"Time");
-      AddDataDL(&(wam->cteach),valptr_vn((vect_n*)wam->Cpos),sizeof(btreal)*3,4,"Cpos");
+      //AddDataDL(&(wam->cteach),valptr_vn((vect_n*)wam->Cpos),sizeof(btreal)*3,4,"Cpos");
+      AddDataDL(&(wam->cteach),valptr_vn((vect_n*)wam->R6pos),sizeof(btreal)*12,4,"R6pos");
+
    } else { //Only for joint space recording for now
       joints = wam->num_actuators;
       PrepDL(&(wam->cteach),2);

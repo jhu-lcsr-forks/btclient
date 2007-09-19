@@ -614,7 +614,8 @@ BTINLINE vect_3* matTXvec_m3(matr_3* a, vect_3* b); //matXvec_m3(T_m3(a),b);
 
 void print_m3(matr_3* src);
 int test_m3(btreal error);
-BTINLINE vect_3* RtoXYZf_m3(matr_3* R, vect_3* XYZ); //return ZYZ
+BTINLINE vect_3* RtoXYZf_m3(matr_3* R, vect_3* XYZ); //return XYZ
+BTINLINE vect_3* RtoZYZf_m3(matr_3* R, vect_3* ZYZ); //return ZYZ
 BTINLINE matr_3* XYZftoR_m3(matr_3* R, vect_3* XYZ); //Return R
 BTINLINE vect_3* eqaxis_m3(matr_3* R, vect_3* a); //return axis of rotation with amount encoded in length
 quat* R_to_q(quat* dest, matr_3* src);

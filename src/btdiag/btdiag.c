@@ -123,16 +123,11 @@ RTIME eventStart;
 keyEventStruct keyEvent[500];
 
 /* Other */
-double vel = 3.0, acc = 2.0;
+double vel = 0.5, acc = 2.0;
 char active_file[250];
 char *user_def = "User edited point list";
-
-/* Rotation control */
-vect_3 *ns, *n, *os, *o, *as, *a, *xyz, *f3, *t3;
 matr_3 *r_mat;
-vect_n *e, *ed, *last_e, *f6;
-matr_mn *kp, *kd;
-
+vect_3 *xyz, *RxRyRz;
 
 /******* Haptics *******/
 btgeom_plane planes[10];
@@ -182,26 +177,6 @@ int main(int argc, char **argv)
    int      i, nout;
    struct   sched_param mysched;
    char     robotName[128];
-
-   ns = new_v3();
-   n = new_v3();
-   os = new_v3();
-   o = new_v3();
-   as = new_v3();
-   a = new_v3();
-   xyz = new_v3();
-   r_mat = new_m3();
-   e = new_vn(6);
-   ed = new_vn(6);
-   last_e = new_vn(6);
-   kp = new_mn(6,6);
-   kd = new_mn(6,6);
-   f6 = new_vn(6);
-   f3 = new_v3();
-   t3 = new_v3();
-   
-   set_mn(kp, scale_mn(20.0, kp));
-   set_mn(kd, scale_mn(0.1, kd));
 
    /* Figure out what the keys do and print it on screen.
     * Parses this source file for lines containing "case '", because
@@ -324,6 +299,9 @@ int main(int argc, char **argv)
       /* Register the control loop's local callback routine */
       registerWAMcallback(wam[i], WAMcallback);
    }
+   r_mat = new_m3();
+   xyz = new_v3();
+   RxRyRz = new_v3();
    
    /* Initialize the haptic scene */
    init_haptics();
@@ -416,14 +394,16 @@ int main(int argc, char **argv)
 int WAMcallback(struct btwam_struct *w)
 {
    int i;
-  // 
+#if 0  
+   //R_to_q(q, w->robot.tool->origin);
+   //q_to_R(r_mat, q);
    if(getmode_bts(w->active_sc) == SCMODE_POS && w->active_sc == &w->Csc){
       // Reference
       //setrange_vn((vect_n*)xyz, w->R6ref, 0, 3, 3);
       //XYZftoR_m3(r_mat, xyz);
-      getcol_m3(ns, r_mat, 0);
-      getcol_m3(os, r_mat, 1);
-      getcol_m3(as, r_mat, 2);
+      //getcol_m3(ns, r_mat, 0);
+      //getcol_m3(os, r_mat, 1);
+      //getcol_m3(as, r_mat, 2);
       
       // Actual
       //setrange_vn((vect_n*)xyz, w->R6pos, 0, 3, 3);
@@ -440,7 +420,7 @@ int WAMcallback(struct btwam_struct *w)
       apply_tool_force_bot(&(w->robot), w->Cpoint, f3, t3);
       set_vn(last_e, e);
    }
-
+#endif
    
    /* Handle haptic scene for the specified WAM */
    for(i = 0; i < busCount; i++){
@@ -703,6 +683,17 @@ void RenderMAIN_SCREEN()
       line+=1;
       mvprintw(line, 0, "Position   : %s ", sprint_vn(vect_buf1,wamData[cnt].active_pos));
       ++line;
+      mvprintw(line, 0, "RzRyRz     : %s ", sprint_vn(vect_buf1,(vect_n*)RtoZYZf_m3(wam[cnt]->robot.tool->origin, RxRyRz)));
+      ++line;
+      mvprintw(line, 0, "R6ref       : %s ", sprint_vn(vect_buf1,wam[cnt]->R6ref));
+      ++line;
+      /*
+      mvprintw(line, 0, "origin     : \n%s ", sprint_mn(vect_buf1,(matr_mn*)wam[cnt]->robot.tool->origin));
+      line+=5;
+      
+      mvprintw(line, 0, "q->R       : \n%s ", sprint_mn(vect_buf1,(matr_mn*)r_mat));
+      line+=5;
+      */
       //mvprintw(line, 0, "Target     : %s ", sprint_vn(vect_buf1,active_bts->qref));
       //++line;
       mvprintw(line, 0, "%s     : %s ", (wamData[cnt].active_bts == &(wam[cnt]->Jsc)) ? "Torque" : "Force ", sprint_vn(vect_buf1,wamData[cnt].active_trq));
@@ -915,6 +906,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             wamData[i].active_trq = wam[i]->R6force;
             wamData[i].active_dest = wamData[i].cdest;
             wamData[i].vta = &wamData[i].vt_c;
+            register_vta(wamData[i].active_bts,*wamData[i].vta);
          } else {
             SetJointSpace(wam[i]);
             wamData[i].active_bts = &(wam[i]->Jsc);
@@ -922,6 +914,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             wamData[i].active_trq = wam[i]->Jtrq;
             wamData[i].active_dest = wamData[i].jdest;
             wamData[i].vta = &wamData[i].vt_j;
+            register_vta(wamData[i].active_bts,*wamData[i].vta);
          }
       }
       clearScreen();
@@ -938,8 +931,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             setmode_bts(wamData[i].active_bts,SCMODE_IDLE);
          else
             setmode_bts(wamData[i].active_bts,SCMODE_POS);
-         
-         set_m3(r_mat, wam[i]->robot.tool->origin);
+         /*
+         setrange_vn((vect_n*)xyz, wam[i]->R6ref, 0, 3, 3);
+         XYZftoR_m3(r_mat, xyz);
+         getcol_m3(ns, r_mat, 0);
+         getcol_m3(os, r_mat, 1);
+         getcol_m3(as, r_mat, 2);
+         //set_m3(r_mat, wam[i]->robot.tool->origin);
+         */
       }
       
       
@@ -1116,6 +1115,21 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          finish_entry();
          fill_vn(wamData[0].active_dest,0.25);
          csvto_vn(wamData[0].active_dest,fn);
+         if(wamData[0].active_bts == &(wam[cnt]->Csc)){
+            // Convert from RxRyRz to RotMatrix
+            // active_dest[3] = Rx;
+            // active_dest[4] = Ry;
+            // active_dest[5] = Rz;
+            setrange_vn((vect_n*)xyz, wamData[0].active_dest, 0, 3, 3);
+            XYZftoR_m3(r_mat, xyz);
+            getcol_m3(xyz, r_mat, 0);
+            setrange_vn(wamData[0].active_dest, (vect_n*)xyz, 3, 0, 3);
+            getcol_m3(xyz, r_mat, 1);
+            setrange_vn(wamData[0].active_dest, (vect_n*)xyz, 6, 0, 3);
+            getcol_m3(xyz, r_mat, 2);
+            setrange_vn(wamData[0].active_dest, (vect_n*)xyz, 9, 0, 3);
+         }
+         
          moveparm_bts(wamData[0].active_bts,vel,acc);
          if (getmode_bts(wamData[0].active_bts) != SCMODE_POS)
             setmode_bts(wamData[0].active_bts,SCMODE_POS);

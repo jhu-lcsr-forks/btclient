@@ -1991,14 +1991,39 @@ quat* R_to_q(quat* dest, matr_3* src)
 }
 
 /** Convert quaternion to rotation matrix
-\todo This could be optimized further, reducing the multiplies by half.
 */
 matr_3* q_to_R(matr_3* dest, quat* src)
 {
+   btreal q00 = src->q[0]*src->q[0];
+   btreal q01 = src->q[0]*src->q[1];
+   btreal q02 = src->q[0]*src->q[2];
+   btreal q03 = src->q[0]*src->q[3];
+   btreal q11 = src->q[1]*src->q[1];
+   btreal q12 = src->q[1]*src->q[2];
+   btreal q13 = src->q[1]*src->q[3];
+   btreal q22 = src->q[2]*src->q[2];
+   btreal q23 = src->q[2]*src->q[3];
+   btreal q33 = src->q[3]*src->q[3];
+   
+   setrow_m3(dest,0,
+             q00 + q11 - q22 - q33,
+             2.0*(q12 - q03),
+             2.0*(q13 + q02)); // BZ: Changed to +
+
+   setrow_m3(dest,1,
+             2.0*(q12 + q03),
+             q00 - q11 + q22 - q33,
+             2.0*(q23 - q01));
+
+   setrow_m3(dest,2,
+             2.0*(q13 - q02),
+             2.0*(q23 + q01),
+             q00 - q11 - q22 + q33);
+   /*
    setrow_m3(dest,0,
              src->q[0]*src->q[0] + src->q[1]*src->q[1] - src->q[2]*src->q[2] - src->q[3]*src->q[3],
              2.0*(src->q[1]*src->q[2] - src->q[0]*src->q[3]),
-             2.0*(src->q[1]*src->q[3] - src->q[0]*src->q[2]));
+             2.0*(src->q[1]*src->q[3] + src->q[0]*src->q[2])); // BZ: Changed to +
 
    setrow_m3(dest,1,
              2.0*(src->q[1]*src->q[2] + src->q[0]*src->q[3]),
@@ -2009,6 +2034,7 @@ matr_3* q_to_R(matr_3* dest, quat* src)
              2.0*(src->q[1]*src->q[3] - src->q[0]*src->q[2]),
              2.0*(src->q[2]*src->q[3] + src->q[0]*src->q[1]),
              src->q[0]*src->q[0] - src->q[1]*src->q[1] - src->q[2]*src->q[2] + src->q[3]*src->q[3]);
+   */
    return dest;
 }
 
@@ -2953,7 +2979,7 @@ BTINLINE vect_3* eqaxis_m3(matr_3* R, vect_3* a)
 
 BTINLINE vect_3* RtoXYZf_m3(matr_3* R, vect_3* XYZ)
 {
-   //return ZYZ
+   //return XYZ
    btreal a,b,g,cb;
    const btreal pi = 3.14159265359;
 
@@ -2972,6 +2998,32 @@ BTINLINE vect_3* RtoXYZf_m3(matr_3* R, vect_3* XYZ)
    } else {
       a = atan2(R->q[4]/cb,R->q[0]/cb);
       g = atan2(R->q[9]/cb,R->q[10]/cb);
+   }
+   const_v3(XYZ,a,b,g);
+   return XYZ;
+}
+
+BTINLINE vect_3* RtoZYZf_m3(matr_3* R, vect_3* XYZ)
+{
+   //return ZYZ
+   btreal a,b,g,sb;
+   const btreal pi = 3.14159265359;
+
+   b = atan2_bt(sqrt(R->q[8] * R->q[8] + R->q[9] * R->q[9]), R->q[10]);
+   sb = sin(b);
+   if (sb == 0.0) {
+      if (b > pi/2) {
+         b = pi;
+         a = 0.0;
+         g = atan2(R->q[1],-R->q[0]);
+      } else {
+         b = 0.0;
+         a = 0.0;
+         g = atan2(-R->q[1],R->q[0]);
+      }
+   } else {
+      a = atan2(R->q[6]/sb,R->q[2]/sb);
+      g = atan2(R->q[9]/sb,-R->q[8]/sb);
    }
    const_v3(XYZ,a,b,g);
    return XYZ;
@@ -3212,6 +3264,28 @@ void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz,
 /** 2 parameter arc tangent
  
 */
+BTINLINE btreal atan2_bt(btreal y, btreal x)
+{
+   /* returns angle from -pi to pi */
+   const btreal pi = 3.14159265359;
+
+   if(x > 0.0)
+      return(atan(y / x));
+   
+   if(x < 0.0) {
+      if(y >= 0.0)
+         return( pi + atan(y / x));
+      else
+         return( -pi + atan(y / x));
+   }
+   
+   /* x = 0 */
+   if(y > 0.0)
+      return(pi/2.0);
+   else
+      return(-pi/2.0);
+}
+#if 0
 BTINLINE btreal atan2_bt(btreal arg1, btreal arg2)
 {
    /* returns angle from -pi to pi */
@@ -3240,6 +3314,7 @@ BTINLINE btreal atan2_bt(btreal arg1, btreal arg2)
          return(-pi/2.0);
    }
 }
+#endif
 
 btreal interp_bt(btreal x1, btreal y1, btreal x2, btreal y2, btreal x)
 {

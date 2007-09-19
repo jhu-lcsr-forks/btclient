@@ -273,7 +273,7 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
       else if (state == BTTRAJ_UNPAUSING && rampstate == BTRAMP_MAX)
          sc->btt.state = BTTRAJ_RUN;
 
-      set_vn(sc->qref, (*(sc->btt.eval))(&(sc->btt)));//evaluate path
+      set_vn(sc->qref, (*(sc->btt.eval))(&(sc->btt)));//sc->tref = eval(), sc->qref = sc->tref
 
       if ((*(sc->btt.getstate))(&(sc->btt)) == BTTRAJ_DONE) {
          sc->btt.state = BTTRAJ_DONE;
@@ -320,7 +320,7 @@ vect_n* eval_bts(btstatecontrol *sc)
    case SCMODE_TRJ://PID
       eval_btramp(&(sc->ramp),*(sc->dt));
       sc->local_dt = *(sc->dt) * sc->dt_scale;
-      eval_trj_bts(sc);
+      eval_trj_bts(sc); // Calculate sc->qref
    case SCMODE_POS://PID
 #ifdef BT_NULL_PTR_GUARD
 
