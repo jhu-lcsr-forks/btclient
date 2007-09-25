@@ -88,6 +88,9 @@ int main(int argc, char **argv)
    double  x, y, z;
    int     busCount;
 
+   /* Allow hard real time process scheduling for non-root users */
+   rt_allow_nonroot_hrt();
+   
    /* Lead the user through a proper WAM startup */
    printf("\nMake sure the all WAM power and signal cables are securely");
    printf("\nfastened, then turn on the main power to WAM and press <Enter>");

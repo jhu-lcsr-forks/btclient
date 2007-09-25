@@ -46,6 +46,9 @@ int main(int argc, char **argv)
     int  err, i;
     int  busCount;
 
+    /* Allow hard real time process scheduling for non-root users */
+   rt_allow_nonroot_hrt();
+   
    /* Initialize syslog */
    openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
    atexit((void*)closelog);

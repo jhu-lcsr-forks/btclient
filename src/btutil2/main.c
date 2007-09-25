@@ -799,7 +799,7 @@ void paramDefaults(int newID,int targID)
       for(i = 0; taterDefs[i].key; i++)
          setProperty(0, newID, *taterDefs[i].key, 0, taterDefs[i].val);
       if(role & 0x0100)
-	 setProperty(0, newID, CTS, 0, 4096);
+         setProperty(0, newID, CTS, 0, 4096);
       
       if(targID <= 4) { //4DOF
          setProperty(0,newID,IKCOR,0,1638);
@@ -836,6 +836,14 @@ void paramDefaults(int newID,int targID)
       case ROLE_SAFETY:
       for(i = 0; safetyDefs[i].key; i++)
          setProperty(0, newID, *safetyDefs[i].key, 0, safetyDefs[i].val);
+      
+      setProperty(0, newID, SAFE, 0, 4);
+      setProperty(0, newID, SAFE, 0, 5);
+      usleep(1000000); // Wait a sec
+      setProperty(0, newID, FIND, 0, VBUS);
+      usleep(1000000); // Wait a sec
+      setProperty(0, newID, SAFE, 0, 0);
+      
       break;
       
       case ROLE_WRAPTOR:

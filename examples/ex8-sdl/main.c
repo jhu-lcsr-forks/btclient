@@ -257,6 +257,9 @@ int main(int argc, char **argv)
    struct   sched_param mysched;
    char     robotName[128];
 
+   /* Allow hard real time process scheduling for non-root users */
+   rt_allow_nonroot_hrt();
+   
    /* Figure out what the keys do and print it on screen.
     * Parses this source file for lines containing "case '", because
     * that is how we manage keypresses in ProcessInput().

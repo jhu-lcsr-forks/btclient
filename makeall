@@ -1,12 +1,21 @@
+# Makefile for btclient
+
+# Remove any cached svn credentials
+rm ~/.subversion/auth/svn.simple/*
+
+# Remove the previous libraries
 rm ./lib/libbtwam.a ./lib/libbtsystem.a
+
 cd src/btsystem
 make clean
 make lib
 make install
+
 cd ../btwam
 make clean
 make lib
 make install
+
 cd ../btdiag
 make clean
 make
