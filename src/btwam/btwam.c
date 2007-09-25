@@ -568,6 +568,7 @@ void WAMControlThread1(void *data)
    WAMControlThreadTask = rt_task_init(nam2num("WAM1"), 5, 0, 0);
    //mlockall(MCL_CURRENT | MCL_FUTURE);
    //#ifdef  BTREALTIME
+   rt_allow_nonroot_hrt();
    rt_make_hard_real_time();
    //#endif
    syslog(LOG_ERR,"WAMControl initial hard");
