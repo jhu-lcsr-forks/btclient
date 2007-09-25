@@ -1,4 +1,4 @@
-Test There are now two versions of puck firmware in the field. Consequently there
+There are now two versions of puck firmware in the field. Consequently there
 is a compile-time switch to control how the WAM client software is built. (the
 changes are centered around how and where the pucks get their configuration 
 information. In the new firmware, a new, better, configuration file is used.)
