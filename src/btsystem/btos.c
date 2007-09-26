@@ -16,7 +16,6 @@
  *  TH 051101 - Final pass. Needs testing. Esp. Periodic threads.
  *
  *======================================================================*/
-
 #include <syslog.h>
 #include <stdlib.h>
 #include "btos.h"
@@ -64,6 +63,7 @@ int btmutex_init(btmutex* btm)
    return ret;
 }
 
+
 /** Lock a btmutex.
 See pthread_mutex_lock() in pthread.h for more info.
 This function calls pthread_mutex_lock() and prints an error to syslog if it 
@@ -76,11 +76,13 @@ BTINLINE int btmutex_lock(btmutex* btm)
 {
    int ret;
    ret = pthread_mutex_lock(btm);
-   if (ret != 0) {
-      syslog(LOG_ERR, "Mutex lock failed: %d", ret);
+   if (ret != 0)
+   {
+      syslog(LOG_ERR, "Mutex lock failed (REG): %d", ret);
    }
    return ret;
 }
+
 
 /** Unlock a btmutex.
 See pthread_mutex_unlock() in pthread.h for more info.
@@ -94,11 +96,13 @@ BTINLINE int btmutex_unlock(btmutex *btm)
 {
    int ret;
    ret = pthread_mutex_unlock(btm);
-   if (ret != 0) {
-      syslog(LOG_ERR, "Mutex unlock failed: %d",  ret);
+   if (ret != 0)
+   {
+      syslog(LOG_ERR, "Mutex unlock failed (REG): %d",  ret);
    }
    return ret;
 }
+
 
 /** Check pointer for a NULL value.
 \retval 0 Pointer is NOT valid.
@@ -112,7 +116,8 @@ just null pointers. See sbrk() [gnu libc] for finding end of data segment.
 */
 int btptr_ok(void *ptr,char *str)
 {
-   if (ptr == NULL) {
+   if (ptr == NULL)
+   {
 #if BT_BACKTRACE & BTDEBUG_BACKTRACE
       backtracesize = baktrace(backtracearray,50);
       backtracestrings = backtrace_symbols(backtracearray,backtracesize);
@@ -137,7 +142,8 @@ Has same (backwards) return values as btptr_ok().
 */
 int btptr_chk(void *ptr)
 {
-   if (ptr == NULL) {
+   if (ptr == NULL)
+   {
 #if BT_BACKTRACE & BTDEBUG_BACKTRACE
       backtracesize = baktrace(backtracearray,50);
       backtracestrings = backtrace_symbols(backtracearray,backtracesize);
@@ -160,7 +166,8 @@ int btptr_chk(void *ptr)
 */
 int idx_bounds_ok(int idx,int max,char *str)
 {
-   if ((idx < 0) || (idx > max)) {
+   if ((idx < 0) || (idx > max))
+   {
 #if BT_BACKTRACE & BTDEBUG_BACKTRACE
       backtracesize = baktrace(backtracearray,50);
       backtracestrings = backtrace_symbols(backtracearray,backtracesize);
@@ -178,10 +185,12 @@ int idx_bounds_ok(int idx,int max,char *str)
 */
 BTINLINE int test_and_log(int return_val, const char *str)
 {
-   if (return_val != 0) {
+   if (return_val != 0)
+   {
       syslog(LOG_ERR, "%s: %d", str, return_val);
       return return_val;
-   } else
+   }
+   else
       return 0;
 }
 
@@ -195,7 +204,8 @@ BTINLINE int test_and_log(int return_val, const char *str)
 BTINLINE void * btmalloc(size_t size)
 {
    void* vmem;
-   if ((vmem = malloc(size)) == NULL) {
+   if ((vmem = malloc(size)) == NULL)
+   {
       syslog(LOG_ERR,"btMalloc: memory allocation failed, size %d",size);
       exit(-1);
    }
@@ -229,6 +239,11 @@ btthread* new_btthread()
    return mem;
 }
 
+btrt_thread_struct* new_btrt_thread()
+{
+   btrt_thread_struct* mem;
+   mem = (btrt_thread_struct*)btmalloc(sizeof(btrt_thread_struct));
+}
 /** Free memory for a btthread object.
 \internal chk'd TH 051101
 */
@@ -269,7 +284,8 @@ pthread_t* btthread_create(btthread *thd,int priority, void *function,void *args
 
    pthread_create(&(thd->thd_id), &(thd->attr), function, thd);
 
-   if (thd->thd_id == -1) {
+   if (thd->thd_id == -1)
+   {
       syslog(LOG_ERR,"btthread_create:Couldn't start control thread!");
       exit(-1);
    }
@@ -285,6 +301,15 @@ BTINLINE int btthread_done(btthread *thd)
    btmutex_lock(&(thd->mutex));
    done = thd->done;
    btmutex_unlock(&(thd->mutex));
+   return done;
+}
+
+BTINLINE int btrt_thread_done(btrt_thread_struct *thd)
+{
+   int done;
+   btrt_mutex_lock(&(thd->mutex));
+   done = thd->done;
+   btrt_mutex_unlock(&(thd->mutex));
    return done;
 }
 
@@ -307,6 +332,8 @@ void mythread(void* args)
 \endcode
 \internal chk'd TH 051101 
 */
+
+
 BTINLINE void btthread_stop(btthread *thd)
 {
    btmutex_lock(&(thd->mutex));
@@ -315,12 +342,29 @@ BTINLINE void btthread_stop(btthread *thd)
    pthread_join(thd->thd_id,NULL);
 }
 
+BTINLINE void btrt_thread_stop(btrt_thread_struct *thd)
+{
+   thd->done = 1;
+
+   btrt_thread_join(thd);
+}
+
 /** Call pthread_exit() on this btthread object.
 \internal chk'd TH 051101
 */
 BTINLINE void btthread_exit(btthread *thd)
 {
    pthread_exit(NULL);
+}
+
+BTINLINE void btrt_thread_exit(btrt_thread_struct *thd)
+{
+#ifdef XEMOMAI
+   rt_task_delete(&(thd->task));
+#else
+
+   pthread_exit(NULL);
+#endif
 }
 
 /**
@@ -332,10 +376,15 @@ BTINLINE void btthread_exit(btthread *thd)
 \warning Untested!!!
  
 */
+
+//will start a xenomai realtime task
+
+
+
 void btperiodic_proto(void *args)
 {
    btthread* this_thd;
-   RT_TASK *ThreadTask;
+   RT_TASK ThreadTask;
 
    double thisperiod;
    RTIME rtime_period;
@@ -345,20 +394,21 @@ void btperiodic_proto(void *args)
    thisperiod = this_thd->period;
    rtime_period = (RTIME)(thisperiod * 1000000000.0);
 
-   ThreadTask = rt_task_init(0, 0, 0, 0);
-   rt_task_make_periodic_relative_ns(ThreadTask, rtime_period, rtime_period);
-   while (!btthread_done(this_thd)) {
-      rt_task_wait_period();
-      loop_start = rt_get_cpu_time_ns(); //th prof
+   rt_task_create(&ThreadTask, 0, 0, 0, 0);
+   rt_task_set_periodic(&ThreadTask, rtime_period, rtime_period);
+   while (!btthread_done(this_thd))
+   {
+      rt_task_wait_period(NULL);
+      loop_start = rt_timer_read(); //th prof
       this_thd->actual_period = loop_start - last_loop; //th prof
 
       (*this_thd->function)(this_thd->data);
 
-      loop_end = rt_get_cpu_time_ns(); //th prof
+      loop_end = rt_timer_read(); //th prof
       this_thd->proc_time = loop_end - loop_start; //th prof
       last_loop = loop_start; //th prof
    }
-   rt_task_delete(ThreadTask);
+   rt_task_delete(&ThreadTask);
    pthread_exit(NULL);
 }
 
@@ -378,3 +428,201 @@ pthread_t* btperiodic_create(btthread *thd,int priority, double period, void *fu
    return btthread_create(thd,priority,btperiodic_proto,args);
 
 }
+
+
+
+//****************Real Time Calls***************************//
+
+//NOT USEABLE YET FOR ANYTHING BUT XENOMAI
+#ifdef XENOMAI
+//will start a xenomai realtime task
+void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, void *function, void *args)
+{
+   int ret;
+   int error;
+
+   thd->done = 0;
+   thd->function = function;
+   thd->data = args;
+   thd->priority = prio;
+   thd->periodic = 0;
+   btrt_mutex_init(&(thd->mutex));
+
+
+   //create task
+   ret = rt_task_create(&(thd->task), name, 0, prio, 0);
+   if(ret)
+   {
+      syslog(LOG_ERR, "btthread_xenomai_create: Could not create task!");
+      exit(-1);
+   }
+   ret = rt_task_start(&(thd->task), function, thd);
+   if(ret)
+   {
+      syslog(LOG_ERR, "btthread_xenomai_create: Could not start task! %d", ret);
+      exit(-1);
+   }
+}
+#else
+void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, void *function, void *args)
+{
+   btthread_create((btthread_struct*)thd, prio, function, args);
+}
+
+#endif
+
+
+
+void btrt_set_mode_soft(void)
+{
+#ifdef XENOMAI
+   rt_task_set_mode( T_PRIMARY, 0, NULL);
+#else
+
+   rt_make_soft_real_time();
+#endif
+}
+
+void btrt_set_mode_hard(void)
+{
+#ifdef XENOMAI
+   rt_task_set_mode(0, T_PRIMARY, NULL);
+#else
+
+   rt_make_hard_real_time();
+#endif
+}
+
+#ifdef XENOMAI
+void btrt_set_mode_warn(void)
+{
+   rt_task_set_mode(0, T_WARNSW, NULL);
+}
+#endif
+
+
+RTIME btrt_get_time(void)
+{
+   RTIME time;
+
+#ifdef XENOMAI
+   time = rt_timer_read(); 
+#else
+   time = rt_get_cpu_time_ns();
+#endif
+
+   return(time);
+}
+
+void btrt_task_wait_period(void)
+{
+#ifdef XENOMAI
+   rt_task_wait_period(NULL);
+#else
+
+   rt_task_wait_period();
+#endif
+}
+
+void btrt_thread_join(btrt_thread_struct *thd)
+{
+#ifdef XENOMAI
+   rt_task_join(&(thd->task));
+#else
+
+   pthread_join(thd->thd_id,NULL);
+#endif
+}
+
+//*********************RT MUTEX*************************
+
+
+int btrt_mutex_create(btrt_mutex *mutex)//used when RTAI mattr is NULL
+{
+   int ret;
+
+#ifdef XENOMAI
+
+   ret = test_and_log(
+            rt_mutex_create(mutex,NULL),
+            "Could not initialize mutex.");
+#else
+
+   ret = test_and_log(
+            pthread_mutex_init(mutex,NULL),
+            "Could not initialize mutex.");
+#endif
+
+   return ret;
+}
+
+
+int btrt_mutex_init(btrt_mutex* mutex)//make sure a global variable
+{
+   int ret;
+#ifdef XENOMAI
+
+   ret = test_and_log(
+            rt_mutex_create(mutex,NULL),
+            "Could not initialize mutex.");
+#else
+
+   pthread_mutexattr_t mattr;
+   pthread_mutexattr_init(&mattr);
+   pthread_mutexattr_settype(&mattr,PTHREAD_MUTEX_TIMED_NP);
+   //pthread_mutexattr_settype(&mattr,PTHREAD_MUTEX_ERRORCHECK_NP);
+
+   ret = test_and_log(
+            pthread_mutex_init(mutex,&mattr),
+            "Could not initialize mutex.");
+#endif
+
+   return ret;
+}
+
+
+
+
+BTINLINE int btrt_mutex_lock(btrt_mutex *mutex)
+{
+   int ret;
+
+#ifdef XENOMAI
+   ret = rt_mutex_acquire(mutex, TM_INFINITE);
+   if (ret != 0)
+   {
+      syslog(LOG_ERR, "Mutex lock failed (XENO): %d", ret);
+   }
+#else
+
+   ret = pthread_mutex_lock(mutex);
+   if (ret != 0)
+   {
+      syslog(LOG_ERR, "Mutex lock failed (REG): %d", ret);
+   }
+#endif
+   return ret;
+}
+
+
+
+BTINLINE int btrt_mutex_unlock(btrt_mutex *mutex)
+{
+   int ret;
+
+#ifdef XENOMAI
+   ret = rt_mutex_release(mutex);
+   if (ret != 0)
+   {
+      syslog(LOG_ERR, "Mutex unlock failed (XENO): %d",  ret);
+   }
+#else
+   ret = pthread_mutex_unlock(mutex);
+   if (ret != 0)
+   {
+      syslog(LOG_ERR, "Mutex unlock failed (REG): %d",  ret);
+   }
+#endif
+   return ret;
+}
+

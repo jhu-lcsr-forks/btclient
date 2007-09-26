@@ -31,7 +31,9 @@ See #btwam_struct
 */
 #ifndef _BTWAM_H
 #define _BTWAM_H
-#include <rtai_lxrt.h>
+//#include <rtai_lxrt.h>
+//#include <native/task.h>
+//#include <native/timer.h>
 #include "btsystem.h"
 #include "btrobot.h"
 #include "btcontrol.h"
@@ -40,6 +42,7 @@ See #btwam_struct
 #include "btlogger.h"
 #include "btparser.h"
 #include "btmath.h"
+#include "btos.h"
 
 #define VN_SIZE (7)
 
@@ -200,7 +203,7 @@ typedef struct btwam_struct{
   RTIME Jsc_time; //!< Time spent in joint control
   RTIME Csc_time; //!< Time spent in Cartesian control
   double skipmax;
-  pthread_mutex_t loop_mutex; //This mutex is set while the wam control loop is in operation. It is to help slow loops access control loop data
+  RT_MUTEX loop_mutex; //This mutex is set while the wam control loop is in operation. It is to help slow loops access control loop data
   
   //Data logging
   btlogger log;

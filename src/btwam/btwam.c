@@ -23,6 +23,7 @@ to make it easier to find and maintain later
  
 */
 #define TWOPI (2.0 * 3.14159265359)
+#define DEBUG(x) x
 
 /*==============================*
  * INCLUDES - System Files      *
@@ -122,12 +123,12 @@ void InitVectors(wam_struct *wam)
    wam->js_or_cs = 0;
    wam->idle_when_done = 0;
    wam->active_sc = &wam->Jsc;
-   
+
    wam->motor_position = (int*)btmalloc(wam->dof * sizeof(int));
    wam->zero_order = (int*)btmalloc(wam->dof * sizeof(int));
    wam->d_jpos_ctl = (btPID*)btmalloc(wam->dof * sizeof(btPID));
    wam->sc = (SimpleCtl*)btmalloc(wam->dof * sizeof(SimpleCtl));
-   
+
    wam->G = new_vn(wam->dof);
 }
 
@@ -191,12 +192,12 @@ wam_struct* OpenWAM(char *fn, int bus)
    // Read Degrees of Freedom
    sprintf(key, "%s.dof", robotName);
    parseGetVal(INT, key, (void*)&wam->dof);
-   
+
    // Allocate memory for the WAM vectors
    InitVectors(wam);
 
    /* START of Joint Control plugin initialization */
-   for (cnt = 0; cnt < wam->dof; cnt ++) {
+   for (cnt = 0; cnt < wam->dof; cnt ++){
       init_btPID(&(wam->d_jpos_ctl[cnt]));
    }
    wam->d_jpos_array.pid = wam->d_jpos_ctl;
@@ -225,20 +226,7 @@ wam_struct* OpenWAM(char *fn, int bus)
    btposition_interface_mapf_btPID(&wam->Csc, &(wam->d_pos_array));
    /* END of Control plugin initialization */
 
-   init_pwl(&wam->pth,3,2); //Cartesian move path (unused?)
-
-   //for (cnt = 0; cnt < 3; cnt++) {
-   //   init_btPID(&(wam->pid[cnt]));
-   //   setgains_btPID(&(wam->pid[cnt]),2000.0,5.0,0.0);
-   //}
-   
-   //for (cnt = 3; cnt < 6; cnt ++) {
-   //   init_btPID(&(wam->pid[cnt]));
-   //   setgains_btPID(&(wam->pid[cnt]), 200.0, 0.5, 0.0);
-   //}
-   //setgains_btPID(&(wam->pid[3]),15.0,0.5,0.0);
-   //setgains_btPID(&(wam->pid[3]),60.0,0.10,0.0);
-   //init_err_btPID(&(wam->pid[3]));
+   init_pwl(&wam->pth,3,2); //Cartesian move path
 
    wam->F = 0.0;
    wam->isZeroed = FALSE;
@@ -252,12 +240,14 @@ wam_struct* OpenWAM(char *fn, int bus)
 
    if(test_and_log(
               InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
-              "Failed to initialize system")) {
+              "Failed to initialize system"))
+   {
       exit(-1);
    }
 
    if(test_and_log(
-              EnumerateSystem(),"Failed to enumerate system")) {
+              EnumerateSystem(),"Failed to enumerate system"))
+   {
       exit(-1);
    }
 
@@ -265,7 +255,8 @@ wam_struct* OpenWAM(char *fn, int bus)
    //------------------------
    /*
    err = InitializeSystem();
-   if(err) {
+   if(err)
+   {
       syslog(LOG_ERR, "OpenWAM: InitializeSystem returned err = %d", err);
       return(NULL);
    }
@@ -310,15 +301,15 @@ wam_struct* OpenWAM(char *fn, int bus)
    // Read the transmission ratios
    sprintf(key, "%s.n", robotName);
    parseGetVal(VECTOR, key, (void*)wam->n);
-   
+
    // Find motor positions
-   for (actcnt = 0;actcnt < wam->num_actuators;actcnt++) {
+   for (actcnt = 0;actcnt < wam->num_actuators;actcnt++)
+   {
 #ifdef BTOLDCONFIG
       wam->motor_position[actcnt] = actcnt;
 #else
 
       getProperty(wam->act[actcnt].bus, wam->act[actcnt].puck.ID, ROLE, &reply);
-      //syslog(LOG_ERR,"role[%d] = %ld", wam->act[actcnt].puck.ID, reply);
       if (reply == 1) {
          wam->motor_position[actcnt] = wam->act[actcnt].puck.ID - 1;
       } else {
@@ -337,7 +328,8 @@ wam_struct* OpenWAM(char *fn, int bus)
    }
 
    syslog(LOG_ERR,"OpenWAM(): for link from 0 to %d", wam->dof);
-   for(link = 0; link <= wam->dof; link++) {
+   for(link = 0; link <= wam->dof; link++)
+   {
       // Get the DH parameters
       sprintf(key, "%s.link[%d].dh.theta", robotName, link);
       parseGetVal(DOUBLE, key, (void*)&theta);
@@ -353,19 +345,20 @@ wam_struct* OpenWAM(char *fn, int bus)
       parseGetVal(VECTOR, key, (void*)com);
       sprintf(key, "%s.link[%d].mass", robotName, link);
       parseGetVal(DOUBLE, key, (void*)&mass);
-      
+
       // Get inertia matrix
       sprintf(key, "%s.link[%d].I", robotName, link);
       parseGetVal(MATRIX, key, (void*)wam->robot.links[link].I);
-      
+
       sprintf(key, "%s.link[%d].rotorI", robotName, link);
       parseGetVal(VECTOR, key, (void*)wam->robot.links[link].rotorI);
-      
+
       // Add the rotor inertia to the link inertia
       for(cnt = 0; cnt < 3; cnt++)
-              ELEM(wam->robot.links[link].I, cnt, cnt) += wam->robot.links[link].rotorI->q[cnt];
-      
-      if(link != wam->dof) {
+         ELEM(wam->robot.links[link].I, cnt, cnt) += wam->robot.links[link].rotorI->q[cnt];
+
+      if(link != wam->dof)
+      {
          // Query for motor_position (JIDX)
 
          // Read joint PID constants
@@ -391,7 +384,9 @@ wam_struct* OpenWAM(char *fn, int bus)
 
          link_geom_bot(&wam->robot, link, theta * pi, d, a, alpha * pi);
          link_mass_bot(&wam->robot, link, com, mass);
-      } else {
+      }
+      else
+      {
          tool_geom_bot(&wam->robot, theta * pi, d, a, alpha * pi);
          tool_mass_bot(&wam->robot, com, mass);
       }
@@ -402,11 +397,14 @@ wam_struct* OpenWAM(char *fn, int bus)
    /* If the WAM is already zeroed, note it- else, zero it */
    reply = 0;
    getProperty(wam->act->bus, SAFETY_MODULE, ZERO, &reply);
-   if(reply) {
+
+   if(reply)
+   {
       wam->isZeroed = TRUE;
       syslog(LOG_ERR, "WAM was already zeroed");
-   } else {
-      //syslog(LOG_ERR, "About to DefineWAMpos, bus=%d", wam->act->bus);
+   }
+   else
+   {
       DefineWAMpos(wam, wam->park_location);
       syslog(LOG_ERR, "WAM zeroed by application");
    }
@@ -436,7 +434,8 @@ wam_struct* OpenWAM(char *fn, int bus)
    wam->Gcomp = 0;
    set_gravity_bot(&wam->robot, 0.0);
 
-   for(cnt = 0; cnt < wam->dof; cnt++) {
+   for(cnt = 0; cnt < wam->dof; cnt++)
+   {
       SCinit(&(wam->sc[cnt]));
       SCsetpid(&(wam->sc[cnt]),getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt),getval_vn(wam->saturation,cnt));
       SCsettrjprof(&(wam->sc[cnt]),getval_vn(wam->vel,cnt),getval_vn(wam->acc,cnt));
@@ -445,7 +444,7 @@ wam_struct* OpenWAM(char *fn, int bus)
    }
 
    test_and_log(
-      pthread_mutex_init(&(wam->loop_mutex),NULL),
+      rt_mutex_create(&(wam->loop_mutex),NULL),
       "Could not initialize mutex for WAM control loop.");
 
    btthread_create(&wam->maint,0,(void*)WAMMaintenanceThread,wam);
@@ -506,7 +505,8 @@ understand exactly what it is doing!
  
 The following functionality is in this loop:
  - Joint Space Controller (pid, point-to-point trapezoidal trajectories)
- - Loop profiling - Period time, Read pos time, Write trq time, Calc time
+ - Loop profiling - Period time,
+   btthread* this_thd; Read pos time, Write trq time, Calc time
  - Newton-Euler Recursive kinematics & dynamics
  - Data logging
  - Continuous teach & play recording
@@ -515,24 +515,32 @@ The following functionality is in this loop:
  
 */
 
-void WAMControlThread1(void *data)
+void WAMControlThread(void *data)
 {
-   btthread* this_thd;
+   btrt_thread_struct* this_thd;
    int                 cnt;
    int                 idx;
    int                 Mid;
-   double              dt,dt_targ,skiptarg,skipmax = 0.0;
+   double              dt,dt_targ,skiptarg;
    int                 err,skipcnt = 0;
    long unsigned       counter = 0;
    RTIME last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
-   RT_TASK *WAMControlThreadTask;
    double thisperiod;
-   RTIME rtime_period,sampleCount;
+   RTIME rtime_period;
    wam_struct *wam;
    unsigned char CANdata[8];
    int len_in;
    int id_in;
-   
+   unsigned long overrun;
+   int      ret, numskip;
+   RT_TASK *WAMControlThreadTask;
+
+   RTIME    max1, min1, dat1, max2, min2, dat2, max3, min3, dat3, max4, min4, dat4, startt1, stopt1, startt2, stopt2, startt3, stopt3;
+   double   sumX1, sumX21, mean1, stdev1, sumX2, sumX22, mean2, stdev2, sumX3, sumX23, mean3, stdev3, sumX4, sumX24, mean4, stdev4;
+
+   /*//DEBUG: Seting up warn signal for changes to secondary mode, XENOMAI
+   btrt_set_mode_warn();*/
+
    /* Rotation control */
    vect_3 *ns, *n, *os, *o, *as, *a, *f3, *t3;
    vect_n *e, *ed, *last_e, *f6;
@@ -556,33 +564,79 @@ void WAMControlThread1(void *data)
    set_mn(kp, scale_mn(10.0, kp)); //20
    set_mn(kd, scale_mn(0.08, kd)); //0.1
    
+
    /* Set up timer*/
-   this_thd = (btthread*)data;
+   this_thd = (btrt_thread_struct*)data;
    wam = this_thd->data;
    thisperiod = this_thd->period;
    rtime_period = (RTIME)(thisperiod * 1000000000.0);
+
+#ifdef RTAI
    sampleCount = nano2count(rtime_period);
    rt_set_periodic_mode();
    start_rt_timer(sampleCount);
 
    WAMControlThreadTask = rt_task_init(nam2num("WAM1"), 5, 0, 0);
-   //mlockall(MCL_CURRENT | MCL_FUTURE);
-   //#ifdef  BTREALTIME
-   rt_make_hard_real_time();
-   //#endif
-   syslog(LOG_ERR,"WAMControl initial hard");
    rt_task_make_periodic_relative_ns(WAMControlThreadTask, rtime_period, rtime_period);
+   
+#endif
+
+   /*Set up as hard real time*/
+   btrt_set_mode_hard();
+   
+#ifdef XENOMAI
+   /*Make task periodic*/
+   test_and_log(
+      rt_task_set_periodic(NULL, TM_NOW, rt_timer_ns2ticks((rtime_period))),"WAMControlThread: rt_task_set_periodic failed, code");
+#endif
+
+   //#ifdef  BTREALTIME
+   //btrt_set_mode_hard();
+   //#endif
+
    dt_targ = thisperiod;
    skiptarg = 1.5 * dt_targ;
    dt = dt_targ;
    wam->skipmax = 0.0;
    syslog(LOG_ERR,"WAMControl period Sec:%f, ns: %d",thisperiod, rtime_period);
-   last_loop = rt_get_cpu_time_ns();
-   while (!btthread_done(this_thd)) {
-      rt_task_wait_period();
+   last_loop = btrt_get_time();
+ 
+   DEBUG(
+      sumX1 = sumX21 = 0;
+      max1 = 0;
+      min1 = 200000000.0;
+
+      sumX2 = sumX22 = 0;
+      max2 = 0;
+      min2 = 200000000.0;
+
+      sumX3 = sumX23 = 0;
+      max3 = 0;
+      min3 = 200000000.0;
+
+      sumX4 = sumX24 = 0;
+      max4 = 0;
+      min4 = 200000000.0;
+      numskip = 0;
+   );
+
+
+   while (!btrt_thread_done(this_thd))
+   {
+
+      /*Make sure task is still in Primary mode*/
+      btrt_set_mode_hard();
+
+      DEBUG(startt3 = btrt_get_time());
+
+      btrt_task_wait_period();
+
+
       counter++;
 
-      loop_start = rt_get_cpu_time_ns(); //th prof
+      DEBUG(stopt3 = btrt_get_time());
+
+      loop_start = btrt_get_time(); //th prof
       wam->loop_period = loop_start - last_loop; //th prof
       dt = (double)wam->loop_period / 1000000000.0;
       if (dt > skiptarg) {
@@ -593,43 +647,30 @@ void WAMControlThread1(void *data)
       wam->dt = dt;
 
       test_and_log(
-         pthread_mutex_lock(&(wam->loop_mutex)),"WAMControlThread lock mutex failed");
+         btrt_mutex_lock(&(wam->loop_mutex)),"WAMControlThread lock mutex failed");
 
-#ifdef BTDOUBLETIME
+      pos1_time = btrt_get_time(); //th prof
 
-      rt_make_soft_real_time();
-#endif
 
-      pos1_time = rt_get_cpu_time_ns(); //th prof
+      // Clear CAN bus of any unwanted messages
+      canClearMsg(0);
 
-      // Try to get messages (non-blocking read) to clear the bus
-      while(!canReadMsg(0, &id_in, &len_in, CANdata, FALSE)){
-	syslog(LOG_ERR, "Cleared unexpected message from CANbus");
-        usleep(1);
-      }
-      //syslog(LOG_ERR, "C 1 1");
-      GetPositions(wam->act[0].bus);
-//syslog(LOG_ERR, "C 1 2");
-      pos2_time = rt_get_cpu_time_ns(); //th prof
+
+      GetPositions(wam->act->bus);
+
+      pos2_time = btrt_get_time(); //th prof
       wam->readpos_time = pos2_time - pos1_time; //th prof
-#ifdef BTDOUBLETIME
 
-      rt_make_hard_real_time();
-#endif
-        
-        //syslog(LOG_ERR, "C 1 3");
+      DEBUG(dat1=pos2_time - pos1_time);
+
       ActAngle2Mpos(wam,(wam->Mpos)); //Move motor angles into a wam_vector variable
       //const_vn(wam->Mpos, 0.0, 0.0, 0.0, 0.0);
-      //syslog(LOG_ERR, "C 1 4");
       Mpos2Jpos(wam,(wam->Mpos), (wam->Jpos)); //Convert from motor angles to joint angles
-//syslog(LOG_ERR, "C 1 5");
+
       // Joint space stuff
-      pos1_time = rt_get_cpu_time_ns(); //th prof
-      //syslog(LOG_ERR, "C 1 6");
+      pos1_time = btrt_get_time(); //th prof
       eval_bts(&(wam->Jsc));
-      //syslog(LOG_ERR, "C 1 7");
-      pos2_time = rt_get_cpu_time_ns(); //th prof
-      //syslog(LOG_ERR, "C 1 8");
+      pos2_time = btrt_get_time(); //th prof
       wam->Jsc_time = pos2_time - pos1_time; //th prof
 
       // Cartesian space stuff
@@ -655,9 +696,9 @@ void WAMControlThread1(void *data)
          setrange_vn(wam->R6pos, (vect_n*)v3, 3+3*cnt, 0, 3);
       }
 
-      pos1_time = rt_get_cpu_time_ns(); //th prof
+      pos1_time = btrt_get_time(); //th prof
       eval_bts(&(wam->Csc));
-      pos2_time = rt_get_cpu_time_ns(); //th prof
+      pos2_time = btrt_get_time(); //th prof
       wam->user_time = pos2_time - pos1_time; //th prof
 
       set_v3(wam->Cforce,(vect_3*)wam->R6force);
@@ -684,301 +725,164 @@ void WAMControlThread1(void *data)
          //apply_tool_force_bot(&(w->robot), w->Cpoint, f3, t3);
          set_vn(last_e, e);
       }
-#if 0 
+#if 0
       //Cartesian angular constraint
       R_to_q(wam->qact,T_to_W_trans_bot(&wam->robot));
       set_q(wam->qaxis,mul_q(wam->qact,conj_q(wam->qref)));
       set_q(wam->forced,force_closest_q(wam->qaxis));
-      
+
       //syslog_vn("qref: ", (vect_n*)wam->qref);
       //syslog_vn("qact: ", (vect_n*)wam->qact);
-      
-      wam->qerr = GCdist_q(wam->qref,wam->qact); 
+
+      wam->qerr = GCdist_q(wam->qref,wam->qact);
       set_v3(wam->Ctrq,scale_v3(eval_err_btPID(&(wam->pid[3]),wam->qerr,dt),GCaxis_q(wam->Ctrq,wam->qref,wam->qact)));
-      
+
       //syslog(LOG_ERR, "qerr: %f", wam->qerr);
       //syslog_vn("Ctrq: ", (vect_n*)wam->Ctrq);
-#endif  
+#endif
       //syslog_vn("qref: ", (vect_n*)wam->qref);
       //syslog_vn("qact: ", (vect_n*)wam->qact);
       //Force application
       apply_tool_force_bot(&wam->robot, wam->Cpoint, wam->Cforce, wam->Ctrq);
 
-      pos1_time = rt_get_cpu_time_ns(); //th prof
+      pos1_time = btrt_get_time(); //th prof
       (*wam->force_callback)(wam);
-      pos2_time = rt_get_cpu_time_ns(); //th prof
+      pos2_time = btrt_get_time(); //th prof
       wam->user_time = pos2_time - pos1_time; //th prof
 
       eval_bd_bot(&wam->robot);
       get_t_bot(&wam->robot,wam->Ttrq);
 
-      if(wam->isZeroed) {
+      if(wam->isZeroed)
+      {
          set_vn(wam->Jtrq,add_vn(wam->Jtrq,wam->Ttrq));
       }
 
       Jtrq2Mtrq(wam,(wam->Jtrq), (wam->Mtrq));  //Convert from joint torques to motor torques
 #if 0
-      if(wam->dof == 8){
+
+      if(wam->dof == 8)
+      {
          //8-DOF paint spraying demo code
          if(getmode_bts(&wam->Jsc) == SCMODE_IDLE)
-         setval_vn(wam->Mtrq, 7, 0);
+            setval_vn(wam->Mtrq, 7, 0);
          else
-         setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
+            setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
       }
 #endif
-      
+
       Mtrq2ActTrq(wam,wam->Mtrq); //Move motor torques from wam_vector variable into actuator database
 #ifdef BTDOUBLETIME
 
-      rt_make_soft_real_time();
+      //rt_make_soft_real_time();
+      btrt_set_mode_soft();
 #endif
 
-      trq1_time = rt_get_cpu_time_ns(); //th prof
+      trq1_time = btrt_get_time(); //th prof
 
-      SetTorques(wam->act[0].bus);
+      SetTorques(wam->act->bus);
 
-      trq2_time = rt_get_cpu_time_ns(); //th prof
+      trq2_time = btrt_get_time(); //th prof
       wam->writetrq_time = trq2_time - trq1_time; //th prof
+      DEBUG(dat2 = trq2_time - trq1_time);
 #ifdef BTDOUBLETIME
 
-      rt_make_hard_real_time();
+      //rt_make_hard_real_time();
+      btrt_set_mode_hard();
+
 #endif
 
-      loop_end = rt_get_cpu_time_ns(); //th prof
+      loop_end = btrt_get_time(); //th prof
       wam->loop_time = loop_end - loop_start; //th prof
       last_loop = loop_start; //th prof
 
-      pthread_mutex_unlock(&(wam->loop_mutex));
+      btrt_mutex_unlock(&(wam->loop_mutex));
 
       wam->log_time += dt;
-      if ((counter % wam->logdivider) == 0) {
+      if ((counter % wam->logdivider) == 0)
+      {
          TriggerDL(&(wam->log)); //th log
       }
       //th cteach {
-      if (wam->cteach.Log_Data) {
+      if (wam->cteach.Log_Data)
+      {
          wam->counter++;
          wam->teach_time += dt;
          if ((counter % wam->divider) == 0)
             TriggerDL(&(wam->cteach));
       }//th cteach }
+
+      DEBUG(
+         dat3=stopt3-startt3;
+         dat4=trq1_time-pos2_time;
+         
+         /* Track max/min */
+         if(dat1 > max1)
+            max1 = dat1;
+         if((dat1 < min1) && (dat1 > 100))
+            min1 = dat1;
+         if(dat2 > max2)
+            max2 = dat2;
+         if((dat2 < min2) && (dat2 > 100))
+            min2 = dat2;
+         if(dat3 > max3)
+            max3 = dat3;
+         if((dat3 < min3) && (dat3 > 100))
+            min3 = dat3;
+         if(dat4 > max4)
+            max4 = dat4;
+         if((dat4 < min4) && (dat4 > 100))
+            min4 = dat4;
+
+                        /* Track sum(X) and sum(X^2) */
+                        sumX1 += dat1;
+                        sumX21 += dat1 * dat1;
+                        sumX2 += dat2;
+                        sumX22 += dat2 * dat2;
+                        sumX3 += dat3;
+                        sumX23 += dat3 * dat3;
+                        sumX4 += dat4;
+                        sumX24 += dat4 * dat4;
+                        );
+
    }
+   DEBUG(
+      mean1 = 1.0 * sumX1 / counter;
+      stdev1 = sqrt((1.0 * counter * sumX21 - sumX1 * sumX1) / (counter * counter - counter));
+      mean2 = 1.0 * sumX2 / counter;
+      stdev2 = sqrt((1.0 * counter * sumX22 - sumX2 * sumX2) / (counter * counter - counter));
+      mean3 = 1.0 * sumX3 / counter;
+      stdev3 = sqrt((1.0 * counter * sumX23 - sumX3 * sumX3) / (counter * counter - counter));
+      mean4 = 1.0 * sumX4 / counter;
+      stdev4 = sqrt((1.0 * counter * sumX24 - sumX4 * sumX4) / (counter * counter - counter));
+
+      syslog(LOG_ERR, "Get Positions)Max: %ld,", max1);
+      syslog(LOG_ERR, "              Min: %ld", min1);
+      syslog(LOG_ERR, "             Mean: %.4f", mean1);
+      syslog(LOG_ERR, "            Stdev: %.4f", stdev1);
+      syslog(LOG_ERR, "Set Torques)  Max: %ld,", max2);
+      syslog(LOG_ERR, "              Min: %ld", min2);
+      syslog(LOG_ERR, "             Mean: %.4f", mean2);
+      syslog(LOG_ERR, "            Stdev: %.4f", stdev2);
+      syslog(LOG_ERR, "Wait time)    Max: %ld,", max3);
+      syslog(LOG_ERR, "              Min: %ld", min3);
+      syslog(LOG_ERR, "             Mean: %.4f", mean3);
+      syslog(LOG_ERR, "            Stdev: %.4f", stdev3);
+      syslog(LOG_ERR, "Calc time)    Max: %ld,", max4);
+      syslog(LOG_ERR, "              Min: %ld", min4);
+      syslog(LOG_ERR, "             Mean: %.4f", mean4);
+      syslog(LOG_ERR, "            Stdev: %.4f", stdev4);
+      syslog(LOG_ERR, "Skips %d", counter);
+   );
+
+
    syslog(LOG_ERR, "WAM Control Thread: exiting");
    syslog(LOG_ERR, "----------WAM Control Thread Statistics:--------------");
-   syslog(LOG_ERR,"WAMControl Skipped cycles %d, Max dt: %f",skipcnt,skipmax);
+   syslog(LOG_ERR,"WAMControl Skipped cycles %d, Max dt: %f",skipcnt, wam->skipmax);
    syslog(LOG_ERR,"WAMControl Times: Readpos: %lld, Calcs: %lld, SendTrq: %lld",wam->readpos_time,wam->loop_time-wam->writetrq_time-wam->readpos_time,wam->writetrq_time);
-   rt_make_soft_real_time();
-   rt_task_delete(WAMControlThreadTask);
-   pthread_exit(NULL);
-}
 
-void WAMControlThread2(void *data)
-{
-   btthread* this_thd;
-   int                 cnt;
-   int                 idx;
-   int                 Mid;
-   double              dt,dt_targ,skiptarg,skipmax = 0.0;
-   int                 err,skipcnt = 0;
-   long unsigned       counter = 0;
-   RTIME last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
-   RT_TASK *WAMControlThreadTask;
-   double thisperiod;
-   RTIME rtime_period,sampleCount;
-   wam_struct *wam;
-   unsigned char CANdata[8];
-   int len_in;
-   int id_in;
-      
-   /* Set up timer*/
-   this_thd = (btthread*)data;
-   wam = this_thd->data;
-   thisperiod = this_thd->period;
-   rtime_period = (RTIME)(thisperiod * 1000000000.0);
-   sampleCount = nano2count(rtime_period);
-   //syslog(LOG_ERR, "C 2 -1");
-   rt_set_periodic_mode();
-   //syslog(LOG_ERR, "C 2 -2");
-   start_rt_timer(sampleCount);
-//syslog(LOG_ERR, "C 2 -3");
-   WAMControlThreadTask = rt_task_init(nam2num("WAM2"), 3, 0, 0);
-   //syslog(LOG_ERR, "C 2 -4");
-   //mlockall(MCL_CURRENT | MCL_FUTURE);
-   //#ifdef  BTREALTIME
-   rt_make_hard_real_time();
-   //#endif
-   //syslog(LOG_ERR, "C 2 -5");
-   syslog(LOG_ERR,"WAMControl initial hard");
-   rt_task_make_periodic_relative_ns(WAMControlThreadTask, rtime_period, rtime_period);
-   //syslog(LOG_ERR, "C 2 -6");
-   dt_targ = thisperiod;
-   skiptarg = 1.5 * dt_targ;
-   dt = dt_targ;
-   wam->skipmax = 0.0;
-   syslog(LOG_ERR,"WAMControl period Sec:%f, ns: %d",thisperiod, rtime_period);
-   last_loop = rt_get_cpu_time_ns();
-   //syslog(LOG_ERR, "C 2 1");
-   while (!btthread_done(this_thd)) {
-      rt_task_wait_period();
-      counter++;
-
-      loop_start = rt_get_cpu_time_ns(); //th prof
-      wam->loop_period = loop_start - last_loop; //th prof
-      dt = (double)wam->loop_period / 1000000000.0;
-      if (dt > skiptarg) {
-         skipcnt++;
-         if (dt > wam->skipmax)
-            wam->skipmax = dt;
-      }
-      wam->dt = dt;
-
-      test_and_log(
-         pthread_mutex_lock(&(wam->loop_mutex)),"WAMControlThread lock mutex failed");
-
-#ifdef BTDOUBLETIME
-
-      rt_make_soft_real_time();
-#endif
-
-      pos1_time = rt_get_cpu_time_ns(); //th prof
-
-      // Try to get messages (non-blocking read) to clear the bus
-      while(!canReadMsg(0, &id_in, &len_in, CANdata, FALSE)){
-	syslog(LOG_ERR, "Cleared unexpected message from CANbus");
-        usleep(1);
-      }
-            //syslog(LOG_ERR, "C 2 1");
-      GetPositions(wam->act[0].bus);
-//syslog(LOG_ERR, "C 2 2");
-      pos2_time = rt_get_cpu_time_ns(); //th prof
-      wam->readpos_time = pos2_time - pos1_time; //th prof
-#ifdef BTDOUBLETIME
-
-      rt_make_hard_real_time();
-#endif
-        
-        //syslog(LOG_ERR, "C 2 3");
-      ActAngle2Mpos(wam,(wam->Mpos)); //Move motor angles into a wam_vector variable
-      //const_vn(wam->Mpos, 0.0, 0.0, 0.0, 0.0);
-      //syslog(LOG_ERR, "C 2 4");
-      Mpos2Jpos(wam,(wam->Mpos), (wam->Jpos)); //Convert from motor angles to joint angles
-//syslog(LOG_ERR, "C 2 5");
-      // Joint space stuff
-      pos1_time = rt_get_cpu_time_ns(); //th prof
-      //syslog(LOG_ERR, "C 2 6");
-      eval_bts(&(wam->Jsc));
-      //syslog(LOG_ERR, "C 2 7");
-      pos2_time = rt_get_cpu_time_ns(); //th prof
-      //syslog(LOG_ERR, "C 2 8");
-      wam->Jsc_time = pos2_time - pos1_time; //th prof
-
-      // Cartesian space stuff
-      set_vn(wam->robot.q,wam->Jpos);
-//syslog(LOG_ERR, "C 2 9");
-      eval_fk_bot(&wam->robot);
-      //syslog(LOG_ERR, "C 2 10");
-      //eval_fj_bot(&wam->robot); // Uncomment for inertia matrix calc
-      //(requires powerful CPU)
-      eval_fd_bot(&wam->robot);
-//syslog(LOG_ERR, "C 2 11");
-      eval_bd_bot(&wam->robot);
-      //syslog(LOG_ERR, "C 2 12");
-      get_t_bot(&wam->robot, wam->Gtrq);
-
-      set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));
-      set_vn(wam->R6pos,(vect_n*)wam->Cpos);
-
-      pos1_time = rt_get_cpu_time_ns(); //th prof
-      eval_bts(&(wam->Csc));
-      pos2_time = rt_get_cpu_time_ns(); //th prof
-      wam->user_time = pos2_time - pos1_time; //th prof
-
-      set_v3(wam->Cforce,(vect_3*)wam->R6force);
-      //setrange_vn((vect_n*)wam->Ctrq,wam->R6force,0,2,3);
-#if 0 
-      //Cartesian angular constraint
-      R_to_q(wam->qact,T_to_W_trans_bot(&wam->robot));
-      set_q(wam->qaxis,mul_q(wam->qact,conj_q(wam->qref)));
-      set_q(wam->forced,force_closest_q(wam->qaxis));
-      
-      //syslog_vn("qref: ", (vect_n*)wam->qref);
-      //syslog_vn("qact: ", (vect_n*)wam->qact);
-      
-      wam->qerr = GCdist_q(wam->qref,wam->qact); 
-      set_v3(wam->Ctrq,scale_v3(eval_err_btPID(&(wam->pid[3]),wam->qerr,dt),GCaxis_q(wam->Ctrq,wam->qref,wam->qact)));
-      
-      //syslog(LOG_ERR, "qerr: %f", wam->qerr);
-      //syslog_vn("Ctrq: ", (vect_n*)wam->Ctrq);
-#endif  
-      //syslog_vn("qref: ", (vect_n*)wam->qref);
-      //syslog_vn("qact: ", (vect_n*)wam->qact);
-      //Force application
-      apply_tool_force_bot(&wam->robot, wam->Cpoint, wam->Cforce, wam->Ctrq);
-
-      pos1_time = rt_get_cpu_time_ns(); //th prof
-      (*wam->force_callback)(wam);
-      pos2_time = rt_get_cpu_time_ns(); //th prof
-      wam->user_time = pos2_time - pos1_time; //th prof
-
-      eval_bd_bot(&wam->robot);
-      get_t_bot(&wam->robot,wam->Ttrq);
-
-      if(wam->isZeroed) {
-         set_vn(wam->Jtrq,add_vn(wam->Jtrq,wam->Ttrq));
-      }
-
-      Jtrq2Mtrq(wam,(wam->Jtrq), (wam->Mtrq));  //Convert from joint torques to motor torques
-#if 0
-      if(wam->dof == 8){
-         //8-DOF paint spraying demo code
-         if(getmode_bts(&wam->Jsc) == SCMODE_IDLE)
-         setval_vn(wam->Mtrq, 7, 0);
-         else
-         setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
-      }
-#endif
-      
-      Mtrq2ActTrq(wam,wam->Mtrq); //Move motor torques from wam_vector variable into actuator database
-#ifdef BTDOUBLETIME
-
-      rt_make_soft_real_time();
-#endif
-
-      trq1_time = rt_get_cpu_time_ns(); //th prof
-
-      SetTorques(wam->act[0].bus);
-
-      trq2_time = rt_get_cpu_time_ns(); //th prof
-      wam->writetrq_time = trq2_time - trq1_time; //th prof
-#ifdef BTDOUBLETIME
-
-      rt_make_hard_real_time();
-#endif
-
-      loop_end = rt_get_cpu_time_ns(); //th prof
-      wam->loop_time = loop_end - loop_start; //th prof
-      last_loop = loop_start; //th prof
-
-      pthread_mutex_unlock(&(wam->loop_mutex));
-
-      wam->log_time += dt;
-      if ((counter % wam->logdivider) == 0) {
-         TriggerDL(&(wam->log)); //th log
-      }
-      //th cteach {
-      if (wam->cteach.Log_Data) {
-         wam->counter++;
-         wam->teach_time += dt;
-         if ((counter % wam->divider) == 0)
-            TriggerDL(&(wam->cteach));
-      }//th cteach }
-   }
-   syslog(LOG_ERR, "WAM Control Thread: exiting");
-   syslog(LOG_ERR, "----------WAM Control Thread Statistics:--------------");
-   syslog(LOG_ERR,"WAMControl Skipped cycles %d, Max dt: %f",skipcnt,skipmax);
-   syslog(LOG_ERR,"WAMControl Times: Readpos: %lld, Calcs: %lld, SendTrq: %lld",wam->readpos_time,wam->loop_time-wam->writetrq_time-wam->readpos_time,wam->writetrq_time);
-   rt_make_soft_real_time();
-   rt_task_delete(WAMControlThreadTask);
-   pthread_exit(NULL);
+   /*Delete thread when done*/
+   btrt_thread_exit(this_thd);
 }
 
 /** Load a wam_vector with the actuator angles.
@@ -993,7 +897,8 @@ int ActAngle2Mpos(wam_struct *wam,vect_n *Mpos)
 
    //Extracts actuators 0 thru 6 into wam_vector positions
    num_act = wam->num_actuators;
-   for (cnt = 0; cnt < num_act; cnt++) {
+   for (cnt = 0; cnt < num_act; cnt++)
+   {
       setval_vn(Mpos,wam->motor_position[cnt],wam->act[cnt].angle);
    }
 
@@ -1012,7 +917,7 @@ int Mtrq2ActTrq(wam_struct *wam,vect_n *Mtrq)
    int num_act, cnt;
 
    //Packs wam_vector of torques into actuator array
-   //err = GetActuators(wam->&num_act);
+   //act = GetActuators(&num_act);
    for (cnt = 0; cnt < buses[wam->act[0].bus].num_pucks; cnt++) {
       wam->act[cnt].torque = getval_vn(Mtrq,wam->motor_position[cnt]);
    }
@@ -1062,10 +967,11 @@ void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos)
    setval_vn(Mpos,1, (pos[1] * mN[1]) - (pos[2] * mN[2] / mn[2]));
    setval_vn(Mpos,2, ( -pos[1] * mN[1]) - ( pos[2] * mN[2] / mn[2]));
    if(wam->M4_reversed)
-   setval_vn(Mpos,3, (-pos[3] * mN[3]));
+      setval_vn(Mpos,3, (-pos[3] * mN[3]));
    else
-   setval_vn(Mpos,3, (pos[3] * mN[3]));
-   if(wam->dof > 4){
+      setval_vn(Mpos,3, (pos[3] * mN[3]));
+   if(wam->dof > 4)
+   {
       setval_vn(Mpos,4,pos[4] * mN[4] - pos[5] * mN[4] / mn[5]);
       setval_vn(Mpos,5, pos[4] * mN[4] + pos[5] * mN[4] / mn[5]);
       setval_vn(Mpos,6, -pos[6] / mN[6]);
@@ -1115,8 +1021,9 @@ void DefineWAMpos(wam_struct *wam, vect_n *wv)
    SetByID(wam->act->bus, SAFETY_MODULE, IFAULT, 8);
 
    //convert from joint space to motor space, then from motor radians to encoder counts
-   Jpos2Mpos(wam, wv,motor_angle);
-   for (cnt = 0;cnt < (wam->num_actuators - 3 * gimbalsInit);cnt++) {
+   Jpos2Mpos(wam, wv, motor_angle);
+   for (cnt = 0;cnt < (wam->num_actuators - 3 * gimbalsInit);cnt++)
+   {
       if(getval_vn(motor_angle,wam->motor_position[cnt]) == 0.0)
          result = 0;
       else
@@ -1142,7 +1049,8 @@ void SetCartesianSpace(wam_struct* wam)
    int trjstate;
 
    // In joint space?
-   if (wam->active_sc == &wam->Jsc) {
+   if (wam->active_sc == &wam->Jsc)
+   {
       trjstate = get_trjstate_bts(wam->active_sc);
       if (trjstate != BTTRAJ_DONE && trjstate != BTTRAJ_STOPPED)
          stop_trj_bts(wam->active_sc);
@@ -1157,7 +1065,8 @@ void SetJointSpace(wam_struct* wam)
    int trjstate;
 
    // In cartesian space?
-   if (wam->active_sc == &wam->Csc) {
+   if (wam->active_sc == &wam->Csc)
+   {
       trjstate = get_trjstate_bts(wam->active_sc);
       if (trjstate != BTTRAJ_DONE && trjstate != BTTRAJ_STOPPED)
          stop_trj_bts(wam->active_sc);
@@ -1324,9 +1233,7 @@ void getLagrangian4(wam_struct *wam,double *A, double *B, double *C, double *D)
 void setSafetyLimits(int bus, double jointVel, double tipVel, double elbowVel)
 {
    int conversion;
-   
    syslog(LOG_ERR, "About to set safety limits, VL2 = %d", VL2);
-   
    if((jointVel > 0) && (jointVel < 7)) /* If the vel (rad/s) is reasonable */
    {
       conversion = jointVel * 0x1000; /* Convert to Q4.12 rad/s */
@@ -1344,6 +1251,7 @@ void setSafetyLimits(int bus, double jointVel, double tipVel, double elbowVel)
       conversion = elbowVel * 0x1000; /* Convert to Q4.12 rad/s */
       SetByID(bus, SAFETY_MODULE, VL2, conversion);
    }
+
 }
 
 /** Syslog wam configuration information for debugging

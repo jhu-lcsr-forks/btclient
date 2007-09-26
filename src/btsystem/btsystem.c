@@ -30,6 +30,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <native/task.h>
+#include <native/timer.h>
 
 /*==============================*
  * INCLUDES - Project Files     *
@@ -308,11 +310,10 @@ int InitializeSystem(void)
       if(buses[bus_number].type == CAN) {
          //err = parseGetVal(INT, key, (void*)&canAddr);
          // Initialize the hardware channel
-         ///** \bug Should have a commMutex for each device.*/
-         //if(err = pthread_mutex_init(&commMutex, NULL))
-         //   syslog(LOG_ERR, "Could not initialize can mutex for bus %d.", bus_number);
+
          if(err = initCAN(bus_number, buses[bus_number].address))
             syslog(LOG_ERR, "Could not initialize can bus %d, err = %d", bus_number, err);
+
          syslog(LOG_ERR, "Waking all pucks");
          wakePuck(bus_number, GROUPID(WHOLE_ARM));
 
@@ -737,12 +738,15 @@ void GetPositions(int bus)
       return;
    }
 
+   /*
    for (cnt = 0; cnt < num_actuators; cnt++) {
       if(act[cnt].bus == bus){
-         gettimeofday(&timev, 0); /* if this segfaults put a timezone struct in here */
+         gettimeofday(&timev, 0); // if this segfaults put a timezone struct in here 
          act[cnt].lastpos = timev.tv_usec + timev.tv_sec * 1000000;
       }
    }
+   */
+   
    //for each bus do a broadcast get position...
    //for (cnt = 0; cnt < num_buses; cnt++) {
       err = getPositions(bus, 0, buses[bus].num_pucks, data);
@@ -828,13 +832,16 @@ void SetTorques(int bus)
          setTorques(cnt, buses[cnt].group[cnt2].group_number, data);
       }
    //}
-
+   
+   //I think this code was used for debugging in RTAI, eliminating it to debug in XENOMAI
+   /*
    for (cnt = 0; cnt < num_actuators; cnt++) {
       if(act[cnt].bus == bus){
-         gettimeofday(&timev, 0); /* if this segfaults put a timezone struct here */
+         gettimeofday(&timev, 0); // if this segfaults put a timezone struct here
          act[cnt].lasttrq = timev.tv_usec + timev.tv_sec * 1000000;
       }
    }
+   */
 }
 
 /** Get a property from an actuator.

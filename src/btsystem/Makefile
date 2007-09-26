@@ -1,5 +1,5 @@
 LIB_OBJS =  btsystem.o  btjointcontrol.o playlist.o \
-            btlogger.o btcan_esd.o btrobot.o btmath.o \
+            btlogger.o btcan_peakesd.o btrobot.o btmath.o \
             btos.o btpath.o btcontrol.o btserial.o bthaptics.o btstatecontrol.o \
             btgeometry.o btparser.o btseg.o
 INCL_FILES = btcan.h btsystem.h  btlogger.h btjointcontrol.h \
@@ -8,7 +8,7 @@ INCL_FILES = btcan.h btsystem.h  btlogger.h btjointcontrol.h \
 LIB_TARG = ./libbtsystem.a
 SLIB_TARG = ./libbtsystem.so
 CC = gcc
-PATH_INCLUDE = -I./include -I/usr/realtime/include
+PATH_INCLUDE = -I./include -I/usr/realtime/include -I/usr/xenomai/include
 PATH_INSTALL = ../..
 
 #set BTOLDCFG to -DBTOLDCONFIG for RIC,MIT,Ualberta,BPW

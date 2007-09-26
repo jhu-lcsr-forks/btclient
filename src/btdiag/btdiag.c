@@ -41,9 +41,16 @@ it to properly establish the time values.
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 
+#ifdef XENOMAI
+#include <native/task.h>
+#include <native/timer.h>
+
+#else
 #include <rtai_lxrt.h>
 #include <rtai_sem.h>
+#endif
 
 /*==============================*
  * INCLUDES - Project Files     *
@@ -57,7 +64,12 @@ it to properly establish the time values.
  * PRIVATE DEFINED constants    *
  *==============================*/
 enum{SCREEN_MAIN, SCREEN_HELP};
+
+#ifdef XENOMAI
+#define Ts (0.001)
+#else 
 #define Ts (0.002)
+#endif
 
 /*==============================*
  * PRIVATE MACRO definitions    *
@@ -82,7 +94,7 @@ typedef struct {
    via_trj_array **vta;
    via_trj_array *vt_j;
    via_trj_array *vt_c;
-   btthread wam_thd;
+   btrt_thread_struct wam_thd;
    btgeom_state pstate;
 }wamData_struct;
 
@@ -129,6 +141,23 @@ char *user_def = "User edited point list";
 matr_3 *r_mat;
 vect_3 *xyz, *RxRyRz;
 
+btrt_thread_struct  StartupThread;
+
+#if 0
+vectray *vr;
+via_trj_array **vta = NULL,*vt_j = NULL,*vt_c = NULL;
+int cteach = 0;
+extern int isZeroed;
+/*static RT_TASK *mainTask; */
+btthread audio_thd,disp_thd;
+btrt_thread_struct wam_thd;
+double sample_rate;
+btreal Jpos_filt[7];
+btfilter *j5,*j6,*j7;
+btfilter *yk_xfilt, *yk_yfilt, *yk_zfilt;
+matr_mn *Th;
+#endif
+
 /******* Haptics *******/
 btgeom_plane planes[10];
 bteffect_wall wall[10];
@@ -141,6 +170,8 @@ btgeom_box boxs[10];
 vect_3 *p1,*p2,*p3,*zero_v3;
 bthaptic_scene bth;
 
+
+int startDone = FALSE;
 
 /*==============================*
  * PRIVATE Function Prototypes  *
@@ -166,7 +197,79 @@ int  WAMcallback(struct btwam_struct *wam);
 /*==============================*
  * Functions                    *
  *==============================*/
+ 
+ 
 
+/* For Debugging: This function will singnal SIGXCPU if rt thread switches to 
+ * secontary mode.  Also one can look at /proc/xenomai/stat and MSW will 
+ * tell you the number of switches a thread has made.
+void warn_upon_switch(int sig __attribute__((unused)))
+{
+    void *bt[32];
+    int nentries;
+    int errfiled;
+ 
+    errfiled= open ("/root/WAMerror.txt", 1);//open WAMerror text as a write
+    
+    // Dump a backtrace of the frame which caused the switch to
+    // secondary mode: 
+    nentries = backtrace(bt,sizeof(bt) / sizeof(bt[0]));
+    backtrace_symbols_fd(bt,nentries,errfiled);
+    close(errfiled);
+}
+*/
+
+void Startup(void *thd){
+   btrt_thread_struct* this_thd;
+   char *robotNamep[128];
+   int err, i;
+   
+   this_thd = (btrt_thread_struct*)thd;
+   *robotNamep=this_thd->data;
+   
+   /* Read the WAM configuration file */
+   err = ReadSystemFromConfig("../../wam.conf", &busCount);
+   if(err) {
+      syslog(LOG_ERR, "ReadSystemFromConfig returned err = %d", err);
+      exit(1);
+   }
+   
+   /* Probe and initialize the robot actuators */
+   err = InitializeSystem();
+   if(err) {
+      syslog(LOG_ERR, "InitializeSystem returned err = %d", err);
+      exit(1);
+   }
+      
+   /* Initialize and get a handle to the robot(s) */
+   for(i = 0; i < busCount; i++){
+      if(!(wam[i] = OpenWAM("../../wam.conf", i)))
+         exit(1);
+   }
+
+   /* Set the safety limits for each bus (WAM) */
+   for(i = 0; i < busCount; i++){
+      if(!NoSafety) {
+         /* setSafetyLimits(bus, joint rad/s, tip m/s, elbow m/s);
+          * For now, the joint and tip velocities are ignored and
+          * the elbow velocity provided is used for all three limits.
+          */
+         setSafetyLimits(i, 1.5, 1.5, 1.5);  // Limit to 1.5 m/s
+   
+         /* Set the puck torque safety limits (TL1 = Warning, TL2 = Critical)
+          * Note: The pucks are limited internally to 3441 (see 'MT' in btsystem.c) 
+          * Note: btsystem.c bounds the outbound torque to 8191, so 9000
+          * tells the safety system to never register a critical fault
+          */
+         setProperty(i, SAFETY_MODULE, TL2, FALSE, 9000); //4700);
+         setProperty(i, SAFETY_MODULE, TL1, FALSE, 2000); //1800
+      }
+   }
+   
+   startDone = TRUE;
+   pause();
+}
+    
 /** Entry point for the application.
     Initializes the system and executes the main event loop.
 */
@@ -178,7 +281,21 @@ int main(int argc, char **argv)
    struct   sched_param mysched;
    char     robotName[128];
 
+
+   mlockall(MCL_CURRENT | MCL_FUTURE);
+   
+   // Test to see when thread is changing over to secondary mode
+   // signal(SIGXCPU, warn_upon_switch);
+   
+#ifdef RTAI
    rt_allow_nonroot_hrt();
+#endif
+
+/* XENOMAI nonroot_hrt is trickier:
+   XENO_OPT_SECURITY_ACCESS=n
+   /usr/src/linux/include/linux/resource.h
+      #define MLOCK_LIMIT (4096 * PAGE_SIZE)
+*/
 
    /* Figure out what the keys do and print it on screen.
     * Parses this source file for lines containing "case '", because
@@ -233,51 +350,18 @@ int main(int argc, char **argv)
          usleep(5000);
    }
 
-   /* Read the WAM configuration file */
-   err = ReadSystemFromConfig("../../wam.conf", &busCount);
-   if(err) {
-      syslog(LOG_ERR, "ReadSystemFromConfig returned err = %d", err);
-      exit(1);
-   }
-   
-   /* Probe and initialize the robot actuators */
-   err = InitializeSystem();
-   if(err) {
-      syslog(LOG_ERR, "InitializeSystem returned err = %d", err);
-      exit(1);
-   }
-      
-   /* Initialize and get a handle to the robot(s) */
-   for(i = 0; i < busCount; i++){
-      if(!(wam[i] = OpenWAM("../../wam.conf", i)))
-         exit(1);
-   }
-
    /* Register the ctrl-c interrupt handler */
    signal(SIGINT, sigint_handler);
-
-   /* Set the safety limits for each bus (WAM) */
-   for(i = 0; i < busCount; i++){
-      if(!NoSafety) {
-         /* setSafetyLimits(bus, joint rad/s, tip m/s, elbow m/s);
-          * For now, the joint and tip velocities are ignored and
-          * the elbow velocity provided is used for all three limits.
-          */
-         setSafetyLimits(i, 1.5, 1.5, 1.5);  // Limit to 1.5 m/s
    
-         /* Set the puck torque safety limits (TL1 = Warning, TL2 = Critical)
-          * Note: The pucks are limited internally to 3441 (see 'MT' in btsystem.c) 
-          * Note: btsystem.c bounds the outbound torque to 8191, so 9000
-          * tells the safety system to never register a critical fault
-          */
-         setProperty(i, SAFETY_MODULE, TL2, FALSE, 9000); //4700);
-         setProperty(i, SAFETY_MODULE, TL1, FALSE, 2000); //1800
-      }
-      
+   /* RT task for setup of CAN Bus */
+   btrt_thread_create(&StartupThread,"StTT", 25, (void*)Startup, (void*)robotName);
+   while(!startDone)
+      usleep(10000);
+ 
+   for(i = 0; i < busCount; i++){
       /* Prepare the WAM data */
       wamData[i].jdest = new_vn(len_vn(wam[i]->Jpos));
       wamData[i].cdest = new_vn(len_vn(wam[i]->R6pos));
-      //wv = new_vn(7);
    
       /* The WAM can be in either Joint mode or Cartesian mode.
        * We want a single set of variables (active_) to eliminate the need
@@ -301,6 +385,7 @@ int main(int argc, char **argv)
       /* Register the control loop's local callback routine */
       registerWAMcallback(wam[i], WAMcallback);
    }
+
    r_mat = new_m3();
    xyz = new_v3();
    RxRyRz = new_v3();
@@ -309,7 +394,7 @@ int main(int argc, char **argv)
    init_haptics();
    
    /* Spin off the WAM control thread(s) */
-   btthread_create(&wamData[0].wam_thd, 90, (void*)WAMControlThread1, (void*)wam[0]);
+   btrt_thread_create(&wamData[0].wam_thd, "WAMCTT", 90, (void*)WAMControlThread, (void*)wam[0]);
    //btthread_create(&wamData[1].wam_thd, 90, (void*)WAMControlThread2, (void*)wam[1]);
    
    /* Initialize the active teach filename (to blank) */
@@ -347,7 +432,7 @@ int main(int argc, char **argv)
       /* If we are in playback mode, handle the BarrettHand teach commands */
       if(cplay){
          if(keyEvent[eventIdx].c){
-            if((rt_get_cpu_time_ns() - eventStart) > keyEvent[eventIdx].t){
+            if((btrt_get_time() - eventStart) > keyEvent[eventIdx].t){
                ProcessInput(keyEvent[eventIdx].c);
                ++eventIdx;  
             }
@@ -382,10 +467,13 @@ int main(int argc, char **argv)
 
    /* Clean up and exit */
    for(i = 0; i < busCount; i++){
-      btthread_stop(&wamData[i].wam_thd); //Kill WAMControlThread
+      btrt_thread_stop(&wamData[i].wam_thd); //Kill WAMControlThread
       //CloseDL(&(wam[i]->log));
    }
    //DecodeDL("datafile.dat","dat.csv",1);
+
+   //CloseWAM(wam);
+   test_and_log(rt_task_delete(&(StartupThread.task)), "Startup: task delete failed");
    exit(1);
 }
 
@@ -819,7 +907,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rGC\r");
       if(cteach){
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          syslog(LOG_ERR, "keyEvent[%d].c = %d, keyEvent[%d].t = %lld", eventIdx, c, eventIdx, keyEvent[eventIdx].t);
          eventIdx++;
          keyEvent[eventIdx].c = 0;
@@ -829,7 +917,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rGO\r");
       if(cteach){
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          syslog(LOG_ERR, "keyEvent[%d].c = %d, keyEvent[%d].t = %lld", eventIdx, c, eventIdx, keyEvent[eventIdx].t);
          eventIdx++;
          keyEvent[eventIdx].c = 0;
@@ -839,7 +927,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rSC\r");
       if(cteach){
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -848,7 +936,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rSO\r");
       if(cteach){
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -857,7 +945,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rSM 1000\r");
       if(cteach){
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -866,7 +954,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rSM 1500\r");
       if(cteach){
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -875,7 +963,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rHI\r");
       if(cteach){
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -950,7 +1038,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          if(getmode_bts(wamData[i].active_bts)!=SCMODE_TRJ) {
    
             cplay = 1;
-            eventStart = rt_get_cpu_time_ns();
+            eventStart = btrt_get_time();
             eventIdx = 0;
             
             moveparm_bts(wamData[i].active_bts,vel,acc);
@@ -1011,7 +1099,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       
       cteach = 1;
       eventIdx = 0;
-      eventStart = rt_get_cpu_time_ns()-750000000L;
+      eventStart = btrt_get_time()-750000000L;
       keyEvent[eventIdx].c = 0;
       
       break;

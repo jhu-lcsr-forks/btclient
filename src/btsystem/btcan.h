@@ -64,6 +64,7 @@ extern "C"
 */
 
 /* Public Functions */
+
 int initCAN(int bus, int port);
 void freeCAN(int bus);
 int getBusStatus(int bus, long *status);

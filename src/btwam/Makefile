@@ -3,7 +3,7 @@ INCL_FILES = btwam.h gimbals.h
 LIB_TARG = ./libbtwam.a
 SLIB_TARG = ./libbtwam.so
 CC = gcc
-PATH_INCLUDE = -I./include -I/usr/realtime/include -I../btsystem
+PATH_INCLUDE = -I./include -I/usr/realtime/include -I../btsystem -I/usr/xenomai/include
 PATH_INSTALL = ../..
 
 #set BTOLDCFG to -DBTOLDCONFIG for RIC,MIT,Ualberta,BPW
