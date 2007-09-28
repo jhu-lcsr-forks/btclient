@@ -829,8 +829,8 @@ void paramDefaults(int newID,int targID)
          }
       }
       
-      setProperty(0,newID,JIDX,0,newID);
-      setProperty(0,newID,PIDX,0,((newID-1)%4)+1);
+      setProperty(0,newID,JIDX,0,targID);
+      setProperty(0,newID,PIDX,0,((targID-1)%4)+1);
       break;
       
       case ROLE_SAFETY:

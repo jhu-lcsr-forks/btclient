@@ -128,125 +128,6 @@ int ReadSystemFromConfig(char *fn, int *busCount)
    return(0);
 }
 
-#ifdef BTOLDCONFIG
-/** Load information from configuration files, initialize structures, and open CAN device drivers
-*/
-int InitializeSystem(char *actuatorfile,char *busfile,char *motorfile,char *puckfile)
-{
-   int err, cnt, cnt2, cnt3, cnt4;
-   int min, max, min_idx, max_idx, act_cnt, grp_cnt;
-   int group_cnt[65];
-
-   CPU_cycles_per_second = sysconf(_SC_CLK_TCK);
-   buses = (bus_struct*)btmalloc(MAX_BUSES * sizeof(bus_struct));
-
-   //Load bus file
-   num_buses = Load_Bus_File(buses,busfile);
-   if (num_buses <= 0) {
-      return -1;
-   }
-   syslog(LOG_ERR,"Read %s",buses[0].device_str);
-
-   //Load actuator file
-   act = Load_Actuator_File(&num_actuators, actuatorfile, motorfile, puckfile);
-   if (act == NULL) {
-      return -2;
-   }
-   syslog(LOG_ERR,"Read actuators");
-   //Initialize actuator file
-
-   for (cnt = 0; cnt < num_actuators; cnt++) {
-      act[cnt].puck.position = 0;
-      act[cnt].puck.torque_cmd = 0;
-      act[cnt].angle = 0;
-      act[cnt].torque = 0;
-      act[cnt].puck.zero = 0;
-      act[cnt].puck.index = 0;
-      act[cnt].UseTRC = 0;
-      act[cnt].UseEngrUnits = 1;
-   }
-
-   //set up group indexes. CAVEATS: does not check for duplicate order numbers in groups
-
-   for (cnt = 0; cnt < num_buses; cnt++) {
-      buses[cnt].total_pucks=0;
-      //initialize the group counter
-      for (cnt4 = 0;cnt4 < 65;cnt4++)
-         group_cnt[cnt4] = 0;
-      //get number of actuators on this bus
-      act_cnt = 0;
-      for (cnt2 = 0; cnt2 < num_actuators; cnt2++) {
-         if (act[cnt2].bus == cnt) {
-            act_cnt++;
-            group_cnt[act[cnt2].puck.group]++;
-         }
-      }
-      buses[cnt].num_pucks = act_cnt;
-      //figure out how many groups were found
-      for (cnt4 = 0;cnt4 < 65;cnt4++) {
-         if (group_cnt[cnt4]) {
-            buses[cnt].num_groups++;
-            buses[cnt].group[buses[cnt].num_groups - 1].group_number = cnt4;
-         }
-      }
-      min = 0;
-      //for each actuator on this bus scan through and sort from lowest puck_id to highest
-      for (cnt2 = 0;cnt2 < act_cnt; cnt2++) {
-         max = 1000;
-         for (cnt3 = 0; cnt3 < num_actuators; cnt3++) {
-            if ((act[cnt3].bus == cnt) && (act[cnt3].puck.ID < max) && (act[cnt3].puck.ID > min)) {
-               max = act[cnt3].puck.ID;
-               max_idx = cnt3;
-            }
-         }
-         buses[cnt].pucks_by_id[cnt2] = max_idx;
-         min = max;
-      }
-
-      //zero out pucks_by_order in index
-      for (cnt3 = 0;cnt3 < buses[cnt].num_groups;cnt3++) {
-         for (cnt4 = 0; cnt4 < 4;cnt4++)
-            buses[cnt].group[cnt3].pucks_by_order[cnt4] = -1;
-      }
-      //creat index of pucks by order
-      for (cnt2 = 0;cnt2 < buses[cnt].num_pucks;cnt2++) {
-         for (cnt3 = 0;cnt3 < buses[cnt].num_groups;cnt3++) {
-            if (act[buses[cnt].pucks_by_id[cnt2]].puck.group == buses[cnt].group[cnt3].group_number) {
-               buses[cnt].group[cnt3].pucks_by_order[act[buses[cnt].pucks_by_id[cnt2]].puck.order % 4] = buses[cnt].pucks_by_id[cnt2]; //%4 forces .order into valid range. prevents segfaults when we don't care what the torque order is.
-            }
-         }
-      }
-   }
-   //Initialize CAN bus
-   for (cnt = 0; cnt < num_buses; cnt++) {
-      //initialize comm mutex
-      err = pthread_mutex_init(&commMutex, NULL);
-      if (err) {
-         syslog(LOG_ERR, "Could not initialize can mutex for bus %d.", cnt);
-         free(act);
-         //for (cnt2 = 0; cnt2 < num_buses-1; cnt2++)
-         //  close(buses[cnt2].CANdev.CANfd);
-         return -1;
-      }
-      //initialize can device
-      err = initCAN(cnt);
-      if (err) {
-         syslog(LOG_ERR, "Could not initialize can bus %d.", cnt);
-         free(act);
-         //for (cnt2 = 0; cnt2 <= cnt; cnt2++)
-         //  close(buses[cnt].CANdev.CANfd);
-         return -1;
-      }
-      //initialize channel
-      //buses[cnt].CANdev.channel = 0;
-   }
-
-   //Success!
-   act_data_valid = 1;
-   return 0;
-}
-
-#else //BTNEWCONFIG
 /** Load information from configuration files, initialize structures, and open CAN device drivers
  
  
@@ -489,7 +370,6 @@ int InitializeSystem(void)
    return 0;
 }
 
-#endif //BTNEWCONFIG
 
 /** Figure out who is online and error gracefully if it's something other that what our config files tell us.
  
@@ -638,11 +518,12 @@ void CloseSystem()
 {
    int cnt;
 
-   for (cnt = 0; cnt < num_actuators; cnt++) {
-      if (act[cnt].motor.values != NULL)
-         free(act[cnt].motor.values);
-   }
-   free(act);
+   /* malloc()'ed memory is automatically freed upon exit */
+   //for (cnt = 0; cnt < num_actuators; cnt++) {
+   //   if (act[cnt].motor.values != NULL)
+   //      free(act[cnt].motor.values);
+   //}
+   //free(act);
 
    for (cnt = 0; cnt < num_buses; cnt++) {
       freeCAN(cnt);

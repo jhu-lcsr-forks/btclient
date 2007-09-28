@@ -447,7 +447,7 @@ wam_struct* OpenWAM(char *fn, int bus)
       rt_mutex_create(&(wam->loop_mutex),NULL),
       "Could not initialize mutex for WAM control loop.");
 
-   btthread_create(&wam->maint,0,(void*)WAMMaintenanceThread,wam);
+   btthread_create(&wam->maint, 0, (void*)WAMMaintenanceThread, wam);
 
    return(wam);
 }
@@ -536,8 +536,9 @@ void WAMControlThread(void *data)
    RT_TASK *WAMControlThreadTask;
 
    RTIME    max1, min1, dat1, max2, min2, dat2, max3, min3, dat3, max4, min4, dat4, startt1, stopt1, startt2, stopt2, startt3, stopt3;
-   double   sumX1, sumX21, mean1, stdev1, sumX2, sumX22, mean2, stdev2, sumX3, sumX23, mean3, stdev3, sumX4, sumX24, mean4, stdev4;
-
+   RTIME    mean1=0, mean2=0, mean3=0, mean4=0;
+   double   sumX1, sumX21, stdev1, sumX2, sumX22, stdev2, sumX3, sumX23, stdev3, sumX4, sumX24, stdev4;
+   
    /*//DEBUG: Seting up warn signal for changes to secondary mode, XENOMAI
    btrt_set_mode_warn();*/
 
@@ -602,22 +603,22 @@ void WAMControlThread(void *data)
    last_loop = btrt_get_time();
  
    DEBUG(
-      sumX1 = sumX21 = 0;
+      //sumX1 = sumX21 = 0;
       max1 = 0;
       min1 = 200000000.0;
 
-      sumX2 = sumX22 = 0;
+      //sumX2 = sumX22 = 0;
       max2 = 0;
       min2 = 200000000.0;
 
-      sumX3 = sumX23 = 0;
+      //sumX3 = sumX23 = 0;
       max3 = 0;
       min3 = 200000000.0;
 
-      sumX4 = sumX24 = 0;
+      //sumX4 = sumX24 = 0;
       max4 = 0;
       min4 = 200000000.0;
-      numskip = 0;
+      //numskip = 0;
    );
 
 
@@ -632,12 +633,14 @@ void WAMControlThread(void *data)
       btrt_task_wait_period();
 
 
-      counter++;
+      //counter++;
 
       DEBUG(stopt3 = btrt_get_time());
 
       loop_start = btrt_get_time(); //th prof
       wam->loop_period = loop_start - last_loop; //th prof
+      last_loop = loop_start;
+      /* Find elapsed time (in seconds) since the previous control cycle */
       dt = (double)wam->loop_period / 1000000000.0;
       if (dt > skiptarg) {
          skipcnt++;
@@ -661,7 +664,13 @@ void WAMControlThread(void *data)
       pos2_time = btrt_get_time(); //th prof
       wam->readpos_time = pos2_time - pos1_time; //th prof
 
-      DEBUG(dat1=pos2_time - pos1_time);
+      DEBUG(
+      if(mean1){ 
+         dat1 = pos2_time - pos1_time;
+      }else{
+         mean1 = dat1 = pos2_time - pos1_time;
+      }
+      );
 
       ActAngle2Mpos(wam,(wam->Mpos)); //Move motor angles into a wam_vector variable
       //const_vn(wam->Mpos, 0.0, 0.0, 0.0, 0.0);
@@ -784,7 +793,14 @@ void WAMControlThread(void *data)
 
       trq2_time = btrt_get_time(); //th prof
       wam->writetrq_time = trq2_time - trq1_time; //th prof
-      DEBUG(dat2 = trq2_time - trq1_time);
+      //DEBUG(dat2 = trq2_time - trq1_time);
+      DEBUG(
+      if(mean2){ 
+         dat2 = trq2_time - trq1_time;
+      }else{
+         mean2 = dat2 = trq2_time - trq1_time;
+      }
+      );
 #ifdef BTDOUBLETIME
 
       //rt_make_hard_real_time();
@@ -794,7 +810,6 @@ void WAMControlThread(void *data)
 
       loop_end = btrt_get_time(); //th prof
       wam->loop_time = loop_end - loop_start; //th prof
-      last_loop = loop_start; //th prof
 
       btrt_mutex_unlock(&(wam->loop_mutex));
 
@@ -813,9 +828,19 @@ void WAMControlThread(void *data)
       }//th cteach }
 
       DEBUG(
-         dat3=stopt3-startt3;
-         dat4=trq1_time-pos2_time;
          
+         if(mean3){ 
+            dat3 = stopt3-startt3;
+         }else{
+            mean3 = dat3 = stopt3-startt3;
+         }
+         
+         if(mean4){ 
+            dat4 = trq1_time-pos2_time;
+         }else{
+            mean4 = dat4 = trq1_time-pos2_time;
+         }
+      
          /* Track max/min */
          if(dat1 > max1)
             max1 = dat1;
@@ -834,7 +859,15 @@ void WAMControlThread(void *data)
          if((dat4 < min4) && (dat4 > 100))
             min4 = dat4;
 
-                        /* Track sum(X) and sum(X^2) */
+         if(dat1 > mean1) ++mean1;
+         if(dat1 < mean1) --mean1;
+         if(dat2 > mean2) ++mean2;
+         if(dat2 < mean2) --mean2;
+         if(dat3 > mean3) ++mean3;
+         if(dat3 < mean3) --mean3;
+         if(dat4 > mean4) ++mean4;
+         if(dat4 < mean4) --mean4;
+                        /* Track sum(X) and sum(X^2) 
                         sumX1 += dat1;
                         sumX21 += dat1 * dat1;
                         sumX2 += dat2;
@@ -842,11 +875,12 @@ void WAMControlThread(void *data)
                         sumX3 += dat3;
                         sumX23 += dat3 * dat3;
                         sumX4 += dat4;
-                        sumX24 += dat4 * dat4;
+                        sumX24 += dat4 * dat4;*/
                         );
 
    }
    DEBUG(
+   /*
       mean1 = 1.0 * sumX1 / counter;
       stdev1 = sqrt((1.0 * counter * sumX21 - sumX1 * sumX1) / (counter * counter - counter));
       mean2 = 1.0 * sumX2 / counter;
@@ -855,24 +889,24 @@ void WAMControlThread(void *data)
       stdev3 = sqrt((1.0 * counter * sumX23 - sumX3 * sumX3) / (counter * counter - counter));
       mean4 = 1.0 * sumX4 / counter;
       stdev4 = sqrt((1.0 * counter * sumX24 - sumX4 * sumX4) / (counter * counter - counter));
-
+*/
       syslog(LOG_ERR, "Get Positions)Max: %ld,", max1);
       syslog(LOG_ERR, "              Min: %ld", min1);
-      syslog(LOG_ERR, "             Mean: %.4f", mean1);
-      syslog(LOG_ERR, "            Stdev: %.4f", stdev1);
+      syslog(LOG_ERR, "             Mean: %ld", mean1);
+      /*syslog(LOG_ERR, "            Stdev: %.4f", stdev1);*/
       syslog(LOG_ERR, "Set Torques)  Max: %ld,", max2);
       syslog(LOG_ERR, "              Min: %ld", min2);
-      syslog(LOG_ERR, "             Mean: %.4f", mean2);
-      syslog(LOG_ERR, "            Stdev: %.4f", stdev2);
+      syslog(LOG_ERR, "             Mean: %ld", mean2);
+      /*syslog(LOG_ERR, "            Stdev: %.4f", stdev2);*/
       syslog(LOG_ERR, "Wait time)    Max: %ld,", max3);
       syslog(LOG_ERR, "              Min: %ld", min3);
-      syslog(LOG_ERR, "             Mean: %.4f", mean3);
-      syslog(LOG_ERR, "            Stdev: %.4f", stdev3);
+      syslog(LOG_ERR, "             Mean: %ld", mean3);
+      /*syslog(LOG_ERR, "            Stdev: %.4f", stdev3);*/
       syslog(LOG_ERR, "Calc time)    Max: %ld,", max4);
       syslog(LOG_ERR, "              Min: %ld", min4);
-      syslog(LOG_ERR, "             Mean: %.4f", mean4);
-      syslog(LOG_ERR, "            Stdev: %.4f", stdev4);
-      syslog(LOG_ERR, "Skips %d", counter);
+      syslog(LOG_ERR, "             Mean: %ld", mean4);
+      /*syslog(LOG_ERR, "            Stdev: %.4f", stdev4);*/
+      /*syslog(LOG_ERR, "Skips %d", counter);*/
    );
 
 

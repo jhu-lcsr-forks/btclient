@@ -92,12 +92,15 @@
 #ifdef ESD_CAN
 typedef unsigned long DWORD;
 #endif
+#define MAX_FILTERS (3)
 
 /*==============================*
 * GLOBAL file-scope variables  *
 *==============================*/
 HANDLE        canDev[MAX_BUS]; // typedef int HANDLE (ntcan.h)
 btrt_mutex    commMutex[MAX_BUS];
+int accept[MAX_FILTERS];
+int mask[MAX_FILTERS];
 
 /* keyword, index, readFunction, writeFunction, defaultVal, type */
 const int dataType[]=
@@ -267,6 +270,7 @@ int initCAN(int bus, int port)
    long  retvalue;
    long  pPort;
    int   pIrq;
+   int   i;
 
    //btrt_mutex_create(&commMutex);
    btrt_mutex_init(&commMutex[bus]);
@@ -319,7 +323,10 @@ int initCAN(int bus, int port)
       syslog(LOG_ERR, "initCAN(): CAN_Init() failed with %d", errno);
       return(1);
    }
-
+   
+   CAN_ResetFilter(canDev[bus]);
+   CAN_MsgFilter(canDev[bus], 0x0000, 0x053F, MSGTYPE_STANDARD);
+   
 #endif /* PEAK_CAN */
 
 #ifdef ESD_CAN
@@ -339,12 +346,21 @@ int initCAN(int bus, int port)
       return(1);
    }
 #endif
-
+#if 0
+   /* Intialize filter/mask */
+   for(i = 0; i < MAX_FILTERS; i++){
+      filter[i] = 0;
+      mask[i] = 0;
+   }
+#endif
 
    // Mask 3E0: 0000 0011 1110 0000
-   allowMessage(bus, 0x0000, 0x03E0); // Messages sent directly to host
-   allowMessage(bus, 0x0403, 0x03E0); // Group 3 messages
-   allowMessage(bus, 0x0406, 0x03E0); // Group 6 messages
+   accept[0] = 0x0000; mask[0] = 0x03E0;
+   accept[1] = 0x0403; mask[1] = 0x03E0;
+   accept[2] = 0x0406; mask[2] = 0x03E0;
+   //allowMessage(bus, 0x0000, 0x03E0); // Messages sent directly to host
+   //allowMessage(bus, 0x0403, 0x03E0); // Group 3 messages
+   //allowMessage(bus, 0x0406, 0x03E0); // Group 6 messages
 
    // Set minimum required parameter values
    VERS = 0;
@@ -377,14 +393,22 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
    long     retvalue=0;
    long      msgCt = 1;
    int       i;
-
+   int      filterOK = 0;
 
 #ifdef PEAK_CAN
 
    retvalue = rt_task_set_mode(0, T_PRIMARY, NULL);
    if(blocking)
    {//attempt to read till there is a message available
-      retvalue = LINUX_CAN_Read(canDev[bus], &msg);
+      //while(!filterOK){
+         retvalue = LINUX_CAN_Read(canDev[bus], &msg);
+         /* Apply private acceptance filter 
+         for(i = 0; i < MAX_FILTERS; i++){
+            if((msg.Msg.ID & ~mask[i]) == accept[i]){
+               filterOK = 1;
+            }
+         }*/
+      //}
    }
    else
    {//check if a message is pending, if not wait for a period and try again and return
@@ -412,7 +436,15 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
 #else
    if(blocking)
    {
-      retvalue = canRead(canDev[bus], &msg, &msgCt, NULL);
+      while(!filterOK){
+         retvalue = canRead(canDev[bus], &msg, &msgCt, NULL);
+         /* Apply private acceptance filter */
+         for(i = 0; i < MAX_FILTERS; i++){
+            if((msg.Msg.ID & ~mask[i]) == accept[i]){
+               filterOK = 1;
+            }
+         }
+      }
    }
    else
    {
@@ -530,16 +562,21 @@ int canClearMsg(int bus)
    int id_in;
 
 #endif
-
+   int id, len;
+   unsigned char d[8];
+   
 #ifdef PEAK_CAN
 
    retvalue = LINUX_CAN_Extended_Status(canDev[bus], &pendread, &pendwrite);
 
    while(pendread!=0)
    {
-      retvalue = LINUX_CAN_Read(canDev[bus], &msg);
+      retvalue =  canReadMsg(bus, &id, &len, d, 1);
+      //retvalue = LINUX_CAN_Read(canDev[bus], &msg);
       retvalue = LINUX_CAN_Extended_Status(canDev[bus], &pendread, &pendwrite);
-      syslog(LOG_ERR, "Cleared unexpected message from CANbus");
+      
+      syslog(LOG_ERR, "Cleared unexpected message from CANbus: ID[%4x] LEN[%d] DATA[%2x %2x %2x %2x %2x %2x %2x %2x]",
+         id, len, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       usleep(1);
    }
    return(0);
@@ -634,7 +671,7 @@ int getPositions(int bus, int group, int howMany, long *pos)
          }
          else
          {
-            syslog(LOG_ERR, "getPositions(): Asked group %d for position, received property %d = %ld from id %d", property, reply, id);
+            syslog(LOG_ERR, "getPositions(): Asked group %d for position, received property %d = %ld from id %d", group, property, reply, id);
          }
       }
       else

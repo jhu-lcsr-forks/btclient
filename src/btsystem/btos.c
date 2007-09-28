@@ -450,7 +450,7 @@ void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, voi
 
 
    //create task
-   ret = rt_task_create(&(thd->task), name, 0, prio, 0);
+   ret = rt_task_create(&(thd->task), name, 0, prio, T_JOINABLE);
    if(ret)
    {
       syslog(LOG_ERR, "btthread_xenomai_create: Could not create task!");

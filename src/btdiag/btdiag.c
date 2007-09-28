@@ -66,7 +66,7 @@ it to properly establish the time values.
 enum{SCREEN_MAIN, SCREEN_HELP};
 
 #ifdef XENOMAI
-#define Ts (0.001)
+#define Ts (0.002)
 #else 
 #define Ts (0.002)
 #endif
@@ -124,7 +124,7 @@ int cplay = 0;
 /* Global data */
 btthread audio_thd;
 btthread disp_thd;
-int busCount;
+int busCount = 0;
 char *command_help[100];
 int num_commands;
 PORT p; // Serial port
@@ -200,24 +200,40 @@ int  WAMcallback(struct btwam_struct *wam);
  
  
 
-/* For Debugging: This function will singnal SIGXCPU if rt thread switches to 
+/* For Debugging: This function will signal SIGXCPU if rt thread switches to 
  * secontary mode.  Also one can look at /proc/xenomai/stat and MSW will 
  * tell you the number of switches a thread has made.
+ */
 void warn_upon_switch(int sig __attribute__((unused)))
 {
     void *bt[32];
     int nentries;
     int errfiled;
  
-    errfiled= open ("/root/WAMerror.txt", 1);//open WAMerror text as a write
+    errfiled= open ("/root/btclient/src/btdiag/WAMerror.txt", 1);//open WAMerror text as a write
     
     // Dump a backtrace of the frame which caused the switch to
     // secondary mode: 
     nentries = backtrace(bt,sizeof(bt) / sizeof(bt[0]));
     backtrace_symbols_fd(bt,nentries,errfiled);
     close(errfiled);
+    syslog(LOG_ERR, "Switched out of RealTime, see WAMerror.txt for details");
 }
-*/
+
+void Cleanup(){
+   int i;
+
+   for(i = 0; i < busCount; i++){
+      wamData[i].wam_thd.done = 1;
+      //btrt_thread_stop(&wamData[i].wam_thd); // Exit control loop and JOIN
+      //btrt_thread_exit(&wamData[i].wam_thd); // Delete task
+   }
+   usleep(10000);
+   CloseSystem(); // Free the actuator memory and CAN device(s)
+   StartupThread.done = 1;
+   //btrt_thread_stop(&StartupThread);
+   //btrt_thread_exit(&StartupThread);
+}
 
 void Startup(void *thd){
    btrt_thread_struct* this_thd;
@@ -267,7 +283,11 @@ void Startup(void *thd){
    }
    
    startDone = TRUE;
-   pause();
+   
+   while (!btrt_thread_done(thd)){
+      usleep(10000);
+   }
+   btrt_thread_exit(thd);
 }
     
 /** Entry point for the application.
@@ -285,7 +305,7 @@ int main(int argc, char **argv)
    mlockall(MCL_CURRENT | MCL_FUTURE);
    
    // Test to see when thread is changing over to secondary mode
-   // signal(SIGXCPU, warn_upon_switch);
+   signal(SIGXCPU, warn_upon_switch);
    
 #ifdef RTAI
    rt_allow_nonroot_hrt();
@@ -465,15 +485,7 @@ int main(int argc, char **argv)
       usleep(100000);
    }
 
-   /* Clean up and exit */
-   for(i = 0; i < busCount; i++){
-      btrt_thread_stop(&wamData[i].wam_thd); //Kill WAMControlThread
-      //CloseDL(&(wam[i]->log));
-   }
-   //DecodeDL("datafile.dat","dat.csv",1);
-
-   //CloseWAM(wam);
-   test_and_log(rt_task_delete(&(StartupThread.task)), "Startup: task delete failed");
+   Cleanup();
    exit(1);
 }
 
@@ -484,34 +496,7 @@ int main(int argc, char **argv)
 int WAMcallback(struct btwam_struct *w)
 {
    int i;
-#if 0  
-   //R_to_q(q, w->robot.tool->origin);
-   //q_to_R(r_mat, q);
-   if(getmode_bts(w->active_sc) == SCMODE_POS && w->active_sc == &w->Csc){
-      // Reference
-      //setrange_vn((vect_n*)xyz, w->R6ref, 0, 3, 3);
-      //XYZftoR_m3(r_mat, xyz);
-      //getcol_m3(ns, r_mat, 0);
-      //getcol_m3(os, r_mat, 1);
-      //getcol_m3(as, r_mat, 2);
-      
-      // Actual
-      //setrange_vn((vect_n*)xyz, w->R6pos, 0, 3, 3);
-      //XYZftoR_m3(r_mat, xyz);
-      getcol_m3(n, w->robot.tool->origin, 0);
-      getcol_m3(o, w->robot.tool->origin, 1);
-      getcol_m3(a, w->robot.tool->origin, 2);
-      
-      setrange_vn(e, (vect_n*)/*matXvec_m3(w->robot.tool->origin,*/( scale_v3(0.5, add_v3(cross_v3(ns,n), add_v3(cross_v3(os,o), cross_v3(as,a))))), 3, 0, 3);
-      set_vn(ed, scale_vn(1/Ts, add_vn(e, scale_vn(-1.0, last_e))));
-      set_vn(f6, add_vn(matXvec_mn(kp, e, e->ret), matXvec_mn(kd, ed, ed->ret)));
-      setrange_vn(w->R6force, f6, 3, 3, 3); // Just for show
-      setrange_vn((vect_n*)t3, f6, 0, 3, 3);
-      apply_tool_force_bot(&(w->robot), w->Cpoint, f3, t3);
-      set_vn(last_e, e);
-   }
-#endif
-   
+
    /* Handle haptic scene for the specified WAM */
    for(i = 0; i < busCount; i++){
       if(wam[i] == w){
@@ -634,6 +619,7 @@ void init_ncurses(void)
 */
 void sigint_handler()
 {
+   Cleanup();
    exit(1);
 }
 
