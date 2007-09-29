@@ -575,9 +575,9 @@ int canClearMsg(int bus)
       //retvalue = LINUX_CAN_Read(canDev[bus], &msg);
       retvalue = LINUX_CAN_Extended_Status(canDev[bus], &pendread, &pendwrite);
       
-      syslog(LOG_ERR, "Cleared unexpected message from CANbus: ID[%4x] LEN[%d] DATA[%2x %2x %2x %2x %2x %2x %2x %2x]",
-         id, len, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
-      usleep(1);
+      //syslog(LOG_ERR, "Cleared unexpected message from CANbus: ID[%4x] LEN[%d] DATA[%2x %2x %2x %2x %2x %2x %2x %2x]",
+      //   id, len, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      //usleep(1);
    }
    return(0);
 

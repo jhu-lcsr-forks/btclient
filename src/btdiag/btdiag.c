@@ -374,7 +374,7 @@ int main(int argc, char **argv)
    signal(SIGINT, sigint_handler);
    
    /* RT task for setup of CAN Bus */
-   btrt_thread_create(&StartupThread,"StTT", 25, (void*)Startup, (void*)robotName);
+   btrt_thread_create(&StartupThread,"StTT", 45, (void*)Startup, (void*)robotName);
    while(!startDone)
       usleep(10000);
  
@@ -414,7 +414,7 @@ int main(int argc, char **argv)
    init_haptics();
    
    /* Spin off the WAM control thread(s) */
-   btrt_thread_create(&wamData[0].wam_thd, "WAMCTT", 90, (void*)WAMControlThread, (void*)wam[0]);
+   btrt_thread_create(&wamData[0].wam_thd, "WAMCTT", 50, (void*)WAMControlThread, (void*)wam[0]);
    //btthread_create(&wamData[1].wam_thd, 90, (void*)WAMControlThread2, (void*)wam[1]);
    
    /* Initialize the active teach filename (to blank) */
