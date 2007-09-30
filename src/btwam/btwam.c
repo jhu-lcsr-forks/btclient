@@ -236,32 +236,7 @@ wam_struct* OpenWAM(char *fn, int bus)
    wam->logdivider = 1;
 
    SetEngrUnits(1);
-#ifdef BTOLDCONFIG
 
-   if(test_and_log(
-              InitializeSystem("actuators.dat","buses.dat","motors.dat","pucks.dat"),
-              "Failed to initialize system"))
-   {
-      exit(-1);
-   }
-
-   if(test_and_log(
-              EnumerateSystem(),"Failed to enumerate system"))
-   {
-      exit(-1);
-   }
-
-#else //BTOLDCONFIG
-   //------------------------
-   /*
-   err = InitializeSystem();
-   if(err)
-   {
-      syslog(LOG_ERR, "OpenWAM: InitializeSystem returned err = %d", err);
-      return(NULL);
-   }
-   */
-#endif
    err = GetActuators(bus, &wam->act, &wam->num_actuators);
    //syslog(LOG_ERR, "bus=%d, num_actuators=%d", bus, wam->num_actuators);
    com = new_v3();
@@ -310,7 +285,7 @@ wam_struct* OpenWAM(char *fn, int bus)
 #else
 
       getProperty(wam->act[actcnt].bus, wam->act[actcnt].puck.ID, ROLE, &reply);
-      if (reply == 1) {
+      if (reply == ROLE_GIMBALS) {
          wam->motor_position[actcnt] = wam->act[actcnt].puck.ID - 1;
       } else {
          switch(wam->act[actcnt].puck.ID){

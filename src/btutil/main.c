@@ -69,13 +69,19 @@ where command is:
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
 #include <math.h>
 
+#ifdef XENOMAI
+#include <native/task.h>
+#include <native/timer.h>
+#else
 #include <rtai_lxrt.h>
 #include <rtai_sem.h>
+#endif
 
 /*==============================*
  * INCLUDES - Project Files     *
@@ -103,8 +109,11 @@ int curses = FALSE;
 
 btthread disp_thd;
 pthread_mutex_t disp_mutex;
+int startDone = FALSE;
+btrt_thread_struct  StartupThread;
 
 struct watchStruct watch[MAX_WATCH];
+struct {int a; char **b;} args;
 
 /*==============================*
  * PRIVATE Function Prototypes  *
@@ -410,33 +419,30 @@ void ProcessWatch(void){
    }
 }
 
-int main( int argc, char **argv )
-{
+void Startup(void *thd){
+   int argc;
+   char **argv;
    char            chr;
    int             err;
    int pID;
    int i;
    long status[MAX_NODES];
-
    
-   /* Initialize syslogd */
-   openlog("PUCK", LOG_CONS | LOG_NDELAY, LOG_USER);
-   syslog(LOG_ERR, "...Starting Puck Utility Program...");
-
+   argc = args.a;
+   argv = args.b;
+   
+   //printf("a=%d, s=%s\n", argc, argv[1]);
+   
    /* Initialize CAN */
    if(err = initCAN(0, 0)) {
       syslog(LOG_ERR, "initCAN returned err=%d", err);
    }
-   //handleMenu('E'); // Enumeration required to populate property keys
    
    /* Open serial port */
    if(err = serialOpen(&p, "/dev/ttyS0")) {
       syslog(LOG_ERR, "Error opening serial port: %d", err);
    }
    serialSetBaud(&p, 9600);
-   
-   /* Spin off the display thread */
-   btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
    
    if(argc > 1){
       getBusStatus(0, status);
@@ -451,7 +457,10 @@ int main( int argc, char **argv )
       test_and_log(
          pthread_mutex_init(&(disp_mutex),NULL),
          "Could not initialize mutex for displays.");
-         
+      
+      /* Spin off the display thread */
+      btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
+   
       for(i = 0; i < MAX_WATCH; i++)
          watch[i].puckID = 0;
       //enumeratePucks(NULL);
@@ -467,7 +476,37 @@ int main( int argc, char **argv )
       }
    }
    
-   exit(1);
+   freeCAN(0); 
+   startDone = 1;
+   
+   btrt_thread_exit((btrt_thread_struct*)thd);
+}
+
+void Cleanup(){
+	/* Exit the CANbus thread gracefully */
+	StartupThread.done = 1;
+	exit(0);
+}
+
+
+int main( int argc, char **argv )
+{
+   args.a = argc;
+   args.b = argv;
+   
+   mlockall(MCL_CURRENT | MCL_FUTURE);
+   
+   /* Initialize syslogd */
+   openlog("PUCK", LOG_CONS | LOG_NDELAY, LOG_USER);
+   syslog(LOG_ERR, "...Starting Puck Utility Program...");
+
+   /* Register the ctrl-c interrupt handler */
+   signal(SIGINT, Cleanup);
+   
+   /* RT task for setup of CAN Bus */
+   btrt_thread_create(&StartupThread,"StTT", 45, (void*)Startup, NULL);
+   while(!startDone)
+      usleep(10000);
 }
 
 /** Spins in a loop, updating the screen.

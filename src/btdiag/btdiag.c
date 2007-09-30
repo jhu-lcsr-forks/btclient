@@ -141,6 +141,7 @@ char *user_def = "User edited point list";
 matr_3 *r_mat;
 vect_3 *xyz, *RxRyRz;
 
+int startDone = FALSE;
 btrt_thread_struct  StartupThread;
 
 #if 0
@@ -171,7 +172,7 @@ vect_3 *p1,*p2,*p3,*zero_v3;
 bthaptic_scene bth;
 
 
-int startDone = FALSE;
+
 
 /*==============================*
  * PRIVATE Function Prototypes  *
@@ -236,27 +237,15 @@ void Cleanup(){
 }
 
 void Startup(void *thd){
-   btrt_thread_struct* this_thd;
-   char *robotNamep[128];
    int err, i;
-   
-   this_thd = (btrt_thread_struct*)thd;
-   *robotNamep=this_thd->data;
-   
-   /* Read the WAM configuration file */
-   err = ReadSystemFromConfig("../../wam.conf", &busCount);
-   if(err) {
-      syslog(LOG_ERR, "ReadSystemFromConfig returned err = %d", err);
-      exit(1);
-   }
-   
+
    /* Probe and initialize the robot actuators */
    err = InitializeSystem();
    if(err) {
       syslog(LOG_ERR, "InitializeSystem returned err = %d", err);
       exit(1);
    }
-      
+    
    /* Initialize and get a handle to the robot(s) */
    for(i = 0; i < busCount; i++){
       if(!(wam[i] = OpenWAM("../../wam.conf", i)))
@@ -281,13 +270,14 @@ void Startup(void *thd){
          setProperty(i, SAFETY_MODULE, TL1, FALSE, 2000); //1800
       }
    }
+  
    
    startDone = TRUE;
    
-   while (!btrt_thread_done(thd)){
+   while (!btrt_thread_done((btrt_thread_struct*)thd)){
       usleep(10000);
    }
-   btrt_thread_exit(thd);
+   btrt_thread_exit((btrt_thread_struct*)thd);
 }
     
 /** Entry point for the application.
@@ -373,11 +363,18 @@ int main(int argc, char **argv)
    /* Register the ctrl-c interrupt handler */
    signal(SIGINT, sigint_handler);
    
+   /* Read the WAM configuration file */
+   err = ReadSystemFromConfig("../../wam.conf", &busCount);
+   if(err) {
+      syslog(LOG_ERR, "ReadSystemFromConfig returned err = %d", err);
+      exit(1);
+   }
+   
    /* RT task for setup of CAN Bus */
-   btrt_thread_create(&StartupThread,"StTT", 45, (void*)Startup, (void*)robotName);
+   btrt_thread_create(&StartupThread,"StTT", 45, (void*)Startup, NULL);
    while(!startDone)
       usleep(10000);
- 
+   
    for(i = 0; i < busCount; i++){
       /* Prepare the WAM data */
       wamData[i].jdest = new_vn(len_vn(wam[i]->Jpos));

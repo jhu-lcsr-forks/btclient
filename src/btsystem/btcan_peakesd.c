@@ -397,7 +397,8 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
 
 #ifdef PEAK_CAN
 
-   retvalue = rt_task_set_mode(0, T_PRIMARY, NULL);
+   btrt_set_mode_hard();
+   //retvalue = rt_task_set_mode(0, T_PRIMARY, NULL);
    if(blocking)
    {//attempt to read till there is a message available
       //while(!filterOK){
@@ -502,8 +503,8 @@ int canSendMsg(int bus, int id, char len, unsigned char *data, int blocking){
       msg.DATA[i] = data[i];
 
    //make sure that write is in primary mode
-   retvalue = rt_task_set_mode(0, T_PRIMARY, NULL);
-
+   //retvalue = rt_task_set_mode(0, T_PRIMARY, NULL);
+   btrt_set_mode_hard();
    if(blocking)
    {
       retvalue =CAN_Write(canDev[bus], &msg);
@@ -774,6 +775,8 @@ int getBusStatus(int bus, long *status)
    int property_in;
    int firstFound = 0;
    long fw_vers;
+
+   btrt_set_mode_hard();
 
    btrt_mutex_lock(&commMutex[bus]);
    //err = canReadMsg(bus, &id_in, &len_in, data, FALSE);
