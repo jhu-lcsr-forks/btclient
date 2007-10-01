@@ -266,8 +266,8 @@ void Startup(void *thd){
           * Note: btsystem.c bounds the outbound torque to 8191, so 9000
           * tells the safety system to never register a critical fault
           */
-         setProperty(i, SAFETY_MODULE, TL2, FALSE, 9000); //4700);
-         setProperty(i, SAFETY_MODULE, TL1, FALSE, 2000); //1800
+         setProperty(i, SAFETY_MODULE, TL2, FALSE, 4700); //4700);
+         setProperty(i, SAFETY_MODULE, TL1, FALSE, 1800); //1800
       }
    }
   
