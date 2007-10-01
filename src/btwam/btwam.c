@@ -992,7 +992,7 @@ void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos)
    {
       setval_vn(Mpos,4,pos[4] * mN[4] - pos[5] * mN[4] / mn[5]);
       setval_vn(Mpos,5, pos[4] * mN[4] + pos[5] * mN[4] / mn[5]);
-      setval_vn(Mpos,6, -pos[6] / mN[6]);
+      setval_vn(Mpos,6, -pos[6] * mN[6]);
    }
 }
 
