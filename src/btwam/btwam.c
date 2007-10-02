@@ -419,7 +419,7 @@ wam_struct* OpenWAM(char *fn, int bus)
    }
 
    test_and_log(
-      rt_mutex_create(&(wam->loop_mutex),NULL),
+      btrt_mutex_create(&(wam->loop_mutex)),
       "Could not initialize mutex for WAM control loop.");
 
    btthread_create(&wam->maint, 0, (void*)WAMMaintenanceThread, wam);
@@ -502,7 +502,7 @@ void WAMControlThread(void *data)
    long unsigned       counter = 0;
    RTIME last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
    double thisperiod;
-   RTIME rtime_period;
+   RTIME rtime_period, sampleCount;
    wam_struct *wam;
    unsigned char CANdata[8];
    int len_in;

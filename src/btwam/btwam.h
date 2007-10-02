@@ -203,7 +203,7 @@ typedef struct btwam_struct{
   RTIME Jsc_time; //!< Time spent in joint control
   RTIME Csc_time; //!< Time spent in Cartesian control
   double skipmax;
-  RT_MUTEX loop_mutex; //This mutex is set while the wam control loop is in operation. It is to help slow loops access control loop data
+  btrt_mutex loop_mutex; //This mutex is set while the wam control loop is in operation. It is to help slow loops access control loop data
   
   //Data logging
   btlogger log;

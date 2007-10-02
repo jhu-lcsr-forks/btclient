@@ -43,15 +43,6 @@ it to properly establish the time values.
 #include <sys/types.h>
 #include <sys/mman.h>
 
-#ifdef XENOMAI
-#include <native/task.h>
-#include <native/timer.h>
-
-#else
-#include <rtai_lxrt.h>
-#include <rtai_sem.h>
-#endif
-
 /*==============================*
  * INCLUDES - Project Files     *
  *==============================*/

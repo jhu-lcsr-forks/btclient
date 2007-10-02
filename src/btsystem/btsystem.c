@@ -30,8 +30,6 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <pthread.h>
-#include <native/task.h>
-#include <native/timer.h>
 
 /*==============================*
  * INCLUDES - Project Files     *

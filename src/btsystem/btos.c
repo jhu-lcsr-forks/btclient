@@ -367,6 +367,7 @@ BTINLINE void btrt_thread_exit(btrt_thread_struct *thd)
 #endif
 }
 
+#ifdef XEMOMAI
 /**
 \internal 
 \todo
@@ -378,9 +379,6 @@ BTINLINE void btrt_thread_exit(btrt_thread_struct *thd)
 */
 
 //will start a xenomai realtime task
-
-
-
 void btperiodic_proto(void *args)
 {
    btthread* this_thd;
@@ -428,7 +426,7 @@ pthread_t* btperiodic_create(btthread *thd,int priority, double period, void *fu
    return btthread_create(thd,priority,btperiodic_proto,args);
 
 }
-
+#endif
 
 
 //****************Real Time Calls***************************//
@@ -466,7 +464,7 @@ void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, voi
 #else
 void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, void *function, void *args)
 {
-   btthread_create((btthread_struct*)thd, prio, function, args);
+   btthread_create((btrt_thread_struct*)thd, prio, function, args);
 }
 
 #endif

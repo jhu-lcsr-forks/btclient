@@ -345,6 +345,10 @@ int initCAN(int bus, int port)
       syslog(LOG_ERR, "initCAN(): canSetBaudrate() failed with error %d", retvalue);
       return(1);
    }
+   
+   allowMessage(bus, 0x0000, 0x03E0); // Messages sent directly to host
+   allowMessage(bus, 0x0403, 0x03E0); // Group 3 messages
+   allowMessage(bus, 0x0406, 0x03E0); // Group 6 messages
 #endif
 #if 0
    /* Intialize filter/mask */
@@ -434,18 +438,27 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
       syslog(LOG_ERR, "canReadMsg(): canRead error: %ld", retvalue);
       return(2);
    }
+   if(msgCt == 1)
+   {
+      *id = msg.Msg.ID;
+      *len = msg.Msg.LEN;
+      for(i = 0; i < msg.Msg.LEN; i++)
+         data[i] = msg.Msg.DATA[i];
+
+      return(0);
+   }
 #else
    if(blocking)
    {
-      while(!filterOK){
+      //while(!filterOK){
          retvalue = canRead(canDev[bus], &msg, &msgCt, NULL);
-         /* Apply private acceptance filter */
+         /* Apply private acceptance filter 
          for(i = 0; i < MAX_FILTERS; i++){
-            if((msg.Msg.ID & ~mask[i]) == accept[i]){
+            if((msg.id & ~mask[i]) == accept[i]){
                filterOK = 1;
             }
-         }
-      }
+         }*/
+      //}
    }
    else
    {
@@ -459,18 +472,16 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
       else
          return(2);
    }
-
-#endif
-   if(msgCt == 1)
-   {
-      *id = msg.Msg.ID;
-      *len = msg.Msg.LEN;
-      for(i = 0; i < msg.Msg.LEN; i++)
-         data[i] = msg.Msg.DATA[i];
+   if(msgCt == 1) {
+      *id = msg.id;
+      *len = msg.len;
+      for(i = 0; i < msg.len; i++)
+         data[i] = msg.data[i];
 
       return(0);
    }
-
+#endif
+   
    return(1); // No message received, return err
 }
 
@@ -530,6 +541,11 @@ int canSendMsg(int bus, int id, char len, unsigned char *data, int blocking){
 
 #else
 
+   msg.id = id;
+   msg.len = len & 0x0F;
+   for(i = 0; i < len; i++)
+      msg.data[i] = data[i];
+   
    if(blocking)
    {
       retvalue = canWrite(canDev[bus], &msg, &msgCt, NULL);

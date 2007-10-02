@@ -31,13 +31,13 @@ endif
 # Choose the correct operating system flags
 ifeq ($(TARGET_OS),rtai)
 CFLAGS += -DRTAI
-PATH_INCLUDE += -I/usr/realtime/include
+CFLAGS += -I/usr/realtime/include
 LDFLAGS += -L/usr/realtime/lib -llxrt
 endif
 
 ifeq ($(TARGET_OS),xenomai)
 CFLAGS += -DXENOMAI
-PATH_INCLUDE += -I/usr/xenomai/include
+CFLAGS += -I/usr/xenomai/include
 LDFLAGS += -L/usr/xenomai/lib -rdynamic -lnative
 SKIN = xeno
 ### Xenomai directory, xeno-config and library directory ###########
