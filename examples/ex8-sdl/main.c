@@ -1,32 +1,19 @@
 /*======================================================================*
- *  Module .............btdiag
- *  File ...............btdiag.c
- *  Author .............Traveler Hauptman
- *                      Brian Zenowich
+ *  Module .............Example 8 - Simple DirectMedia Layer
+ *  File ...............main.c
+ *  Author .............Brian Zenowich
  *  Creation Date ......14 Oct 2005
  *                                                                      *
  *  ******************************************************************  *
  *                                                                      *
  *  NOTES:
-    This is the primary WAM demo application. It shows off many
-    features of the WAM library.
-    This application is also used for diagnostics and testing.
+    This application requires that you have SDL installed and
+    configured properly for your system.
  *                                                                      *
  *======================================================================*/
 
-/** \file btdiag.c
-    \brief An interactive demo of WAM capabilities.
- 
-    Read the code to see what you can do with it.
-    
-This program allows a user to test and interact with the teach and play
-features of the WAM library.
- 
-The user can switch between Cartesian space and joint space. The toggle 
-variable is a pointer to the present btstatecontroller.
- 
-Note that if a trajectory is modified, you must call 's' scale trajectory on
-it to properly establish the time values.
+/** \file main.c
+    \brief Demonstrates how to use SDL with the WAM.
  
 */
 

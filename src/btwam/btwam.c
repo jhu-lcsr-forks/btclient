@@ -12,7 +12,6 @@
  *                                                                      *
  *======================================================================*/
 
-
 /* Tags -
 This is a list of tags for functionality integrated into the InitWAM and WAMControlThread code
 to make it easier to find and maintain later

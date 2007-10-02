@@ -1,26 +1,52 @@
-There are now two versions of puck firmware in the field. Consequently there
-is a compile-time switch to control how the WAM client software is built. (the
-changes are centered around how and where the pucks get their configuration 
-information. In the new firmware, a new, better, configuration file is used.)
+              *** Welcome to the WAM control source code! ***
 
+We are continually improving and evolving the WAM source code. Please visit
+http://wiki.barrett.com for information on how to update to the latest version
+available, plus many helpful tips on running your new WAM.
 
-Requires:
+The directory structure looks like this:
+btclient    <-- This directory
+   doc      <-- doxygen-generated source documentation
+   examples <-- Some simple and not-so-simple examples on how to use the library
+      ex1
+      ..
+      ex8
+   include  <-- All the header files related to the WAM control library
+   lib      <-- The compiled library binaries
+   src      <-- Library source code + utilities + full demo (btdiag)
+      btdiag   <-- Full demo application with many features
+      btsystem <-- Control library, not robot-specific
+      btutil   <-- Utility application for testing/debugging
+      btwam    <-- WAM-specific control functions
+      
+                         *** The wam.conf file ***
+You will notice a number of configuration files in the btclient directory.
+These files define the WAM configuration and various parameters for any control
+application. The home position, torque limits, mass parameters, kinematics, and
+PID parameters are all defined in here.
 
-Linux 2.4.x or 2.6.x
-RTAI 3.1,3.2
-esdcan driver (libntcan)
+The wam.conf file is only a symbolic link to one of several standard
+configuration files like WAM4.conf (4DOF WAM), or WAM7.conf (7DOF WAM). These
+files were tuned to your specific WAM during final checkout. It is important
+to keep these files safe (make backups), as we may not be able to replace it in
+the event of a disk failure or accidental deletion.
 
+Also, if download a software update to a new directory, you will need to copy 
+your WAM configuration files to that new directory so that the new software
+will know about your specific WAM parameters.
 
-Quickstart:
+                           *** The makefiles ***
+You will also notice two files named config.mk and common.mk in this directory.
 
-Important! If you have the old puck firmware: (presently UAlberta,MIT,CMU,RIC,B.PW,UTenn)
-Set the environment variable BTOLDCFG to -DBTOLDCONFIG
-Example: #export BTOLDCFG=-DBTOLDCONFIG
+The config.mk file contains important compiler definitions for your PC setup.
+We support two different realtime operating systems: Linux/RTAI and 
+Linux/Xenomai. We also support two different CANbus communication cards:
+esd-Electronics and PEAK-System. Finally, the Peak card can be on an ISA bus
+(typically PC/104) or a PCI bus (most desktop PCs). The settings in this file
+MUST match your PC setup for the software to compile and run correctly.
 
-#cd src/btdiag
-#chmod 755 makeall run
-#./makeall
+The common.mk file sets up all the necessary includes, libraries, and defines
+for the compilation process. This file is referenced by each individual
+application's Makefile, in order to make the Makefiles easier to manage and
+reduce clutter.
 
-Power up wam
-Idle wam
-#./run

@@ -1,5 +1,5 @@
 /*======================================================================*
- *  Module .............ex4-haptics
+ *  Module .............Example 4 - Haptics
  *  File ...............main.c
  *  Author .............Brian Zenowich
  *  Creation Date ......19 Jan 2006
@@ -15,8 +15,6 @@
 /** \file main.c
     \brief A demo of WAM haptics capabilities.
  
-    Read the code to see what you can do with it.
-    
 This program allows a user to test and interact with the haptics
 features of the WAM library.
  

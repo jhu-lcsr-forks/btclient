@@ -1,7 +1,8 @@
 /*======================================================================*
- *  Module .............ex3
+ *  Module .............Example 3 - Teach & Play
  *  File ...............main.c
  *  Author .............Traveler Hauptman
+ *                      Brian Zenowich
  *  Creation Date ......06 Oct 2005
  *                                                                      *
  *  ******************************************************************  *
@@ -15,12 +16,10 @@
 /** \file ex3.c
     \brief An interactive teach and play demo.
  
-    Read the code to see what you can do with it.
-    
 This program allows a user to test and interact with the teach and play
 features of the WAM library.
  
-The user can switch between cartesian space and joint space. The toggle 
+The user can switch between Cartesian space and joint space. The toggle 
 variable is a pointer to the present btstatecontroller.
  
 Note that if a trajectory is modified, you must call 's' scale trajectory on

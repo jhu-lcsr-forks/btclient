@@ -36,7 +36,10 @@ it to properly establish the time values.
 #include <syslog.h>
 #include <signal.h>
 #include <pthread.h>
-#include <errno.h>
+/* Decipher function error codes using the defined system constants.
+ * For the error text, use syslog("LOG_ERR", "f(): %s", strerror(errnum));
+ */
+//#include <errno.h>
 #include <curses.h>
 #include <unistd.h>
 #include <stdlib.h>
