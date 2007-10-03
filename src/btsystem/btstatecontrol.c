@@ -321,11 +321,12 @@ vect_n* eval_bts(btstatecontrol *sc)
       eval_btramp(&(sc->ramp),*(sc->dt));
       sc->local_dt = *(sc->dt) * sc->dt_scale;
       eval_trj_bts(sc); // Calculate sc->qref
+      // Intentionally fall through to SCMODE_POS
    case SCMODE_POS://PID
 #ifdef BT_NULL_PTR_GUARD
 
       if (sc->btp.dat == NULL) {
-         syslog(LOG_ERR,"eval_trj_bts: Pointer to btt.dat is NULL");
+         syslog(LOG_ERR,"eval_trj_bts: Pointer to btp.dat is NULL");
          sc->error = 1;
       } else
 #endif

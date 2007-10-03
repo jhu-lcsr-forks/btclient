@@ -148,7 +148,7 @@ int WAMcallback(wam_struct *w)
     * If you make this positive, you have a poor-man's (unstable) friction 
     * compensation algorithm. Have fun, but be careful!
     */
-   btreal Kscale = -10.0; 
+   btreal Kscale = -20.0; 
    
    /* Get the time in nanoseconds */
    start = btrt_get_time();
@@ -256,12 +256,12 @@ int main(int argc, char **argv)
    PrepDL(&(wam->log), 35);
    
    /* Add a pointers to some data to log */
-   /* NOTE: log_time begins counting seconds when the logging is started */
+   /* NOTE: log_time begins counting seconds when the WAMControlThread() is started */
    AddDataDL(&(wam->log), &(wam->log_time), sizeof(double), BTLOG_DOUBLE, "Time(s)");
    AddDataDL(&(wam->log), valptr_vn((vect_n*)wam->Cpos),sizeof(btreal) * len_vn((vect_n*)wam->Cpos), BTLOG_BTREAL,"Cpos(m)");
    AddDataDL(&(wam->log), valptr_vn((vect_n*)pstate.vel), sizeof(btreal) * len_vn((vect_n*)pstate.vel), BTLOG_BTREAL, "Cvel(m/s)");
    AddDataDL(&(wam->log), valptr_vn((vect_n*)wam->Cforce), sizeof(btreal) * len_vn((vect_n*)wam->Cforce), BTLOG_BTREAL, "Cforce(N)");
-   AddDataDL(&(wam->log), &callbackTime, sizeof(btreal), BTLOG_BTREAL, "callbackTime(ns)");
+   AddDataDL(&(wam->log), &callbackTime, sizeof(long), BTLOG_LONG, "callbackTime(ns)");
 
    /* Initialize the datalogging buffer size and output file.
     * Once the buffer is full, the data is written to disk. Datalogging continues
@@ -302,6 +302,7 @@ int main(int argc, char **argv)
       mvprintw(line, 0, "Joint Torque (Nm)  : %s", sprint_vn(buf, wam->Jtrq)); ++line;
       mvprintw(line, 0, "Cartesian XYZ (m)  : %s", sprint_vn(buf, (vect_n*)wam->Cpos)); ++line;
       mvprintw(line, 0, "Cartesian Force (N): %s", sprint_vn(buf, (vect_n*)wam->Cforce)); ++line;
+      mvprintw(line, 0, "Callback Time (ns) : %ld", callbackTime); ++line;
       
       ++line;
       mvprintw(line, 0, "To exit, press Shift-Idle on pendant, then hit Ctrl-C");

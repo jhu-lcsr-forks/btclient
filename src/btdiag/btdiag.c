@@ -17,10 +17,9 @@
 /** \file btdiag.c
     \brief An interactive demo of WAM capabilities.
  
-    Read the code to see what you can do with it.
-    
-This program allows a user to test and interact with the teach and play
-features of the WAM library.
+    This is a full-featured demo. If the source is intimidating, I suggest
+    you start with the examples in the ../../examples directory. You will
+    be a WAM code expert in no time!
  
 The user can switch between Cartesian space and joint space. The toggle 
 variable is a pointer to the present btstatecontroller.
