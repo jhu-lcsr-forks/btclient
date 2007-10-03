@@ -22,6 +22,9 @@
 /* Provide access to standard C input/output functions such as printf() */
 #include <stdio.h>
 
+/* Provides atexit(), registers functions to execute upon process termination */
+#include <stdlib.h>
+
 /* The syslog daemon is used primarily for sending debug information to a log 
  * file. Note that syslog calls break realtime scheduling, so try not to use
  * syslog() from within a realtime thread!
@@ -70,7 +73,8 @@ void rt_thread(void *thd){
     
    /* Initialize and get a handle to the robot on the first bus */
    if((wam = OpenWAM("../../wam.conf", 0)) == NULL){
-         exit(1);
+      syslog(LOG_ERR, "OpenWAM failed");
+      exit(1);
    }
    
    /* Notify main() thread that the initialization is complete */
@@ -85,6 +89,7 @@ void rt_thread(void *thd){
    btrt_thread_exit((btrt_thread_struct*)thd);
 }
 
+/* Exit the realtime threads and close the system */
 void Cleanup(){
    /* Tell the WAM control thread to exit */
    wam_thd.done = TRUE;
@@ -94,7 +99,7 @@ void Cleanup(){
     * while the control loop is still using it!
     */
    usleep(10000);
-   CloseWAM(wam);
+   CloseSystem();
    
    /* Tell the initial communcation thread to exit */
    rt_thd.done = TRUE;
@@ -103,6 +108,7 @@ void Cleanup(){
    printf("\n\n");
 }
 
+/* Program entry point */
 int main(int argc, char **argv)
 {
    int   err;        // Generic error variable for function calls
@@ -130,7 +136,7 @@ int main(int argc, char **argv)
       exit(1);
    }
    
-   /* Spin off the RT task for setup of CAN Bus.
+   /* Spin off the RT task to set up the CAN Bus.
     * RTAI priorities go from 99 (least important) to 1 (most important)
     * Xenomai priorities go from 1 (least important) to 99 (most important)
     */
@@ -159,10 +165,10 @@ int main(int argc, char **argv)
 }
 
 /**NOTE:
- * sprint_vn() and vect_n are from our own math library. They are specialized 
- * tools for handling vectors. The WAM's joint positions are stored in the "wam"
- * data structure as a vector (wam->Jpos). sprint_vn() is like sprintf() for 
- * our vector data structure.
+ * sprint_vn() and vect_n are from our own math library. 
+ * See src/btsystem/btmath.c. They are specialized tools for handling vectors. 
+ * The WAM's joint positions are stored in the "wam" data structure as a vector 
+ * (wam->Jpos). sprint_vn() is like sprintf() for our vector data structure.
  */
  
 

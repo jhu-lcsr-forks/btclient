@@ -223,6 +223,9 @@ void sdl_waitforkey()
    }
 }
 
+/* Okay, this is a hack. I didn't feel like changing every single
+ * ncurses-based mvprintw() call. Sorry.
+ */
 void mvprintw(int line, int col, char *str)
 {
    text = TTF_RenderText_Solid( font, str, textColor );

@@ -43,6 +43,7 @@ See #btwam_struct
 #include "btparser.h"
 #include "btmath.h"
 #include "btos.h"
+#include "btgeometry.h"
 
 #define VN_SIZE (7)
 

@@ -1,21 +1,13 @@
-Example 1 - Reading the end position of the WAM.
+Example 1 - Reading the joint angles of the WAM (in radians)
 
-This is meant to be the simplest possible program that uses a wam. All it does is
-initialize the wam communications, data structures, and start the control loop thread.
+This is meant to be the simplest possible program that uses a WAM. All it does is
+initialize the WAM communications, data structures, and start the control loop thread.
 
+To compile & run:
 
-To compile & run
-
-1. #make
+1. # make all
 2. Switch on WAM
-3. Idle WAM (press SHIFT and IDLE buttons on pendant. The yellow light should come on)
-4. #./run
+3. Idle WAM (Press SHIFT and IDLE buttons on pendant. The yellow light should come on)
+4. # ./ex1
 
-Things to note:
 
-./.runinfo - The name of your executable is placed in this config file. ./run is
-a script to do all the things needed by RTAI in order to run your program in realtime.
-
-./Makefile - note the location of the barrett include files and libraries
-
-The esdcan-driver module must be loaded 

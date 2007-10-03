@@ -5,12 +5,12 @@ include ../../config.mk
 include ../../common.mk
 
 OBJS = main.o
-TARG = ex2
+TARG = ex3
 
 # Done with defines, now for the real work
-default: ex2
+default: ex3
 
-ex2: ${OBJS}
+ex3: ${OBJS}
 	$(CC) -o ${TARG} ${OBJS} ${LDFLAGS}
   
 clean:
@@ -24,5 +24,5 @@ wam:
 	$(MAKE) -C ../../src/btwam lib
 	$(MAKE) -C ../../src/btwam install
    
-all: system wam ex2
+all: system wam ex3
 

@@ -469,6 +469,7 @@ void WAMMaintenanceThread(void *data)
       evalDL(&(wam->cteach));
       usleep(100000); // Sleep for 0.1s
    }
+   
    pthread_exit(NULL);
 }
 
@@ -667,8 +668,10 @@ void WAMControlThread(void *data)
 //syslog(LOG_ERR, "C 1 9");
       eval_fk_bot(&wam->robot);
       //syslog(LOG_ERR, "C 1 10");
-      //eval_fj_bot(&wam->robot); // Uncomment for inertia matrix calc
-      //(requires powerful CPU)
+      
+      // Uncomment for Jacobian and inertia matrix calc - requires powerful CPU
+      eval_fj_bot(&wam->robot); 
+      
       eval_fd_bot(&wam->robot);
 //syslog(LOG_ERR, "C 1 11");
       eval_bd_bot(&wam->robot);

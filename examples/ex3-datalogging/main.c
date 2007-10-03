@@ -1,5 +1,5 @@
 /*======================================================================*
- *  Module .............Example 2 - Gravity Compensation
+ *  Module .............Example 3 - Datalogging
  *  File ...............main.c
  *  Author .............Traveler Hauptman
  *                      Brian Zenowich
@@ -15,8 +15,8 @@
  *======================================================================*/
 
 /** \file main.c
-    A minimalist program for the WAM that calculates and sends gravity 
-    compensation torques.
+    This program demonstrates the datalogging, timing, and WAM control
+    loop callback functions of the library.
  
  */
 
@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include <signal.h>
-/* The ncurses library allows us to write text anywhere on the screen */
 #include <curses.h>
 
 /*==============================*
@@ -35,12 +34,16 @@
  *==============================*/
 #include "btwam.h"
 
+#define Ts (0.002)
+
 /*==============================*
  * GLOBAL file-scope variables  *
  *==============================*/
 btrt_thread_struct   rt_thd, wam_thd;
 wam_struct           *wam;
 int                  startDone;
+btgeom_state         pstate;
+long                 callbackTime;
 
 /*==============================*
  * PRIVATE Function Prototypes  *
@@ -48,6 +51,7 @@ int                  startDone;
 void Cleanup();
 void sigint_handler();
 void rt_thread(void *thd);
+int WAMcallback(wam_struct *w);
 
 /*==============================*
  * Functions                    *
@@ -108,11 +112,71 @@ void rt_thread(void *thd){
 
 /* Exit the realtime threads and close the system */
 void Cleanup(){
+   /* Turn off Datalogging */
+   DLoff(&(wam->log));
+   
    wam_thd.done = TRUE;
    usleep(10000);
+   
+   /* Close the log file */
+   CloseDL(&(wam->log));
+   
+   /* Decode the file from binary->text */
+   DecodeDL("datafile.dat", "dat.csv", 1);
+   
    CloseSystem();
    rt_thd.done = TRUE;
    printf("\n\n");
+}
+
+/* The registerWAMcallback() function registers this special function to be
+ * called from the WAMControlThread() after the positions have been received 
+ * from the WAM (and after all the kinematics are calculated) but before torques 
+ * are sent to the WAM.
+ * NOTE 1: Since this function becomes part of the control loop, it must execute
+ * quickly to support the strict realtime periodic scheduler requirements.
+ * NOTE 2: For proper operation, you must avoid using any system calls that 
+ * cause this thread to drop out of realtime mode. Avoid syslog, printf, and
+ * most other forms of I/O.
+ */
+int WAMcallback(wam_struct *w)
+{
+   /* Declare two timing variables */
+   RTIME start, end;
+   
+   /* Set a damping factor.
+    * If you make this positive, you have a poor-man's (unstable) friction 
+    * compensation algorithm. Have fun, but be careful!
+    */
+   btreal Kscale = -10.0; 
+   
+   /* Get the time in nanoseconds */
+   start = btrt_get_time();
+   
+   /* Differentiate the Cartesian end position to get velocity and acceleration */
+   eval_state_btg(&pstate, w->Cpos);
+   
+   /* Apply velocity damping.
+    * Here is what happens with our math library:
+    *    scale_vn() Scale a vector: pstate.vel->ret = Kscale * pstate.vel
+    *    add_vn() Add two vectors:  wam->Cforce->ret = wam->Cforce + pstate.vel->ret
+    *    set_vn() Copy a vector:    wam->Cforce = wam->Cforce->ret
+    */
+   set_vn((vect_n*)wam->Cforce, add_vn((vect_n*)wam->Cforce, scale_vn(Kscale, (vect_n*)pstate.vel)));
+
+   /* Apply the calculated force vector to the robot */
+   apply_tool_force_bot(&(w->robot), w->Cpoint, w->Cforce, w->Ctrq);
+
+   /* Get the time in nanoseconds */
+   end = btrt_get_time();
+   
+   /* NOTE: Be careful what you do with RTIMEs. They exhibit odd behavior unless
+    * you stick to simple addition and subtraction. And if you print them,
+    * use %lld (they are 64-bits).
+    */
+   callbackTime = end - start;
+   
+   return 0;
 }
 
 /* Program entry point */
@@ -167,33 +231,77 @@ int main(int argc, char **argv)
    while(!startDone)
       usleep(10000);
 
+   /* Initialize a WAM state evaluator */
+   init_state_btg(&pstate, Ts , 30.0);
+   
+   /* Commanded Cartesian forces and torques are applied about Cpoint, which is 
+    * defined as an offset from the kinematic endpoint of the robot.
+    * This is where we define that offset in meters (x, y, z).
+    */
+   const_v3(wam->Cpoint, 0.0, 0.0, 0.0);
+   
+   /*==============================*
+    * Set up Datalogging           *
+    *==============================*/
+    
+   /* NOTE: Buffer dumps are handled by the WAMMaintenanceThread() which is spun
+    * off inside OpenWAM(). Buffer data is recorded automatically from the 
+    * WAMControlThread()'s TriggerDL() function call.
+    */
+    
+   /* Configure the logdivider: 1 = every control cycle, 2 = every other cycle, etc. */
+   wam->logdivider = 5;
+   
+   /* Prepare the datalogger with the max number of btreal fields per record */
+   PrepDL(&(wam->log), 35);
+   
+   /* Add a pointers to some data to log */
+   /* NOTE: log_time begins counting seconds when the logging is started */
+   AddDataDL(&(wam->log), &(wam->log_time), sizeof(double), BTLOG_DOUBLE, "Time(s)");
+   AddDataDL(&(wam->log), valptr_vn((vect_n*)wam->Cpos),sizeof(btreal) * len_vn((vect_n*)wam->Cpos), BTLOG_BTREAL,"Cpos(m)");
+   AddDataDL(&(wam->log), valptr_vn((vect_n*)pstate.vel), sizeof(btreal) * len_vn((vect_n*)pstate.vel), BTLOG_BTREAL, "Cvel(m/s)");
+   AddDataDL(&(wam->log), valptr_vn((vect_n*)wam->Cforce), sizeof(btreal) * len_vn((vect_n*)wam->Cforce), BTLOG_BTREAL, "Cforce(N)");
+   AddDataDL(&(wam->log), &callbackTime, sizeof(btreal), BTLOG_BTREAL, "callbackTime(ns)");
+
+   /* Initialize the datalogging buffer size and output file.
+    * Once the buffer is full, the data is written to disk. Datalogging continues
+    * even as the buffer is being written out.
+    */
+   InitDL(&(wam->log), 1000, "datafile.dat");
+   
    /* Spin off the WAM control loop */
-   wam_thd.period = 0.002; // Control loop period in seconds
+   wam_thd.period = Ts; // Control loop period in seconds
    btrt_thread_create(&wam_thd, "ctrl", 90, (void*)WAMControlThread, (void*)wam);
 
+   /* Prompt the user to activate the WAM.*/
    mvprintw(8,0,"Please activate the WAM (press Shift+Activate on the pendant), ");
    mvprintw(9,0,"then press <Enter>");
    while(getch()==ERR)
       usleep(5000);
    
+   /* Register the control loop's local callback routine */
+   registerWAMcallback(wam, WAMcallback);
+      
    /* Clear the screen (ncurses) */
    clear(); refresh();
    
    /* Set gravity scale to 1.0g */
    SetGravityComp(wam, 1.0); 
 
+   /* Turn on Datalogging */
+   DLon(&(wam->log));
+   
    /* Loop until Ctrl-C is pressed */
-   mvprintw(0,0,"Gravity compensation and WAM data display demo");
+   mvprintw(0,0,"Datalogging, timing, and control loop callback example");
    while(1) {
       /* Display some interesting WAM data on-screen */
       line = 2;
       
       mvprintw(line, 0, "Robot name = %s     Degrees of Freedom = %d", wam->name, wam->dof); line += 2;
-      mvprintw(line, 0, "Joint Position: %s", sprint_vn(buf, wam->Jpos)); ++line;
-      mvprintw(line, 0, "Joint Torque  : %s", sprint_vn(buf, wam->Jtrq)); ++line;
-      mvprintw(line, 0, "Cartesian XYZ : %s", sprint_vn(buf, (vect_n*)wam->Cpos)); ++line;
-      mvprintw(line, 0, "Jacobian Matrix\n%s", sprint_mn(buf, wam->robot.J)); line += 7;
-      mvprintw(line, 0, "Mass Matrix\n%s", sprint_mn(buf, wam->robot.M)); line += wam->dof + 1;
+      mvprintw(line, 0, "Joint Position (m) : %s", sprint_vn(buf, wam->Jpos)); ++line;
+      mvprintw(line, 0, "Joint Torque (Nm)  : %s", sprint_vn(buf, wam->Jtrq)); ++line;
+      mvprintw(line, 0, "Cartesian XYZ (m)  : %s", sprint_vn(buf, (vect_n*)wam->Cpos)); ++line;
+      mvprintw(line, 0, "Cartesian Force (N): %s", sprint_vn(buf, (vect_n*)wam->Cforce)); ++line;
       
       ++line;
       mvprintw(line, 0, "To exit, press Shift-Idle on pendant, then hit Ctrl-C");
