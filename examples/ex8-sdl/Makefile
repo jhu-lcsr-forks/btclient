@@ -1,22 +1,29 @@
+### Makefile for Barrett Software (examples)
+
+# Be sure to edit config.mk to match your installation
+include ../../config.mk
+include ../../common.mk
+
 OBJS = main.o
 TARG = ex8
-CC = gcc 
-PATH_INCLUDE = -I/usr/realtime/include -I../../include
+LDFLAGS += -lSDL -lSDL_ttf
 
-#Replace -DUSE_FUSION with -DUSE_RTAI31
-CFLAGS =  -g -DUSE_RTAI31 -static ${PATH_INCLUDE} ${BTOLDCFG}
-#Replace -lrtai with -llxrt
-LDFLAGS = -L/usr/realtime/lib -L/usr/lib -L../../lib -lpthread -llxrt \
-          -lncurses -lm -lbtwam -lbtsystem -lntcan -lSDL -lSDL_ttf
+# Done with defines, now for the real work
+default: ex8
 
-
-default: ex1
-
-ex1: ${OBJS} 
+ex8: ${OBJS}
 	$(CC) -o ${TARG} ${OBJS} ${LDFLAGS}
-
-clean: 
+  
+clean:
 	rm *.o ${TARG} 
 
+system:
+	$(MAKE) -C ../../src/btsystem lib
+	$(MAKE) -C ../../src/btsystem install
 
+wam:
+	$(MAKE) -C ../../src/btwam lib
+	$(MAKE) -C ../../src/btwam install
+   
+all: system wam ex8
 

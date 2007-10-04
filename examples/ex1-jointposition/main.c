@@ -34,6 +34,9 @@
 /* Allow us to catch the Ctrl-C signal and exit gracefully */
 #include <signal.h>
 
+/* Provides mlockall(), prevent process memory from being swapped out to disk */
+#include <sys/mman.h>
+
 /* Include the standard WAM header file */
 #include "btwam.h"
 
@@ -119,6 +122,7 @@ int main(int argc, char **argv)
 #ifdef RTAI   
    rt_allow_nonroot_hrt();
 #else
+   mlockall(MCL_CURRENT | MCL_FUTURE);
    /* Xenomai non-root scheduling is coming soon! */
 #endif
 

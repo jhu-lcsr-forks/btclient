@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include <signal.h>
+#include <sys/mman.h>
 #include <curses.h>
 
 /*==============================*
@@ -195,6 +196,7 @@ int main(int argc, char **argv)
 #ifdef RTAI   
    rt_allow_nonroot_hrt();
 #else
+   mlockall(MCL_CURRENT | MCL_FUTURE);
    /* Xenomai non-root scheduling is coming soon! */
 #endif
 
