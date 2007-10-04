@@ -1,19 +1,24 @@
 /*======================================================================*
- *  Module .............Example 8 - Simple DirectMedia Layer
+ *  Module .............ex8-sdl
  *  File ...............main.c
  *  Author .............Brian Zenowich
- *  Creation Date ......14 Oct 2005
+ *  Creation Date ......04 Oct 2007
  *                                                                      *
  *  ******************************************************************  *
  *                                                                      *
  *  NOTES:
-    This application requires that you have SDL installed and
-    configured properly for your system.
+    This application should have most of the features of btdiag.
+    It is not yet finished and still has many critical bugs.
+    However, it does initialize the screen and display data correctly!
  *                                                                      *
  *======================================================================*/
 
 /** \file main.c
-    \brief Demonstrates how to use SDL with the WAM.
+    \brief An interactive demo of WAM capabilities.
+ 
+    This is a full-featured demo. If the source is intimidating, I suggest
+    you start with Example 1: ex1-jointposition. You will
+    be a WAM code expert in no time!
  
 */
 
@@ -23,16 +28,12 @@
 #include <syslog.h>
 #include <signal.h>
 #include <pthread.h>
-#include <errno.h>
-//#include <curses.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <SDL/SDL.h>
 #include "SDL/SDL_ttf.h"
-
-#include <rtai_lxrt.h>
-#include <rtai_sem.h>
 
 /*==============================*
  * INCLUDES - Project Files     *
@@ -40,13 +41,17 @@
 #include "btwam.h"
 #include "bthaptics.h"
 #include "btserial.h"
-//#include "aob.h"
 
 /*==============================*
  * PRIVATE DEFINED constants    *
  *==============================*/
 enum{SCREEN_MAIN, SCREEN_HELP};
+
+#ifdef XENOMAI
 #define Ts (0.002)
+#else 
+#define Ts (0.002)
+#endif
 
 /*==============================*
  * PRIVATE MACRO definitions    *
@@ -55,15 +60,12 @@ enum{SCREEN_MAIN, SCREEN_HELP};
 /*==============================*
  * PRIVATE typedefs and structs *
  *==============================*/
-typedef struct
-{
+typedef struct {
    RTIME t;
    char c;
-}
-keyEventStruct;
+}keyEventStruct;
 
-typedef struct
-{
+typedef struct {
    /* Per-WAM State */
    btstatecontrol *active_bts;
    vect_n *jdest;
@@ -74,10 +76,9 @@ typedef struct
    via_trj_array **vta;
    via_trj_array *vt_j;
    via_trj_array *vt_c;
-   btthread wam_thd;
+   btrt_thread_struct wam_thd;
    btgeom_state pstate;
-}
-wamData_struct;
+}wamData_struct;
 
 /*==============================*
  * GLOBAL file-scope variables  *
@@ -105,7 +106,7 @@ int cplay = 0;
 /* Global data */
 btthread audio_thd;
 btthread disp_thd;
-int busCount;
+int busCount = 0;
 char *command_help[100];
 int num_commands;
 PORT p; // Serial port
@@ -115,12 +116,31 @@ int eventIdx;
 RTIME eventStart;
 keyEventStruct keyEvent[500];
 
+/* SDL Data */
+SDL_Event event;
+
+//Screen attributes
+const int SCREEN_WIDTH = 1024;
+const int SCREEN_HEIGHT = 768;
+const int SCREEN_BPP = 32;
+
+//The font
+TTF_Font *font = NULL;
+
+//The color of the font
+SDL_Color textColor = { 255, 255, 255 };
+SDL_Surface *screen = NULL;
+SDL_Surface *text = NULL;
+
 /* Other */
 double vel = 0.5, acc = 2.0;
 char active_file[250];
 char *user_def = "User edited point list";
 matr_3 *r_mat;
 vect_3 *xyz, *RxRyRz;
+
+int startDone = FALSE;
+btrt_thread_struct  StartupThread;
 
 /******* Haptics *******/
 btgeom_plane planes[10];
@@ -133,19 +153,6 @@ btgeom_box boxs[10];
 //bteffect_global myglobal;
 vect_3 *p1,*p2,*p3,*zero_v3;
 bthaptic_scene bth;
-
-SDL_Event event; /* Event structure */
-//Screen attributes
-const int SCREEN_WIDTH = 1024;
-const int SCREEN_HEIGHT = 768;
-const int SCREEN_BPP = 32;
-//The font
-TTF_Font *font = NULL;
-
-//The color of the font
-SDL_Color textColor = { 255, 255, 255 };
-SDL_Surface *screen = NULL;
-SDL_Surface *text = NULL;
 
 /*==============================*
  * PRIVATE Function Prototypes  *
@@ -168,13 +175,52 @@ void init_haptics(void);
 void read_keys(char *filename);
 int  WAMcallback(struct btwam_struct *wam);
 void ProcessKey(Uint8 *keystates);
+void mvprintw(int line, int col, char *str);
+void apply_surface( int x, int y, SDL_Surface* source, SDL_Surface* destination);
+void sdl_waitforkey();
+void SDL_Cleanup();
 
 /*==============================*
  * Functions                    *
  *==============================*/
-
-void clean_up()
+ 
+/* For Debugging: This function will signal SIGXCPU if rt thread switches to 
+ * secontary mode.  Also one can look at /proc/xenomai/stat and MSW will 
+ * tell you the number of switches a thread has made.
+ */
+void warn_upon_switch(int sig __attribute__((unused)))
 {
+    void *bt[32];
+    int nentries;
+    int errfiled;
+ 
+    errfiled= open ("/root/btclient/src/btdiag/WAMerror.txt", 1);//open WAMerror text as a write
+    
+    // Dump a backtrace of the frame which caused the switch to
+    // secondary mode: 
+    nentries = backtrace(bt,sizeof(bt) / sizeof(bt[0]));
+    backtrace_symbols_fd(bt,nentries,errfiled);
+    close(errfiled);
+    syslog(LOG_ERR, "Switched out of RealTime, see WAMerror.txt for details");
+}
+
+void Cleanup(){
+   int i;
+
+   for(i = 0; i < busCount; i++){
+      wamData[i].wam_thd.done = 1;
+      //btrt_thread_stop(&wamData[i].wam_thd); // Exit control loop and JOIN
+      //btrt_thread_exit(&wamData[i].wam_thd); // Delete task
+   }
+   usleep(10000);
+   CloseSystem(); // Free the actuator memory and CAN device(s)
+   StartupThread.done = 1;
+   
+   SDL_Cleanup();
+}
+
+void SDL_Cleanup(){
+   /* SDL Cleanup */
    //Free the surfaces
    if(text)
       SDL_FreeSurface( text );
@@ -236,6 +282,50 @@ void mvprintw(int line, int col, char *str)
    return;
 }
 
+void Startup(void *thd){
+   int err, i;
+
+   /* Probe and initialize the robot actuators */
+   err = InitializeSystem();
+   if(err) {
+      syslog(LOG_ERR, "InitializeSystem returned err = %d", err);
+      exit(1);
+   }
+    
+   /* Initialize and get a handle to the robot(s) */
+   for(i = 0; i < busCount; i++){
+      if(!(wam[i] = OpenWAM("../../wam.conf", i)))
+         exit(1);
+   }
+
+   /* Set the safety limits for each bus (WAM) */
+   for(i = 0; i < busCount; i++){
+      if(!NoSafety) {
+         /* setSafetyLimits(bus, joint rad/s, tip m/s, elbow m/s);
+          * For now, the joint and tip velocities are ignored and
+          * the elbow velocity provided is used for all three limits.
+          */
+         setSafetyLimits(i, 1.5, 1.5, 1.5);  // Limit to 1.5 m/s
+   
+         /* Set the puck torque safety limits (TL1 = Warning, TL2 = Critical)
+          * Note: The pucks are limited internally to 3441 (see 'MT' in btsystem.c) 
+          * Note: btsystem.c bounds the outbound torque to 8191, so 9000
+          * tells the safety system to never register a critical fault
+          */
+         setProperty(i, SAFETY_MODULE, TL2, FALSE, 4700); //4700);
+         setProperty(i, SAFETY_MODULE, TL1, FALSE, 1800); //1800
+      }
+   }
+  
+   
+   startDone = TRUE;
+   
+   while (!btrt_thread_done((btrt_thread_struct*)thd)){
+      usleep(10000);
+   }
+   btrt_thread_exit((btrt_thread_struct*)thd);
+}
+    
 /** Entry point for the application.
     Initializes the system and executes the main event loop.
 */
@@ -248,50 +338,26 @@ int main(int argc, char **argv)
    char     robotName[128];
 
    /* Allow hard real time process scheduling for non-root users */
+#ifdef RTAI   
    rt_allow_nonroot_hrt();
-   
+#else
+   mlockall(MCL_CURRENT | MCL_FUTURE);
+   // Test to see when thread is changing over to secondary mode
+   signal(SIGXCPU, warn_upon_switch);
+   /* Xenomai non-root scheduling is coming soon! */
+#endif
+
    /* Figure out what the keys do and print it on screen.
     * Parses this source file for lines containing "case '", because
     * that is how we manage keypresses in ProcessInput().
     */
-   //system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
-   //read_keys("keys.txt");
+   system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
+   read_keys("keys.txt");
 
-   /* Initialize the ncurses screen library */
-   //init_ncurses();
-   //atexit((void*)endwin);
-
-
-   /* Initialize syslog */
-   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
-   atexit((void*)closelog);
-   syslog(LOG_ERR,"...Starting btdiag program...");
-
-   /* Initialize the display mutex */
-   test_and_log(
-      pthread_mutex_init(&(disp_mutex),NULL),
-      "Could not initialize mutex for displays.");
-
-   /* Look through the command line arguments for "-q" */
-   //mvprintw(18,0,"argc=%d",argc);
-   //for(i = 0; i < argc; i++) mvprintw(20+i,0,"%s",argv[i]);
-   for(i = 1; i < argc; i++) {
-      if(!strcmp(argv[i],"-q"))
-         quiet = TRUE; // Flag to skip the startup walkthrough text
-   }
-
-   /* Do we want to bypass the safety circuit + pendant?
-    * This is for diagnostics only and should not normally be used .
-    */
-   NoSafety = 0;
-   for(i = 1; i < argc; i++) {
-      if(!strcmp(argv[i],"-ns"))
-         NoSafety = 1;
-   }
-
+   /* SDL Initialization */
    //Initialize all SDL subsystems
    if( SDL_Init( SDL_INIT_EVERYTHING ) == -1 ) {
-      clean_up();
+      SDL_Cleanup();
       return 0;
    }
    //Set up the screen
@@ -299,11 +365,13 @@ int main(int argc, char **argv)
 
    //If there was an error in setting up the screen
    if( screen == NULL ) {
+      SDL_Cleanup();
       return 0;
    }
 
    //Initialize SDL_ttf
    if( TTF_Init() == -1 ) {
+      SDL_Cleanup();
       return 0;
    }
 
@@ -314,12 +382,39 @@ int main(int argc, char **argv)
    font = TTF_OpenFont( "/usr/X11R6/lib/X11/fonts/TTF/VeraMono.ttf", 12 );
    //If there was an error in loading the font
    if( font == NULL ) {
-      clean_up();
+      SDL_Cleanup();
       printf("TTF_OpenFont: %s\n", SDL_GetError());
       return 0;
    }
    SDL_FillRect( screen, &screen->clip_rect, SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 ) );
 
+   /* Initialize syslog */
+   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
+   atexit((void*)closelog);
+   syslog(LOG_ERR,"...Starting btdiag program...");
+
+   /* Initialize the display mutex */
+   test_and_log(
+      pthread_mutex_init(&(disp_mutex),NULL),
+      "Could not initialize mutex for displays.");
+   
+   /* Look through the command line arguments for "-q" */
+   //mvprintw(18,0,"argc=%d",argc);
+   //for(i = 0; i < argc; i++) mvprintw(20+i,0,"%s",argv[i]);
+   for(i = 1; i < argc; i++) {
+      if(!strcmp(argv[i],"-q"))
+         quiet = TRUE; // Flag to skip the startup walkthrough text
+   }
+
+   /* Do we want to bypass the safety circuit + pendant? 
+    * This is for diagnostics only and should not normally be used .
+    */
+   NoSafety = 0;
+   for(i = 1; i < argc; i++) {
+      if(!strcmp(argv[i],"-ns"))
+         NoSafety = 1;
+   }
+   
    if(!quiet) {
       /* Lead the user through a proper WAM startup */
       mvprintw(1,0,"Make sure the all WAM power and signal cables are securely");
@@ -336,52 +431,26 @@ int main(int argc, char **argv)
    }
    clearScreen();
 
+   /* Register the ctrl-c interrupt handler */
+   signal(SIGINT, sigint_handler);
+   
    /* Read the WAM configuration file */
    err = ReadSystemFromConfig("../../wam.conf", &busCount);
    if(err) {
       syslog(LOG_ERR, "ReadSystemFromConfig returned err = %d", err);
       exit(1);
    }
-
-   /* Probe and initialize the robot actuators */
-   err = InitializeSystem();
-   if(err) {
-      syslog(LOG_ERR, "InitializeSystem returned err = %d", err);
-      exit(1);
-   }
-
-   /* Initialize and get a handle to the robot(s) */
-   for(i = 0; i < busCount; i++) {
-      if(!(wam[i] = OpenWAM("../../wam.conf", i)))
-         exit(1);
-   }
-
-   /* Register the ctrl-c interrupt handler */
-   signal(SIGINT, sigint_handler);
-
-   /* Set the safety limits for each bus (WAM) */
-   for(i = 0; i < busCount; i++) {
-      if(!NoSafety) {
-         /* setSafetyLimits(bus, joint rad/s, tip m/s, elbow m/s);
-          * For now, the joint and tip velocities are ignored and
-          * the elbow velocity provided is used for all three limits.
-          */
-         setSafetyLimits(i, 1.5, 1.5, 1.5);  // Limit to 1.5 m/s
-
-         /* Set the puck torque safety limits (TL1 = Warning, TL2 = Critical)
-          * Note: The pucks are limited internally to 3441 (see 'MT' in btsystem.c) 
-          * Note: btsystem.c bounds the outbound torque to 8191, so 9000
-          * tells the safety system to never register a critical fault
-          */
-         setProperty(i, SAFETY_MODULE, TL2, FALSE, 9000); //4700);
-         setProperty(i, SAFETY_MODULE, TL1, FALSE, 2000); //1800
-      }
-
+   
+   /* RT task for setup of CAN Bus */
+   btrt_thread_create(&StartupThread,"StTT", 45, (void*)Startup, NULL);
+   while(!startDone)
+      usleep(10000);
+   
+   for(i = 0; i < busCount; i++){
       /* Prepare the WAM data */
       wamData[i].jdest = new_vn(len_vn(wam[i]->Jpos));
       wamData[i].cdest = new_vn(len_vn(wam[i]->R6pos));
-      //wv = new_vn(7);
-
+   
       /* The WAM can be in either Joint mode or Cartesian mode.
        * We want a single set of variables (active_) to eliminate the need
        * for a whole bunch of if() statements.
@@ -391,30 +460,31 @@ int main(int argc, char **argv)
       wamData[i].active_pos = wam[i]->Jpos;
       wamData[i].active_trq = wam[i]->Jtrq;
       wamData[i].active_dest = wamData[i].jdest;
-
+      
       /* Create a new trajectory */
       wamData[i].vt_j = new_vta(len_vn(wam[i]->Jpos),50);
       wamData[i].vt_c = new_vta(len_vn(wam[i]->R6pos),50);
       wamData[i].vta = &wamData[i].vt_j;
       register_vta(wamData[i].active_bts,*wamData[i].vta);
-
+      
       /* Initialize the control period */
       wamData[i].wam_thd.period = Ts;
-
+      
       /* Register the control loop's local callback routine */
       registerWAMcallback(wam[i], WAMcallback);
    }
+
    r_mat = new_m3();
    xyz = new_v3();
    RxRyRz = new_v3();
-
+   
    /* Initialize the haptic scene */
    init_haptics();
-
+   
    /* Spin off the WAM control thread(s) */
-   btthread_create(&wamData[0].wam_thd, 90, (void*)WAMControlThread1, (void*)wam[0]);
+   btrt_thread_create(&wamData[0].wam_thd, "WAMCTT", 50, (void*)WAMControlThread, (void*)wam[0]);
    //btthread_create(&wamData[1].wam_thd, 90, (void*)WAMControlThread2, (void*)wam[1]);
-
+   
    /* Initialize the active teach filename (to blank) */
    active_file[0] = 0;
 
@@ -423,85 +493,69 @@ int main(int argc, char **argv)
       syslog(LOG_ERR, "Error opening serial port: %d", err);
    }
    serialSetBaud(&p, 9600); // The BarrettHand defaults to 9600 baud
-
+   
    /* Spin off the display thread */
    btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
-
+   
    /* Spin off the audio thread */
    //btthread_create(&audio_thd,0,(void*)AudioThread,NULL);
 
    /* Main event loop, ~10Hz */
    while (!done) {
       /* Check the active trajectory for completion for each bus */
-      for(i = 0; i < busCount; i++) {
+      for(i = 0; i < busCount; i++){ 
          if (get_trjstate_bts(wamData[i].active_bts) == BTTRAJ_DONE && !wamData[i].active_bts->loop_trj) {  // BZ-16Nov2005
             stop_trj_bts(wamData[i].active_bts);
             //setmode_bts(active_bts,prev_mode);
             cplay = 0;
          }
-
+         
          /* Handle the data logger */
          //evalDL(&(wam[i]->log));
       }
+      
       /* Check and handle user keypress */
-      //if ((chr = getch()) != ERR)
-      //   ProcessInput(chr);
-      //Get the keystates
-
-
-      /* Check for events */
-      //while(SDL_PollEvent(&event)) {  /* Loop until there are no events left on the queue */
-      //}
       SDL_PumpEvents();
       Uint8 *keystates = SDL_GetKeyState( NULL );
       ProcessKey(keystates);
-
+      
       /* If we are in playback mode, handle the BarrettHand teach commands */
-      if(cplay) {
-         if(keyEvent[eventIdx].c) {
-            if((rt_get_cpu_time_ns() - eventStart) > keyEvent[eventIdx].t) {
+      if(cplay){
+         if(keyEvent[eventIdx].c){
+            if((btrt_get_time() - eventStart) > keyEvent[eventIdx].t){
                ProcessInput(keyEvent[eventIdx].c);
-               ++eventIdx;
+               ++eventIdx;  
             }
          }
       }
-
+      
       /* If the WAM has paused due to obstruction, wait */
-      if(pauseCnt > 0) {
-         pauseCnt--;
-         if(pauseCnt == 0) {
-            for(i = 0; i < busCount; i++) {
+      if(pauseCnt > 0){
+	      pauseCnt--;
+	      if(pauseCnt == 0){
+            for(i = 0; i < busCount; i++){
                unpause_trj_bts(wamData[i].active_bts,0.125);
             }
-         }
+	      }
       }
-
+      
       /* If there is an obstruction, pause the WAM playback */
-      for(i = 0; i < busCount; i++) {
-         for(cnt=0;cnt<wam[i]->dof;cnt++) {
+      for(i = 0; i < busCount; i++){
+         for(cnt=0;cnt<wam[i]->dof;cnt++){
             if(fabs(getval_vn(wam[i]->Jtrq,cnt) - getval_vn(wam[i]->Gtrq,cnt)) >
-                    getval_vn(wam[i]->torq_limit,cnt)) {
+               getval_vn(wam[i]->torq_limit,cnt)){
                pauseCnt = 50;
                pause_trj_bts(wamData[i].active_bts,5);
                break;
             }
          }
       }
-
+      
       /* Sleep for 0.1s. This roughly defines the event loop frequency */
       usleep(100000);
    }
 
-   /* Clean up and exit */
-   for(i = 0; i < busCount; i++) {
-      btthread_stop(&wamData[i].wam_thd); //Kill WAMControlThread
-      //CloseDL(&(wam[i]->log));
-   }
-   //DecodeDL("datafile.dat","dat.csv",1);
-
-   //Quit SDL
-   clean_up();
-
+   Cleanup();
    exit(1);
 }
 
@@ -512,55 +566,26 @@ int main(int argc, char **argv)
 int WAMcallback(struct btwam_struct *w)
 {
    int i;
-#if 0
-   //R_to_q(q, w->robot.tool->origin);
-   //q_to_R(r_mat, q);
-   if(getmode_bts(w->active_sc) == SCMODE_POS && w->active_sc == &w->Csc)
-   {
-      // Reference
-      //setrange_vn((vect_n*)xyz, w->R6ref, 0, 3, 3);
-      //XYZftoR_m3(r_mat, xyz);
-      //getcol_m3(ns, r_mat, 0);
-      //getcol_m3(os, r_mat, 1);
-      //getcol_m3(as, r_mat, 2);
-
-      // Actual
-      //setrange_vn((vect_n*)xyz, w->R6pos, 0, 3, 3);
-      //XYZftoR_m3(r_mat, xyz);
-      getcol_m3(n, w->robot.tool->origin, 0);
-      getcol_m3(o, w->robot.tool->origin, 1);
-      getcol_m3(a, w->robot.tool->origin, 2);
-
-      setrange_vn(e, (vect_n*)/*matXvec_m3(w->robot.tool->origin,*/( scale_v3(0.5, add_v3(cross_v3(ns,n), add_v3(cross_v3(os,o), cross_v3(as,a))))), 3, 0, 3);
-      set_vn(ed, scale_vn(1/Ts, add_vn(e, scale_vn(-1.0, last_e))));
-      set_vn(f6, add_vn(matXvec_mn(kp, e, e->ret), matXvec_mn(kd, ed, ed->ret)));
-      setrange_vn(w->R6force, f6, 3, 3, 3); // Just for show
-      setrange_vn((vect_n*)t3, f6, 0, 3, 3);
-      apply_tool_force_bot(&(w->robot), w->Cpoint, f3, t3);
-      set_vn(last_e, e);
-   }
-#endif
 
    /* Handle haptic scene for the specified WAM */
-   for(i = 0; i < busCount; i++)
-   {
-      if(wam[i] == w) {
+   for(i = 0; i < busCount; i++){
+      if(wam[i] == w){
          /* Filter the Cartesian endpoint position to generate the endpoint
           * velocity and acceleration.
           */
          eval_state_btg(&wamData[i].pstate, w->Cpos);
-
+         
          /* Evaluate the haptic scene.
           * Uses the WAM's position and velocity along with the scene definition
           * to determine the required end-of-arm force vector.
           */
          eval_bthaptics(&bth, (vect_n*)w->Cpos, (vect_n*)wamData[i].pstate.vel, (vect_n*)zero_v3, (vect_n*)w->Cforce);
-
+         
          /* Apply the calculated force vector to the robot */
          apply_tool_force_bot(&(w->robot), w->Cpoint, w->Cforce, w->Ctrq);
       }
    }
-
+   
    return 0;
 }
 
@@ -605,7 +630,7 @@ void init_haptics(void)
    p1 = new_v3();
    p2 = new_v3();
    p3 = new_v3();
-
+   
    /* Define the offset from the origin */
    xorig = 0.0;
    yorig = 0.0;
@@ -613,29 +638,29 @@ void init_haptics(void)
 
    /* Allocate a scene with space for 10 objects */
    new_bthaptic_scene(&bth, 10);
-
+   
    /* For each WAM (bus), initialize a structure to track velocity and accel, given position */
-   for(i = 0; i < busCount; i++) {
+   for(i = 0; i < busCount; i++){
       /* Initialize the position filter (btgeometry) */
       init_state_btg(&wamData[i].pstate, Ts, 30.0); // Update rate, filter cutoff Hz
-
+      
       /* Define the Haptic interaction point with respect to the WAM tool frame */
       const_v3(wam[i]->Cpoint, 0.0, 0.0, 0.0); // Define the interaction point to be at the tool
    }
-
+   
    /* To add a haptic object to the scene, you must:
     * 1) Define the object geometry
     * 2) Define a type of haptic interaction (method of force response)
     * 3) Tie the object geometry and haptic interaction together into a haptic object
     * 4) Add the new haptic object to the scene
     */
-
+    
    /* Create workspace bounding box */
    init_bx_btg(&boxs[0],const_v3(p1,0.7,0.0,zorig+0.0),const_v3(p2,0.7,0.01,zorig+0.0),const_v3(p3,0.7,0.0,zorig+0.01),1.0,0.6,0.4,1);
    init_bulletproofwall(&bpwall[0],0.0,0.0,0.05,4000.0,10.0,10.0);
    init_normal_box_bth(&objects[objectCount],&boxs[0],(void*)&bpwall[0],bulletproofwall_nf);
    addobject_bth(&bth,&objects[objectCount++]);
-
+   
    /* Create nested spheres */
    init_sp_btg( &spheres[0],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.4,0.0,zorig+0.0),0); // Inner sphere, outer wall
    init_sp_btg( &spheres[1],const_v3(p1,0.5,0.0,zorig+0.0),const_v3(p2,0.42,0.0,zorig+0.0),1); // Inner sphere, inner wall
@@ -649,22 +674,12 @@ void init_haptics(void)
    }
 }
 
-/* Initialize the ncurses screen library */
-void init_ncurses(void)
-{
-   initscr();
-   cbreak();
-   noecho();
-   timeout(0);
-   clear();
-}
-
 /** Traps the Ctrl-C signal.
     Quits the program gracefully when Ctrl-C is hit.
 */
 void sigint_handler()
 {
-   clean_up();
+   Cleanup();
    exit(1);
 }
 
@@ -675,10 +690,10 @@ void DisplayThread()
 {
    /* Clear the screen buffer */
    clear();
-
+   
    /* Display the cleared screen */
    refresh();
-
+   
    /* Loop forever, rendering the appropriate screen information */
    while (!done) {
       /* Try to obtain a mutex lock to refresh the screen.
@@ -688,7 +703,7 @@ void DisplayThread()
        */
       test_and_log(
          pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
-
+         
       /* Render the appropriate screen, based on the "screen" variable */
       switch(scr) {
       case SCREEN_MAIN:
@@ -698,10 +713,10 @@ void DisplayThread()
          RenderHELP_SCREEN();
          break;
       }
-
+      
       /* Release the mutex lock */
       pthread_mutex_unlock(&(disp_mutex));
-
+      
       /* Slow this loop down to about 10Hz */
       usleep(100000);
    }
@@ -911,7 +926,6 @@ void RenderHELP_SCREEN()
 void clearScreen(void)
 {
    btmutex_lock(&(disp_mutex));
-   //clear();
    SDL_FillRect( screen, &screen->clip_rect, SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 ) );
    SDL_Flip( screen );
    btmutex_unlock(&(disp_mutex));
@@ -1378,6 +1392,7 @@ case 'v'://Set the move velocity
 #endif
 
 }
+
 
 /** Process user input.
     Handles the user's keypress, and performs the function desired by the user.
