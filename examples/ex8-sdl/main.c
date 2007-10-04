@@ -129,6 +129,7 @@ TTF_Font *font = NULL;
 
 //The color of the font
 SDL_Color textColor = { 255, 255, 255 };
+SDL_Color bgColor = { 0, 0, 255 };
 SDL_Surface *screen = NULL;
 SDL_Surface *text = NULL;
 
@@ -245,6 +246,8 @@ void apply_surface( int x, int y, SDL_Surface* source, SDL_Surface* destination)
    //Get offsets
    offset.x = x;
    offset.y = y;
+   offset.w = 20;
+   offset.h = 20;
 
    //Blit
    SDL_BlitSurface( source, clip, destination, &offset );
@@ -274,11 +277,15 @@ void sdl_waitforkey()
  */
 void mvprintw(int line, int col, char *str)
 {
-   text = TTF_RenderText_Solid( font, str, textColor );
+	int i;
+   //text = TTF_RenderText_Solid( font, str, textColor );
+   text = TTF_RenderText_Shaded( font, str, textColor, bgColor );
+
    if( text == NULL ) {
-      return;
+   	  return;
    }
    apply_surface(col*10,line*16,text,screen);
+   //SDL_UpdateRect( screen,0,0,0,0 );
    return;
 }
 
@@ -381,12 +388,15 @@ int main(int argc, char **argv)
    //Open the font
    font = TTF_OpenFont( "/usr/X11R6/lib/X11/fonts/TTF/VeraMono.ttf", 12 );
    //If there was an error in loading the font
+   if(font == NULL) // Try this one
+      font = TTF_OpenFont( "/usr/X11R6/lib/X11/fonts/TTF/DejaVuSansMono-Bold.ttf", 12 );
+   
    if( font == NULL ) {
       SDL_Cleanup();
       printf("TTF_OpenFont: %s\n", SDL_GetError());
       return 0;
    }
-   SDL_FillRect( screen, &screen->clip_rect, SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 ) );
+   SDL_FillRect( screen, &screen->clip_rect, SDL_MapRGB( screen->format, bgColor.r, bgColor.g, bgColor.b ) );
 
    /* Initialize syslog */
    openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
@@ -704,7 +714,7 @@ void DisplayThread()
       test_and_log(
          pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
          
-      /* Render the appropriate screen, based on the "screen" variable */
+      /* Render the appropriate screen, based on the "scr" variable */
       switch(scr) {
       case SCREEN_MAIN:
          RenderMAIN_SCREEN();
@@ -762,12 +772,12 @@ void RenderMAIN_SCREEN()
    char vect_buf1[2500];
    char txt[250];
 
-   SDL_FillRect( screen, &screen->clip_rect, SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 ) );
+   SDL_FillRect( screen, &screen->clip_rect, SDL_MapRGB( screen->format, bgColor.r,  bgColor.g,  bgColor.b ) );
 
    /***** Display the interface text *****/
    line = 0;
 
-   mvprintw(line , 0, "Barrett Technology - Diagnostic Application        Press 'h' for help");
+   mvprintw(line , 0, "Example 8: Simple DirectMedia Layer (SDL) Demo        Press 'h' for help");
    line+=2;
 
    // Show MODE
@@ -926,7 +936,7 @@ void RenderHELP_SCREEN()
 void clearScreen(void)
 {
    btmutex_lock(&(disp_mutex));
-   SDL_FillRect( screen, &screen->clip_rect, SDL_MapRGB( screen->format, 0x00, 0x00, 0x00 ) );
+   SDL_FillRect( screen, &screen->clip_rect, SDL_MapRGB( screen->format,  bgColor.r,  bgColor.g,  bgColor.b ) );
    SDL_Flip( screen );
    btmutex_unlock(&(disp_mutex));
 }
