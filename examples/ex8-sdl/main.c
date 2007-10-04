@@ -975,7 +975,7 @@ void ProcessKey(Uint8 *keystates)
       serialWriteString(&p, "\rHI\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -984,7 +984,7 @@ void ProcessKey(Uint8 *keystates)
       serialWriteString(&p, "\rSM 1500\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -993,7 +993,7 @@ void ProcessKey(Uint8 *keystates)
       serialWriteString(&p, "\rSM 1000\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -1002,7 +1002,7 @@ void ProcessKey(Uint8 *keystates)
       serialWriteString(&p, "\rSO\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -1011,7 +1011,7 @@ void ProcessKey(Uint8 *keystates)
       serialWriteString(&p, "\rSC\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -1020,7 +1020,7 @@ void ProcessKey(Uint8 *keystates)
       serialWriteString(&p, "\rGO\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          syslog(LOG_ERR, "keyEvent[%d].c = %d, keyEvent[%d].t = %lld", eventIdx, c, eventIdx, keyEvent[eventIdx].t);
          eventIdx++;
          keyEvent[eventIdx].c = 0;
@@ -1030,7 +1030,7 @@ void ProcessKey(Uint8 *keystates)
       serialWriteString(&p, "\rGC\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          syslog(LOG_ERR, "keyEvent[%d].c = %d, keyEvent[%d].t = %lld", eventIdx, c, eventIdx, keyEvent[eventIdx].t);
          eventIdx++;
          keyEvent[eventIdx].c = 0;
@@ -1065,7 +1065,7 @@ void ProcessKey(Uint8 *keystates)
          if(getmode_bts(wamData[i].active_bts)!=SCMODE_TRJ) {
 
             cplay = 1;
-            eventStart = rt_get_cpu_time_ns();
+            eventStart = btrt_get_time();
             eventIdx = 0;
 
             moveparm_bts(wamData[i].active_bts,vel,acc);
@@ -1262,7 +1262,7 @@ void ProcessKey(Uint8 *keystates)
 
          cteach = 1;
          eventIdx = 0;
-         eventStart = rt_get_cpu_time_ns()-750000000L;
+         eventStart = btrt_get_time()-750000000L;
          keyEvent[eventIdx].c = 0;
       } else {
          for(i = 0; i < busCount; i++) {
@@ -1440,7 +1440,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rGC\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          syslog(LOG_ERR, "keyEvent[%d].c = %d, keyEvent[%d].t = %lld", eventIdx, c, eventIdx, keyEvent[eventIdx].t);
          eventIdx++;
          keyEvent[eventIdx].c = 0;
@@ -1450,7 +1450,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rGO\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          syslog(LOG_ERR, "keyEvent[%d].c = %d, keyEvent[%d].t = %lld", eventIdx, c, eventIdx, keyEvent[eventIdx].t);
          eventIdx++;
          keyEvent[eventIdx].c = 0;
@@ -1460,7 +1460,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rSC\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -1469,7 +1469,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rSO\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -1478,7 +1478,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rSM 1000\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -1487,7 +1487,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rSM 1500\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -1496,7 +1496,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       serialWriteString(&p, "\rHI\r");
       if(cteach) {
          keyEvent[eventIdx].c = c;
-         keyEvent[eventIdx].t = rt_get_cpu_time_ns() - eventStart;
+         keyEvent[eventIdx].t = btrt_get_time() - eventStart;
          eventIdx++;
          keyEvent[eventIdx].c = 0;
       }
@@ -1571,7 +1571,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          if(getmode_bts(wamData[i].active_bts)!=SCMODE_TRJ) {
 
             cplay = 1;
-            eventStart = rt_get_cpu_time_ns();
+            eventStart = btrt_get_time();
             eventIdx = 0;
 
             moveparm_bts(wamData[i].active_bts,vel,acc);
@@ -1632,7 +1632,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
       cteach = 1;
       eventIdx = 0;
-      eventStart = rt_get_cpu_time_ns()-750000000L;
+      eventStart = btrt_get_time()-750000000L;
       keyEvent[eventIdx].c = 0;
 
       break;
