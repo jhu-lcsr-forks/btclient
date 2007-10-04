@@ -163,7 +163,7 @@ int main(int argc, char **argv)
    
    /* Spin off the RT task to set up the CAN Bus */
    startDone = FALSE;
-   btrt_thread_create(&rt_thd,"rtt", 45, (void*)rt_thread, NULL);
+   btrt_thread_create(&rt_thd, "rtt", 45, (void*)rt_thread, NULL);
    while(!startDone)
       usleep(10000);
 
@@ -189,9 +189,9 @@ int main(int argc, char **argv)
       line = 2;
       
       mvprintw(line, 0, "Robot name = %s     Degrees of Freedom = %d", wam->name, wam->dof); line += 2;
-      mvprintw(line, 0, "Joint Position: %s", sprint_vn(buf, wam->Jpos)); ++line;
-      mvprintw(line, 0, "Joint Torque  : %s", sprint_vn(buf, wam->Jtrq)); ++line;
-      mvprintw(line, 0, "Cartesian XYZ : %s", sprint_vn(buf, (vect_n*)wam->Cpos)); ++line;
+      mvprintw(line, 0, "Joint Position (rad): %s", sprint_vn(buf, wam->Jpos)); ++line;
+      mvprintw(line, 0, "Joint Torque (Nm)   : %s", sprint_vn(buf, wam->Jtrq)); ++line;
+      mvprintw(line, 0, "Cartesian XYZ (m)   : %s", sprint_vn(buf, (vect_n*)wam->Cpos)); ++line;
       mvprintw(line, 0, "Jacobian Matrix\n%s", sprint_mn(buf, wam->robot.J)); line += 7;
       mvprintw(line, 0, "Mass Matrix\n%s", sprint_mn(buf, wam->robot.M)); line += wam->dof + 1;
       

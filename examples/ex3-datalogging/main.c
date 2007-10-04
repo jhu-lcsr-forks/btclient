@@ -34,6 +34,10 @@
  *==============================*/
 #include "btwam.h"
 
+/*==============================*
+ * PRIVATE DEFINED constants    *
+ *==============================*/
+/* Define the control loop period */
 #define Ts (0.002)
 
 /*==============================*
@@ -231,8 +235,11 @@ int main(int argc, char **argv)
    while(!startDone)
       usleep(10000);
 
+   /* Register the control loop's local callback routine */
+   registerWAMcallback(wam, WAMcallback);
+   
    /* Initialize a WAM state evaluator */
-   init_state_btg(&pstate, Ts , 30.0);
+   init_state_btg(&pstate, Ts, 30.0);
    
    /* Commanded Cartesian forces and torques are applied about Cpoint, which is 
     * defined as an offset from the kinematic endpoint of the robot.
@@ -279,9 +286,6 @@ int main(int argc, char **argv)
    while(getch()==ERR)
       usleep(5000);
    
-   /* Register the control loop's local callback routine */
-   registerWAMcallback(wam, WAMcallback);
-      
    /* Clear the screen (ncurses) */
    clear(); refresh();
    
@@ -298,11 +302,11 @@ int main(int argc, char **argv)
       line = 2;
       
       mvprintw(line, 0, "Robot name = %s     Degrees of Freedom = %d", wam->name, wam->dof); line += 2;
-      mvprintw(line, 0, "Joint Position (m) : %s", sprint_vn(buf, wam->Jpos)); ++line;
-      mvprintw(line, 0, "Joint Torque (Nm)  : %s", sprint_vn(buf, wam->Jtrq)); ++line;
-      mvprintw(line, 0, "Cartesian XYZ (m)  : %s", sprint_vn(buf, (vect_n*)wam->Cpos)); ++line;
-      mvprintw(line, 0, "Cartesian Force (N): %s", sprint_vn(buf, (vect_n*)wam->Cforce)); ++line;
-      mvprintw(line, 0, "Callback Time (ns) : %ld", callbackTime); ++line;
+      mvprintw(line, 0, "Joint Position (rad): %s", sprint_vn(buf, wam->Jpos)); ++line;
+      mvprintw(line, 0, "Joint Torque (Nm)   : %s", sprint_vn(buf, wam->Jtrq)); ++line;
+      mvprintw(line, 0, "Cartesian XYZ (m)   : %s", sprint_vn(buf, (vect_n*)wam->Cpos)); ++line;
+      mvprintw(line, 0, "Cartesian Force (N) : %s", sprint_vn(buf, (vect_n*)wam->Cforce)); ++line;
+      mvprintw(line, 0, "Callback Time (ns)  : %ld", callbackTime); ++line;
       
       ++line;
       mvprintw(line, 0, "To exit, press Shift-Idle on pendant, then hit Ctrl-C");

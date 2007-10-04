@@ -153,7 +153,7 @@ int main(int argc, char **argv)
    printf("\nPress Ctrl-C to exit...\n");
    while(1) {
       /* Display the WAM's joint angles on-screen (see **NOTE below) */
-      printf("\rPosition = %s\t",sprint_vn(buf,(vect_n*)wam->Jpos));
+      printf("\rPosition (rad) = %s\t",sprint_vn(buf,(vect_n*)wam->Jpos));
       fflush(stdout);
       usleep(100000); // Wait a moment
    }
