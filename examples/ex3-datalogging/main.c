@@ -153,7 +153,7 @@ int WAMcallback(wam_struct *w)
     * If you make this positive, you have a poor-man's (unstable) friction 
     * compensation algorithm. Have fun, but be careful!
     */
-   btreal Kscale = -20.0; 
+   btreal Kscale = -30.0; 
    
    /* Get the time in nanoseconds */
    start = btrt_get_time();
@@ -311,7 +311,8 @@ int main(int argc, char **argv)
       mvprintw(line, 0, "Callback Time (ns)  : %ld", callbackTime); ++line;
       
       ++line;
-      mvprintw(line, 0, "To exit, press Shift-Idle on pendant, then hit Ctrl-C");
+      mvprintw(line, 0, "To exit, press Shift-Idle on pendant, then hit Ctrl-C"); ++line;
+      mvprintw(line, 0, "...and check out the dat.csv log file after you exit!");
       
       refresh(); // Draw the screen
       usleep(1E5); // Sleep for 1E5 microseconds or 0.1 seconds
