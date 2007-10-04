@@ -358,8 +358,8 @@ int main(int argc, char **argv)
     * Parses this source file for lines containing "case '", because
     * that is how we manage keypresses in ProcessInput().
     */
-   system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
-   read_keys("keys.txt");
+   //system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
+   //read_keys("keys.txt");
 
    /* SDL Initialization */
    //Initialize all SDL subsystems
