@@ -40,16 +40,17 @@ void syslog_backtrace(int size)
 /*==============================*
  * Functions                    *
  *==============================*/
+#if 0
 /** Initialize a mutex.
  
 If pthread_mutex_init() fails, an error message is printed to syslog.
  
 \return Result of pthread_mutex_init().
-\exception Undefined if btm does not point to memory block meant for a btmutex.
+\exception Undefined if btm does not point to memory block meant for a btrt_mutex.
 \internal chk'd TH 051101
 \todo Error checking mutexes enabled by compiler switch.
 */
-int btmutex_init(btmutex* btm)
+int btmutex_init(btrt_mutex* btm)
 {
    int ret;
    pthread_mutexattr_t mattr;
@@ -64,15 +65,15 @@ int btmutex_init(btmutex* btm)
 }
 
 
-/** Lock a btmutex.
+/** Lock a btrt_mutex.
 See pthread_mutex_lock() in pthread.h for more info.
 This function calls pthread_mutex_lock() and prints an error to syslog if it 
 fails.
 \return Result of pthread_mutex_lock().
-\exception Undefined if btm does not point to an initialized btmutex object.
+\exception Undefined if btm does not point to an initialized btrt_mutex object.
 \internal chk'd TH 051101
 */
-BTINLINE int btmutex_lock(btmutex* btm)
+BTINLINE int btmutex_lock(btrt_mutex* btm)
 {
    int ret;
    ret = pthread_mutex_lock(btm);
@@ -84,15 +85,15 @@ BTINLINE int btmutex_lock(btmutex* btm)
 }
 
 
-/** Unlock a btmutex.
+/** Unlock a btrt_mutex.
 See pthread_mutex_unlock() in pthread.h for more info.
 This function calls pthread_mutex_unlock() and prints an error to syslog if it 
 fails.
 \return Result of pthread_mutex_unlock().
-\exception Undefined if btm does not point to an initialized btmutex object.
+\exception Undefined if btm does not point to an initialized btrt_mutex object.
 \internal chk'd TH 051101
 */
-BTINLINE int btmutex_unlock(btmutex *btm)
+BTINLINE int btmutex_unlock(btrt_mutex *btm)
 {
    int ret;
    ret = pthread_mutex_unlock(btm);
@@ -102,7 +103,7 @@ BTINLINE int btmutex_unlock(btmutex *btm)
    }
    return ret;
 }
-
+#endif
 
 /** Check pointer for a NULL value.
 \retval 0 Pointer is NOT valid.
@@ -280,7 +281,7 @@ pthread_t* btthread_create(btthread *thd,int priority, void *function,void *args
    thd->data = args;
    thd->priority = priority;
    thd->periodic = 0;
-   btmutex_init(&(thd->mutex));
+   btrt_mutex_init(&(thd->mutex));
 
    pthread_create(&(thd->thd_id), &(thd->attr), function, thd);
 
@@ -298,9 +299,9 @@ pthread_t* btthread_create(btthread *thd,int priority, void *function,void *args
 BTINLINE int btthread_done(btthread *thd)
 {
    int done;
-   btmutex_lock(&(thd->mutex));
+   btrt_mutex_lock(&(thd->mutex));
    done = thd->done;
-   btmutex_unlock(&(thd->mutex));
+   btrt_mutex_unlock(&(thd->mutex));
    return done;
 }
 
@@ -336,9 +337,9 @@ void mythread(void* args)
 
 BTINLINE void btthread_stop(btthread *thd)
 {
-   btmutex_lock(&(thd->mutex));
+   btrt_mutex_lock(&(thd->mutex));
    thd->done = 1;
-   btmutex_unlock(&(thd->mutex));
+   btrt_mutex_unlock(&(thd->mutex));
    pthread_join(thd->thd_id,NULL);
 }
 

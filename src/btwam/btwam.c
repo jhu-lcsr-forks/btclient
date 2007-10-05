@@ -126,7 +126,7 @@ void InitVectors(wam_struct *wam)
    wam->motor_position = (int*)btmalloc(wam->dof * sizeof(int));
    wam->zero_order = (int*)btmalloc(wam->dof * sizeof(int));
    wam->d_jpos_ctl = (btPID*)btmalloc(wam->dof * sizeof(btPID));
-   wam->sc = (SimpleCtl*)btmalloc(wam->dof * sizeof(SimpleCtl));
+   //wam->sc = (SimpleCtl*)btmalloc(wam->dof * sizeof(SimpleCtl));
 
    wam->G = new_vn(wam->dof);
 }

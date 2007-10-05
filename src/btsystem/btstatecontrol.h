@@ -72,7 +72,7 @@ typedef struct
   btreal min,max;
   btreal rate; // dscaler/dt units per second
   int state; 
-  btmutex mutex;
+  btrt_mutex mutex;
 }btramp;
 
 void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate);
@@ -170,7 +170,7 @@ typedef struct btposition_interface_struct
   
   vect_n *t; //Buffer for output torque
 
-  btmutex mutex; //unused?
+  btrt_mutex mutex; //unused?
 }btposition_interface;
 
 //setup
@@ -201,7 +201,7 @@ typedef struct bttrajectory_interface_struct
   btpath_pwl pth;
   bttraptrj trj;
   int state;
-  btmutex mutex;  //unused?
+  btrt_mutex mutex;  //unused?
 }bttrajectory_interface;
 //void init_bttrj(bttrajectory_interface *btt);
 void mapdata_bttrj(bttrajectory_interface *btt, vect_n* qref, double *dt);
@@ -313,7 +313,7 @@ typedef struct
   bttraptrj trj;
   btreal vel,acc;
   int prep_only,loop_trj;
-  btmutex mutex;
+  btrt_mutex mutex;
 }btstatecontrol;
 void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq, 
                                            vect_n* qref, vect_n* tref,vect_n* t, double *dt);

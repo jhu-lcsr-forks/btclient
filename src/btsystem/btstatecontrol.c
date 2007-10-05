@@ -27,7 +27,7 @@
 #include "btos.h"
 #include "btmath.h"
 #include "btstatecontrol.h"
-#include "btjointcontrol.h"
+//#include "btjointcontrol.h"
 
 /************************** universal trajectory functions *****************/
 /** Set trajectory max velocity and acceleration.

@@ -37,7 +37,7 @@ See #btwam_struct
 #include "btsystem.h"
 #include "btrobot.h"
 #include "btcontrol.h"
-#include "btjointcontrol.h"
+//#include "btjointcontrol.h"
 #include "btpath.h"
 #include "btlogger.h"
 #include "btparser.h"
@@ -171,7 +171,7 @@ typedef struct btwam_struct{
   vect_n *vel,*acc;
   
   //CartesianSpace Position control
-  SimpleCtl *sc;
+  //SimpleCtl *sc;
   btPID pid[12]; //  x,y,z,rot
   quat *qref,*qact,*qaxis,*forced; //reference and actual orientations for quaternion control
   vect_n *Ttrq;

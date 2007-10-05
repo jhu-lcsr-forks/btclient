@@ -103,7 +103,7 @@ int constraint;
 int haptics;
 int pauseCnt = 0;
 int screen = SCREEN_MAIN;
-pthread_mutex_t disp_mutex;
+btrt_mutex disp_mutex;
 int entryLine;
 int useGimbals      = FALSE;
 int done            = FALSE;
@@ -318,7 +318,7 @@ int main(int argc, char **argv)
 
    /* Initialize the display mutex */
    test_and_log(
-      pthread_mutex_init(&(disp_mutex),NULL),
+      btrt_mutex_init(&disp_mutex),
       "Could not initialize mutex for displays.");
    
    /* Look through the command line arguments for "-q" */
@@ -632,7 +632,7 @@ void DisplayThread()
        * See start_entry() and finish_entry()
        */
       test_and_log(
-         pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+         btrt_mutex_lock(&(disp_mutex)),"Display mutex failed");
          
       /* Render the appropriate screen, based on the "screen" variable */
       switch(screen) {
@@ -645,7 +645,7 @@ void DisplayThread()
       }
       
       /* Release the mutex lock */
-      pthread_mutex_unlock(&(disp_mutex));
+      btrt_mutex_unlock(&(disp_mutex));
       
       /* Slow this loop down to about 10Hz */
       usleep(100000);
@@ -660,7 +660,7 @@ void start_entry()
 {
    int err;
    test_and_log(
-      pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+      btrt_mutex_lock(&(disp_mutex)),"Display mutex failed");
    move(entryLine, 1);
    echo();
    timeout(-1);
@@ -676,7 +676,7 @@ void finish_entry()
    move(entryLine, 1);
    addstr("                                                                              ");
    refresh();
-   pthread_mutex_unlock( &(disp_mutex) );
+   btrt_mutex_unlock( &(disp_mutex) );
 }
 
 /** Draw the main information screen.
@@ -832,9 +832,9 @@ void RenderHELP_SCREEN()
 /* Clear the screen while honoring the mutex lock */
 void clearScreen(void)
 {
-   btmutex_lock(&(disp_mutex));
+   btrt_mutex_lock(&(disp_mutex));
    clear();
-   btmutex_unlock(&(disp_mutex));
+   btrt_mutex_unlock(&(disp_mutex));
 }
 
 /** Process user input.

@@ -152,7 +152,7 @@ mutex error handling and debugging.
  
  
 */
-typedef pthread_mutex_t btmutex;
+//typedef pthread_mutex_t btrt_mutex;
 
 #ifdef XENOMAI
 typedef RT_MUTEX btrt_mutex;
@@ -160,18 +160,18 @@ typedef RT_MUTEX btrt_mutex;
 typedef pthread_mutex_t btrt_mutex;
 #endif
 
-int btmutex_init(btmutex* btm);
+int btrt_mutex_init(btrt_mutex* btm);
 int btrt_mutex_init(btrt_mutex* mutex);
 int btrt_mutex_create(btrt_mutex* mutex);
 
-BTINLINE int btmutex_lock(btmutex* btm);
-BTINLINE int btmutex_unlock(btmutex *btm);
+BTINLINE int btrt_mutex_lock(btrt_mutex* btm);
+BTINLINE int btrt_mutex_unlock(btrt_mutex *btm);
 
 
 BTINLINE int btrt_mutex_lock(btrt_mutex* mutex);
 BTINLINE int btrt_mutex_unlock(btrt_mutex *mutex);
 
-//int btmutex_lock_msg(btmutex* btm,char *msg);
+//int btrt_mutex_lock_msg(btrt_mutex* btm,char *msg);
 //@}
 
 /** @name Pointer and Array Sanity Checking */
@@ -220,7 +220,7 @@ typedef struct {
    int done; //!< See btthread_done()
    void (*function)(void *data); //Pointer to the function this thread is running
    void* data;
-   btmutex mutex;
+   btrt_mutex mutex;
 
    RTIME actual_period,proc_time;
 }

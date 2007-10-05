@@ -114,7 +114,7 @@ typedef struct
   btreal yref; //!< Commanded control parameter
   btreal lastresult; //!< Last output of the regulator
  
-  btmutex mutex;
+  btrt_mutex mutex;
 }btPID;
 typedef struct
 {

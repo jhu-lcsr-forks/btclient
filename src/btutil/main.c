@@ -687,9 +687,9 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
 void clearScreen(void)
 {
-   btmutex_lock(&(disp_mutex));
+   btrt_mutex_lock(&(disp_mutex));
    clear();
-   btmutex_unlock(&(disp_mutex));
+   btrt_mutex_unlock(&(disp_mutex));
 }
 
 int mygetch( )
