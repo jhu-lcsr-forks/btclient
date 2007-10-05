@@ -1396,7 +1396,7 @@ int read_csv_file_vr(char *fileName, vectray **vr)
    //Allocate memory for the file
    *vr = new_vr(maxcols,rows);
    syslog(LOG_ERR, "New vr. Col: %d Row: %d", maxcols,rows);
-   tmp_v = new_vn(maxcols);
+   tmp_v = new_vn(maxcols); // BUG: This becomes a dangling pointer (leak)
    //Load the file into memory
    rewind(inFile);
    row = 0;

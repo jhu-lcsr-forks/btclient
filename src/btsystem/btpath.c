@@ -156,11 +156,12 @@ int add_arclen_point_pwl(btpath_pwl *pth, vect_n *p)
 
    append_vr(pth->vr,p);
    idx = numrows_vr(pth->vr)- 1;
-   if (idx==0)
+   if (idx==0){ // If this is the first point in the path, set arclength to zero
       pth->s[0] = 0.0;
-   else
+   }else{ // Store the sum of the prev arclen + this arclen
       pth->s[idx] = pth->s[idx-1] + norm_vn(sub_vn(idxa_pwl(pth,idx),idxb_pwl(pth,idx-1)));
-
+   }
+   
    return idx;
 }
 

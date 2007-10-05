@@ -50,7 +50,7 @@ int SCinit(SimpleCtl *sc)
    sc->trj.vel = .00000001;
    PIDinit(&(sc->pid),0, 0, 0, 0.002);
 
-   btmutex_init(&(sc->mutex));
+   btrt_mutex_init(&(sc->mutex));
 }
 
 /*! Evaluate the Simple Controller
@@ -71,18 +71,18 @@ double SCevaluate(SimpleCtl *sc, double position, double dt)
    double cmptorque;
    int err;
 
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
 
    sc->position = position;
    switch (sc->mode) {
    case SCMODE_IDLE://Idle
-      btmutex_unlock(&(sc->mutex));
+      btrt_mutex_unlock(&(sc->mutex));
       sc->command_torque = 0.0;
       return sc->command_torque;
       break;
    case SCMODE_TORQUE://Torque
       sc->command_torque = sc->requested_torque;
-      btmutex_unlock(&(sc->mutex));
+      btrt_mutex_unlock(&(sc->mutex));
       return sc->command_torque;
       break;
    case SCMODE_POS://PID
@@ -96,12 +96,12 @@ double SCevaluate(SimpleCtl *sc, double position, double dt)
 
       sc->command_torque = newtorque;
 
-      btmutex_unlock(&(sc->mutex));
+      btrt_mutex_unlock(&(sc->mutex));
       return newtorque;
       break;
    default:
       sc->error = 1;
-      btmutex_unlock(&(sc->mutex));
+      btrt_mutex_unlock(&(sc->mutex));
       return 0.0;
    }
 
@@ -118,7 +118,7 @@ int SCsetmode(SimpleCtl *sc, int mode)
    int err;
    double tmp;
 
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
 
    if (sc->trj.state != BTTRAJ_STOPPED)
       sc->trj.state = BTTRAJ_STOPPED;
@@ -127,7 +127,7 @@ int SCsetmode(SimpleCtl *sc, int mode)
    tmp = PIDcalc(&(sc->pid));
    sc->mode = mode;
 
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
    return 0;
 }
 
@@ -135,11 +135,11 @@ int SCsettorque(SimpleCtl *sc,double torque)
 {
    int err;
 
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
 
    sc->requested_torque = torque; //use a buffer since we are not necessarily running from the same thread as evaluatecontroller
 
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
 
    if (sc->mode != SCMODE_TORQUE) {
       return -1;
@@ -156,14 +156,14 @@ int SCsetpid(SimpleCtl *sc,double kp,double kd,double ki, double saturation)
    if (sc->trj.state == BTTRAJ_RUN || sc->mode == SCMODE_POS)
       return -1;
 
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
 
    sc->pid.Kp = kp;
    sc->pid.Kd = kd;
    sc->pid.Ki = ki;
    sc->pid.saturation = saturation;
 
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
 
    return 0;
 }
@@ -176,11 +176,11 @@ int SCsetcmd(SimpleCtl *sc,double cmd)
    if (sc->trj.state != BTTRAJ_STOPPED)
       return -1;
 
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
 
    sc->pid.yref = cmd;
 
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
    return 0;
 }
 
@@ -191,12 +191,12 @@ int SCsettrjprof(SimpleCtl *sc,double vel,double acc)
    if (sc->trj.state == BTTRAJ_RUN)
       return -1;
 
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
 
    sc->trj.vel = fabs(vel);
    sc->trj.acc = fabs(acc);
 
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
    return 0;
 
 }
@@ -209,12 +209,12 @@ int SCstarttrj(SimpleCtl *sc,double end)
    if (sc->trj.state != BTTRAJ_STOPPED)
       return -1;
 
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
 
    here = sc->pid.yref;
    init_trajectory(&(sc->trj),here,end);
 
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
    return 0;
 }
 

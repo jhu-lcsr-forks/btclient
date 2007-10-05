@@ -198,6 +198,7 @@ wam_struct* OpenWAM(char *fn, int bus)
    /* START of Joint Control plugin initialization */
    for (cnt = 0; cnt < wam->dof; cnt ++){
       init_btPID(&(wam->d_jpos_ctl[cnt]));
+      setgains_btPID(&(wam->d_jpos_ctl[cnt]), getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt));
    }
    wam->d_jpos_array.pid = wam->d_jpos_ctl;
    wam->d_jpos_array.elements = wam->dof;
@@ -407,16 +408,16 @@ wam_struct* OpenWAM(char *fn, int bus)
 
    wam->Gcomp = 0;
    set_gravity_bot(&wam->robot, 0.0);
-
+#if 0
    for(cnt = 0; cnt < wam->dof; cnt++)
    {
       SCinit(&(wam->sc[cnt]));
       SCsetpid(&(wam->sc[cnt]),getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt),getval_vn(wam->saturation,cnt));
       SCsettrjprof(&(wam->sc[cnt]),getval_vn(wam->vel,cnt),getval_vn(wam->acc,cnt));
 
-      setgains_btPID(&(wam->d_jpos_ctl[cnt]), getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt));
+      //setgains_btPID(&(wam->d_jpos_ctl[cnt]), getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt));
    }
-
+#endif
    test_and_log(
       btrt_mutex_create(&(wam->loop_mutex)),
       "Could not initialize mutex for WAM control loop.");
@@ -1052,8 +1053,8 @@ void DefineWAMpos(wam_struct *wam, vect_n *wv)
       //syslog(LOG_ERR,"ctsperrev = %d, motor_angle=%lf", wam->act[cnt].motor.counts_per_rev, motor_angle.q[wam->motor_position[cnt]]);
       //syslog(LOG_ERR,"tmp = %ld, result=%lf", tmp, result);
       setProperty(wam->act->bus,wam->act[cnt].puck.ID,AP,FALSE,tmp);
-      SCevaluate(&(wam->sc[wam->motor_position[cnt]]),getval_vn(wv,cnt),0);
-      SCsetmode(&(wam->sc[wam->motor_position[cnt]]),wam->sc[wam->motor_position[cnt]].mode);
+      //SCevaluate(&(wam->sc[wam->motor_position[cnt]]),getval_vn(wv,cnt),0);
+      //SCsetmode(&(wam->sc[wam->motor_position[cnt]]),wam->sc[wam->motor_position[cnt]].mode);
       usleep(1000);
    }
 

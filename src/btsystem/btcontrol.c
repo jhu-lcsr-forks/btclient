@@ -45,7 +45,7 @@
  
 The function sets the main parameters of a PID regulator. You
 will only have to use this function a single time when you create the variable. Before
-you start using PIDcalc, remember to set y and yref.
+you start using eval_btPID, remember to sety_btPID() and setyref_btPID().
  
 \internal chk'd TH 051103
 */
@@ -67,7 +67,7 @@ void init_btPID(btPID *pid)
    pid->state = 0;
    pid->external_error_calc = 0;
 
-   btmutex_init(&pid->mutex);
+   btrt_mutex_init(&pid->mutex);
 
 }
 /** Initialize a btPID object for use with an external error.
@@ -86,13 +86,13 @@ void init_err_btPID(btPID *pid)
   */
 void reset_btPID(btPID *pid)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    pid->se = 0;
    pid->firsttick = 1;
    pid->yref = pid->y;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 
 /** Start the PID regulator
@@ -105,14 +105,14 @@ void reset_btPID(btPID *pid)
 */
 void start_btPID(btPID *pid)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    pid->se = 0;
    pid->firsttick = 1;
    pid->yref = pid->y;
    pid->state = 1;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 /** Stop the PID regulator
  
@@ -122,11 +122,11 @@ void start_btPID(btPID *pid)
 */
 void stop_btPID(btPID *pid)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    pid->state = 0;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 /** Increments the state by dt and returns the output of the regulator.
  
@@ -140,7 +140,7 @@ and then calculates the error between y and yref.
 */
 btreal step_btPID(btPID *pid)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    if (pid->state) {
       if (!pid->external_error_calc) {
@@ -167,7 +167,7 @@ btreal step_btPID(btPID *pid)
       pid->lastresult = 0.0;
    }
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
    return(pid->lastresult); //bz
 }
 /** Set measured value 'y'.
@@ -177,11 +177,11 @@ See #btPID object of more info.
 */
 void sety_btPID(btPID *pid, btreal y)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    pid->y = y;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 /** Set reference value 'yref'.
  
@@ -190,11 +190,11 @@ See #btPID object of more info.
 */
 void setyref_btPID(btPID *pid, btreal yref)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    pid->yref = yref;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 /** Set time step value 'dt'.
  
@@ -203,11 +203,11 @@ See #btPID object of more info.
 */
 void setdt_btPID(btPID *pid, btreal dt)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    pid->dt = dt;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 /** Get the last calculated effort value.
  
@@ -217,11 +217,11 @@ See #btPID object of more info.
 btreal lastresult_btPID(btPID *pid)
 {
    btreal ret;
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    ret = pid->lastresult;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 
    return ret;
 }
@@ -232,13 +232,13 @@ See #btPID object of more info.
 */
 btreal eval_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    pid->y = y;
    pid->yref = yref;
    pid->dt = dt;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 
    return step_btPID(pid);
 }
@@ -248,12 +248,12 @@ See #btPID object of more info.
 */
 btreal eval_err_btPID(btPID *pid, btreal error, btreal dt)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    pid->e = error;
    pid->dt = dt;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 
    return step_btPID(pid);
 }
@@ -264,13 +264,13 @@ See #btPID object of more info.
 */
 void setinputs_btPID(btPID *pid, btreal y, btreal yref, btreal dt)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    pid->y = y;
    pid->yref = yref;
    pid->dt = dt;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 /** Set the gains.
  
@@ -281,7 +281,7 @@ See #btPID object of more info.
 */
 void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
 #ifdef BT_DUMMY_PROOF
 
@@ -299,7 +299,7 @@ void setgains_btPID(btPID *pid, btreal Kp, btreal Kd, btreal Ki)
    }
 #endif
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 /** Set saturation of the regulator.
  
@@ -309,48 +309,48 @@ If set anti-windup will kick in above this value. See #btPID object of more info
 */
 void setsaturation_btPID(btPID *pid, btreal saturation)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    pid->saturation = saturation;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 /** Get the present gain values.
 \internal chk'd TH 051103
 */
 void getgains_btPID(btPID *pid, btreal *Kp, btreal *Kd, btreal *Ki)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    *Kp = pid->Kp;
    *Kd = pid->Kd;
    *Ki = pid->Ki;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 /** Get the present input values
 \internal chk'd TH 051103
 */
 void getinputs_btPID(btPID *pid, btreal *y, btreal *yref, btreal *dt)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    *y = pid->y;
    *yref = pid->yref;
    *dt = pid->dt;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 /** Get the present saturation values
 \internal chk'd TH 051103
 */
 void getsaturation_btPID(btPID *pid, btreal *saturation)
 {
-   btmutex_lock(&(pid->mutex));
+   btrt_mutex_lock(&(pid->mutex));
 
    *saturation = pid->saturation;
 
-   btmutex_unlock(&(pid->mutex));
+   btrt_mutex_unlock(&(pid->mutex));
 }
 /************************* btPID interface functions ***************************/
 /* Repackages the above PID routines for vectors
@@ -936,6 +936,7 @@ via_trj_array* read_file_vta(char* filename,int extrapoints)
    int cnt;
    if (read_csv_file_vr(filename,&vr) != 0)
       return NULL;
+   //vr = (vectray *)realloc(vr, maxrows_vr(vr)+extrapoints);
    vr = resize_vr(&vr,maxrows_vr(vr)+extrapoints);
 
    vt = malloc_vta(numelements_vr(vr)-1);
@@ -1334,9 +1335,10 @@ vect_n* bttrajectory_interface_reset_vt(struct bttrajectory_interface_struct *bt
    if (numrows_vr(vt->vr) <= 0)
       return NULL;
 
+   /* Get rid of the old pavn */
    destroy_pavn(&vt->pavn);
-   vt->pavn = vr2pararray(vt->vr,vt->acc);
-   set_vn(btt->qref,reset_pavn(vt->pavn));
+   vt->pavn = vr2pararray(vt->vr, vt->acc);
+   set_vn(btt->qref, reset_pavn(vt->pavn));
    /*
    for (cnt = 0;cnt<vt->elements;cnt++)
 {

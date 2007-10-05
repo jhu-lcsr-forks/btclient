@@ -280,16 +280,17 @@ btreal eval_pa(pararray* pa,btreal dt)
 }
 
 /************************ pararray_vn **************************************/
-pararray_vn* new_pavn(int max,int elements)
+pararray_vn* new_pavn(int max, int elements)
 {
-   void *mem;
-   int cnt;
-   pararray_vn* pavn;
-   mem = btmalloc(sizeof(pararray_vn) + sizeof(pararray*) * elements);
-   pavn = (pararray_vn*)mem;
-   pavn->pa = (pararray**)(mem + sizeof(pararray_vn));
+   void           *vmem;
+   int            cnt;
+   pararray_vn    *pavn;
+   
+   vmem = btmalloc(sizeof(pararray_vn) + sizeof(pararray*) * elements);
+   pavn = (pararray_vn*)vmem;
+   pavn->pa = (pararray**)(vmem + sizeof(pararray_vn));
    pavn->elements = elements;
-   for (cnt = 0; cnt < elements; cnt ++)
+   for (cnt = 0; cnt < elements; cnt++)
       pavn->pa[cnt] = new_pa(max);
    pavn->result = new_vn(elements);
    return pavn;
@@ -303,8 +304,9 @@ void destroy_pavn(pararray_vn** pavn)
       destroy_vn(&(*pavn)->result);
       for (cnt = 0; cnt < (*pavn)->elements; cnt ++)
          destroy_pa(&(*pavn)->pa[cnt]);
+      
+      btfree((void**)pavn);
    }
-   btfree((void**)pavn);
 }
 
 void clear_pavn(pararray_vn* pavn)
@@ -370,20 +372,20 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
    btreal acc,min_acc;
    btreal dt,dx,t_last;
 
-   vect_n* p0,*pf; //store first and last points of vr
+   vect_n *p0, *pf; //store first and last points of vr
 
-   p0 = new_vn(numelements_vr(vr));
+   p0 = new_vn(numelements_vr(vr)); // numelements_vr() returns vr->n (columns)
    pf = new_vn(numelements_vr(vr));
 
-   set_vn(p0,idx_vr(vr,0));
-   set_vn(pf,idx_vr(vr,numrows_vr(vr)-1));
+   set_vn(p0, idx_vr(vr, 0));
+   set_vn(pf, idx_vr(vr, numrows_vr(vr)-1));
 
    //new pararray of size (Viapoints - 1)*2 + 1
-   pavn = new_pavn(2*numrows_vr(vr)-1+5,numelements_vr(vr)-1);
-
+   pavn = new_pavn(2*numrows_vr(vr) -1 +5, numelements_vr(vr)-1);
 
    tmax = 0;
-   for (cnt = 0;cnt < pavn->elements;cnt ++) {
+   // For each column of pavn
+   for (cnt = 0; cnt < pavn->elements; cnt ++) {
       acc = fabs(acceleration);
       /* First acceleration segment */
       t1 = getval_vn(idx_vr(vr,0),0);
@@ -394,21 +396,28 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
       dt = t2-t1;
       dx = x2-x1;
       v1 = 0.0;
+      if(dt == 0.0)
+         syslog(LOG_ERR, "vr2pararray(): about to divide by dt = 0.0");
       v2 = dx/dt;
 
-      min_acc = 8.0*fabs(dx)/(3.0*dt*dt);
+      min_acc = 8.0 * fabs(dx) / (3.0 * dt*dt);
+      if(isnan(min_acc))
+         syslog(LOG_ERR, "vr2pararray(): min_acc is NaN (bad)");
+      
       //Make sure initial acceleration is fast enough
       if (acc < min_acc) {
          acc = min_acc;
-         //syslog(LOG_ERR,"vr2pararray: Boosting initial acc to %f",acc);
+         syslog(LOG_ERR,"vr2pararray: Boosting initial acc (%f) to %f", acc, min_acc);
       }
       tacc = dt - sqrt(dt*dt - 2*fabs(dx)/acc);
 
       saf = x1 + 0.5*acc*tacc*tacc*Sgn(dx); //Final x
       v2 = (x2-saf)/(dt-tacc); //final velocity
+      if(isnan(v2))
+         syslog(LOG_ERR, "vr2pararray: v2 is NaN (bad)");
       sa0 = x1;
 
-      tf_prev = s0sfspftf_pb(&pa,0.0,sa0,saf,v2,tacc);  //acc seg starting at time 0.0
+      tf_prev = s0sfspftf_pb(&pa, 0.0, sa0, saf, v2, tacc);  //acc seg starting at time 0.0
       add_bseg_pa(pavn->pa[cnt],&pa);
 
       setval_vn(idx_vr(vr,0),cnt+1,x2-dt*v2);

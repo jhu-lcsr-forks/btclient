@@ -53,7 +53,7 @@ void start_traptrj(bttraptrj *traj, btreal dist)
    //assumes that velocity and acceleration have been set to reasonable values
    double ax; //acceleration x
 
-   traj->cmd = 0;
+   traj->cmd = 0.0;
 
    traj->t1 = (traj->vel / traj->acc); //Calculate the "ramp-up" time
 
@@ -68,8 +68,11 @@ void start_traptrj(bttraptrj *traj, btreal dist)
    traj->t2 = (dist-(2*ax)) / traj->vel + traj->t1; //Find the time to start the "ramp-down"
    traj->t = 0;
    traj->state = BTTRAJ_RUN;
-   if (dist == 0.0)
+   if (dist <= 0.0)
       traj->state = BTTRAJ_STOPPED;
+   
+   //syslog(LOG_ERR, "start_traptrj: dist=%f, vel=%f, acc=%f, ax=%f, x1=%f, x2=%f, t1=%f, t2=%f, t=%f",
+   //dist, traj->vel, traj->acc, ax, traj->x1, traj->x2, traj->t1, traj->t2, traj->t);
 }
 
 /** Calculate next position on the trajectory
@@ -91,28 +94,38 @@ btreal evaluate_traptrj(bttraptrj *traj, btreal dt)
 
    if (traj->state == BTTRAJ_RUN) {
       traj->t += dt;
-      if (traj->cmd < traj->x1) //If we are in "accel" stage
+      if (traj->cmd < traj->x1){ //If we are in "accel" stage
          traj->cmd = 0.5 * traj->acc * traj->t * traj->t;  //x = 1/2 a t^2
-      else if (traj->cmd < traj->x2) //If we are in "cruise" stage
+      }else if (traj->cmd < traj->x2){ //If we are in "cruise" stage
          traj->cmd = traj->x1 + traj->vel * (traj->t - traj->t1); //x = x + v t
-      else {
+      }else {
          //We are in "decel" stage
          /* time to hit zero = sqrt( (target position - current position)*2/a)
-                              new position = 1/2 acc * (time to hit zero - dt)^2 */
+          * new position = 1/2 acc * (time to hit zero - dt)^2 
+          */
+         if(traj->end - traj->cmd < 0.0){
+            syslog(LOG_ERR, "evaluate_traptrj: About to take sqrt() of %8.4f-%8.4f (bad)", traj->end, traj->cmd);
+            syslog(LOG_ERR, "evaluate_traptrj: traj->t=%f, dt=%f, traj->x1=%f, traj->x2=%f", traj->t, dt, traj->x1, traj->x2);
+         }
+         if(traj->acc == 0.0)
+            syslog(LOG_ERR, "evaluate_traptrj: About to divide by zero traj->acc (bad)");
          remaining_time = sqrt((traj->end - traj->cmd)*2/traj->acc);
          if (dt > remaining_time) {
+            /* We are within the final step of the trajectory */
             traj->cmd = traj->end;
             traj->state = BTTRAJ_STOPPED;
+         }else{
+            /* NOTE: This newtime stuff is redundant, why is it here? */
+            newtime = (remaining_time-dt);
+            if(newtime <= 0) {
+               syslog(LOG_ERR, "evaluate_traptrj: How did we get here? new=%f, rem=%f, dt=%f", newtime, remaining_time, dt);
+               traj->cmd = traj->end;
+               traj->state = BTTRAJ_STOPPED;
+            }else{
+               traj->cmd =  traj->end - 0.5 * traj->acc * newtime * newtime;
+            }
          }
-
-         newtime = (remaining_time-dt);
-         if(newtime <= 0) {
-            traj->cmd = traj->end;
-            traj->state = BTTRAJ_STOPPED;
-         }
-         traj->cmd =  traj->end - 0.5 * traj->acc * newtime * newtime;
       }
-
    }
    result = traj->cmd;
 
@@ -178,7 +191,7 @@ void map_btstatecontrol(btstatecontrol *sc, vect_n* q, vect_n* dq, vect_n* ddq,
 */
 void maptrajectory_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* getstate)
 {
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
 
    if (sc->btt.state == BTTRAJ_STOPPED) {
       sc->btt.reset = reset;
@@ -189,7 +202,10 @@ void maptrajectory_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void*
       set_vn(sc->tref,sc->q); //Initialize trajectory output to a sane value
       sc->btt.state = BTTRAJ_STOPPED;
    }
-   btmutex_unlock(&(sc->mutex));
+   else{
+      syslog(LOG_ERR, "maptrajectory_bts() failed: btt.state was not BTTRAJ_STOPPED");
+   }
+   btrt_mutex_unlock(&(sc->mutex));
 }
 
 /** Register virtual functions and data for a position control object with btstatecontrol.
@@ -197,7 +213,7 @@ void maptrajectory_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void*
 */
 void mapposition_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* pause)
 {
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
    if (sc->mode == SCMODE_IDLE) {
       sc->btp.reset = reset;
       sc->btp.eval = eval;
@@ -206,7 +222,7 @@ void mapposition_bts(btstatecontrol *sc,void* dat,void* reset,void* eval,void* p
       mapdata_btpos(&(sc->btp),sc->q,sc->dq,sc->ddq,sc->qref,sc->t,sc->dt);
       sc->btt.state = BTTRAJ_STOPPED;
    }
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
 }
 
 /** Initialize the state controller structure
@@ -237,7 +253,7 @@ int init_bts(btstatecontrol *sc)
    sc->dt_scale = 1.0;
    init_btramp(&(sc->ramp),&(sc->dt_scale),0.0,1.0,2);
    set_btramp(&(sc->ramp),BTRAMP_MAX);
-   btmutex_init(&(sc->mutex));
+   btrt_mutex_init(&(sc->mutex));
 }
 
 /* Internal function: evaluation portion of case sc.mode */
@@ -262,7 +278,10 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
             sc->btt.state = BTTRAJ_DONE;
             sc->mode = SCMODE_POS;
          } else
-            sc->btt.state = BTTRAJ_RUN;
+            // We are INPREP and STOPPED, therefore start_traptrj() found that
+            // dist <= 0 (which is bad)
+            sc->btt.state = BTTRAJ_DONE;
+            //sc->btt.state = BTTRAJ_RUN;
       }
 
       set_vn(sc->qref, getval_pwl(&(sc->pth),evaluate_traptrj(&(sc->trj),*(sc->dt))));
@@ -309,7 +328,7 @@ vect_n* eval_bts(btstatecontrol *sc)
       exit(1);
 #endif
 
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
    sc->error = 0;
    sc->last_dt = *(sc->dt);
    fill_vn(sc->t,0.0);
@@ -337,7 +356,7 @@ vect_n* eval_bts(btstatecontrol *sc)
       sc->error = 1;
       break;
    }
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
    return sc->t;
 }
 
@@ -395,7 +414,7 @@ int setmode_bts(btstatecontrol *sc, int mode)
       exit(1);
 #endif
 
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
 
    switch (mode) {
    case SCMODE_POS:
@@ -417,7 +436,7 @@ int setmode_bts(btstatecontrol *sc, int mode)
       sc->mode = SCMODE_IDLE;
       break;
    }
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
    return sc->mode;
 }
 
@@ -455,24 +474,32 @@ int start_trj_bts(btstatecontrol *sc)
 
 
    dest = (*(sc->btt.reset))(&(sc->btt));
-
+   
+   
    if (dest == NULL) {
       ret = -4;
    } else if(sc->btt.state == BTTRAJ_STOPPED || sc->btt.state == BTTRAJ_DONE) {
-      btmutex_lock(&(sc->mutex));
+      //vectray *vr = ((via_trj_array*)(sc->btt.dat))->vr;
+      
+      btrt_mutex_lock(&(sc->mutex));
       sc->mode = SCMODE_TRJ;
-      clear_pwl(&(sc->pth));
+      clear_pwl(&(sc->pth)); // Remove all the points on the path
 
-      add_arclen_point_pwl(&(sc->pth),sc->qref);
-      add_arclen_point_pwl(&(sc->pth),dest);
-
+      add_arclen_point_pwl(&(sc->pth),sc->qref); // This is the present position vector
+      add_arclen_point_pwl(&(sc->pth),dest); // This is the starting position vector
+      //syslog(LOG_ERR, "start_trj_bts: qref=%s", sprint_vn(vect_buf1, sc->qref));
+      //syslog(LOG_ERR, "start_trj_bts: dest=%s", sprint_vn(vect_buf1, dest));
+      
       setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
+      
+      // This is expecting a pointer to the trj and the total trj time (or total arclen)
       start_traptrj(&(sc->trj), arclength_pwl(&(sc->pth)));
+      //start_traptrj(&(sc->trj), vr->data[(vr->num_rows-1)*vr->n] - vr->data[0]);
       set_btramp(&(sc->ramp),BTRAMP_MAX);
       sc->btt.state = BTTRAJ_INPREP;
       sc->prep_only = 0;
       ret = 0;
-      btmutex_unlock(&(sc->mutex));
+      btrt_mutex_unlock(&(sc->mutex));
    } else {
       ret = -1;
    }
@@ -501,7 +528,7 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
 
    if(sc->mode != SCMODE_POS)
       return -2;
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
 
    if(sc->btt.state == BTTRAJ_STOPPED || sc->btt.state == BTTRAJ_DONE) {
       clear_pwl(&(sc->pth));
@@ -523,7 +550,7 @@ int moveto_bts(btstatecontrol *sc,vect_n* dest)
    } else {
       ret = -1;
    }
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
 
    return ret;
 }
@@ -540,10 +567,10 @@ void moveparm_bts(btstatecontrol *sc,btreal vel, btreal acc)
       exit(1);
 #endif
 
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
    sc->vel = vel;
    sc->acc = acc;
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
 }
 
 /** Return the state of the present trajectory generator.
@@ -573,11 +600,11 @@ int stop_trj_bts(btstatecontrol *sc)
       exit(1);
 #endif
 
-   btmutex_lock(&(sc->mutex));
+   btrt_mutex_lock(&(sc->mutex));
 
    sc->btt.state = BTTRAJ_STOPPED;
 
-   btmutex_unlock(&(sc->mutex));
+   btrt_mutex_unlock(&(sc->mutex));
    return 0;
 }
 
@@ -608,10 +635,10 @@ int pause_trj_bts(btstatecontrol *sc,btreal period)
       set_btramp(&(sc->ramp),BTRAMP_DOWN);
 
 
-      btmutex_lock(&(sc->mutex));
+      btrt_mutex_lock(&(sc->mutex));
 
       sc->btt.state = BTTRAJ_PAUSING;
-      btmutex_unlock(&(sc->mutex));
+      btrt_mutex_unlock(&(sc->mutex));
    }
 }
 
@@ -640,10 +667,10 @@ int unpause_trj_bts(btstatecontrol *sc,btreal period)
       setrate_btramp(&(sc->ramp),period);
       set_btramp(&(sc->ramp),BTRAMP_UP);
 
-      btmutex_lock(&(sc->mutex));
+      btrt_mutex_lock(&(sc->mutex));
 
       sc->btt.state = BTTRAJ_UNPAUSING;
-      btmutex_unlock(&(sc->mutex));
+      btrt_mutex_unlock(&(sc->mutex));
    }
 }
 
@@ -657,7 +684,7 @@ This should be called once before using this object.
 */
 void init_btramp(btramp *r,btreal *var,btreal min,btreal max,btreal rate)
 {
-   btmutex_init(&(r->mutex));
+   btrt_mutex_init(&(r->mutex));
    r->scaler = var;
    r->min = min;
    r->max = max;
@@ -671,10 +698,10 @@ See #btramp_state for valid values of state.
 */
 void set_btramp(btramp *r,enum btramp_state state)
 {
-   btmutex_lock(&(r->mutex));
+   btrt_mutex_lock(&(r->mutex));
 
    r->state = state;
-   btmutex_unlock(&(r->mutex));
+   btrt_mutex_unlock(&(r->mutex));
 }
 
 /** Return the present value of a btramp scaler.
@@ -703,7 +730,7 @@ will degenerate into BTRAMP_MAX and BTRAMP_MIN respectively.
 */
 btreal eval_btramp(btramp *r,btreal dt)
 {
-   btmutex_lock(&(r->mutex));
+   btrt_mutex_lock(&(r->mutex));
 
    if (r->state == BTRAMP_MAX) {
       *(r->scaler) = r->max;
@@ -723,7 +750,7 @@ btreal eval_btramp(btramp *r,btreal dt)
       }
    }
    //default case is to do nothing
-   btmutex_unlock(&(r->mutex));
+   btrt_mutex_unlock(&(r->mutex));
    return *(r->scaler);
 }
 
@@ -733,9 +760,9 @@ btreal eval_btramp(btramp *r,btreal dt)
 */
 void setrate_btramp(btramp *r,btreal rate)
 {
-   btmutex_lock(&(r->mutex));
+   btrt_mutex_lock(&(r->mutex));
    r->rate = rate;
-   btmutex_unlock(&(r->mutex));
+   btrt_mutex_unlock(&(r->mutex));
 }
 /**************************** btramp functions **********************************/
 
