@@ -40,17 +40,17 @@ void syslog_backtrace(int size)
 /*==============================*
  * Functions                    *
  *==============================*/
-#if 0
+
 /** Initialize a mutex.
  
 If pthread_mutex_init() fails, an error message is printed to syslog.
  
 \return Result of pthread_mutex_init().
-\exception Undefined if btm does not point to memory block meant for a btrt_mutex.
+\exception Undefined if btm does not point to memory block meant for a btmutex.
 \internal chk'd TH 051101
 \todo Error checking mutexes enabled by compiler switch.
 */
-int btmutex_init(btrt_mutex* btm)
+int btmutex_init(btmutex* btm)
 {
    int ret;
    pthread_mutexattr_t mattr;
@@ -65,15 +65,15 @@ int btmutex_init(btrt_mutex* btm)
 }
 
 
-/** Lock a btrt_mutex.
+/** Lock a btmutex.
 See pthread_mutex_lock() in pthread.h for more info.
 This function calls pthread_mutex_lock() and prints an error to syslog if it 
 fails.
 \return Result of pthread_mutex_lock().
-\exception Undefined if btm does not point to an initialized btrt_mutex object.
+\exception Undefined if btm does not point to an initialized btmutex object.
 \internal chk'd TH 051101
 */
-BTINLINE int btmutex_lock(btrt_mutex* btm)
+BTINLINE int btmutex_lock(btmutex* btm)
 {
    int ret;
    ret = pthread_mutex_lock(btm);
@@ -85,15 +85,15 @@ BTINLINE int btmutex_lock(btrt_mutex* btm)
 }
 
 
-/** Unlock a btrt_mutex.
+/** Unlock a btmutex.
 See pthread_mutex_unlock() in pthread.h for more info.
 This function calls pthread_mutex_unlock() and prints an error to syslog if it 
 fails.
 \return Result of pthread_mutex_unlock().
-\exception Undefined if btm does not point to an initialized btrt_mutex object.
+\exception Undefined if btm does not point to an initialized btmutex object.
 \internal chk'd TH 051101
 */
-BTINLINE int btmutex_unlock(btrt_mutex *btm)
+BTINLINE int btmutex_unlock(btmutex *btm)
 {
    int ret;
    ret = pthread_mutex_unlock(btm);
@@ -103,7 +103,7 @@ BTINLINE int btmutex_unlock(btrt_mutex *btm)
    }
    return ret;
 }
-#endif
+
 
 /** Check pointer for a NULL value.
 \retval 0 Pointer is NOT valid.
@@ -281,7 +281,7 @@ pthread_t* btthread_create(btthread *thd,int priority, void *function,void *args
    thd->data = args;
    thd->priority = priority;
    thd->periodic = 0;
-   btrt_mutex_init(&(thd->mutex));
+   btmutex_init(&(thd->mutex));
 
    pthread_create(&(thd->thd_id), &(thd->attr), function, thd);
 
@@ -299,9 +299,9 @@ pthread_t* btthread_create(btthread *thd,int priority, void *function,void *args
 BTINLINE int btthread_done(btthread *thd)
 {
    int done;
-   btrt_mutex_lock(&(thd->mutex));
+   btmutex_lock(&(thd->mutex));
    done = thd->done;
-   btrt_mutex_unlock(&(thd->mutex));
+   btmutex_unlock(&(thd->mutex));
    return done;
 }
 
@@ -337,9 +337,9 @@ void mythread(void* args)
 
 BTINLINE void btthread_stop(btthread *thd)
 {
-   btrt_mutex_lock(&(thd->mutex));
+   btmutex_lock(&(thd->mutex));
    thd->done = 1;
-   btrt_mutex_unlock(&(thd->mutex));
+   btmutex_unlock(&(thd->mutex));
    pthread_join(thd->thd_id,NULL);
 }
 
@@ -361,6 +361,7 @@ BTINLINE void btthread_exit(btthread *thd)
 BTINLINE void btrt_thread_exit(btrt_thread_struct *thd)
 {
 #ifdef XEMOMAI
+   btrt_set_mode_hard();
    rt_task_delete(&(thd->task));
 #else
 
@@ -449,6 +450,7 @@ void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, voi
 
 
    //create task
+   btrt_set_mode_hard();
    ret = rt_task_create(&(thd->task), name, 0, prio, T_JOINABLE);
    if(ret)
    {
@@ -465,7 +467,7 @@ void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, voi
 #else
 void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, void *function, void *args)
 {
-   btthread_create((btrt_thread_struct*)thd, prio, function, args);
+   btthread_create((btthread*)thd, prio, function, args);
 }
 
 #endif
@@ -505,6 +507,7 @@ RTIME btrt_get_time(void)
    RTIME time;
 
 #ifdef XENOMAI
+   btrt_set_mode_hard();
    time = rt_timer_read(); 
 #else
    time = rt_get_cpu_time_ns();
@@ -516,6 +519,7 @@ RTIME btrt_get_time(void)
 void btrt_task_wait_period(void)
 {
 #ifdef XENOMAI
+   btrt_set_mode_hard();
    rt_task_wait_period(NULL);
 #else
 
@@ -526,6 +530,7 @@ void btrt_task_wait_period(void)
 void btrt_thread_join(btrt_thread_struct *thd)
 {
 #ifdef XENOMAI
+   btrt_set_mode_hard();
    rt_task_join(&(thd->task));
 #else
 
@@ -541,7 +546,7 @@ int btrt_mutex_create(btrt_mutex *mutex)//used when RTAI mattr is NULL
    int ret;
 
 #ifdef XENOMAI
-
+   btrt_set_mode_hard();
    ret = test_and_log(
             rt_mutex_create(mutex,NULL),
             "Could not initialize mutex.");
@@ -560,7 +565,7 @@ int btrt_mutex_init(btrt_mutex* mutex)//make sure a global variable
 {
    int ret;
 #ifdef XENOMAI
-
+   btrt_set_mode_hard();
    ret = test_and_log(
             rt_mutex_create(mutex,NULL),
             "Could not initialize mutex.");
@@ -587,6 +592,7 @@ BTINLINE int btrt_mutex_lock(btrt_mutex *mutex)
    int ret;
 
 #ifdef XENOMAI
+   btrt_set_mode_hard();
    ret = rt_mutex_acquire(mutex, TM_INFINITE);
    if (ret != 0)
    {
@@ -610,6 +616,7 @@ BTINLINE int btrt_mutex_unlock(btrt_mutex *mutex)
    int ret;
 
 #ifdef XENOMAI
+   btrt_set_mode_hard();
    ret = rt_mutex_release(mutex);
    if (ret != 0)
    {

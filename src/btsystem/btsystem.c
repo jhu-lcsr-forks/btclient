@@ -273,16 +273,16 @@ int InitializeSystem(void)
                 // 2.4A = 1/4 breaking strength = 3441
                switch(id){
                  case 1: case 2: case 3:
-                        setProperty(bus_number, id, MT, FALSE, 2300);//4731);
+                        setProperty(bus_number, id, MT, FALSE, 4860);//4731);
                  break;
                  case 4:
-                        setProperty(bus_number, id, MT, FALSE, 2050);//4731);
+                        setProperty(bus_number, id, MT, FALSE, 4320);//4731);
                  break;
                  case 5: case 6: 
-                        setProperty(bus_number, id, MT, FALSE, 1500);//4731);
+                        setProperty(bus_number, id, MT, FALSE, 3900);//4731);
                  break;
                  default:
-                        setProperty(bus_number, id, MT, FALSE, 3441);//4731);
+                        setProperty(bus_number, id, MT, FALSE, 1370);//4731);
                  break;
                }
                ++num_actuators; // Update the number of actuators

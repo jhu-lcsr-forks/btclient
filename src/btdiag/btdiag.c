@@ -103,7 +103,7 @@ int constraint;
 int haptics;
 int pauseCnt = 0;
 int screen = SCREEN_MAIN;
-btrt_mutex disp_mutex;
+btmutex disp_mutex;
 int entryLine;
 int useGimbals      = FALSE;
 int done            = FALSE;
@@ -136,6 +136,7 @@ vect_3 *xyz, *RxRyRz;
 
 int startDone = FALSE;
 btrt_thread_struct  StartupThread;
+btrt_thread_struct  event_thd;
 
 #if 0
 vectray *vr;
@@ -272,156 +273,11 @@ void Startup(void *thd){
    }
    btrt_thread_exit((btrt_thread_struct*)thd);
 }
-    
-/** Entry point for the application.
-    Initializes the system and executes the main event loop.
-*/
-int main(int argc, char **argv)
-{
-   char     chr,cnt;
-   int      err;
-   int      i, nout;
-   struct   sched_param mysched;
-   char     robotName[128];
 
-
-   mlockall(MCL_CURRENT | MCL_FUTURE);
+void MainEventThread(void *thd){
+   char     chr;
+   int      i, cnt;
    
-   // Test to see when thread is changing over to secondary mode
-   signal(SIGXCPU, warn_upon_switch);
-   
-#ifdef RTAI
-   rt_allow_nonroot_hrt();
-#endif
-
-/* XENOMAI nonroot_hrt is trickier:
-   XENO_OPT_SECURITY_ACCESS=n
-   /usr/src/linux/include/linux/resource.h
-      #define MLOCK_LIMIT (4096 * PAGE_SIZE)
-*/
-
-   /* Figure out what the keys do and print it on screen.
-    * Parses this source file for lines containing "case '", because
-    * that is how we manage keypresses in ProcessInput().
-    */
-   system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
-   read_keys("keys.txt");
-
-   /* Initialize the ncurses screen library */
-   init_ncurses();
-   atexit((void*)endwin);
-
-   /* Initialize syslog */
-   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
-   atexit((void*)closelog);
-   syslog(LOG_ERR,"...Starting btdiag program...");
-
-   /* Initialize the display mutex */
-   test_and_log(
-      btrt_mutex_init(&disp_mutex),
-      "Could not initialize mutex for displays.");
-   
-   /* Look through the command line arguments for "-q" */
-   //mvprintw(18,0,"argc=%d",argc);
-   //for(i = 0; i < argc; i++) mvprintw(20+i,0,"%s",argv[i]);
-   for(i = 1; i < argc; i++) {
-      if(!strcmp(argv[i],"-q"))
-         quiet = TRUE; // Flag to skip the startup walkthrough text
-   }
-
-   /* Do we want to bypass the safety circuit + pendant? 
-    * This is for diagnostics only and should not normally be used .
-    */
-   NoSafety = 0;
-   for(i = 1; i < argc; i++) {
-      if(!strcmp(argv[i],"-ns"))
-         NoSafety = 1;
-   }
-   
-   if(!quiet) {
-      /* Lead the user through a proper WAM startup */
-      mvprintw(1,0,"Make sure the all WAM power and signal cables are securely");
-      mvprintw(2,0,"fastened, then turn on the main power to WAM and press <Enter>");
-      while((chr=getch())==ERR)
-         usleep(5000);
-      mvprintw(4,0,"Make sure all E-STOPs are released, then press Shift-Idle");
-      mvprintw(5,0,"on the control pendant. Then press <Enter>");
-      while((chr=getch())==ERR)
-         usleep(5000);
-      mvprintw(7,0,"Place WAM in its home (folded) position, then press <Enter>");
-      while((chr=getch())==ERR)
-         usleep(5000);
-   }
-
-   /* Register the ctrl-c interrupt handler */
-   signal(SIGINT, sigint_handler);
-   
-   /* Read the WAM configuration file */
-   err = ReadSystemFromConfig("../../wam.conf", &busCount);
-   if(err) {
-      syslog(LOG_ERR, "ReadSystemFromConfig returned err = %d", err);
-      exit(1);
-   }
-   
-   /* RT task for setup of CAN Bus */
-   btrt_thread_create(&StartupThread,"StTT", 45, (void*)Startup, NULL);
-   while(!startDone)
-      usleep(10000);
-   
-   for(i = 0; i < busCount; i++){
-      /* Prepare the WAM data */
-      wamData[i].jdest = new_vn(len_vn(wam[i]->Jpos));
-      wamData[i].cdest = new_vn(len_vn(wam[i]->R6pos));
-   
-      /* The WAM can be in either Joint mode or Cartesian mode.
-       * We want a single set of variables (active_) to eliminate the need
-       * for a whole bunch of if() statements.
-       */
-      wamData[i].active_bts = &(wam[i]->Jsc);
-      setmode_bts(wamData[i].active_bts,SCMODE_IDLE);
-      wamData[i].active_pos = wam[i]->Jpos;
-      wamData[i].active_trq = wam[i]->Jtrq;
-      wamData[i].active_dest = wamData[i].jdest;
-      
-      /* Create a new trajectory */
-      wamData[i].vt_j = new_vta(len_vn(wam[i]->Jpos),50);
-      wamData[i].vt_c = new_vta(len_vn(wam[i]->R6pos),50);
-      wamData[i].vta = &wamData[i].vt_j;
-      register_vta(wamData[i].active_bts,*wamData[i].vta);
-      
-      /* Initialize the control period */
-      wamData[i].wam_thd.period = Ts;
-      
-      /* Register the control loop's local callback routine */
-      registerWAMcallback(wam[i], WAMcallback);
-   }
-
-   r_mat = new_m3();
-   xyz = new_v3();
-   RxRyRz = new_v3();
-   
-   /* Initialize the haptic scene */
-   init_haptics();
-   
-   /* Spin off the WAM control thread(s) */
-   btrt_thread_create(&wamData[0].wam_thd, "WAMCTT", 50, (void*)WAMControlThread, (void*)wam[0]);
-   //btthread_create(&wamData[1].wam_thd, 90, (void*)WAMControlThread2, (void*)wam[1]);
-   
-   /* Initialize the active teach filename (to blank) */
-   active_file[0] = 0;
-
-   /* Open serial port */
-   if(err = serialOpen(&p, "/dev/ttyS0")) {
-      syslog(LOG_ERR, "Error opening serial port: %d", err);
-   }
-   serialSetBaud(&p, 9600); // The BarrettHand defaults to 9600 baud
-   
-   /* Spin off the display thread */
-   btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
-   
-   /* Spin off the audio thread */
-   //btthread_create(&audio_thd,0,(void*)AudioThread,NULL);
-
    /* Main event loop, ~10Hz */
    while (!done) {
       /* Check the active trajectory for completion for each bus */
@@ -474,7 +330,162 @@ int main(int argc, char **argv)
       /* Sleep for 0.1s. This roughly defines the event loop frequency */
       usleep(100000);
    }
+   btrt_thread_exit((btrt_thread_struct*)thd);
+}
 
+/** Entry point for the application.
+    Initializes the system and executes the main event loop.
+*/
+int main(int argc, char **argv)
+{
+   char     chr;
+   int      i;
+   int      err;
+   
+   mlockall(MCL_CURRENT | MCL_FUTURE);
+   
+   // Test to see when thread is changing over to secondary mode
+   signal(SIGXCPU, warn_upon_switch);
+   
+#ifdef RTAI
+   rt_allow_nonroot_hrt();
+#endif
+
+/* XENOMAI nonroot_hrt is trickier:
+   XENO_OPT_SECURITY_ACCESS=n
+   /usr/src/linux/include/linux/resource.h
+      #define MLOCK_LIMIT (4096 * PAGE_SIZE)
+*/
+
+   /* Figure out what the keys do and print it on screen.
+    * Parses this source file for lines containing "case '", because
+    * that is how we manage keypresses in ProcessInput().
+    */
+   system("grep \"case '\" btdiag.c | sed 's/[[:space:]]*case \\(.*\\)/\\1/' > keys.txt");
+   read_keys("keys.txt");
+
+   /* Initialize the ncurses screen library */
+   init_ncurses();
+   atexit((void*)endwin);
+
+   /* Initialize syslog */
+   openlog("WAM", LOG_CONS | LOG_NDELAY, LOG_USER);
+   atexit((void*)closelog);
+   syslog(LOG_ERR,"...Starting btdiag program...");
+
+   /* Look through the command line arguments for "-q" */
+   //mvprintw(18,0,"argc=%d",argc);
+   //for(i = 0; i < argc; i++) mvprintw(20+i,0,"%s",argv[i]);
+   for(i = 1; i < argc; i++) {
+      if(!strcmp(argv[i],"-q"))
+         quiet = TRUE; // Flag to skip the startup walkthrough text
+   }
+
+   /* Do we want to bypass the safety circuit + pendant? 
+    * This is for diagnostics only and should not normally be used .
+    */
+   NoSafety = 0;
+   for(i = 1; i < argc; i++) {
+      if(!strcmp(argv[i],"-ns"))
+         NoSafety = 1;
+   }
+   
+   if(!quiet) {
+      /* Lead the user through a proper WAM startup */
+      mvprintw(1,0,"Make sure the all WAM power and signal cables are securely");
+      mvprintw(2,0,"fastened, then turn on the main power to WAM and press <Enter>");
+      while((chr=getch())==ERR)
+         usleep(5000);
+      mvprintw(4,0,"Make sure all E-STOPs are released, then press Shift-Idle");
+      mvprintw(5,0,"on the control pendant. Then press <Enter>");
+      while((chr=getch())==ERR)
+         usleep(5000);
+      mvprintw(7,0,"Place WAM in its home (folded) position, then press <Enter>");
+      while((chr=getch())==ERR)
+         usleep(5000);
+   }
+
+   /* Register the ctrl-c interrupt handler */
+   signal(SIGINT, sigint_handler);
+   
+   /* Read the WAM configuration file */
+   err = ReadSystemFromConfig("../../wam.conf", &busCount);
+   if(err) {
+      syslog(LOG_ERR, "ReadSystemFromConfig returned err = %d", err);
+      exit(1);
+   }
+   
+   /* RT task for setup of CAN Bus */
+   btrt_thread_create(&StartupThread, "StTT", 45, (void*)Startup, NULL);
+   while(!startDone)
+      usleep(10000);
+   
+   for(i = 0; i < busCount; i++){
+      /* Prepare the WAM data */
+      wamData[i].jdest = new_vn(len_vn(wam[i]->Jpos));
+      wamData[i].cdest = new_vn(len_vn(wam[i]->R6pos));
+   
+      /* The WAM can be in either Joint mode or Cartesian mode.
+       * We want a single set of variables (active_) to eliminate the need
+       * for a whole bunch of if() statements.
+       */
+      wamData[i].active_bts = &(wam[i]->Jsc);
+      setmode_bts(wamData[i].active_bts,SCMODE_IDLE);
+      wamData[i].active_pos = wam[i]->Jpos;
+      wamData[i].active_trq = wam[i]->Jtrq;
+      wamData[i].active_dest = wamData[i].jdest;
+      
+      /* Create a new trajectory */
+      wamData[i].vt_j = new_vta(len_vn(wam[i]->Jpos),50);
+      wamData[i].vt_c = new_vta(len_vn(wam[i]->R6pos),50);
+      wamData[i].vta = &wamData[i].vt_j;
+      register_vta(wamData[i].active_bts,*wamData[i].vta);
+      
+      /* Initialize the control period */
+      wamData[i].wam_thd.period = Ts;
+      
+      /* Register the control loop's local callback routine */
+      registerWAMcallback(wam[i], WAMcallback);
+   }
+
+   r_mat = new_m3();
+   xyz = new_v3();
+   RxRyRz = new_v3();
+   
+   /* Initialize the haptic scene */
+   init_haptics();
+   
+   /* Spin off the WAM control thread(s) */
+   btrt_thread_create(&wamData[0].wam_thd, "WAMCTT", 50, (void*)WAMControlThread, (void*)wam[0]);
+   //btthread_create(&wamData[1].wam_thd, 90, (void*)WAMControlThread2, (void*)wam[1]);
+   
+   /* Initialize the active teach filename (to blank) */
+   active_file[0] = 0;
+
+   /* Open serial port */
+   if(err = serialOpen(&p, "/dev/ttyS0")) {
+      syslog(LOG_ERR, "Error opening serial port: %d", err);
+   }
+   serialSetBaud(&p, 9600); // The BarrettHand defaults to 9600 baud
+   
+   /* Initialize the display mutex */
+   test_and_log(
+      btmutex_init(&disp_mutex),
+      "Could not initialize mutex for displays.");
+      
+   /* Spin off the display thread */
+   btthread_create(&disp_thd, 0, (void*)DisplayThread, NULL);
+   
+   /* Spin off the audio thread */
+   //btthread_create(&audio_thd,0,(void*)AudioThread,NULL);
+
+   /* Spin off the main event loop */
+   btrt_thread_create(&event_thd, "EVENT", 20, (void*)MainEventThread, NULL);
+   
+   while(!done){
+      usleep(10000);
+   }
+   
    Cleanup();
    exit(1);
 }
@@ -632,7 +643,7 @@ void DisplayThread()
        * See start_entry() and finish_entry()
        */
       test_and_log(
-         btrt_mutex_lock(&(disp_mutex)),"Display mutex failed");
+         btmutex_lock(&(disp_mutex)),"Display mutex failed");
          
       /* Render the appropriate screen, based on the "screen" variable */
       switch(screen) {
@@ -645,7 +656,7 @@ void DisplayThread()
       }
       
       /* Release the mutex lock */
-      btrt_mutex_unlock(&(disp_mutex));
+      btmutex_unlock(&(disp_mutex));
       
       /* Slow this loop down to about 10Hz */
       usleep(100000);
@@ -660,7 +671,7 @@ void start_entry()
 {
    int err;
    test_and_log(
-      btrt_mutex_lock(&(disp_mutex)),"Display mutex failed");
+      btmutex_lock(&(disp_mutex)),"Display mutex failed");
    move(entryLine, 1);
    echo();
    timeout(-1);
@@ -676,7 +687,7 @@ void finish_entry()
    move(entryLine, 1);
    addstr("                                                                              ");
    refresh();
-   btrt_mutex_unlock( &(disp_mutex) );
+   btmutex_unlock( &(disp_mutex) );
 }
 
 /** Draw the main information screen.
@@ -832,9 +843,9 @@ void RenderHELP_SCREEN()
 /* Clear the screen while honoring the mutex lock */
 void clearScreen(void)
 {
-   btrt_mutex_lock(&(disp_mutex));
+   btmutex_lock(&(disp_mutex));
    clear();
-   btrt_mutex_unlock(&(disp_mutex));
+   btmutex_unlock(&(disp_mutex));
 }
 
 /** Process user input.

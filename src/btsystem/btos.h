@@ -152,24 +152,29 @@ mutex error handling and debugging.
  
  
 */
-//typedef pthread_mutex_t btrt_mutex;
+typedef pthread_mutex_t btmutex;
 
 #ifdef XENOMAI
 typedef RT_MUTEX btrt_mutex;
-#else
+#endif
+
+#ifdef RTAI
 typedef pthread_mutex_t btrt_mutex;
 #endif
 
+/* Realtime mutexes - must be used from realtime threads */
 int btrt_mutex_init(btrt_mutex* btm);
 int btrt_mutex_init(btrt_mutex* mutex);
 int btrt_mutex_create(btrt_mutex* mutex);
-
 BTINLINE int btrt_mutex_lock(btrt_mutex* btm);
 BTINLINE int btrt_mutex_unlock(btrt_mutex *btm);
 
-
-BTINLINE int btrt_mutex_lock(btrt_mutex* mutex);
-BTINLINE int btrt_mutex_unlock(btrt_mutex *mutex);
+/* Non-realtime mutexes - must be used from non-realtime threads */
+int btmutex_init(btmutex* btm);
+int btmutex_init(btmutex* mutex);
+int btmutex_create(btmutex* mutex);
+BTINLINE int btmutex_lock(btmutex* btm);
+BTINLINE int btmutex_unlock(btmutex *btm);
 
 //int btrt_mutex_lock_msg(btrt_mutex* btm,char *msg);
 //@}
@@ -206,7 +211,7 @@ BTINLINE void btfree(void **ptr);
 /** @name Threads: */
 //@{
 /** Convenience info for creation of threads
- 
+    This is for non-realtime threads.
 See new_btthread()
 */
 typedef struct {
@@ -223,10 +228,10 @@ typedef struct {
    btrt_mutex mutex;
 
    RTIME actual_period,proc_time;
-}
-btthread;
+}btthread;
 
-//If not Xenomai, the structure will be the same as btthread
+// This is for realtime threads
+// If not Xenomai, the structure will be the same as btthread
 typedef struct {
 #ifdef XENOMAI
    RT_TASK task;
@@ -247,8 +252,7 @@ typedef struct {
 
    RTIME actual_period,proc_time;
 
-}
-btrt_thread_struct;
+}btrt_thread_struct;
 
 btthread* new_btthread();
 btrt_thread_struct* new_btrt_thread();
@@ -256,13 +260,18 @@ void free_btthread(btthread **thd);
 
 pthread_t* btthread_create(btthread *thd,int priority, void *function,void *args);
 void btrt_thread_create(btrt_thread_struct *thd, const char *name, int priority, void *function, void *args);
+
 int btthread_done(btthread *thd); //ret !0 when time to kill
 int btrt_thread_done(btrt_thread_struct *thd);
+
 void btthread_stop(btthread *thd); //set done = 1;
 void btrt_thread_stop(btrt_thread_struct *thd);
+
 void btthread_exit(btthread *thd);
 void btrt_thread_exit(btrt_thread_struct *thd);
+
 void btrt_thread_join(btrt_thread_struct *thd);
+
 /** Create a periodic thread. Not yet implemented. */
 pthread_t* btperiodic_create(btthread *thd,int priority, double period, void *function,void *args);
 //@}

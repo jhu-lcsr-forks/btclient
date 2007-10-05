@@ -280,8 +280,8 @@ inline vect_n* eval_trj_bts(btstatecontrol *sc)
          } else
             // We are INPREP and STOPPED, therefore start_traptrj() found that
             // dist <= 0 (which is bad)
-            sc->btt.state = BTTRAJ_DONE;
-            //sc->btt.state = BTTRAJ_RUN;
+            //sc->btt.state = BTTRAJ_DONE;
+            sc->btt.state = BTTRAJ_RUN;
       }
 
       set_vn(sc->qref, getval_pwl(&(sc->pth),evaluate_traptrj(&(sc->trj),*(sc->dt))));

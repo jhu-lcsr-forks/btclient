@@ -962,7 +962,7 @@ void setMofst(int newID)
    
    // Get a valid IOFST
    #define IOFST_MIN (1950)
-   #define IOFST_MAX (2150)
+   #define IOFST_MAX (2160)
    #define IOFST_STDEV (3)
    
    // Collect stats

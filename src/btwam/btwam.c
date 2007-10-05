@@ -408,6 +408,11 @@ wam_struct* OpenWAM(char *fn, int bus)
 
    wam->Gcomp = 0;
    set_gravity_bot(&wam->robot, 0.0);
+   
+   for (cnt = 0; cnt < wam->dof; cnt ++){
+      setgains_btPID(&(wam->d_jpos_ctl[cnt]), getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt));
+   }
+   
 #if 0
    for(cnt = 0; cnt < wam->dof; cnt++)
    {
@@ -422,7 +427,8 @@ wam_struct* OpenWAM(char *fn, int bus)
       btrt_mutex_create(&(wam->loop_mutex)),
       "Could not initialize mutex for WAM control loop.");
 
-   btthread_create(&wam->maint, 0, (void*)WAMMaintenanceThread, wam);
+   btrt_thread_create(&wam->maint, "MAINT", 30, (void*)WAMMaintenanceThread, (void*)wam);
+   //btthread_create(&wam->maint, 0, (void*)WAMMaintenanceThread, wam);
 
    return(wam);
 }

@@ -220,7 +220,7 @@ typedef struct btwam_struct{
   btstatecontrol *active_sc;
   int idle_when_done; //!< !0 = When done with the present move switch to idle mode
   
-  btthread maint;
+  btrt_thread_struct maint;
   vect_n *G; //!< Torques due to gravity
   int M4_reversed;
 
