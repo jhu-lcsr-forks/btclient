@@ -107,8 +107,8 @@ int enumX = 39, enumY = 2;
 int watchX = 39, watchY = 20;
 int curses = FALSE;
 
-btthread disp_thd;
-pthread_mutex_t disp_mutex;
+btrt_thread_struct disp_thd;
+btrt_mutex disp_mutex;
 int startDone = FALSE;
 btrt_thread_struct  StartupThread;
 
@@ -455,11 +455,12 @@ void Startup(void *thd){
       
       /* Initialize the display mutex */
       test_and_log(
-         pthread_mutex_init(&(disp_mutex),NULL),
+         btrt_mutex_init(&(disp_mutex)),
          "Could not initialize mutex for displays.");
       
       /* Spin off the display thread */
-      btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
+      btrt_thread_create(&disp_thd, "DISP", 10, (void*)DisplayThread, NULL);
+      //btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
    
       for(i = 0; i < MAX_WATCH; i++)
          watch[i].puckID = 0;
@@ -520,13 +521,13 @@ void DisplayThread()
    refresh();
    while (!done) {
       test_and_log(
-         pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+         btrt_mutex_lock(&(disp_mutex)),"Display mutex failed");
       switch(screen) {
       case SCREEN_MAIN:
          RenderMAIN_SCREEN();
          break;
       }
-      pthread_mutex_unlock(&(disp_mutex));
+      btrt_mutex_unlock(&(disp_mutex));
       
       usleep(100000);
    }
@@ -540,7 +541,7 @@ void start_entry()
 {
    int err;
    test_and_log(
-      pthread_mutex_lock(&(disp_mutex)),"Display mutex failed");
+      btrt_mutex_lock(&(disp_mutex)),"Display mutex failed");
    move(entryLine, 1);
    echo();
    timeout(-1);
@@ -556,7 +557,7 @@ void finish_entry()
    move(entryLine, 1);
    addstr("                                                                              ");
    refresh();
-   pthread_mutex_unlock( &(disp_mutex) );
+   btrt_mutex_unlock( &(disp_mutex) );
 }
 
 /** Draw the main information screen.

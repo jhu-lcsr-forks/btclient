@@ -145,7 +145,7 @@ int main(int argc, char **argv)
     * Xenomai priorities go from 1 (least important) to 99 (most important)
     */
    startDone = FALSE;
-   btrt_thread_create(&rt_thd,"rtt", 45, (void*)rt_thread, NULL);
+   btrt_thread_create(&rt_thd, "rtt", 45, (void*)rt_thread, NULL);
    while(!startDone)
       usleep(10000);
 
