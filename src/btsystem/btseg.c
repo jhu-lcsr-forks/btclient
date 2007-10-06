@@ -406,8 +406,8 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
       
       //Make sure initial acceleration is fast enough
       if (acc < min_acc) {
+         //syslog(LOG_ERR,"vr2pararray: Boosting initial acc (%f) to %f", acc, min_acc);
          acc = min_acc;
-         syslog(LOG_ERR,"vr2pararray: Boosting initial acc (%f) to %f", acc, min_acc);
       }
       tacc = dt - sqrt(dt*dt - 2*fabs(dx)/acc);
 

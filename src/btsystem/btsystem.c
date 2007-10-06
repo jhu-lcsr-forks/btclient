@@ -40,7 +40,7 @@
 #include "btparser.h"
 #define Border(Value,Min,Max)  (Value<Min)?Min:((Value>Max)?Max:Value)
 #define TWOPI 6.283185
-extern pthread_mutex_t commMutex;
+//extern pthread_mutex_t commMutex;
 
 /*==============================*
  * GLOBAL file-scope variables  *

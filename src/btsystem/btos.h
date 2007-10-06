@@ -225,7 +225,7 @@ typedef struct {
    int done; //!< See btthread_done()
    void (*function)(void *data); //Pointer to the function this thread is running
    void* data;
-   btrt_mutex mutex;
+   btmutex mutex;
 
    RTIME actual_period,proc_time;
 }btthread;

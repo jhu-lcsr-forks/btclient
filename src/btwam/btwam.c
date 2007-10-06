@@ -457,13 +457,13 @@ structures.
 */
 void WAMMaintenanceThread(void *data)
 {
-   btthread* this_thd;
+   btrt_thread_struct* this_thd;
    wam_struct *wam;
 
-   this_thd = (btthread*)data;
+   this_thd = (btrt_thread_struct*)data;
    wam = (wam_struct*)this_thd->data;
 
-   while (!btthread_done(this_thd)) {
+   while (!btrt_thread_done(this_thd)) {
       if (get_trjstate_bts(wam->active_sc) == BTTRAJ_DONE) {
          if(wam->active_sc->loop_trj) {
             start_trj_bts(wam->active_sc);

@@ -41,6 +41,7 @@ void syslog_backtrace(int size)
  * Functions                    *
  *==============================*/
 
+#if 1
 /** Initialize a mutex.
  
 If pthread_mutex_init() fails, an error message is printed to syslog.
@@ -103,7 +104,7 @@ BTINLINE int btmutex_unlock(btmutex *btm)
    }
    return ret;
 }
-
+#endif
 
 /** Check pointer for a NULL value.
 \retval 0 Pointer is NOT valid.
@@ -253,6 +254,7 @@ void free_btthread(btthread **thd)
    btfree((void**)thd);
 }
 
+#if 1
 /**  Create a new thread.
  
 We create a new posix thread with a schedpolicy of SCHED_FIFO. The thread_id
@@ -304,6 +306,7 @@ BTINLINE int btthread_done(btthread *thd)
    btmutex_unlock(&(thd->mutex));
    return done;
 }
+#endif
 
 BTINLINE int btrt_thread_done(btrt_thread_struct *thd)
 {
@@ -334,7 +337,7 @@ void mythread(void* args)
 \internal chk'd TH 051101 
 */
 
-
+#if 1
 BTINLINE void btthread_stop(btthread *thd)
 {
    btmutex_lock(&(thd->mutex));
@@ -343,12 +346,7 @@ BTINLINE void btthread_stop(btthread *thd)
    pthread_join(thd->thd_id,NULL);
 }
 
-BTINLINE void btrt_thread_stop(btrt_thread_struct *thd)
-{
-   thd->done = 1;
 
-   btrt_thread_join(thd);
-}
 
 /** Call pthread_exit() on this btthread object.
 \internal chk'd TH 051101
@@ -356,6 +354,14 @@ BTINLINE void btrt_thread_stop(btrt_thread_struct *thd)
 BTINLINE void btthread_exit(btthread *thd)
 {
    pthread_exit(NULL);
+}
+#endif
+
+BTINLINE void btrt_thread_stop(btrt_thread_struct *thd)
+{
+   thd->done = 1;
+
+   btrt_thread_join(thd);
 }
 
 BTINLINE void btrt_thread_exit(btrt_thread_struct *thd)
@@ -471,7 +477,6 @@ void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, voi
 }
 
 #endif
-
 
 
 void btrt_set_mode_soft(void)

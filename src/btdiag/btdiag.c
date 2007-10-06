@@ -103,7 +103,7 @@ int constraint;
 int haptics;
 int pauseCnt = 0;
 int screen = SCREEN_MAIN;
-btmutex disp_mutex;
+btrt_mutex disp_mutex;
 int entryLine;
 int useGimbals      = FALSE;
 int done            = FALSE;
@@ -116,7 +116,7 @@ int cplay = 0;
 
 /* Global data */
 btthread audio_thd;
-btthread disp_thd;
+btrt_thread_struct disp_thd;
 int busCount = 0;
 char *command_help[100];
 int num_commands;
@@ -263,8 +263,33 @@ void Startup(void *thd){
          setProperty(i, SAFETY_MODULE, TL2, FALSE, 4700); //4700);
          setProperty(i, SAFETY_MODULE, TL1, FALSE, 1800); //1800
       }
+      
+      /* Prepare the WAM data */
+      wamData[i].jdest = new_vn(len_vn(wam[i]->Jpos));
+      wamData[i].cdest = new_vn(len_vn(wam[i]->R6pos));
+   
+      /* The WAM can be in either Joint mode or Cartesian mode.
+       * We want a single set of variables (active_) to eliminate the need
+       * for a whole bunch of if() statements.
+       */
+      wamData[i].active_bts = &(wam[i]->Jsc);
+      setmode_bts(wamData[i].active_bts,SCMODE_IDLE);
+      wamData[i].active_pos = wam[i]->Jpos;
+      wamData[i].active_trq = wam[i]->Jtrq;
+      wamData[i].active_dest = wamData[i].jdest;
+      
+      /* Create a new trajectory */
+      wamData[i].vt_j = new_vta(len_vn(wam[i]->Jpos),50);
+      wamData[i].vt_c = new_vta(len_vn(wam[i]->R6pos),50);
+      wamData[i].vta = &wamData[i].vt_j;
+      register_vta(wamData[i].active_bts,*wamData[i].vta);
+      
+      /* Initialize the control period */
+      wamData[i].wam_thd.period = Ts;
+      
+      /* Register the control loop's local callback routine */
+      registerWAMcallback(wam[i], WAMcallback);
    }
-  
    
    startDone = TRUE;
    
@@ -420,34 +445,6 @@ int main(int argc, char **argv)
    while(!startDone)
       usleep(10000);
    
-   for(i = 0; i < busCount; i++){
-      /* Prepare the WAM data */
-      wamData[i].jdest = new_vn(len_vn(wam[i]->Jpos));
-      wamData[i].cdest = new_vn(len_vn(wam[i]->R6pos));
-   
-      /* The WAM can be in either Joint mode or Cartesian mode.
-       * We want a single set of variables (active_) to eliminate the need
-       * for a whole bunch of if() statements.
-       */
-      wamData[i].active_bts = &(wam[i]->Jsc);
-      setmode_bts(wamData[i].active_bts,SCMODE_IDLE);
-      wamData[i].active_pos = wam[i]->Jpos;
-      wamData[i].active_trq = wam[i]->Jtrq;
-      wamData[i].active_dest = wamData[i].jdest;
-      
-      /* Create a new trajectory */
-      wamData[i].vt_j = new_vta(len_vn(wam[i]->Jpos),50);
-      wamData[i].vt_c = new_vta(len_vn(wam[i]->R6pos),50);
-      wamData[i].vta = &wamData[i].vt_j;
-      register_vta(wamData[i].active_bts,*wamData[i].vta);
-      
-      /* Initialize the control period */
-      wamData[i].wam_thd.period = Ts;
-      
-      /* Register the control loop's local callback routine */
-      registerWAMcallback(wam[i], WAMcallback);
-   }
-
    r_mat = new_m3();
    xyz = new_v3();
    RxRyRz = new_v3();
@@ -470,11 +467,12 @@ int main(int argc, char **argv)
    
    /* Initialize the display mutex */
    test_and_log(
-      btmutex_init(&disp_mutex),
+      btrt_mutex_init(&disp_mutex),
       "Could not initialize mutex for displays.");
       
    /* Spin off the display thread */
-   btthread_create(&disp_thd, 0, (void*)DisplayThread, NULL);
+   btrt_thread_create(&disp_thd, "DISP", 10, (void*)DisplayThread, NULL);
+   //btthread_create(&disp_thd, 0, (void*)DisplayThread, NULL);
    
    /* Spin off the audio thread */
    //btthread_create(&audio_thd,0,(void*)AudioThread,NULL);
@@ -483,9 +481,10 @@ int main(int argc, char **argv)
    btrt_thread_create(&event_thd, "EVENT", 20, (void*)MainEventThread, NULL);
    
    while(!done){
-      usleep(10000);
+      usleep(100000);
    }
    
+   usleep(100000);
    Cleanup();
    exit(1);
 }
@@ -643,7 +642,7 @@ void DisplayThread()
        * See start_entry() and finish_entry()
        */
       test_and_log(
-         btmutex_lock(&(disp_mutex)),"Display mutex failed");
+         btrt_mutex_lock(&(disp_mutex)),"Display mutex failed");
          
       /* Render the appropriate screen, based on the "screen" variable */
       switch(screen) {
@@ -656,7 +655,7 @@ void DisplayThread()
       }
       
       /* Release the mutex lock */
-      btmutex_unlock(&(disp_mutex));
+      btrt_mutex_unlock(&(disp_mutex));
       
       /* Slow this loop down to about 10Hz */
       usleep(100000);
@@ -671,7 +670,7 @@ void start_entry()
 {
    int err;
    test_and_log(
-      btmutex_lock(&(disp_mutex)),"Display mutex failed");
+      btrt_mutex_lock(&(disp_mutex)),"Display mutex failed");
    move(entryLine, 1);
    echo();
    timeout(-1);
@@ -687,7 +686,7 @@ void finish_entry()
    move(entryLine, 1);
    addstr("                                                                              ");
    refresh();
-   btmutex_unlock( &(disp_mutex) );
+   btrt_mutex_unlock( &(disp_mutex) );
 }
 
 /** Draw the main information screen.
@@ -843,9 +842,9 @@ void RenderHELP_SCREEN()
 /* Clear the screen while honoring the mutex lock */
 void clearScreen(void)
 {
-   btmutex_lock(&(disp_mutex));
+   btrt_mutex_lock(&(disp_mutex));
    clear();
-   btmutex_unlock(&(disp_mutex));
+   btrt_mutex_unlock(&(disp_mutex));
 }
 
 /** Process user input.

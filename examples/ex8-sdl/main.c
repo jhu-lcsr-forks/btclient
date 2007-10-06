@@ -105,7 +105,7 @@ int cplay = 0;
 
 /* Global data */
 btthread audio_thd;
-btthread disp_thd;
+btrt_thread_struct disp_thd;
 int busCount = 0;
 char *command_help[100];
 int num_commands;
@@ -142,6 +142,7 @@ vect_3 *xyz, *RxRyRz;
 
 int startDone = FALSE;
 btrt_thread_struct  StartupThread;
+btrt_thread_struct  event_thd;
 
 /******* Haptics *******/
 btgeom_plane planes[10];
@@ -322,9 +323,34 @@ void Startup(void *thd){
          setProperty(i, SAFETY_MODULE, TL2, FALSE, 4700); //4700);
          setProperty(i, SAFETY_MODULE, TL1, FALSE, 1800); //1800
       }
+      
+      /* Prepare the WAM data */
+      wamData[i].jdest = new_vn(len_vn(wam[i]->Jpos));
+      wamData[i].cdest = new_vn(len_vn(wam[i]->R6pos));
+   
+      /* The WAM can be in either Joint mode or Cartesian mode.
+       * We want a single set of variables (active_) to eliminate the need
+       * for a whole bunch of if() statements.
+       */
+      wamData[i].active_bts = &(wam[i]->Jsc);
+      setmode_bts(wamData[i].active_bts,SCMODE_IDLE);
+      wamData[i].active_pos = wam[i]->Jpos;
+      wamData[i].active_trq = wam[i]->Jtrq;
+      wamData[i].active_dest = wamData[i].jdest;
+      
+      /* Create a new trajectory */
+      wamData[i].vt_j = new_vta(len_vn(wam[i]->Jpos),50);
+      wamData[i].vt_c = new_vta(len_vn(wam[i]->R6pos),50);
+      wamData[i].vta = &wamData[i].vt_j;
+      register_vta(wamData[i].active_bts,*wamData[i].vta);
+      
+      /* Initialize the control period */
+      wamData[i].wam_thd.period = Ts;
+      
+      /* Register the control loop's local callback routine */
+      registerWAMcallback(wam[i], WAMcallback);
    }
   
-   
    startDone = TRUE;
    
    while (!btrt_thread_done((btrt_thread_struct*)thd)){
@@ -332,7 +358,69 @@ void Startup(void *thd){
    }
    btrt_thread_exit((btrt_thread_struct*)thd);
 }
-    
+
+void MainEventThread(void *thd){
+   char     chr,cnt;
+   int      err;
+   int      i;
+   
+   /* Main event loop, ~10Hz */
+   while (!done) {
+      /* Check the active trajectory for completion for each bus */
+      for(i = 0; i < busCount; i++){ 
+         if (get_trjstate_bts(wamData[i].active_bts) == BTTRAJ_DONE && !wamData[i].active_bts->loop_trj) {  // BZ-16Nov2005
+            stop_trj_bts(wamData[i].active_bts);
+            //setmode_bts(active_bts,prev_mode);
+            cplay = 0;
+         }
+         
+         /* Handle the data logger */
+         //evalDL(&(wam[i]->log));
+      }
+      
+      /* Check and handle user keypress */
+      SDL_PumpEvents();
+      Uint8 *keystates = SDL_GetKeyState( NULL );
+      ProcessKey(keystates);
+      
+      /* If we are in playback mode, handle the BarrettHand teach commands */
+      if(cplay){
+         if(keyEvent[eventIdx].c){
+            if((btrt_get_time() - eventStart) > keyEvent[eventIdx].t){
+               ProcessInput(keyEvent[eventIdx].c);
+               ++eventIdx;  
+            }
+         }
+      }
+      
+      /* If the WAM has paused due to obstruction, wait */
+      if(pauseCnt > 0){
+	      pauseCnt--;
+	      if(pauseCnt == 0){
+            for(i = 0; i < busCount; i++){
+               unpause_trj_bts(wamData[i].active_bts,0.125);
+            }
+	      }
+      }
+      
+      /* If there is an obstruction, pause the WAM playback */
+      for(i = 0; i < busCount; i++){
+         for(cnt=0;cnt<wam[i]->dof;cnt++){
+            if(fabs(getval_vn(wam[i]->Jtrq,cnt) - getval_vn(wam[i]->Gtrq,cnt)) >
+               getval_vn(wam[i]->torq_limit,cnt)){
+               pauseCnt = 50;
+               pause_trj_bts(wamData[i].active_bts,5);
+               break;
+            }
+         }
+      }
+      
+      /* Sleep for 0.1s. This roughly defines the event loop frequency */
+      usleep(100000);
+   }
+   btrt_thread_exit((btrt_thread_struct*)thd);
+}
+
 /** Entry point for the application.
     Initializes the system and executes the main event loop.
 */
@@ -340,9 +428,7 @@ int main(int argc, char **argv)
 {
    char     chr,cnt;
    int      err;
-   int      i, nout;
-   struct   sched_param mysched;
-   char     robotName[128];
+   int      i;
 
    /* Allow hard real time process scheduling for non-root users */
 #ifdef RTAI   
@@ -456,34 +542,6 @@ int main(int argc, char **argv)
    while(!startDone)
       usleep(10000);
    
-   for(i = 0; i < busCount; i++){
-      /* Prepare the WAM data */
-      wamData[i].jdest = new_vn(len_vn(wam[i]->Jpos));
-      wamData[i].cdest = new_vn(len_vn(wam[i]->R6pos));
-   
-      /* The WAM can be in either Joint mode or Cartesian mode.
-       * We want a single set of variables (active_) to eliminate the need
-       * for a whole bunch of if() statements.
-       */
-      wamData[i].active_bts = &(wam[i]->Jsc);
-      setmode_bts(wamData[i].active_bts,SCMODE_IDLE);
-      wamData[i].active_pos = wam[i]->Jpos;
-      wamData[i].active_trq = wam[i]->Jtrq;
-      wamData[i].active_dest = wamData[i].jdest;
-      
-      /* Create a new trajectory */
-      wamData[i].vt_j = new_vta(len_vn(wam[i]->Jpos),50);
-      wamData[i].vt_c = new_vta(len_vn(wam[i]->R6pos),50);
-      wamData[i].vta = &wamData[i].vt_j;
-      register_vta(wamData[i].active_bts,*wamData[i].vta);
-      
-      /* Initialize the control period */
-      wamData[i].wam_thd.period = Ts;
-      
-      /* Register the control loop's local callback routine */
-      registerWAMcallback(wam[i], WAMcallback);
-   }
-
    r_mat = new_m3();
    xyz = new_v3();
    RxRyRz = new_v3();
@@ -505,65 +563,20 @@ int main(int argc, char **argv)
    serialSetBaud(&p, 9600); // The BarrettHand defaults to 9600 baud
    
    /* Spin off the display thread */
-   btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
+   btrt_thread_create(&disp_thd, "DISP", 10, (void*)DisplayThread, NULL);
+   //btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
    
    /* Spin off the audio thread */
    //btthread_create(&audio_thd,0,(void*)AudioThread,NULL);
 
-   /* Main event loop, ~10Hz */
-   while (!done) {
-      /* Check the active trajectory for completion for each bus */
-      for(i = 0; i < busCount; i++){ 
-         if (get_trjstate_bts(wamData[i].active_bts) == BTTRAJ_DONE && !wamData[i].active_bts->loop_trj) {  // BZ-16Nov2005
-            stop_trj_bts(wamData[i].active_bts);
-            //setmode_bts(active_bts,prev_mode);
-            cplay = 0;
-         }
-         
-         /* Handle the data logger */
-         //evalDL(&(wam[i]->log));
-      }
-      
-      /* Check and handle user keypress */
-      SDL_PumpEvents();
-      Uint8 *keystates = SDL_GetKeyState( NULL );
-      ProcessKey(keystates);
-      
-      /* If we are in playback mode, handle the BarrettHand teach commands */
-      if(cplay){
-         if(keyEvent[eventIdx].c){
-            if((btrt_get_time() - eventStart) > keyEvent[eventIdx].t){
-               ProcessInput(keyEvent[eventIdx].c);
-               ++eventIdx;  
-            }
-         }
-      }
-      
-      /* If the WAM has paused due to obstruction, wait */
-      if(pauseCnt > 0){
-	      pauseCnt--;
-	      if(pauseCnt == 0){
-            for(i = 0; i < busCount; i++){
-               unpause_trj_bts(wamData[i].active_bts,0.125);
-            }
-	      }
-      }
-      
-      /* If there is an obstruction, pause the WAM playback */
-      for(i = 0; i < busCount; i++){
-         for(cnt=0;cnt<wam[i]->dof;cnt++){
-            if(fabs(getval_vn(wam[i]->Jtrq,cnt) - getval_vn(wam[i]->Gtrq,cnt)) >
-               getval_vn(wam[i]->torq_limit,cnt)){
-               pauseCnt = 50;
-               pause_trj_bts(wamData[i].active_bts,5);
-               break;
-            }
-         }
-      }
-      
-      /* Sleep for 0.1s. This roughly defines the event loop frequency */
+   /* Spin off the main event loop */
+   btrt_thread_create(&event_thd, "EVENT", 20, (void*)MainEventThread, NULL);
+   
+    while(!done){
       usleep(100000);
    }
+   
+   usleep(100000);
 
    Cleanup();
    exit(1);
