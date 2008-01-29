@@ -24,5 +24,5 @@ wam:
 	$(MAKE) -C ../btwam lib
 	$(MAKE) -C ../btwam install
    
-all: clean system wam btdiag
+all: system wam btdiag
 
