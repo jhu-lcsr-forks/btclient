@@ -231,7 +231,7 @@ void Cleanup(){
 }
 
 void Startup(void *thd){
-   int err, i;
+   int err, i, id;
 
    /* Probe and initialize the robot actuators */
    err = InitializeSystem();
@@ -256,12 +256,40 @@ void Startup(void *thd){
          setSafetyLimits(i, 1.5, 1.5, 1.5);  // Limit to 1.5 m/s
    
          /* Set the puck torque safety limits (TL1 = Warning, TL2 = Critical)
-          * Note: The pucks are limited internally to 3441 (see 'MT' in btsystem.c) 
+          * Note: The pucks are limited internally (see 'MT' in btsystem.c) 
           * Note: btsystem.c bounds the outbound torque to 8191, so 9000
           * tells the safety system to never register a critical fault
           */
-         setProperty(i, SAFETY_MODULE, TL2, FALSE, 4700); //4700);
-         setProperty(i, SAFETY_MODULE, TL1, FALSE, 1800); //1800
+         setProperty(i, SAFETY_MODULE, TL2, FALSE, 9000); 
+         setProperty(i, SAFETY_MODULE, TL1, FALSE, 1800);
+         
+         /* Set the Max Torque (MT) for each motor
+          * Notes: 
+          * 1 Amp = 1024 puck torque units
+          * Puck torques are saturated at 8191 by the communications layer
+          * Cable limits were chosen to be approx 20% of the rated breaking strength
+          *
+          * Motor             1      2      3      4      5      6      7
+          * Stall (Nm)       1.490  1.490  1.490  1.490  0.356  0.356  0.091
+          * Peak (Nm)        6.31   6.31   6.31   6.31   1.826  1.826  0.613
+          * Cable limit (Nm) 1.8    1.8    1.8    1.6    0.6    0.6    N/A
+          * Nm/A -published  0.457  0.457  0.457  0.457  0.236  0.236  0.067
+          * Nm/A -actual     0.379  0.379  0.379  0.379  0.157  0.157  0.058
+          *
+          * Example: 
+          * What should the motor 3 Max Torque (MT) be set to in order to not
+          * exceeed the designed cable limit?
+          * (1.8 Nm) / (0.379 Nm/A) * (1024 Units/A) = 4863
+          */
+          
+         setProperty(i, 1, MT, FALSE, 4860); // Cable limit = 4860
+         setProperty(i, 2, MT, FALSE, 7500); // Cable limit = 4860
+         setProperty(i, 3, MT, FALSE, 7500); // Cable limit = 4860
+         setProperty(i, 4, MT, FALSE, 4320); // Cable limit = 4320
+         setProperty(i, 5, MT, FALSE, 3900); // Cable limit = 3900
+         setProperty(i, 6, MT, FALSE, 3900); // Cable limit = 3900
+         setProperty(i, 7, MT, FALSE, 1600); // J7 Gears (max stall)
+         
       }
       
       /* Prepare the WAM data */
@@ -338,7 +366,7 @@ void MainEventThread(void *thd){
                unpause_trj_bts(wamData[i].active_bts,0.125);
             }
 	      }
-      }
+      } 
       
       /* If there is an obstruction, pause the WAM playback */
       for(i = 0; i < busCount; i++){
@@ -350,7 +378,7 @@ void MainEventThread(void *thd){
                break;
             }
          }
-      }
+      } 
       
       /* Sleep for 0.1s. This roughly defines the event loop frequency */
       usleep(100000);
@@ -759,19 +787,6 @@ void RenderMAIN_SCREEN()
       line+=1;
       mvprintw(line, 0, "Position   : %s ", sprint_vn(vect_buf1,wamData[cnt].active_pos));
       ++line;
-      mvprintw(line, 0, "RzRyRz     : %s ", sprint_vn(vect_buf1,(vect_n*)RtoZYZf_m3(wam[cnt]->robot.tool->origin, RxRyRz)));
-      ++line;
-      mvprintw(line, 0, "R6ref       : %s ", sprint_vn(vect_buf1,wam[cnt]->R6ref));
-      ++line;
-      /*
-      mvprintw(line, 0, "origin     : \n%s ", sprint_mn(vect_buf1,(matr_mn*)wam[cnt]->robot.tool->origin));
-      line+=5;
-      
-      mvprintw(line, 0, "q->R       : \n%s ", sprint_mn(vect_buf1,(matr_mn*)r_mat));
-      line+=5;
-      */
-      //mvprintw(line, 0, "Target     : %s ", sprint_vn(vect_buf1,active_bts->qref));
-      //++line;
       mvprintw(line, 0, "%s     : %s ", (wamData[cnt].active_bts == &(wam[cnt]->Jsc)) ? "Torque" : "Force ", sprint_vn(vect_buf1,wamData[cnt].active_trq));
       line+=2;
       
@@ -813,6 +828,7 @@ void RenderMAIN_SCREEN()
          line += 2;
       }
       line += 2;
+      
    }
    
 
