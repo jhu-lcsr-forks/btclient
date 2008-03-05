@@ -27,7 +27,9 @@
 /*==============================*
  * INCLUDES - System Files      *
  *==============================*/
-
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <stdio.h>
 #include <errno.h>
 

@@ -21,7 +21,9 @@
  *    Final pass on documentation 
  *======================================================================*/
 
-
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <math.h>
 #include <pthread.h>
 #include <errno.h>
@@ -554,7 +556,7 @@ double start_via_trj(via_trj *trj,int col)
       trj->v_next = 0.0;
       trj->t3 = getval_vn(idx_vr(trj->vr,trj->idx+1),0);
    } else {
-      end = 0;
+      end = 0; if(Dt_next > -EPSILON && Dt_next < EPSILON) syslog(LOG_ERR, "btcontrol:start_via_trj:560 Dt_next");
       trj->v_next = Dq_next/Dt_next;
       trj->t3 = getval_vn(idx_vr(trj->vr,trj->idx+2),0);
    }
@@ -634,6 +636,7 @@ double eval_via_trj(via_trj *trj,double dt)
                end = 1;
                Dt_next = getval_vn(idx_vr(trj->vr,trj->idx+2),0) - getval_vn(idx_vr(trj->vr,trj->idx+1),0);
                Dq_next = getval_vn(idx_vr(trj->vr,trj->idx+2),trj->col) - getval_vn(idx_vr(trj->vr,trj->idx+1),trj->col);
+               if(Dt_next > -EPSILON && Dt_next < EPSILON) syslog(LOG_ERR, "btcontrol:eval_via_trj:640 Dt_next");
                trj->v_next = Dq_next/Dt_next;
             }
             //syslog(LOG_ERR, "CalcSegment: Col %d",trj->col);
@@ -715,15 +718,17 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
 
    if (end == 0) {
       //Starting segment (Accelerate to the next point)
+      if(dt > -EPSILON && dt < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:722 dt");
       min_acc = 8*fabs(dq)/(3*dt*dt);
 
       if (use_acc < min_acc) { //accelleration must get us to vel_mode at halfway point
          use_acc = min_acc;
          syslog(LOG_ERR, "CalcSegment: Boosted acceleration to %f to match velocity change",use_acc);
       }
-      if (use_acc != 0.0)
+      if (use_acc != 0.0){
+         if(use_acc > -EPSILON && use_acc < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:730 use_acc");
          dt_acc1 = dt - sqrt(dt*dt - 2*fabs(dq)/use_acc);
-      else
+      }else
          dt_acc1 = 0.0;
       acc1 = Sgn(dq)*use_acc;
       q_acc1 = q1 + 0.5*acc1*dt_acc1*dt_acc1;
@@ -732,13 +737,16 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
       acc2 = Sgn(v_next - vel)*use_acc;
       /* Force acceleration high enough to make the corner */
       if (fabs(v_next - vel) > dtn*fabs(acc2)/2) {
+         if(dtn > -EPSILON && dtn < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:741 dtn");
          acc2 = (v_next - vel)*2/dtn;
          syslog(LOG_ERR, "CalcSegment: Boosted next segment acceleration to %f to fit next side",acc1);
       } else if (fabs(v_next - vel) > dt*fabs(acc2)/2) {
+         if(dt > -EPSILON && dt < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:745 dt");
          acc2 = (v_next - vel)*2/dt;
          syslog(LOG_ERR, "CalcSegment: Boosted mid segment acceleration to %f to fit this side",acc1);
       }
       if (acc2 != 0.0) {
+         if(acc2 > -EPSILON && acc2 < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:750 acc2");
          dt_acc2 = (v_next - vel)/acc2;
       } else {
          dt_acc2 = 0.0;
@@ -752,6 +760,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
       }
    } else if (end == 1) //Middle segment
    {
+      if(dt > -EPSILON && dt < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:764 dt");
       vel = dq/dt;
       //acc1 = Sgn(vel - v_prev)*use_acc;
       /*
@@ -774,15 +783,18 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
       /* Force acceleration high enough to make the corner */
       if (fabs(v_next - vel) > dtn*fabs(acc2)/2)
       {
+         if(dtn > -EPSILON && dtn < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:787 dtn");
          acc2 = (v_next - vel)*2/dtn;
          syslog(LOG_ERR, "CalcSegment: Boosted next segment acceleration to %f to fit next side",acc1);
       } else if (fabs(v_next - vel) > dt*fabs(acc2)/2)
       {
+         if(dt > -EPSILON && dt < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:792 dt");
          acc2 = (v_next - vel)*2/dt;
          syslog(LOG_ERR, "CalcSegment: Boosted mid segment acceleration to %f to fit this side",acc1);
       }
       if (acc2 != 0.0)
       {
+         if(acc2 > -EPSILON && acc2 < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:798 acc2");
          dt_acc2 = (v_next - vel)/acc2;
       } else
       {
@@ -800,6 +812,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
    }
    else if (end == 2) {
       //Ending segment (decelerate)
+      if(dt > -EPSILON && dt < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:816 dt");
       min_acc = 8.0*fabs(dq)/(3.0*dt*dt);
 
       if (use_acc < min_acc) { //accelleration must get us to vel_mode at halfway point
@@ -808,6 +821,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
          //syslog(LOG_ERR, "CalcSegment:  %f %f %f %f",q1,q2,t1,t2);
       }
       if (use_acc != 0.0) {
+         if(use_acc > -EPSILON && use_acc < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:825 use_acc");
          dt_acc2 = dt - sqrt(dt*dt - 2*fabs(dq)/use_acc);
       } else {
          dt_acc1 = 0.0;
@@ -817,10 +831,12 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
       vel = -1.0*acc2*dt_acc2;
       acc1 = Sgn((vel - v_prev))*use_acc;
       if (fabs(vel - v_prev) > dt*fabs(acc1)/2) {
+         if(dt > -EPSILON && dt < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:835 dt");
          acc1 = (vel - v_prev)*2/dt;
          syslog(LOG_ERR, "CalcSegment: Boosted mid segment acceleration to %f to match velocity change",acc1);
       }
       if (acc1 != 0.0) {
+         if(acc1 > -EPSILON && acc1 < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:840 acc1");
          dt_acc1 = (vel - v_prev)/acc1;
       } else {
          dt_acc1 = 0.0;
@@ -836,7 +852,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
       }
    } else {
       //Short Segment (accelerate and decellerate with bang bang
-
+      if(dt > -EPSILON && dt < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:856 dt");
       max_acc = fabs(dq)/(0.25*dt*dt);
       if (use_acc > max_acc) {
          //accelleration must get us to vel_mode at halfway point
@@ -852,6 +868,7 @@ void CalcSegment(Seg_int *seg,double q1, double q2, double t1, double t2, double
          else
             sqrtb = sqrt(acc2*acc2*dt*dt - ac4);
 
+         if(acc2 > -EPSILON && acc2 < EPSILON) syslog(LOG_ERR, "btcontrol:CalcSegment:872 acc2");
          dt_acc1 = acc2*dt/(2.0*acc2)+sqrtb;
       } else {
          dt_acc1 = 0.0;

@@ -16,7 +16,9 @@
  *  chk'd TH 051101
  *                                                                      
  *======================================================================*/
-
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <syslog.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -15,7 +15,9 @@
  *  REVISION HISTORY:
  *
  *======================================================================*/
- 
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif 
 #include <math.h>
 #include "btseg.h"
 #include "btmath.h"

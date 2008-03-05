@@ -14,7 +14,9 @@
  *  REVISION HISTORY:
  *                                                                      *
  *======================================================================*/
-
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <syslog.h>
@@ -403,14 +405,6 @@ int magneticwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *no
    btreal WallStiff,WallDamp,Vel;
    bteffect_magneticwall *norm_eff;
 
-
-   WallStiff = 0.0;
-   WallDamp = 0.0;
-
-   norm_eff = (bteffect_magneticwall*)obj->norm_eff;
-   Vel = dot_v3((vect_3*)norm,(vect_3*)vel);
-
-
    // Variables that can be adjusted:
    // magforce: the force of the magnet, the greater
    //           this value is, the larger the attraction.
@@ -428,6 +422,14 @@ int magneticwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *no
    double yval = -1.0*norm_eff->K1*threshold;
    double xval = sqrt(magforce/(-1.0*yval));
    double shift = threshold - xval;
+
+   WallStiff = 0.0;
+   WallDamp = 0.0;
+
+   norm_eff = (bteffect_magneticwall*)obj->norm_eff;
+   Vel = dot_v3((vect_3*)norm,(vect_3*)vel);
+
+
 
 
    if (depth > threshold)

@@ -15,6 +15,9 @@
  *                                                                      *
  *======================================================================*/
 
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <math.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -603,7 +606,11 @@ v1 + (v2 - v1) t/dt = vx
 */
 vect_n* interp_vn(vect_n* a, vect_n* b,btreal dt,btreal t)
 {
-   return add_vn(a,scale_vn(t/dt,sub_vn(b,a)));
+   if(dt == 0.0){
+      return(a);
+   }else{
+      return add_vn(a,scale_vn(t/dt,sub_vn(b,a)));
+   }
 }
 
 /** Force a vect_n to be in the range min value to max value (inclusive)

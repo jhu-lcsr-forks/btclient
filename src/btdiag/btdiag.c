@@ -32,9 +32,13 @@ it to properly establish the time values.
 /*==============================*
  * INCLUDES - System Files      *
  *==============================*/
+#ifdef S_SPLINT_S
+#include <err.h>
+#else
+#include <pthread.h>
+#endif
 #include <syslog.h>
 #include <signal.h>
-#include <pthread.h>
 /* Decipher function error codes using the defined system constants.
  * For the error text, use syslog("LOG_ERR", "f(): %s", strerror(errnum));
  */
@@ -121,6 +125,7 @@ int busCount = 0;
 char *command_help[100];
 int num_commands;
 PORT p; // Serial port
+int force = 0;
 
 /* Event logger */
 int eventIdx;
@@ -525,6 +530,14 @@ int WAMcallback(struct btwam_struct *w)
 {
    int i;
 
+
+   if(force){
+   const_v3(w->Cforce, 0.0, 0.0, 10.0);
+   const_v3(w->Ctrq, 0.0, 0.0, 0.0);
+         apply_tool_force_bot(&(w->robot), w->Cpoint, w->Cforce, w->Ctrq);
+         //apply_force_bot(&(w->robot), 2, w->Cpoint, w->Cforce, w->Ctrq);
+   }
+
    /* Handle haptic scene for the specified WAM */
    for(i = 0; i < busCount; i++){
       if(wam[i] == w){
@@ -787,6 +800,19 @@ void RenderMAIN_SCREEN()
       line+=1;
       mvprintw(line, 0, "Position   : %s ", sprint_vn(vect_buf1,wamData[cnt].active_pos));
       ++line;
+      mvprintw(line, 0, "RxRyRz     : %s ", sprint_vn(vect_buf1,(vect_n*)RtoXYZf_m3(wam[cnt]->robot.tool->origin, RxRyRz)));
+      ++line;
+      mvprintw(line, 0, "R6ref       : %s ", sprint_vn(vect_buf1,wam[cnt]->R6ref));
+      ++line;
+      /*
+      mvprintw(line, 0, "origin     : \n%s ", sprint_mn(vect_buf1,(matr_mn*)wam[cnt]->robot.tool->origin));
+      line+=5;
+      
+      mvprintw(line, 0, "q->R       : \n%s ", sprint_mn(vect_buf1,(matr_mn*)r_mat));
+      line+=5;
+      */
+      //mvprintw(line, 0, "Target     : %s ", sprint_vn(vect_buf1,active_bts->qref));
+      //++line;
       mvprintw(line, 0, "%s     : %s ", (wamData[cnt].active_bts == &(wam[cnt]->Jsc)) ? "Torque" : "Force ", sprint_vn(vect_buf1,wamData[cnt].active_trq));
       line+=2;
       
@@ -883,6 +909,9 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
    case 'x'://eXit
    case  'X'://eXit
       done = 1;
+      break;
+   case 'f'://Toggle Force
+      force = !force;
       break;
    case '!'://Set puck to mode TORQ
       if (NoSafety)

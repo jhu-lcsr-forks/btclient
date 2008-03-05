@@ -20,6 +20,9 @@
 /*==============================*
  * INCLUDES - System Files      *
  *==============================*/
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

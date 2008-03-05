@@ -16,7 +16,9 @@
  *======================================================================*/
 
 
-
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include "btmath.h"

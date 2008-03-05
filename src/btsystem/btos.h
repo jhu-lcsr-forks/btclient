@@ -129,7 +129,10 @@ extern "C"
 #define BTINLINE inline
 #endif
 
+#ifndef S_SPLINT_S
 #include <pthread.h>
+#endif
+
 /** \todo Move periodic thread api to another include file to remove dependancy on rtai in this file */
 //#include <rtai_lxrt.h>
 #ifdef XENOMAI

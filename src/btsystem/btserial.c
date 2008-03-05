@@ -17,6 +17,9 @@
  *======================================================================*/
 
 /* Serial port routines */
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <unistd.h>
 #include <termios.h>
 #include <stdio.h>

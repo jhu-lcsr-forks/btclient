@@ -98,6 +98,8 @@ extern "C"
    */
 #define ELEM(m,r,c) ((m)->q[(r) * (m)->n + (c)])
 
+#define EPSILON (0.001)
+
 typedef double btreal; //<! Typedef floating point type
 
 /** The list of all pointers allocated by btmath

@@ -14,6 +14,9 @@
  *  REVISION HISTORY:
  *  '051107 TH Minimal documentation in place.                          *
  *======================================================================*/
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <curses.h>
 #include <math.h>
 #include <stdarg.h>

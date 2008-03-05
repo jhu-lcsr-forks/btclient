@@ -27,6 +27,9 @@ to make it easier to find and maintain later
 /*==============================*
  * INCLUDES - System Files      *
  *==============================*/
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <syslog.h>
 #include <stdio.h>
 #include <math.h>

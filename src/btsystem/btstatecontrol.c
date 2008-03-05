@@ -17,7 +17,9 @@
  *  051102 TH - Final doc & coding pass
  *                                                                      
  *======================================================================*/
-
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <math.h>
 #include <pthread.h>
 #include <errno.h>
@@ -61,18 +63,21 @@ void start_traptrj(bttraptrj *traj, btreal dist)
    ax = 0.5*traj->acc*traj->t1*traj->t1; //x = 1/2 a t^2
 
    traj->end = dist;
-   if (ax > dist/2) //If the acceleration completion point is beyond the halfway point
+   if (ax > dist/2){ //If the acceleration completion point is beyond the halfway point
       ax = dist/2; //Stop accelerating at the halfway point
+      traj->t1 = sqrt(2*ax/traj->acc); // Find the new "ramp-up" time
+   }
    traj->x1 = ax;   //Set the top left point of the trapezoid
    traj->x2 = dist - ax; //Set the top right point of the trapezoid
    traj->t2 = (dist-(2*ax)) / traj->vel + traj->t1; //Find the time to start the "ramp-down"
    traj->t = 0;
    traj->state = BTTRAJ_RUN;
-   if (dist <= 0.0)
+   if (dist <= 0.0){
+      //syslog(LOG_ERR, "btstatecontrol.c:start_traptrj() dist <=0.0 (%f)", dist);
+      //syslog(LOG_ERR, "start_traptrj: dist=%f, vel=%f, acc=%f, ax=%f, x1=%f, x2=%f, t1=%f, t2=%f, t=%f",
+      //dist, traj->vel, traj->acc, ax, traj->x1, traj->x2, traj->t1, traj->t2, traj->t);
       traj->state = BTTRAJ_STOPPED;
-   
-   //syslog(LOG_ERR, "start_traptrj: dist=%f, vel=%f, acc=%f, ax=%f, x1=%f, x2=%f, t1=%f, t2=%f, t=%f",
-   //dist, traj->vel, traj->acc, ax, traj->x1, traj->x2, traj->t1, traj->t2, traj->t);
+   }
 }
 
 /** Calculate next position on the trajectory

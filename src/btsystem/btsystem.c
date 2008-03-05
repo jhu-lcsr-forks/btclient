@@ -22,6 +22,9 @@
 /*==============================*
  * INCLUDES - System Files      *
  *==============================*/
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <malloc.h>
 #include <stdio.h>
 #include <math.h>

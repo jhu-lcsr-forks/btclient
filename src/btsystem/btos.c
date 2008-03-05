@@ -16,6 +16,9 @@
  *  TH 051101 - Final pass. Needs testing. Esp. Periodic threads.
  *
  *======================================================================*/
+#ifdef S_SPLINT_S
+#include <err.h>
+#endif
 #include <syslog.h>
 #include <stdlib.h>
 #include "btos.h"
