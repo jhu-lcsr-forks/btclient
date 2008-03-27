@@ -335,6 +335,8 @@ void Startup(void *thd){
 void MainEventThread(void *thd){
    char     chr;
    int      i, cnt;
+   char     vect_buf1[500], vect_buf2[500], vect_buf3[500], vect_buf4[500];
+   long     pos[7];
    
    /* Main event loop, ~10Hz */
    while (!done) {
@@ -378,6 +380,11 @@ void MainEventThread(void *thd){
          for(cnt=0;cnt<wam[i]->dof;cnt++){
             if(fabs(getval_vn(wam[i]->Jtrq,cnt) - getval_vn(wam[i]->Gtrq,cnt)) >
                getval_vn(wam[i]->torq_limit,cnt)){
+               syslog(LOG_ERR, "OverTorque on J%d, Jtrq[]=%s, Jpos[]=%s, Jref[]=%s", 
+                 cnt+1, sprint_vn(vect_buf1, wam[i]->Jtrq),
+		 sprint_vn(vect_buf2, wam[i]->Jpos),
+		 sprint_vn(vect_buf2, wam[i]->Jtref));
+                 //sprintf(vect_buf4, "< %ld, %ld, %ld, %ld>", wam[i]->act[0].puck.position, wam[i]->act[1].puck.position, wam[i]->act[2].puck.position, wam[i]->act[3].puck.position));
                pauseCnt = 50;
                pause_trj_bts(wamData[i].active_bts,5);
                break;
