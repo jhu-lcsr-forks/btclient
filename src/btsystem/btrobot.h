@@ -89,16 +89,16 @@ This object is used internally to btrobot.
 */
 typedef struct {
   //physical info
-  double m; //!< Link mass
-  double Gscale; // Percent of gravity to use (normally 0.0->1.0)
-  vect_3 *cog; //Mass center, gravity vector in base frame
-  matr_mn *I; //Inertial matrix
-  vect_3 *rotorI;
+  double m; //!< Link mass (kg)
+  double Gscale; //!< Percent of gravity to use (normally 0.0->1.0)
+  vect_3 *cog; //!< Mass center, gravity vector in base frame
+  matr_mn *I; //!< Inertial matrix for this link
+  vect_3 *rotorI; //!< Rotor inertia, added to the link's inertial matrix in #OpenWAM()
   
   //geometry info
   double Alpha,Theta,A,D; //!< Denavit-Hartenberg link parameters
   int type;
-  double R,P; //Joint type multipliers to avoid decision
+  double R,P; //!< Revolute, Prismatic: Joint type multipliers to avoid decision
   
   //storage for dynamic info
   matr_h* trans; //last computed transform

@@ -2137,6 +2137,8 @@ matr_mn * new_mn(int r,int c) //allocate an n-vector
    n->n = c;
    n->ret->m = r;
    n->ret->n = c;
+   n->s = r * c;
+   n->ret->s = r * c;
    
    ident_mn(n);
 
@@ -2528,7 +2530,11 @@ matr_h * new_mh()
    n->ret->q = n->ret->data;
    n->m = 4;
    n->n = 4;
-
+   n->s = 16;
+   n->ret->m = 4;
+   n->ret->n = 4;
+   n->ret->s = 16;
+   
    ident_mh(n);
    
    return n;

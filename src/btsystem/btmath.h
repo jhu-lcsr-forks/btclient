@@ -186,8 +186,8 @@ add in bounds checking and verbose error reporting
 
 /*================================*/
 typedef struct barrett_vect_n{
-  void *vtable;  //filler for D compatibility
-  void *monitor; //filler for D compatibility
+  //void *vtable;  //filler for D compatibility
+  //void *monitor; //filler for D compatibility
   struct barrett_vect_n *ret;  //pointer to return data for stacked operations
  // btvect_stack *stk; //Stack object for temporary variable allocation
  // int stk_id; //location on the stack. -1 = not on the stack
@@ -560,9 +560,10 @@ void print_q(quat* src);
 */
 typedef struct barrett_matr_h{
   struct barrett_matr_h *ret;
-  int m,n; //m rows, n cols
+  int s; // Total size of matrix (rows x columns)
   btreal *q;
   btreal data[16];
+  int m,n; //m rows, n cols
 }matr_h;
 
 matr_h * new_mh();
@@ -637,8 +638,9 @@ Function definitions are in btmath.c.
 */
 typedef struct barrett_matr_mn{
   struct barrett_matr_mn *ret;
-  int m,n; //m rows, n cols
+  int s; // Total size of matrix (m x n)
   btreal *q;
+  int m,n; //m rows, n cols
 }matr_mn;
 
 matr_mn * new_mn();

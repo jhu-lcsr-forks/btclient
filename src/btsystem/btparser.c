@@ -44,6 +44,7 @@
 char  hdr[255];
 FILE *outFile;
 btparser btparser_default = BTPARSE_INIT;
+int multi = 0;
 
 /*==============================*
  * Defines                      *
@@ -94,28 +95,71 @@ void getKey(char *key, char *line)
 }
 
 /* Write out the assignment statement */
-void assignLine(char *line)
+int assignLine(char *line)
 {
    char key[255];
    char *val;
    char *k;
 
-   getKey(key, line);
-   line = strchr(line, '=') + 1; // Get on the right side of =
-
-   if((val = strpbrk(line, "<\0x22")) != NULL) // String or Vector
-      fprintf(outFile, "%s%s = %s\n", hdr, key, val);
-   else {
-      // Array
-      do {
-         val = line;
-         k = strchr(line, ',');
-         if(k != NULL) {
-            *k = '\0';
-            line = k+1;
+   if(multi){
+      if((val = strpbrk(line, "<")) != NULL){ // Vector, Matrix
+         fprintf(outFile, "%s", val);
+         // Check for matrix ending on this line
+         if((val = strpbrk(line, ">")) != NULL){ 
+            if(*(val+1) == ">"){
+               multi = 0; // Found the end of the matrix
+               fprintf(outFile, "\n"); Finish the line
+            }
+            return(multi); // Signal whether there are more lines to this assignment
          }
+         else{
+            syslog(LOG_ERR, "Invalid matrix structure in parsed file");
+            return(0);
+         }
+      }
+      else{
+         syslog(LOG_ERR, "Invalid matrix structure in parsed file");
+         return(0);
+      }
+   }
+   
+   if(!multi){
+      getKey(key, line);
+      line = strchr(line, '=') + 1; // Get on the right side of =
+   
+      if((val = strpbrk(line, "\0x22")) != NULL){ // String
          fprintf(outFile, "%s%s = %s\n", hdr, key, val);
-      } while(k);
+      }else if((val = strpbrk(line, "<")) != NULL){ // Vector, Matrix
+         if(*(val+1) == "<"){ // Matrix
+            multi = 1; // Multiple lines are possible
+            fprintf(outFile, "%s%s = %s", hdr, key, val);
+            // Check for matrix ending on this line
+            if((val = strpbrk(line, ">")) != NULL){ 
+               if(*(val+1) == ">"){
+                  multi = 0; // Found the end of the matrix
+                  fprintf(outFile, "\n"); Finish the line
+               }
+               return(multi); // Signal whether there are more lines to this assignment
+            }
+            else{
+               syslog(LOG_ERR, "Invalid matrix structure in parsed file");
+            }
+         }
+         else{
+            fprintf(outFile, "%s%s = %s\n", hdr, key, val); // Output the Vector
+         }
+      }else {
+         // Array
+         do {
+            val = line;
+            k = strchr(line, ',');
+            if(k != NULL) {
+               *k = '\0';
+               line = k+1;
+            }
+            fprintf(outFile, "%s%s = %s\n", hdr, key, val);
+         } while(k);
+      }
    }
 }
 
@@ -172,12 +216,16 @@ int btParseFile(btparser *parse_obj,char *filename)
       line[strlen(line)-1] = '\0';  // Overwrite newline with termination
       stripComments(line);    // Strip the comments
       //fprintf(outFile, "%s\n", line);
-      if(strchr(line, '{') != NULL)
+      if(strchr(line, '{') != NULL){
          nestLine(line); // NEST
-      else if(strchr(line, '=') != NULL)
-         assignLine(line); // ASGN
-      else if(strchr(line, '}') != NULL)
+      }else if(strchr(line, '=') != NULL){
+         while(assignLine(line)){ // ASGN
+            if(fgets(line, 255, inFile) == NULL)
+               break;
+         }
+      }else if(strchr(line, '}') != NULL){
          killLine(line); // KILL
+      }
    }
    fclose(outFile);
    fclose(inFile);

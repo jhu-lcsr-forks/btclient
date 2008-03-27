@@ -116,6 +116,7 @@ typedef struct
  
   btrt_mutex mutex;
 }btPID;
+
 typedef struct
 {
   btPID* pid;

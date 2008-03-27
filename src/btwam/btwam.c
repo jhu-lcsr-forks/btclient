@@ -88,15 +88,16 @@ void InitVectors(wam_struct *wam)
    wam->Jtrq = new_vn(wam->dof);
    wam->Ttrq = new_vn(wam->dof);
    wam->Gtrq = new_vn(wam->dof);
-   wam->Kp = new_vn(wam->dof);
-   wam->Kd = new_vn(wam->dof);
-   wam->Ki = new_vn(wam->dof);
-   wam->saturation = new_vn(wam->dof);
+   //wam->Kp = new_vn(wam->dof);
+   //wam->Kd = new_vn(wam->dof);
+   //wam->Ki = new_vn(wam->dof);
+   //wam->saturation = new_vn(wam->dof);
    wam->torq_limit = new_vn(wam->dof);
    wam->vel = new_vn(wam->dof);
    wam->acc = new_vn(wam->dof);
    wam->Cpos = new_v3();
    wam->Cvel = new_v3();
+   wam->Cacc = new_v3();
    wam->Cpoint = new_v3();
    wam->Cref = new_v3();
    wam->Cforce = new_v3();
@@ -104,7 +105,7 @@ void InitVectors(wam_struct *wam)
    wam->Ckp = new_v3();
    wam->Ckd = new_v3();
    wam->Cki = new_v3();
-   wam->use_new = 0;
+   //wam->use_new = 0;
    wam->qref = new_q();
    wam->qact = new_q();
    wam->qaxis = new_q();
@@ -122,16 +123,28 @@ void InitVectors(wam_struct *wam)
    wam->R6acc = new_vn(12);
    wam->R6trq = new_vn(12);
    wam->R6force = new_vn(12);
-   wam->js_or_cs = 0;
+   
+   /* Declare the Homogeneous Matrix state variables for Cartesian control */
+   wam->HMpos = wam->robot.tool->origin; // Position
+   wam->HMvel = new_mh(); // Velocity
+   wam->HMacc = new_mh(); // Acceleration
+   wam->HMref = new_mh(); // Position reference
+   wam->HMtref = new_mh(); // Trajectory reference
+   wam->HMft = new_mh(); // Force/torque matrix
+   
+   //wam->js_or_cs = 0;
    wam->idle_when_done = 0;
    wam->active_sc = &wam->Jsc;
 
    wam->motor_position = (int*)btmalloc(wam->dof * sizeof(int));
    wam->zero_order = (int*)btmalloc(wam->dof * sizeof(int));
-   wam->d_jpos_ctl = (btPID*)btmalloc(wam->dof * sizeof(btPID));
+   wam->JposControl.pid = (btPID*)btmalloc(wam->dof * sizeof(btPID));
+   wam->JposControl.elements = wam->dof;
+   wam->CposControl.pid = (btPID*)btmalloc(12 * sizeof(btPID));
+   wam->CposControl.elements = 12;
    //wam->sc = (SimpleCtl*)btmalloc(wam->dof * sizeof(SimpleCtl));
 
-   wam->G = new_vn(wam->dof);
+   //wam->G = new_vn(wam->dof);
 }
 
 /** Initialize a WAM
@@ -149,20 +162,17 @@ void InitVectors(wam_struct *wam)
 */
 wam_struct* OpenWAM(char *fn, int bus)
 {
-   int cnt,ret,err;
-   const double pi = 3.14159;
-   btreal theta, d, a, alpha, mass, tmpdbl;
-   vect_3 *com;
-   wam_struct *wam;
-   char key[256];
-   long reply;
-   int link;
-   char robotName[256];
-   int actcnt = 0;
+   int            cnt, ret, err;
+   const double   pi = 3.14159;
+   btreal         theta, d, a, alpha, mass, tmpdbl;
+   vect_3         *com;
+   wam_struct     *wam;
+   char           key[256];
+   long           reply;
+   int            link;
+   char           robotName[256];
+   int            actcnt = 0;
 
-   // Carve out some memory for the main data structure
-   wam = (wam_struct*)btmalloc(sizeof(wam_struct));
-   
    // Parse config file
    if(!*fn) { // If no config file was given
       strcpy(fn, "wam.conf"); // Default to wam.conf
@@ -172,9 +182,9 @@ wam_struct* OpenWAM(char *fn, int bus)
       syslog(LOG_ERR, "OpenWAM: Error parsing config file- %s", fn);
       return(NULL);
    }
-   //strcpy(robotName, buses[bus].device_name);
-
-   //if(!*rName) { // If no robot name was given
+   
+   // Carve out some memory for the main data structure
+   wam = (wam_struct*)btmalloc(sizeof(wam_struct));
    
    // Extract the robot name from the config file
    //sprintf(key, "system.bus[%d].name", bus);
@@ -184,54 +194,77 @@ wam_struct* OpenWAM(char *fn, int bus)
    syslog(LOG_ERR, "device_name=%s", buses[bus].device_name);
    strcpy(wam->name, buses[bus].device_name); // Set the name in the wam struct
    strcpy(robotName, wam->name);
-   
-   //} else {
-   //   strcpy(robotName, rName);
-   //}
 
    syslog(LOG_ERR, "robotName=%s", robotName);
 
    // Read Degrees of Freedom
    sprintf(key, "%s.dof", robotName);
    parseGetVal(INT, key, (void*)&wam->dof);
-
+   
+   // Initialize the generic robot data structure
+   new_bot(&wam->robot,wam->dof);
+   
    // Allocate memory for the WAM vectors
    InitVectors(wam);
-
+   
    /* START of Joint Control plugin initialization */
+   // Initialize the joint control data structures
    for (cnt = 0; cnt < wam->dof; cnt ++){
-      init_btPID(&(wam->d_jpos_ctl[cnt]));
-      setgains_btPID(&(wam->d_jpos_ctl[cnt]), getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt));
+      init_btPID(&wam->JposControl.pid[cnt]);
+      //setgains_btPID(&wam->JposControl.pid[cnt], getval_vn(wam->Kp,cnt), getval_vn(wam->Kd,cnt), getval_vn(wam->Ki,cnt));
    }
-   wam->d_jpos_array.pid = wam->d_jpos_ctl;
-   wam->d_jpos_array.elements = wam->dof;
+   
+   // Initialize a state controller
    init_bts(&wam->Jsc);
+   
+   /* Assign input and output data locations to the state controller.
+    * Jpos, Jvel, Jacc are the joint state inputs to the controller
+    * Jref is a command position
+    * Jtref is a trajectory reference value (used by the trajectory generator)
+    * Jtrq is the controller output
+    * dt is the time step used by the controller
+    */
    map_btstatecontrol(&wam->Jsc, wam->Jpos, wam->Jvel, wam->Jacc,
-                      wam->Jref, wam->Jtref,wam->Jtrq, &wam->dt);
-   btposition_interface_mapf_btPID(&wam->Jsc, &(wam->d_jpos_array));
+                      wam->Jref, wam->Jtref, wam->Jtrq, &wam->dt);
+                      
+   /* Assign a position control method to the controller.
+    * This mapf function simply calls mapposition_bts() to assign the control
+    * data along with a _reset, _eval, and _pause function to the state controller.
+    * If you use your own position control method, you will want to define a new
+    * btposition_interface_mapf_yourControl() function, plus your own control
+    * data structure, and your own _reset, _eval, and _pause functions for your
+    * control scheme. See the btPID code in the first 400 lines of btcontrol.c
+    * to understand how we define these components for a simple PID controller.
+    */
+   btposition_interface_mapf_btPID(&wam->Jsc, &wam->JposControl);
    /* END of Joint Control plugin initialization */
 
 
    /* START of Control plugin initialization */
-   for (cnt = 0; cnt < 3; cnt ++) {
-      init_btPID(&(wam->d_pos_ctl[cnt]));
-      setgains_btPID(&(wam->d_pos_ctl[cnt]),2000.0,5.0,0.0);
+   for (cnt = 0; cnt < 12; cnt ++) {
+      init_btPID(&wam->CposControl.pid[cnt]);
    }
-   for (cnt = 3; cnt < 12; cnt++) {
-      init_btPID(&(wam->d_pos_ctl[cnt]));
-      setgains_btPID(&(wam->d_pos_ctl[cnt]),0.0,0.0,0.0);
-   }
-   wam->d_pos_array.pid = wam->d_pos_ctl;
-   wam->d_pos_array.elements = 12;
+   setgains_btPID(&wam->CposControl.pid[3], 2000.0, 5.0, 0.0); // X
+   setgains_btPID(&wam->CposControl.pid[7], 2000.0, 5.0, 0.0); // Y
+   setgains_btPID(&wam->CposControl.pid[11], 2000.0, 5.0, 0.0); // Z
+   
+   //for (cnt = 3; cnt < 12; cnt++) {
+   //   init_btPID(&(wam->d_pos_ctl[cnt]));
+   //   setgains_btPID(&(wam->d_pos_ctl[cnt]),0.0,0.0,0.0);
+   //}
+   //wam->d_pos_array.pid = wam->d_pos_ctl;
+   //wam->d_pos_array.elements = 12;
    init_bts(&wam->Csc);
-   map_btstatecontrol(&wam->Csc, wam->R6pos, wam->R6vel, wam->R6acc,
-                      wam->R6ref, wam->R6tref, wam->R6force, &wam->dt);
-   btposition_interface_mapf_btPID(&wam->Csc, &(wam->d_pos_array));
+   map_btstatecontrol(&wam->Csc, (vect_n*)wam->HMpos, (vect_n*)wam->HMvel, (vect_n*)wam->HMacc,
+                      (vect_n*)wam->HMref, (vect_n*)wam->HMtref, (vect_n*)wam->HMft, &wam->dt);
+   //map_btstatecontrol(&wam->Csc, wam->R6pos, wam->R6vel, wam->R6acc,
+   //                   wam->R6ref, wam->R6tref, wam->R6force, &wam->dt);
+   btposition_interface_mapf_btPID(&wam->Csc, &wam->CposControl);
    /* END of Control plugin initialization */
 
-   init_pwl(&wam->pth,3,2); //Cartesian move path
+   //init_pwl(&wam->pth,3,2); //Cartesian move path
 
-   wam->F = 0.0;
+   //wam->F = 0.0;
    wam->isZeroed = FALSE;
    wam->cteach.Log_Data = 0; //th cteach
    wam->force_callback = BlankWAMcallback;
@@ -243,9 +276,6 @@ wam_struct* OpenWAM(char *fn, int bus)
    err = GetActuators(bus, &wam->act, &wam->num_actuators);
    //syslog(LOG_ERR, "bus=%d, num_actuators=%d", bus, wam->num_actuators);
    com = new_v3();
-
-   // Initialize the generic robot data structure
-   new_bot(&wam->robot,wam->dof);
 
    // Read park_location
    sprintf(key, "%s.home", robotName);
@@ -260,25 +290,27 @@ wam_struct* OpenWAM(char *fn, int bus)
    parseGetVal(MATRIX, key, (void*)wam->robot.world->origin);
 
    // Read whether M4 is reversed (new as of 2007 WAMs)
-   sprintf(key, "%s.M4_2007", robotName);
-   wam->M4_reversed = 0; // Default to "pre-2007"
-   parseGetVal(INT, key, (void*)&wam->M4_reversed);
-
-   //Read transmission matrix
-   sprintf(key, "%s.m2jp", robotName);
-   parseGetVal(MATRIX, key, (void*)wam->M2JP);
-
-   //Read transmission matrix
-   sprintf(key, "%s.j2mt", robotName);
-   parseGetVal(MATRIX, key, (void*)wam->J2MT);
+   //sprintf(key, "%s.M4_2007", robotName);
+   //wam->M4_reversed = 0; // Default to "pre-2007"
+   //parseGetVal(INT, key, (void*)&wam->M4_reversed);
 
    // Read the Transmission ratios
    sprintf(key, "%s.N", robotName);
    parseGetVal(VECTOR, key, (void*)wam->N);
-
-   // Read the transmission ratios
    sprintf(key, "%s.n", robotName);
    parseGetVal(VECTOR, key, (void*)wam->n);
+   
+   //Read the motor->joint position transmission matrix
+   sprintf(key, "%s.m2jp", robotName);
+   parseGetVal(MATRIX, key, (void*)wam->M2JP);
+   
+   //Read the joint->motor position transmission matrix
+   sprintf(key, "%s.j2mp", robotName);
+   parseGetVal(MATRIX, key, (void*)wam->J2MP);
+
+   //Read the joint->motor torque transmission matrix
+   sprintf(key, "%s.j2mt", robotName);
+   parseGetVal(MATRIX, key, (void*)wam->J2MT);
 
    // Find motor positions
    for (actcnt = 0;actcnt < wam->num_actuators;actcnt++)
@@ -335,30 +367,36 @@ wam_struct* OpenWAM(char *fn, int bus)
       for(cnt = 0; cnt < 3; cnt++)
          ELEM(wam->robot.links[link].I, cnt, cnt) += wam->robot.links[link].rotorI->q[cnt];
 
-      if(link != wam->dof)
+      // If this is not the tool...
+      if(link != wam->dof) 
       {
-         // Query for motor_position (JIDX)
-
-         // Read joint PID constants
+         // Read joint PID parameters
          sprintf(key, "%s.link[%d].pid.kp", robotName, link);
-         parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->Kp)[link]));
+         parseGetVal(DOUBLE, key, (void*)&wam->JposControl.pid[link].Kp);
+         //parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->Kp)[link]));
+         
          sprintf(key, "%s.link[%d].pid.kd", robotName, link);
-         parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->Kd)[link]));
-         //parseGetVal(DOUBLE, key, (void*)&wam->Kd);
+         parseGetVal(DOUBLE, key, (void*)&wam->JposControl.pid[link].Kd);
+         //parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->Kd)[link]));
+         
          sprintf(key, "%s.link[%d].pid.ki", robotName, link);
-         parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->Ki)[link]));
-         //parseGetVal(DOUBLE, key, (void*)&wam->Ki);
+         parseGetVal(DOUBLE, key, (void*)&wam->JposControl.pid[link].Ki);
+         //parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->Ki)[link]));
+         
          sprintf(key, "%s.link[%d].pid.max", robotName, link);
-         parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->saturation)[link]));
-         //parseGetVal(DOUBLE, key, (void*)&wam->saturation);
-
-         // Read joint vel/acc defaults
+         parseGetVal(DOUBLE, key, (void*)&wam->JposControl.pid[link].saturation);
+         //parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->saturation)[link]));
+         
+         // Read joint vel/acc parameters
          sprintf(key, "%s.link[%d].vel", robotName, link);
-         parseGetVal(DOUBLE, key, (void*)&tmpdbl);
-         setval_vn(wam->vel, link, tmpdbl);
+         parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->vel)[link]));
+         //parseGetVal(DOUBLE, key, (void*)&tmpdbl);
+         //setval_vn(wam->vel, link, tmpdbl);
+         
          sprintf(key, "%s.link[%d].acc", robotName, link);
-         parseGetVal(DOUBLE, key, (void*)&tmpdbl);
-         setval_vn(wam->acc, link, tmpdbl);
+         parseGetVal(DOUBLE, key, (void*)&(valptr_vn(wam->acc)[link]));
+         //parseGetVal(DOUBLE, key, (void*)&tmpdbl);
+         //setval_vn(wam->acc, link, tmpdbl);
 
          link_geom_bot(&wam->robot, link, theta * pi, d, a, alpha * pi);
          link_mass_bot(&wam->robot, link, com, mass);
@@ -387,45 +425,16 @@ wam_struct* OpenWAM(char *fn, int bus)
       syslog(LOG_ERR, "WAM zeroed by application");
    }
 
-   // Link geometry - file
-   // Link mass - file
-   // motor_position - enum
-   // zero_offsets - unused
-   // stop_torque - unused
-   // park_location - file
-   // zero_order - unused
-   // Joint PID constants Kp, Kd, Ki - file
-   // Joint saturation limits - file
-   // Joint vel/acc defaults - file
-
-   /* WAM tipped forward hack */
-   /*
-   setrow_m3(wam->robot.world->origin,0,0.0,0.0,1.0);
-   setrow_m3(wam->robot.world->origin,1,0.0,1.0,0.0);
-   setrow_m3(wam->robot.world->origin,2,-1.0,0.0,0.0);
-   */
-   /* end WAM tipped forward hack */
-
    fill_vn(wam->robot.dq,0.0);
    fill_vn(wam->robot.ddq,0.0);
 
-   wam->Gcomp = 0;
+   //wam->Gcomp = 0;
    set_gravity_bot(&wam->robot, 0.0);
    
-   for (cnt = 0; cnt < wam->dof; cnt ++){
-      setgains_btPID(&(wam->d_jpos_ctl[cnt]), getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt));
-   }
+   //for (cnt = 0; cnt < wam->dof; cnt ++){
+   //   setgains_btPID(&(wam->JposControl.pid[cnt]), getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt));
+   //}
    
-#if 0
-   for(cnt = 0; cnt < wam->dof; cnt++)
-   {
-      SCinit(&(wam->sc[cnt]));
-      SCsetpid(&(wam->sc[cnt]),getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt),getval_vn(wam->saturation,cnt));
-      SCsettrjprof(&(wam->sc[cnt]),getval_vn(wam->vel,cnt),getval_vn(wam->acc,cnt));
-
-      //setgains_btPID(&(wam->d_jpos_ctl[cnt]), getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt));
-   }
-#endif
    test_and_log(
       btrt_mutex_create(&(wam->loop_mutex)),
       "Could not initialize mutex for WAM control loop.");
@@ -663,9 +672,9 @@ void WAMControlThread(void *data)
       }
       );
 
-      ActAngle2Mpos(wam,(wam->Mpos)); //Move motor angles into a wam_vector variable
+      ActAngle2Mpos(wam,(wam->Mpos)); // Move motor angles into a wam_vector variable
       //const_vn(wam->Mpos, 0.0, 0.0, 0.0, 0.0);
-      Mpos2Jpos(wam,(wam->Mpos), (wam->Jpos)); //Convert from motor angles to joint angles
+      Mpos2Jpos(wam,(wam->Mpos), (wam->Jpos)); // Convert from motor angles to joint angles
 
       // Joint space stuff
       pos1_time = btrt_get_time(); //th prof
@@ -675,34 +684,29 @@ void WAMControlThread(void *data)
 
       // Cartesian space stuff
       set_vn(wam->robot.q,wam->Jpos);
-//syslog(LOG_ERR, "C 1 9");
+
       eval_fk_bot(&wam->robot);
-      //syslog(LOG_ERR, "C 1 10");
-      
-      // Uncomment for Jacobian and inertia matrix calc - requires powerful CPU
       eval_fj_bot(&wam->robot); 
-      
       eval_fd_bot(&wam->robot);
-//syslog(LOG_ERR, "C 1 11");
-      eval_bd_bot(&wam->robot);
-      //syslog(LOG_ERR, "C 1 12");
-      get_t_bot(&wam->robot, wam->Gtrq);
+      
+      //eval_bd_bot(&wam->robot);
+      //get_t_bot(&wam->robot, wam->Gtrq);
 
       /* Fill in the Cartesian XYZ */
       set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));
-      set_vn(wam->R6pos,(vect_n*)wam->Cpos);
+      //set_vn(wam->R6pos,(vect_n*)wam->Cpos);
       
-      /* Append the rMatrix to R6pos */
-      for(cnt = 0; cnt < 3; cnt++){
-         getcol_mh(v3, wam->robot.tool->origin, cnt);
-         setrange_vn(wam->R6pos, (vect_n*)v3, 3+3*cnt, 0, 3);
-      }
+      ///* Append the rMatrix to R6pos */
+      //for(cnt = 0; cnt < 3; cnt++){
+      //   getcol_mh(v3, wam->robot.tool->origin, cnt);
+      //   setrange_vn(wam->R6pos, (vect_n*)v3, 3+3*cnt, 0, 3);
+      //}
 
       pos1_time = btrt_get_time(); //th prof
       eval_bts(&(wam->Csc));
       pos2_time = btrt_get_time(); //th prof
       wam->user_time = pos2_time - pos1_time; //th prof
-
+#if 0
       set_v3(wam->Cforce,(vect_3*)wam->R6force);
       //setrange_vn((vect_n*)wam->Ctrq,wam->R6force,0,2,3);
       
@@ -727,24 +731,22 @@ void WAMControlThread(void *data)
          //apply_tool_force_bot(&(w->robot), w->Cpoint, f3, t3);
          set_vn(last_e, e);
       }
+#endif
 #if 0
-      //Cartesian angular constraint
+      /* Quaternian angular control in Cartesian space */
       R_to_q(wam->qact,T_to_W_trans_bot(&wam->robot));
       set_q(wam->qaxis,mul_q(wam->qact,conj_q(wam->qref)));
       set_q(wam->forced,force_closest_q(wam->qaxis));
-
+      wam->qerr = GCdist_q(wam->qref,wam->qact);
       //syslog_vn("qref: ", (vect_n*)wam->qref);
       //syslog_vn("qact: ", (vect_n*)wam->qact);
-
-      wam->qerr = GCdist_q(wam->qref,wam->qact);
-      set_v3(wam->Ctrq,scale_v3(eval_err_btPID(&(wam->pid[3]),wam->qerr,dt),GCaxis_q(wam->Ctrq,wam->qref,wam->qact)));
-
       //syslog(LOG_ERR, "qerr: %f", wam->qerr);
+      
+      set_v3(wam->Ctrq,scale_v3(eval_err_btPID(&(wam->pid[3]),wam->qerr,dt),GCaxis_q(wam->Ctrq,wam->qref,wam->qact)));
       //syslog_vn("Ctrq: ", (vect_n*)wam->Ctrq);
 #endif
-      //syslog_vn("qref: ", (vect_n*)wam->qref);
-      //syslog_vn("qact: ", (vect_n*)wam->qact);
-      //Force application
+
+      //Force application: set the link forces and torques
       apply_tool_force_bot(&wam->robot, wam->Cpoint, wam->Cforce, wam->Ctrq);
 
       pos1_time = btrt_get_time(); //th prof
@@ -752,8 +754,8 @@ void WAMControlThread(void *data)
       pos2_time = btrt_get_time(); //th prof
       wam->user_time = pos2_time - pos1_time; //th prof
 
-      eval_bd_bot(&wam->robot);
-      get_t_bot(&wam->robot,wam->Ttrq);
+      eval_bd_bot(&wam->robot); // Calculate robot->t, given link forces and torques (+gravity)
+      get_t_bot(&wam->robot,wam->Ttrq); // wam->Ttrq = robot->t
 
       if(wam->isZeroed)
       {
@@ -962,23 +964,9 @@ void Mpos2Jpos(wam_struct *wam,vect_n * Mpos, vect_n * Jpos)
 {
    vect_n tmp_vn[2];
    btreal tmp_btreal[8];
-   btreal pos[10];
-   btreal mN[10];
-   btreal mn[10];
-
+   
    init_local_vn(tmp_vn,tmp_btreal,8);
-   /*
-   extract_vn(pos,Mpos);
-   extract_vn(mN,wam->N);
-   extract_vn(mn,wam->n);
-   setval_vn(Jpos,0, ( -pos[0] / mN[0]));
-   setval_vn(Jpos,1, (0.5 * pos[1] / mN[1]) - (0.5 * pos[2] / mN[2]));
-   setval_vn(Jpos,2, ( -0.5 * pos[1] * mn[2] / mN[1]) - (0.5 * mn[2] * pos[2] / mN[2]));
-   setval_vn(Jpos,3,  (pos[3] / mN[3]));
-   setval_vn(Jpos,4, 0.5 * pos[4] / mN[4] + 0.5 * pos[5] / mN[4]);
-   setval_vn(Jpos,5, -0.5 * pos[4] * mn[5] / mN[4] + 0.5 * mn[5] * pos[5] / mN[4]);
-   setval_vn(Jpos,6, -1 * pos[6] / mN[6]);
-   */
+   
    set_vn(Jpos,matXvec_mn(wam->M2JP,Mpos,tmp_vn));
 }
 
@@ -987,9 +975,14 @@ void Mpos2Jpos(wam_struct *wam,vect_n * Mpos, vect_n * Jpos)
 */
 void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos)
 {
-   btreal pos[10];
-   btreal mN[10];
-   btreal mn[10];
+   vect_n tmp_vn[2];
+   btreal tmp_btreal[8];
+   
+   //btreal pos[10];
+   //btreal mN[10];
+   //btreal mn[10];
+   init_local_vn(tmp_vn,tmp_btreal,8);
+   /*
    extract_vn(pos,Jpos);
    extract_vn(mN,wam->N);
    extract_vn(mn,wam->n);
@@ -1006,6 +999,8 @@ void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos)
       setval_vn(Mpos,5, pos[4] * mN[4] + pos[5] * mN[4] / mn[5]);
       setval_vn(Mpos,6, -pos[6] * mN[6]);
    }
+   */
+   set_vn(Mpos, matXvec_mn(wam->J2MP, Jpos, tmp_vn));
 }
 
 /** Transform wam_vector Joint torques to Motor torques
@@ -1014,9 +1009,9 @@ void Jtrq2Mtrq(wam_struct *wam,vect_n * Jtrq, vect_n * Mtrq)
 {
    vect_n tmp_vn[2];
    btreal tmp_btreal[8];
-   btreal trq[10];
-   btreal mN[10];
-   btreal mn[10];
+   //btreal trq[10];
+   //btreal mN[10];
+   //btreal mn[10];
    init_local_vn(tmp_vn,tmp_btreal,8);
    /*
    extract_vn(trq,Jtrq);
@@ -1030,7 +1025,7 @@ void Jtrq2Mtrq(wam_struct *wam,vect_n * Jtrq, vect_n * Mtrq)
    setval_vn(Mtrq,5, 0.5 * trq[4] / mN[4] + 0.5 * mn[5] * trq[5] / mN[4]);
    setval_vn(Mtrq,6, -1 * trq[6] / mN[6]);
    */
-   set_vn(Mtrq,matXvec_mn(wam->J2MT,Jtrq,tmp_vn));
+   set_vn(Mtrq, matXvec_mn(wam->J2MT, Jtrq, tmp_vn));
 
 }
 
@@ -1205,10 +1200,10 @@ btreal GetGravityComp(wam_struct *w)
 void SetGravityComp(wam_struct *w,btreal scale)
 {
    if (scale == 0.0) {
-      w->Gcomp = 0;
+      //w->Gcomp = 0;
       set_gravity_bot(&w->robot, 0.0);
    } else {
-      w->Gcomp = 1;
+      //w->Gcomp = 1;
       set_gravity_bot(&w->robot, scale);
    }
 }

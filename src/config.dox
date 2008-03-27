@@ -1,4 +1,4 @@
-# Doxyfile 1.4.3
+# Doxyfile 1.4.6
 
 #---------------------------------------------------------------------------
 # Project related configuration options
@@ -32,12 +32,13 @@ JAVADOC_AUTOBRIEF      = YES
 MULTILINE_CPP_IS_BRIEF = NO
 DETAILS_AT_TOP         = YES
 INHERIT_DOCS           = YES
-DISTRIBUTE_GROUP_DOC   = NO
 SEPARATE_MEMBER_PAGES  = NO
 TAB_SIZE               = 2
 ALIASES                = 
 OPTIMIZE_OUTPUT_FOR_C  = YES
 OPTIMIZE_OUTPUT_JAVA   = NO
+BUILTIN_STL_SUPPORT    = NO
+DISTRIBUTE_GROUP_DOC   = NO
 SUBGROUPING            = YES
 #---------------------------------------------------------------------------
 # Build related configuration options
@@ -90,12 +91,7 @@ RECURSIVE              = YES
 EXCLUDE                = btsystem/include/ \
                          btdiag \
                          experimental \
-                         btutil \
-                         btsystem/playlist.c \
-                         btsystem/playlist.h \
-                         btsystem/btjointcontrol.c \
-                         btsystem/btjointcontrol.h \
-                         btsystem/btseg.*
+                         btutil
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = 
 EXAMPLE_PATH           = ../examples
@@ -224,11 +220,11 @@ UML_LOOK               = NO
 TEMPLATE_RELATIONS     = YES
 INCLUDE_GRAPH          = YES
 INCLUDED_BY_GRAPH      = YES
-CALL_GRAPH             = NO
+CALL_GRAPH             = YES
 GRAPHICAL_HIERARCHY    = YES
 DIRECTORY_GRAPH        = YES
 DOT_IMAGE_FORMAT       = png
-DOT_PATH               = "/usr/local/bin"
+DOT_PATH               = C:\Progra~1\ATT\Graphviz\bin
 DOTFILE_DIRS           = 
 MAX_DOT_GRAPH_WIDTH    = 1024
 MAX_DOT_GRAPH_HEIGHT   = 1024
