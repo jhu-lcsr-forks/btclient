@@ -106,9 +106,9 @@ int assignLine(char *line)
          fprintf(outFile, "%s", val);
          // Check for matrix ending on this line
          if((val = strpbrk(line, ">")) != NULL){ 
-            if(*(val+1) == ">"){
+            if(*(val+1) == '>'){
                multi = 0; // Found the end of the matrix
-               fprintf(outFile, "\n"); Finish the line
+               fprintf(outFile, "\n"); //Finish the line
             }
             return(multi); // Signal whether there are more lines to this assignment
          }
@@ -130,14 +130,14 @@ int assignLine(char *line)
       if((val = strpbrk(line, "\0x22")) != NULL){ // String
          fprintf(outFile, "%s%s = %s\n", hdr, key, val);
       }else if((val = strpbrk(line, "<")) != NULL){ // Vector, Matrix
-         if(*(val+1) == "<"){ // Matrix
+         if(*(val+1) == '<'){ // Matrix
             multi = 1; // Multiple lines are possible
             fprintf(outFile, "%s%s = %s", hdr, key, val);
             // Check for matrix ending on this line
             if((val = strpbrk(line, ">")) != NULL){ 
-               if(*(val+1) == ">"){
+               if(*(val+1) == '>'){
                   multi = 0; // Found the end of the matrix
-                  fprintf(outFile, "\n"); Finish the line
+                  fprintf(outFile, "\n"); //Finish the line
                }
                return(multi); // Signal whether there are more lines to this assignment
             }

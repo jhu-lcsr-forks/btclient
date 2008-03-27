@@ -299,7 +299,7 @@ void Startup(void *thd){
       
       /* Prepare the WAM data */
       wamData[i].jdest = new_vn(len_vn(wam[i]->Jpos));
-      wamData[i].cdest = new_vn(len_vn(wam[i]->R6pos));
+      wamData[i].cdest = new_vn(len_vn((vect_n*)wam[i]->HMpos));
    
       /* The WAM can be in either Joint mode or Cartesian mode.
        * We want a single set of variables (active_) to eliminate the need
@@ -313,7 +313,7 @@ void Startup(void *thd){
       
       /* Create a new trajectory */
       wamData[i].vt_j = new_vta(len_vn(wam[i]->Jpos),50);
-      wamData[i].vt_c = new_vta(len_vn(wam[i]->R6pos),50);
+      wamData[i].vt_c = new_vta(len_vn((vect_n*)wam[i]->HMpos),50);
       wamData[i].vta = &wamData[i].vt_j;
       register_vta(wamData[i].active_bts,*wamData[i].vta);
       
@@ -802,8 +802,8 @@ void RenderMAIN_SCREEN()
       ++line;
       mvprintw(line, 0, "RxRyRz     : %s ", sprint_vn(vect_buf1,(vect_n*)RtoXYZf_m3(wam[cnt]->robot.tool->origin, RxRyRz)));
       ++line;
-      mvprintw(line, 0, "R6ref       : %s ", sprint_vn(vect_buf1,wam[cnt]->R6ref));
-      ++line;
+      mvprintw(line, 0, "HMpos      : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMpos));
+      line+=5;
       /*
       mvprintw(line, 0, "origin     : \n%s ", sprint_mn(vect_buf1,(matr_mn*)wam[cnt]->robot.tool->origin));
       line+=5;
@@ -1023,8 +1023,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          if (wamData[i].active_bts == &(wam[i]->Jsc)) { //switch to cartesian space mode.
             SetCartesianSpace(wam[i]);
             wamData[i].active_bts = &(wam[i]->Csc);
-            wamData[i].active_pos = wam[i]->R6pos;
-            wamData[i].active_trq = wam[i]->R6force;
+            wamData[i].active_pos = (vect_n*)wam[i]->HMpos;
+            wamData[i].active_trq = (vect_n*)wam[i]->HMft;
             wamData[i].active_dest = wamData[i].cdest;
             wamData[i].vta = &wamData[i].vt_c;
             register_vta(wamData[i].active_bts,*wamData[i].vta);
@@ -1210,6 +1210,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       }
       finish_entry();
       break;
+#if 0
    case 'N'://Toggle angular hold
       if(angular) {
          angular = 0;
@@ -1224,7 +1225,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          }
       }
       break;
-      
+#endif      
    case 'M'://Move to a location
       if(getmode_bts(wamData[0].active_bts)!=SCMODE_TRJ) {
          start_entry();

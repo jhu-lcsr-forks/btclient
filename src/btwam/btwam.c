@@ -102,9 +102,9 @@ void InitVectors(wam_struct *wam)
    wam->Cref = new_v3();
    wam->Cforce = new_v3();
    wam->Ctrq = new_v3();
-   wam->Ckp = new_v3();
-   wam->Ckd = new_v3();
-   wam->Cki = new_v3();
+   //wam->Ckp = new_v3();
+   //wam->Ckd = new_v3();
+   //wam->Cki = new_v3();
    //wam->use_new = 0;
    wam->qref = new_q();
    wam->qact = new_q();
@@ -116,6 +116,7 @@ void InitVectors(wam_struct *wam)
     * But ypr caused ugly discontinuous math.
     * So now we store XYZ+rMatrix in a vn(12).
     */
+#if 0
    wam->R6pos = new_vn(12);
    wam->R6ref = new_vn(12);
    wam->R6tref = new_vn(12);
@@ -123,7 +124,8 @@ void InitVectors(wam_struct *wam)
    wam->R6acc = new_vn(12);
    wam->R6trq = new_vn(12);
    wam->R6force = new_vn(12);
-   
+#endif
+
    /* Declare the Homogeneous Matrix state variables for Cartesian control */
    wam->HMpos = wam->robot.tool->origin; // Position
    wam->HMvel = new_mh(); // Velocity
@@ -1289,9 +1291,9 @@ void DumpWAM2Syslog(wam_struct *wam)
    syslog(LOG_ERR,"WAM:park_location:%s",sprint_vn(buf,wam->park_location));
    syslog(LOG_ERR,"%d, %d, %d, %d, %d, %d, %d",(wam->zero_order[0]),(wam->zero_order[1]),(wam->zero_order[2]),(wam->zero_order[3]),(wam->zero_order[4]),(wam->zero_order[5]),(wam->zero_order[6]));
    syslog(LOG_ERR,"%d, %d, %d, %d, %d, %d, %d",(wam->motor_position[0]),(wam->motor_position[1]),(wam->motor_position[2]),(wam->motor_position[3]),(wam->motor_position[4]),(wam->motor_position[5]),(wam->motor_position[6]));
-   syslog(LOG_ERR,"WAM:Kp:%s",sprint_vn(buf,wam->Kp));
-   syslog(LOG_ERR,"WAM:Kd:%s",sprint_vn(buf,wam->Kd));
-   syslog(LOG_ERR,"WAM:Ki:%s",sprint_vn(buf,wam->Ki));
+   //syslog(LOG_ERR,"WAM:Kp:%s",sprint_vn(buf,wam->Kp));
+   //syslog(LOG_ERR,"WAM:Kd:%s",sprint_vn(buf,wam->Kd));
+   //syslog(LOG_ERR,"WAM:Ki:%s",sprint_vn(buf,wam->Ki));
    syslog(LOG_ERR,"WAM:vel:%s",sprint_vn(buf,wam->vel));
    syslog(LOG_ERR,"WAM:acc:%s",sprint_vn(buf,wam->acc));
    syslog(LOG_ERR,"Num pucks %d",wam->num_actuators);
@@ -1318,7 +1320,7 @@ void StartContinuousTeach(wam_struct *wam,int Joint,int Div,char *filename)
       PrepDL(&(wam->cteach),2);
       AddDataDL(&(wam->cteach),&(wam->teach_time),sizeof(btreal),4,"Time");
       //AddDataDL(&(wam->cteach),valptr_vn((vect_n*)wam->Cpos),sizeof(btreal)*3,4,"Cpos");
-      AddDataDL(&(wam->cteach),valptr_vn((vect_n*)wam->R6pos),sizeof(btreal)*12,4,"R6pos");
+      AddDataDL(&(wam->cteach),valptr_vn((vect_n*)wam->HMpos),sizeof(btreal)*12,4,"HMpos");
 
    } else { //Only for joint space recording for now
       joints = wam->num_actuators;

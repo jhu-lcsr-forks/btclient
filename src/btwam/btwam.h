@@ -128,7 +128,7 @@ typedef struct btwam_struct
    vect_n *Jacc; //!< Joint acceleration (rad/s/s) (read-only)
    vect_n *Jtrq; //!< Joint torque command (Nm). If you write/use you own torque controller, you can use this.
    vect_n *Jref; //!< Joint position reference/command (rad). If you write/use your own position controller, you can use this.
-   vect_n *Jtref //!< Joint trajectory reference. Tracks progress through a trajectory.
+   vect_n *Jtref; //!< Joint trajectory reference. Tracks progress through a trajectory.
    vect_n *vel, *acc; //!< Velocity and acceleration for joint space moves
    
    //Cartesian space controller
