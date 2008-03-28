@@ -102,7 +102,7 @@ void assignLine(char *line)
    char *k;
 
    if(multi){
-	   syslog(LOG_ERR, "line=[%s]", line);
+	   //syslog(LOG_ERR, "line=[%s]", line);
       if((val = strchr(line, '<')) != NULL){ // Vector, Matrix
          fprintf(outFile, "%s", val);
          // Check for matrix ending on this line
@@ -124,7 +124,7 @@ void assignLine(char *line)
    
       getKey(key, line);
       line = strchr(line, '=') + 1; // Get on the right side of =
-	   syslog(LOG_ERR, "line=[%s]", line);
+	   //syslog(LOG_ERR, "line=[%s]", line);
    
       if((val = strchr(line, 0x22)) != NULL){ // String
          fprintf(outFile, "%s%s = %s\n", hdr, key, val);
