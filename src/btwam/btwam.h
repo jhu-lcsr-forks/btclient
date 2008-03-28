@@ -252,7 +252,7 @@ long GetElapsedTime(); //Static time variable
 
 /*======================================================================*
  *                                                                      *
- *          Copyright (c) 2003, 2004 Barrett Technology, Inc.           *
+ *          Copyright (c) 2003-2008 Barrett Technology, Inc.            *
  *                        625 Mount Auburn St                           *
  *                    Cambridge, MA  02138,  USA                        *
  *                                                                      *
@@ -269,3 +269,4 @@ long GetElapsedTime(); //Static time variable
  *  Technology, Inc. be liable for any lost development expenses, lost  *
  *  lost profits, or any incidental, special, or consequential damage.  *
  *======================================================================*/
+ 

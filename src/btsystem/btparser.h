@@ -98,9 +98,10 @@ enum parsetypes {INT = 0,LONG,DOUBLE,STRING,VECTOR,MATRIX};
 }
 #endif/* __cplusplus */
 #endif /* _PARSER_H */
+
 /*======================================================================*
  *                                                                      *
- *          Copyright (c) 2005 Barrett Technology, Inc.           *
+ *          Copyright (c) 2003-2008 Barrett Technology, Inc.            *
  *                        625 Mount Auburn St                           *
  *                    Cambridge, MA  02138,  USA                        *
  *                                                                      *
@@ -117,3 +118,4 @@ enum parsetypes {INT = 0,LONG,DOUBLE,STRING,VECTOR,MATRIX};
  *  Technology, Inc. be liable for any lost development expenses, lost  *
  *  lost profits, or any incidental, special, or consequential damage.  *
  *======================================================================*/
+ 

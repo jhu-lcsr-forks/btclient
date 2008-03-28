@@ -816,10 +816,6 @@ void RenderMAIN_SCREEN()
       //++line;
       mvprintw(line, 0, "%s     : %s ", (wamData[cnt].active_bts == &(wam[cnt]->Jsc)) ? "Torque" : "Force ", sprint_vn(vect_buf1,wamData[cnt].active_trq));
       line+=2;
-
-      mvprintw(line, 0, "Jtrq       : %s ",
-		      sprint_vn(vect_buf1,wam[cnt]->Jtrq));
-      line +=2;
       
       if (*wamData[cnt].vta != NULL) { // print current point
          vr = get_vr_vta(*wamData[cnt].vta);
@@ -1400,4 +1396,23 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
    }
 }
 
-
+/*======================================================================*
+ *                                                                      *
+ *          Copyright (c) 2003-2008 Barrett Technology, Inc.            *
+ *                        625 Mount Auburn St                           *
+ *                    Cambridge, MA  02138,  USA                        *
+ *                                                                      *
+ *                        All rights reserved.                          *
+ *                                                                      *
+ *  ******************************************************************  *
+ *                            DISCLAIMER                                *
+ *                                                                      *
+ *  This software and related documentation are provided to you on      *
+ *  an as is basis and without warranty of any kind.  No warranties,    *
+ *  express or implied, including, without limitation, any warranties   *
+ *  of merchantability or fitness for a particular purpose are being    *
+ *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
+ *  Technology, Inc. be liable for any lost development expenses, lost  *
+ *  lost profits, or any incidental, special, or consequential damage.  *
+ *======================================================================*/
+ 

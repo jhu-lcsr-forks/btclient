@@ -149,14 +149,15 @@ void InitVectors(wam_struct *wam)
 
 /** Initialize a WAM
  
-  This function calls the necessary lower-level libbt functions to set
-  up the pucks, enumerate them and scan in the wam configuration information.
+  This function calls the necessary lower-level btsystem functions to set
+  up the pucks, enumerate them and scan in the WAM configuration information.
  
   This function may kill the process using exit() if it runs into problems.
   
-  \param fn wam configuration filename
-  \retval NULL - Some error occured during initialization. Check /var/log/syslog.
-  \retval wam_struct* - Pointer to wam data structure.
+  \param fn WAM configuration filename
+  \param bus Index into the bus data structure ("System" order in wam.conf)
+  \retval NULL Some error occured during initialization. Check /var/log/syslog.
+  \retval wam_struct* Pointer to wam data structure.
   
   See #btwam_struct
 */
@@ -494,48 +495,52 @@ void WAMMaintenanceThread(void *data)
    pthread_exit(NULL);
 }
 
-/** This function closes the control loop on the WAM using a PID regulator in joint space.
+/** This function closes the control loop on the WAM
  
-It is worth the programmers time to read through the code of this function and 
-understand exactly what it is doing!
- 
-The following functionality is in this loop:
- - Joint Space Controller (pid, point-to-point trapezoidal trajectories)
- - Loop profiling - Period time,
-   btthread* this_thd; Read pos time, Write trq time, Calc time
- - Newton-Euler Recursive kinematics & dynamics
- - Data logging
- - Continuous teach & play recording
+The WAMControlThread() contains code to:
+ - Set up periodic timer for the control loop
+ - Wait until the start of the next control period
+ - Clear CAN bus of any unwanted messages
+ - Read the motor positions from the WAM
+ - Convert from motor angles to joint angles
+ - Evaluate the Joint state controller (trajectory/position controller yields joint torques)
+ - Evaluate the Forward Kinematics (use joint angles to calculate the tool position)
+ - Evaluate the Forward Jacobian and Mass/Inertia matrices
+ - Evaluate the Forward Dynamics (prepare the dynamics data for later force application)
+ - Evaluate the Cartesian state controller (trajectory/position controller yields tool forces/torques)
+ - Call the user's WAM Callback function (see #registerWAMcallback())
+ - Evaluate the Backward Dynamics (convert link forces to joint torques)
+ - Convert from joint torques to motor torques
+ - Send the torques to the WAM
  
  \todo Make control loop profiling a compiler switch so it is not normally compiled
  
 */
-
 void WAMControlThread(void *data)
 {
    btrt_thread_struct* this_thd;
-   int                 cnt;
-   int                 idx;
-   int                 Mid;
-   double              dt,dt_targ,skiptarg;
-   int                 err,skipcnt = 0;
-   int		       firstLoop = 1;
-   long unsigned       counter = 0;
-   RTIME last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
-   double thisperiod;
-   RTIME rtime_period, sampleCount;
-   wam_struct *wam;
-   unsigned char CANdata[8];
-   int len_in;
-   int id_in;
-   unsigned long overrun;
-   int      ret, numskip;
-   RT_TASK *WAMControlThreadTask;
+   int               cnt;
+   int               idx;
+   int               Mid;
+   double            dt,dt_targ,skiptarg;
+   int               err,skipcnt = 0;
+   int               firstLoop = 1;
+   long unsigned     counter = 0;
+   RTIME             last_loop,loop_start,loop_end,user_start,user_end,pos1_time,pos2_time,trq1_time,trq2_time;
+   double            thisperiod;
+   RTIME             rtime_period, sampleCount;
+   wam_struct        *wam;
+   unsigned char     CANdata[8];
+   int               len_in;
+   int               id_in;
+   unsigned long     overrun;
+   int               ret, numskip;
+   RT_TASK           *WAMControlThreadTask;
 
-   unsigned long    max1, min1, dat1, max2, min2, dat2, max3, min3, dat3, max4, min4, dat4, startt1, stopt1, startt2, stopt2, startt3, stopt3;
-   unsigned long    loop_time;
-   RTIME    mean1=0, mean2=0, mean3=0, mean4=0;
-   double   sumX1, sumX21, stdev1, sumX2, sumX22, stdev2, sumX3, sumX23, stdev3, sumX4, sumX24, stdev4;
+   unsigned long     max1, min1, dat1, max2, min2, dat2, max3, min3, dat3, max4, min4, dat4, startt1, stopt1, startt2, stopt2, startt3, stopt3;
+   unsigned long     loop_time;
+   RTIME             mean1=0, mean2=0, mean3=0, mean4=0;
+   double            sumX1, sumX21, stdev1, sumX2, sumX22, stdev2, sumX3, sumX23, stdev3, sumX4, sumX24, stdev4;
    
    /*//DEBUG: Seting up warn signal for changes to secondary mode, XENOMAI
    btrt_set_mode_warn();*/
@@ -564,7 +569,7 @@ void WAMControlThread(void *data)
    set_mn(kd, scale_mn(0.08, kd)); //0.1
    
 
-   /* Set up timer*/
+   /* Set up timer */
    this_thd = (btrt_thread_struct*)data;
    wam = this_thd->data;
    thisperiod = this_thd->period;
@@ -703,7 +708,7 @@ void WAMControlThread(void *data)
       set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));
       //set_vn(wam->R6pos,(vect_n*)wam->Cpos);
       
-      ///* Append the rMatrix to R6pos */
+      /* Append the rMatrix to R6pos */
       //for(cnt = 0; cnt < 3; cnt++){
       //   getcol_mh(v3, wam->robot.tool->origin, cnt);
       //   setrange_vn(wam->R6pos, (vect_n*)v3, 3+3*cnt, 0, 3);
@@ -1088,7 +1093,8 @@ void DefineWAMpos(wam_struct *wam, vect_n *wv)
    wam->isZeroed = TRUE;
 }
 
-
+/** Control the WAM in Cartesian (linear) space
+*/
 void SetCartesianSpace(wam_struct* wam)
 {
    int trjstate;
@@ -1105,6 +1111,8 @@ void SetCartesianSpace(wam_struct* wam)
    }
 }
 
+/** Control the WAM in joint space
+*/
 void SetJointSpace(wam_struct* wam)
 {
    int trjstate;
@@ -1121,7 +1129,7 @@ void SetJointSpace(wam_struct* wam)
    }
 }
 
-/**   Turns position constraint on/off.
+/** Turns position constraint on/off.
  
 If the robot is being controlled in JointSpace (SetJointSpace), it will apply a PD loop to each joint.
 If the robot is being controlled in CartesianSpace (SetCartesianSpace), it will apply a PD loop to the robot endpoint.
@@ -1146,14 +1154,21 @@ void SetPositionConstraint(wam_struct* wam, int onoff)
       setmode_bts(wam->active_sc,SCMODE_IDLE);
 }
 
-/** Set the velocity and acceleration of a wam move
+/** Set the velocity and acceleration of a WAM move
 */
-void MoveSetup(wam_struct* wam,btreal vel,btreal acc)
+void MoveSetup(wam_struct* wam, btreal vel, btreal acc)
 {
-   moveparm_bts(wam->active_sc,vel,acc);
+   moveparm_bts(wam->active_sc, vel, acc);
 }
 
-void MoveWAM(wam_struct* wam,vect_n * dest)
+/** Begins a point-to-point move in your active space (joint or Cartesian)
+You should call #MoveSetup() before you call this.
+Your destination should have the correct dimensions for your active space.
+
+\param wam A pointer to your WAM structure
+\param dest The desired destination
+*/
+void MoveWAM(wam_struct* wam, vect_n* dest)
 {
    int present_state;
    present_state = getmode_bts(wam->active_sc);
@@ -1168,7 +1183,7 @@ void MoveWAM(wam_struct* wam,vect_n * dest)
       syslog(LOG_ERR,"MoveWAM:Aborted");
 }
 
-/**
+/** Checks whether a trajectory is still active
 \retval 0 Move is still going
 \retval 1 Move is done
 */
@@ -1207,7 +1222,7 @@ void ParkWAM(wam_struct* wam)
    MoveWAM(wam, wam->park_location);
 }
 
-/**Returns the present anti-gravity scaling
+/** Returns the present anti-gravity scaling
  
 */
 btreal GetGravityComp(wam_struct *w)
@@ -1351,7 +1366,6 @@ void StartContinuousTeach(wam_struct *wam, int divider, char *filename)
 /** Stop recording positions to the continuous teach file */
 void StopContinuousTeach(wam_struct *wam)
 {
-
    DLoff(&(wam->cteach));
    CloseDL(&(wam->cteach));
 }
@@ -1362,6 +1376,20 @@ void ServiceContinuousTeach(wam_struct *wam)
    evalDL(&(wam->cteach));
 }
 
+/** Register a WAM control loop callback function
+The registerWAMcallback() function registers a special function to be 
+called from the WAMControlThread() after the positions have been received 
+from the WAM (and after all the kinematics are calculated) but before torques 
+are sent to the WAM.
+ - Since this function becomes part of the control loop, it must execute 
+quickly to support the strict realtime periodic scheduler requirements.
+ - For proper operation, you must avoid using any system calls that 
+cause this thread to drop out of realtime mode. Avoid syslog, printf, and 
+most other forms of I/O.
+
+\param wam A pointer to your WAM structure
+\param func A pointer to the function you want to register
+*/
 void registerWAMcallback(wam_struct* wam, void *func)
 {
    if (func != NULL)
@@ -1370,17 +1398,18 @@ void registerWAMcallback(wam_struct* wam, void *func)
       wam->force_callback = BlankWAMcallback;
 }
 
-int BlankWAMcallback(struct btwam_struct *wam)
+/** A blank (default) WAM control loop callback function
+*/
+int BlankWAMcallback(wam_struct* wam)
 {
    return 0;
 }
 
 /*======================================================================*
  *                                                                      *
- *             Copyright (c) 2003 Barrett Technology, Inc.              *
- *                        139 Main Street                               *
- *                       Kendall/MIT Square                             *
- *                  Cambridge, MA  02142-1528  USA                      *
+ *          Copyright (c) 2003-2008 Barrett Technology, Inc.            *
+ *                        625 Mount Auburn St                           *
+ *                    Cambridge, MA  02138,  USA                        *
  *                                                                      *
  *                        All rights reserved.                          *
  *                                                                      *
@@ -1394,10 +1423,5 @@ int BlankWAMcallback(struct btwam_struct *wam)
  *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
  *  Technology, Inc. be liable for any lost development expenses, lost  *
  *  lost profits, or any incidental, special, or consequential damage.  *
- *  ******************************************************************  *
- *
- * CVS info: $Id$
- * CVS automatic log (prune as desired):
- * $Log$
- *
  *======================================================================*/
+ 
