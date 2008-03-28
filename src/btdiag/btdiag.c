@@ -146,7 +146,6 @@ btrt_thread_struct  event_thd;
 #if 0
 vectray *vr;
 via_trj_array **vta = NULL,*vt_j = NULL,*vt_c = NULL;
-int cteach = 0;
 extern int isZeroed;
 /*static RT_TASK *mainTask; */
 btthread audio_thd,disp_thd;
@@ -169,9 +168,6 @@ btgeom_box boxs[10];
 //bteffect_global myglobal;
 vect_3 *p1,*p2,*p3,*zero_v3;
 bthaptic_scene bth;
-
-
-
 
 /*==============================*
  * PRIVATE Function Prototypes  *
@@ -198,8 +194,6 @@ int  WAMcallback(struct btwam_struct *wam);
  * Functions                    *
  *==============================*/
  
- 
-
 /* For Debugging: This function will signal SIGXCPU if rt thread switches to 
  * secontary mode.  Also one can look at /proc/xenomai/stat and MSW will 
  * tell you the number of switches a thread has made.
@@ -822,6 +816,10 @@ void RenderMAIN_SCREEN()
       //++line;
       mvprintw(line, 0, "%s     : %s ", (wamData[cnt].active_bts == &(wam[cnt]->Jsc)) ? "Torque" : "Force ", sprint_vn(vect_buf1,wamData[cnt].active_trq));
       line+=2;
+
+      mvprintw(line, 0, "Jtrq       : %s ",
+		      sprint_vn(vect_buf1,wam[cnt]->Jtrq));
+      line +=2;
       
       if (*wamData[cnt].vta != NULL) { // print current point
          vr = get_vr_vta(*wamData[cnt].vta);
@@ -1129,12 +1127,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
    case 'Y'://Start continuous teach
       for(i = 0; i < busCount; i++){
          sprintf(fn, "teachpath_%d", i);
-         if (wamData[i].active_bts == &(wam[i]->Jsc))
-            StartContinuousTeach(wam[i], 1, 25, fn);
-         else
-            StartContinuousTeach(wam[i], 0, 25, fn);
+         StartContinuousTeach(wam[i], 25, fn); // Begin logging data at 1/25 the control rate
       }
-      
       cteach = 1;
       eventIdx = 0;
       eventStart = btrt_get_time()-750000000L;

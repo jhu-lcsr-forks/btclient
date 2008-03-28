@@ -68,6 +68,15 @@ int BlankWAMcallback(struct btwam_struct *wam);
 /*==============================*
  * Functions                    *
  *==============================*/
+/** Allocate memory for components of the WAM data structure
+ 
+  This function allocates and initializes memory for many vectors and matrices
+  defined in the #btwam_struct.
+  
+  \param wam Pointer to a WAM structure: wam = (wam_struct*)btmalloc(sizeof(wam_struct));
+  
+  See #btwam_struct for detailed information on the WAM data structure.
+*/
 void InitVectors(wam_struct *wam)
 {
    wam->zero_offsets = new_vn(wam->dof);
@@ -95,6 +104,8 @@ void InitVectors(wam_struct *wam)
    wam->torq_limit = new_vn(wam->dof);
    wam->vel = new_vn(wam->dof);
    wam->acc = new_vn(wam->dof);
+   
+   /* 3-axis Cartesian position data */
    wam->Cpos = new_v3();
    wam->Cvel = new_v3();
    wam->Cacc = new_v3();
@@ -106,27 +117,14 @@ void InitVectors(wam_struct *wam)
    //wam->Ckd = new_v3();
    //wam->Cki = new_v3();
    //wam->use_new = 0;
+   /* Quaternian data (unused) */
    wam->qref = new_q();
    wam->qact = new_q();
    wam->qaxis = new_q();
    wam->forced = new_q();
    wam->qerr = 0;
-   
-   /* The original idea was to store XYZypr in a vn(6).
-    * But ypr caused ugly discontinuous math.
-    * So now we store XYZ+rMatrix in a vn(12).
-    */
-#if 0
-   wam->R6pos = new_vn(12);
-   wam->R6ref = new_vn(12);
-   wam->R6tref = new_vn(12);
-   wam->R6vel = new_vn(12);
-   wam->R6acc = new_vn(12);
-   wam->R6trq = new_vn(12);
-   wam->R6force = new_vn(12);
-#endif
 
-   /* Declare the Homogeneous Matrix state variables for Cartesian control */
+   /* Homogeneous Matrix state variables for Cartesian tool control */
    wam->HMpos = wam->robot.tool->origin; // Position
    wam->HMvel = new_mh(); // Velocity
    wam->HMacc = new_mh(); // Acceleration
@@ -175,6 +173,8 @@ wam_struct* OpenWAM(char *fn, int bus)
    char           robotName[256];
    int            actcnt = 0;
 
+   com = new_v3();
+   
    // Parse config file
    if(!*fn) { // If no config file was given
       strcpy(fn, "wam.conf"); // Default to wam.conf
@@ -271,13 +271,13 @@ wam_struct* OpenWAM(char *fn, int bus)
    wam->cteach.Log_Data = 0; //th cteach
    wam->force_callback = BlankWAMcallback;
    wam->log_time = 0.0;
-   wam->logdivider = 1;
+   wam->logDivider = 1;
 
    SetEngrUnits(1);
 
    err = GetActuators(bus, &wam->act, &wam->num_actuators);
    //syslog(LOG_ERR, "bus=%d, num_actuators=%d", bus, wam->num_actuators);
-   com = new_v3();
+   
 
    // Read park_location
    sprintf(key, "%s.home", robotName);
@@ -465,9 +465,9 @@ BTINLINE int MotorID_From_ActIdx(wam_struct *wam,int idx)
    return wam->motor_position[idx];
 }
 
-/** Internal: Periodically services the data logging and teach&play data
-structures.
- 
+/** Internal: Periodic service routine
+    Services the data logging and teach&play data structures (for writing buffers to disk). 
+    Also handles trajectory playback options including loop_trj and idle_when_done.
 */
 void WAMMaintenanceThread(void *data)
 {
@@ -628,19 +628,15 @@ void WAMControlThread(void *data)
       btrt_set_mode_hard();
 
       DEBUG(startt3 = btrt_get_time());
-
-      btrt_task_wait_period();
-
-
-      //counter++;
-
+      /* Wait until the start of the next control period */
+      btrt_task_wait_period(); 
       DEBUG(stopt3 = btrt_get_time());
 
       loop_start = btrt_get_time(); //th prof
       loop_time = loop_start - last_loop;
       wam->loop_period = loop_time; //th prof
       last_loop = loop_start;
-      /* Find elapsed time (in seconds) since the previous control cycle */
+      // Find elapsed time (in seconds) since the previous control cycle
       dt = loop_time / (double)1E9;
       if(!firstLoop){
          if (dt > skiptarg) {
@@ -656,11 +652,10 @@ void WAMControlThread(void *data)
 
       pos1_time = btrt_get_time(); //th prof
 
+      /* Clear CAN bus of any unwanted messages */
+      canClearMsg(0); 
 
-      // Clear CAN bus of any unwanted messages
-      canClearMsg(0);
-
-
+      /* Read the motor positions from the robot */
       GetPositions(wam->act->bus);
 
       pos2_time = btrt_get_time(); //th prof
@@ -674,27 +669,37 @@ void WAMControlThread(void *data)
       }
       );
 
-      ActAngle2Mpos(wam,(wam->Mpos)); // Move motor angles into a wam_vector variable
+      /* Copy the motor angles from the actuator structure to the Mpos vector */
+      ActAngle2Mpos(wam,(wam->Mpos)); 
       //const_vn(wam->Mpos, 0.0, 0.0, 0.0, 0.0);
-      Mpos2Jpos(wam,(wam->Mpos), (wam->Jpos)); // Convert from motor angles to joint angles
+      
+      /* Convert from motor angles to joint angles */
+      Mpos2Jpos(wam,(wam->Mpos), (wam->Jpos)); 
 
       // Joint space stuff
       pos1_time = btrt_get_time(); //th prof
+      /* Evaluate the Joint state controller */
       eval_bts(&(wam->Jsc));
       pos2_time = btrt_get_time(); //th prof
       wam->Jsc_time = pos2_time - pos1_time; //th prof
 
       // Cartesian space stuff
+      /* Copy the joint positions from the 'robot' structure to the Jpos vector */
       set_vn(wam->robot.q,wam->Jpos);
 
+      /* Evaluate the Forward Kinematics */
       eval_fk_bot(&wam->robot);
+      
+      /* Evaluate the Forward Jacobian (and mass matrix) */
       eval_fj_bot(&wam->robot); 
+      
+      /* Evaluate the Forward Dynamics */
       eval_fd_bot(&wam->robot);
       
       //eval_bd_bot(&wam->robot);
       //get_t_bot(&wam->robot, wam->Gtrq);
 
-      /* Fill in the Cartesian XYZ */
+      /* Fill in the Cartesian tool XYZ */
       set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));
       //set_vn(wam->R6pos,(vect_n*)wam->Cpos);
       
@@ -705,9 +710,13 @@ void WAMControlThread(void *data)
       //}
 
       pos1_time = btrt_get_time(); //th prof
+      /* Evaluate the Cartesian state controller */
       eval_bts(&(wam->Csc));
       pos2_time = btrt_get_time(); //th prof
       wam->user_time = pos2_time - pos1_time; //th prof
+      
+      /* Copy the XYZ force terms from the Cartesian controller output into Cforce */
+      getcol_m3(wam->Cforce, wam->HMft, 3);
 #if 0
       set_v3(wam->Cforce,(vect_3*)wam->R6force);
       //setrange_vn((vect_n*)wam->Ctrq,wam->R6force,0,2,3);
@@ -748,23 +757,28 @@ void WAMControlThread(void *data)
       //syslog_vn("Ctrq: ", (vect_n*)wam->Ctrq);
 #endif
 
-      //Force application: set the link forces and torques
+      /* Insert the end-effector forces and torques generated by the Cartesian state controller into the 'robot' structure */
       apply_tool_force_bot(&wam->robot, wam->Cpoint, wam->Cforce, wam->Ctrq);
 
       pos1_time = btrt_get_time(); //th prof
+      /* Call the user's WAM Callback function */
       (*wam->force_callback)(wam);
       pos2_time = btrt_get_time(); //th prof
       wam->user_time = pos2_time - pos1_time; //th prof
 
-      eval_bd_bot(&wam->robot); // Calculate robot->t, given link forces and torques (+gravity)
-      get_t_bot(&wam->robot,wam->Ttrq); // wam->Ttrq = robot->t
+      /* Evaluate the Backward Dynamics: Calculate robot->t, given link forces and torques (+gravity) */
+      eval_bd_bot(&wam->robot); // 
+      
+      /* Copy the RNE joint torques from robot->t into Ttrq */
+      get_t_bot(&wam->robot,wam->Ttrq); 
 
-      if(wam->isZeroed)
-      {
+      /* If the WAM is zeroed, add the joint torques due to the Cartesian controller into the Jtrq output */
+      if(wam->isZeroed){
          set_vn(wam->Jtrq,add_vn(wam->Jtrq,wam->Ttrq));
       }
 
-      Jtrq2Mtrq(wam,(wam->Jtrq), (wam->Mtrq));  //Convert from joint torques to motor torques
+      /* Convert from joint torques to motor torques */
+      Jtrq2Mtrq(wam,(wam->Jtrq), (wam->Mtrq));  
 #if 0
 
       if(wam->dof == 8)
@@ -777,7 +791,8 @@ void WAMControlThread(void *data)
       }
 #endif
 
-      Mtrq2ActTrq(wam,wam->Mtrq); //Move motor torques from wam_vector variable into actuator database
+      /* Move motor torques from Mtrq into actuator database */
+      Mtrq2ActTrq(wam,wam->Mtrq); 
 #ifdef BTDOUBLETIME
 
       //rt_make_soft_real_time();
@@ -786,6 +801,7 @@ void WAMControlThread(void *data)
 
       trq1_time = btrt_get_time(); //th prof
 
+      /* Send the torques to the WAM */
       SetTorques(wam->act->bus);
 
       trq2_time = btrt_get_time(); //th prof
@@ -810,19 +826,21 @@ void WAMControlThread(void *data)
 
       btrt_mutex_unlock(&(wam->loop_mutex));
 
-      wam->log_time += dt;
-      if ((counter % wam->logdivider) == 0)
-      {
-         TriggerDL(&(wam->log)); //th log
+      /* Handle data logging */
+      wam->logCounter++;
+      if (wam->log.Log_Data){
+         wam->log_time += dt;
+         if ((wam->logCounter % wam->logDivider) == 0)
+            TriggerDL(&wam->log);
       }
-      //th cteach {
-      if (wam->cteach.Log_Data)
-      {
-         wam->counter++;
+      
+      /* Handle continuous teaching */
+      wam->teachCounter++;
+      if (wam->cteach.Log_Data){
          wam->teach_time += dt;
-         if ((counter % wam->divider) == 0)
-            TriggerDL(&(wam->cteach));
-      }//th cteach }
+         if ((wam->teachCounter % wam->teachDivider) == 0)
+            TriggerDL(&wam->cteach);
+      }
 
       DEBUG(
          
@@ -1305,30 +1323,26 @@ void DumpWAM2Syslog(wam_struct *wam)
 Notes: 
  - Variable numbers of joints are handled by polling the robot structure
  
-\param Joint 0 = Cartesian space record, 1 = Joint space record
-\param Div An integer amount to divide the sample period by
-\param filename The file you want to write the path to
+\param divider 1 = Log data every control cycle, 2 = Log data every 2nd control cycle, etc.
+\param filename The output file for the path
 */
-void StartContinuousTeach(wam_struct *wam,int Joint,int Div,char *filename)
+void StartContinuousTeach(wam_struct *wam, int divider, char *filename)
 {
-   int joints;
-
    wam->teach_time = 0.0;
-   wam->counter = 0;
-   wam->divider = Div;
-   if (Joint == 0) { //Just records position. No orientation
-      PrepDL(&(wam->cteach),2);
-      AddDataDL(&(wam->cteach),&(wam->teach_time),sizeof(btreal),4,"Time");
-      //AddDataDL(&(wam->cteach),valptr_vn((vect_n*)wam->Cpos),sizeof(btreal)*3,4,"Cpos");
-      AddDataDL(&(wam->cteach),valptr_vn((vect_n*)wam->HMpos),sizeof(btreal)*12,4,"HMpos");
-
-   } else { //Only for joint space recording for now
-      joints = wam->num_actuators;
-      PrepDL(&(wam->cteach),2);
-      AddDataDL(&(wam->cteach),&(wam->teach_time),sizeof(btreal),4,"Time");
-      AddDataDL(&(wam->cteach),valptr_vn(wam->Jpos),sizeof(btreal)*joints,4,"Jpos");
+   wam->teachCounter = 0;
+   wam->teachDivider = divider;
+   
+   PrepDL(&(wam->cteach),2);
+   AddDataDL(&(wam->cteach),&(wam->teach_time),sizeof(btreal),4,"Time");
+      
+   if(wam->active_sc == &wam->Jsc){ // Record joint positions
+      AddDataDL(&(wam->cteach), valptr_vn(wam->Jpos), sizeof(btreal)*wam->num_actuators, BTLOG_BTREAL, "Jpos");
+   }else if(wam->active_sc == &wam->Csc){ // Record Cartesian positions
+      AddDataDL(&(wam->cteach), valptr_vn((vect_n*)wam->HMpos), sizeof(btreal)*12, BTLOG_BTREAL, "HMpos");
+   }else{ // Unknown control state (user-defined?)
+      return;
    }
-
+   
    InitDL(&(wam->cteach),1000,filename);
    DLon(&(wam->cteach));
    TriggerDL(&(wam->cteach));

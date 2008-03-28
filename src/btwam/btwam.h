@@ -118,7 +118,7 @@ typedef struct btwam_struct
 
    //Motion Control
    btstatecontrol *active_sc; //!< A pointer to the active state controller (usually Jsc or Csc)
-   double dt;
+   double dt; //!< Control loop sample time (seconds)
    
    //Joint space controller
    btstatecontrol Jsc; //!< The state controller for joint space
@@ -142,16 +142,16 @@ typedef struct btwam_struct
    vect_3 *Ctrq; //!< Cartesian torque RxRyRz (Nm)
    vect_3 *Cref; //!< Cartesian position reference XYZ (m)
    vect_3 *Cpoint; //!< XYZ translation (constant) from the tool center point (TCP) to the Cartesian control point (end-point)
-   matr_h *HMpos; // Position
-   matr_h *HMvel; // Velocity
-   matr_h *HMacc; // Acceleration
-   matr_h *HMref; // Position reference
-   matr_h *HMtref; // Trajectory reference
-   matr_h *HMft; // Force/torque matrix
+   matr_h *HMpos; //!< Homogeneous Matrix of the tool transform (Position)
+   matr_h *HMvel; //!< Tool Velocity
+   matr_h *HMacc; //!< Tool Acceleration
+   matr_h *HMref; //!< Tool Position reference
+   matr_h *HMtref; //!< Tool Trajectory reference
+   matr_h *HMft; //!< Tool Force/torque matrix
    
    // Quaternian control
    quat *qref,*qact,*qaxis,*forced; //!< Reference and actual orientations for quaternion control
-   btreal qerr;
+   btreal qerr; //!< Quaternian error
    
    //Cartesian Controllers
    //btPID pid[12]; //  x,y,z,rot
@@ -161,8 +161,8 @@ typedef struct btwam_struct
    //btPID_array d_pos_array;
 
    //Cartesian space moves
-   bttraptrj trj;
-   btpath_pwl pth;
+   //bttraptrj trj;
+   //btpath_pwl pth;
    
    vect_n *Gtrq; //!< Joint torques due to gravity compensation
    //btreal F;
@@ -179,14 +179,16 @@ typedef struct btwam_struct
    btrt_mutex loop_mutex; //This mutex is set while the wam control loop is in operation. It is to help slow loops access control loop data
 
    //Data logging
-   btlogger log;
-   int logdivider;
-   btreal log_time;
+   btlogger log; //!< Structure for storing log data
+   int logDivider; //!< 1 = Log data every control cycle, 2 = Log data every 2nd control cycle, etc. Default = 1.
+   int logCounter; //!< Control loop counter so we know when to log the data
+   btreal log_time; //!< Total active log duration (seconds)
    
    //Continuous path record
-   btlogger cteach;
-   int divider,counter;
-   btreal teach_time;
+   btlogger cteach; //!< Structure for storing teach data
+   int teachDivider; //!< 1 = Log data every control cycle, 2 = Log data every 2nd control cycle, etc. See #StartContinuousTeach()
+   int teachCounter; //!< Control loop counter so we know when to log the data
+   btreal teach_time; //!< Total active teach duration (seconds)
 
    btrt_thread_struct maint; //!< Periodic (default 10Hz) maintenance thread for teach & play. Configured in #OpenWAM().
 }wam_struct;
@@ -219,7 +221,7 @@ void MoveStop(wam_struct* wam);
 
 void ParkWAM(wam_struct* wam);
 // Continuous Teach & Play Recording
-void StartContinuousTeach(wam_struct* wam,int Joint,int Div,char *filename); //joint: 0 = Cartesian, 1 = Joint Space
+void StartContinuousTeach(wam_struct *wam, int divider, char *filename);
 void StopContinuousTeach(wam_struct* wam);
 void ServiceContinuousTeach(wam_struct* wam);
 
