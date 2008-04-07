@@ -2,28 +2,19 @@
  *  Module .............libbtwam
  *  File ...............btwam.h
  *  Author .............Sam Clanton
+ *                      Traveler Hauptman
+ *                      Brian Zenowich
  *  Creation Date ......Q3 2004
- *  Addt'l Authors......Traveler Hauptman
- *                                                                      *
- *  ******************************************************************  *
- *                                                                      *
- * Copyright (C) 2005   Barrett Technology <support@barrett.com>
- *
- *
- *  NOTES:
- *
- *  REVISION HISTORY:
- *    Dec 17, 2004: TH
- *      Splitting libbt into libbtsystem & libbtwam. Adjust file names
- *      to support this. btwam -> btwamctl, btdriver -> btwam
  *                                                                      *
  *======================================================================*/
 /** \file btwam.h
    \brief Provides functions for controlling a WAM.
  
-    btwam assumes that you have a 7 DOF or 4 DOF wam that is being controlled
-on a CAN bus. It provides some high-level functions to help people get up and
-running quickly.
+    The btwam library provides high-level control functions for the Barrett
+    WAM. It contains the WAM control loop, plus high-level movement commands
+    and Teach & Play routines. It depends on the btsystem library for actuator-
+    level communication, kinematics, dynamics, path following, position control,
+    config file parsing, data logging, and matrix/vector math.
  
 See #btwam_struct
  

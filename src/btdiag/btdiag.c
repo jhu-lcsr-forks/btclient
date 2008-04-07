@@ -780,7 +780,7 @@ void RenderMAIN_SCREEN()
 
    // Show TRAJECTORY
    if (cteach)
-      mvprintw(line, 0, "Trajectory : Teaching continuous trajectoy");
+      mvprintw(line, 0, "Trajectory : Teaching continuous trajectory");
    else if (*wamData[0].vta == NULL)
       mvprintw(line, 0, "Trajectory : NONE                         ");
    else

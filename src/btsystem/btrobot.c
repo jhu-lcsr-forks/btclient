@@ -4,15 +4,6 @@
  *  Author .............Traveler Hauptman
  *  Creation Date ......18 Feb 2005
  *                                                                      *
- *  ******************************************************************  *
- *                                                                      *
- * Copyright (C) 2005   Barrett Technology <support@barrett.com>
- *
- *
- *  NOTES:
- *
- *  REVISION HISTORY:
- *  '051107 TH Minimal documentation in place.                          *
  *======================================================================*/
 #ifdef S_SPLINT_S
 #include <err.h>

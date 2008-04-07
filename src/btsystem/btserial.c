@@ -4,16 +4,6 @@
  *  Author .............Brian Zenowich
  *  Creation Date ......Oct 20, 2005
  *                                                                      *
- *  ******************************************************************  *
- *
- * Copyright (C) 2005   Barrett Technology <support@barrett.com>
- *
- *
- *  NOTES:
- *   
- *
- *  REVISION HISTORY:
- *
  *======================================================================*/
 
 /* Serial port routines */
@@ -60,7 +50,7 @@ int serialOpen(PORT *port, char *devicename)
    sigemptyset(&saio.sa_mask);   //saio.sa_mask = 0;
    saio.sa_flags = 0;
    saio.sa_restorer = NULL;
-   //sigaction(SIGIO,&saio,NULL);
+   sigaction(SIGIO, &saio, NULL);
 
    // allow the process to receive SIGIO
    //fcntl(fd, F_SETOWN, getpid());

@@ -99,6 +99,7 @@ extern "C"
 #define ELEM(m,r,c) ((m)->q[(r) * (m)->n + (c)])
 
 #define EPSILON (0.001)
+#define pi (3.14159265359)
 
 typedef double btreal; //<! Typedef floating point type
 

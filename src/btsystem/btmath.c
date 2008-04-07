@@ -2070,7 +2070,7 @@ vect_3* GCaxis_q(vect_3* dest, quat* start, quat* end)
 
 quat * force_closest_q(quat* src)
 {
-   const btreal pi = 3.14159265359;
+   //const btreal pi = 3.14159265359;
    btreal flip = 1.0;
 
    src->ret->q[0] = src->q[0];
@@ -2994,7 +2994,7 @@ BTINLINE vect_3* RtoXYZf_m3(matr_3* R, vect_3* XYZ)
 {
    //return XYZ
    btreal a,b,g,cb;
-   const btreal pi = 3.14159265359;
+   //const btreal pi = 3.14159265359;
 
    b = atan2_bt(-1.0*R->q[8],sqrt(R->q[0]*R->q[0] + R->q[4]*R->q[4]));
    cb = cos(b);
@@ -3020,7 +3020,7 @@ BTINLINE vect_3* RtoZYZf_m3(matr_3* R, vect_3* XYZ)
 {
    //return ZYZ
    btreal a,b,g,sb;
-   const btreal pi = 3.14159265359;
+   //const btreal pi = 3.14159265359;
 
    b = atan2_bt(sqrt(R->q[8] * R->q[8] + R->q[9] * R->q[9]), R->q[10]);
    sb = sin(b);
@@ -3166,7 +3166,7 @@ void  init_btfilter_diff(btfilter *filt, int order, btreal sample_time, btreal c
    btreal woT;
    btreal temp;
    int i;
-   const btreal pi = 3.14159265359;
+   //const btreal pi = 3.14159265359;
 
    filt->index = 0;
    filt->order = order;
@@ -3212,7 +3212,7 @@ void  init_btfilter_butterworth_diff(btfilter *filt, btreal sample_time, btreal 
 
    double woT,wo;
    double norm;
-   const btreal pi = 3.14159265359;
+   //const btreal pi = 3.14159265359;
    int i;
 
    filt->index = 0;
@@ -3248,7 +3248,7 @@ void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz,
    double woT;
    double uu, uu2;
    int i;
-   const btreal pi = 3.14159265359;
+   //const btreal pi = 3.14159265359;
 
    filt->index = 0;
    filt->order = 2;
@@ -3280,7 +3280,7 @@ void  init_btfilter_lowpass(btfilter *filt, btreal sample_time, btreal cutoffHz,
 BTINLINE btreal atan2_bt(btreal y, btreal x)
 {
    /* returns angle from -pi to pi */
-   const btreal pi = 3.14159265359;
+   //const btreal pi = 3.14159265359;
 
    if(x > 0.0)
       return(atan(y / x));
@@ -3302,7 +3302,7 @@ BTINLINE btreal atan2_bt(btreal y, btreal x)
 BTINLINE btreal atan2_bt(btreal arg1, btreal arg2)
 {
    /* returns angle from -pi to pi */
-   const btreal pi = 3.14159265359;
+   //const btreal pi = 3.14159265359;
 
 
    if(arg2 > 0.0) {
@@ -3440,7 +3440,7 @@ void  init_btfilter_vn_diff(btfilter_vn *filt, int order, btreal sample_time, bt
    btreal woT;
    btreal temp;
    int i;
-   const btreal pi = 3.14159265359;
+   //const btreal pi = 3.14159265359;
 
    filt->index = 0;
    filt->order = order;
