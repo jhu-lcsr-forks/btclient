@@ -24,12 +24,14 @@
 #ifndef _BTHAPTICS_H
 #define _BTHAPTICS_H
 
+#include "btmath.h"
+#include "btgeometry.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif/* __cplusplus */
-#include "btmath.h"
-#include "btgeometry.h"
+
 /** A generic haptic object that presents a virtual interface.
 
 */

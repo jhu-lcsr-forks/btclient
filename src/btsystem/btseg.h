@@ -18,12 +18,15 @@
  
 #ifndef _BTSEG_H
 #define _BTSEG_H
+
+#include "btmath.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif/* __cplusplus */
 
-#include "btmath.h"
+
 
 /**
 A parabolic function.

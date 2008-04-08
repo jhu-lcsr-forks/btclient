@@ -39,16 +39,19 @@ with #btPID_array and #via_trj_array.
 //@}
 #ifndef _BTCONTROL_H
 #define _BTCONTROL_H
+
+#include "btmath.h"
+#include "btos.h"
+#include "btseg.h"
+#include "btstatecontrol.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif/* __cplusplus */
 
 //#include <pthread.h>
-#include "btmath.h"
-#include "btos.h"
-#include "btseg.h"
-#include "btstatecontrol.h"
+
 #ifndef PI
 #define PI 3.141596
 #endif /*PI*/

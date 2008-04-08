@@ -77,13 +77,15 @@ This is a general description so that I can see the output.
 #ifndef _BTMATH_H
 #define _BTMATH_H
 
+#include "btos.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif/* __cplusplus */
  
 
-#include "btos.h"
+
 
 #define PRACTICALLY_ZERO 0.0000001 //For avoiding divide by zero
 

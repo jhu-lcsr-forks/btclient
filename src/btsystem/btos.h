@@ -120,6 +120,16 @@ ifdefs:
   
 */
 
+#ifdef XENOMAI
+#include <native/task.h>
+#include <native/timer.h>
+#include <native/mutex.h>
+
+#else
+#include <rtai_lxrt.h>
+#include <rtai_sem.h>
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -135,15 +145,7 @@ extern "C"
 
 /** \todo Move periodic thread api to another include file to remove dependancy on rtai in this file */
 //#include <rtai_lxrt.h>
-#ifdef XENOMAI
-#include <native/task.h>
-#include <native/timer.h>
-#include <native/mutex.h>
 
-#else
-#include <rtai_lxrt.h>
-#include <rtai_sem.h>
-#endif
 
 /*mutex & threads*/
 /** @name Mutex API */

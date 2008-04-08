@@ -32,15 +32,18 @@
 */
 #ifndef _BTCONTROL_VIRT_H
 #define _BTCONTROL_VIRT_H
-#ifdef __cplusplus
-extern "C"
-{
-#endif/* __cplusplus */
 
 #include <pthread.h>
 #include "btmath.h"
 #include "btos.h"
 #include "btpath.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif/* __cplusplus */
+
+
 #ifndef PI
 #define PI 3.14159265359
 #endif /*PI*/

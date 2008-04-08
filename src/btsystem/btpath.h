@@ -28,6 +28,7 @@ code.
 #ifndef _BTPATH_H
 #define _BTPATH_H
 
+#include "btmath.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -35,7 +36,7 @@ extern "C"
 #endif/* __cplusplus */
  
  
-#include "btmath.h"
+
 /** Piecewize Linear Path
 
 btpath_pwl is for N dimensional piecewize linear curves

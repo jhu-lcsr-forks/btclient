@@ -23,11 +23,13 @@
 #ifndef _BTGEOMETRY_H
 #define _BTGEOMETRY_H
 
+#include "btmath.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif/* __cplusplus */
-#include "btmath.h"
+
 
 /** Tracks the state of an object.
 

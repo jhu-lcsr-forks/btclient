@@ -66,13 +66,15 @@ void loop()
 #ifndef _DOUBLEBUFFER_H
 #define _DOUBLEBUFFER_H
 
+#include <stdio.h>
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif/* __cplusplus */
  
 
-#include <stdio.h>
+
 
 enum btlog_type {
   BTLOG_INT = 0,

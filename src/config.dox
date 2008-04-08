@@ -104,10 +104,10 @@ FILTER_SOURCE_FILES    = NO
 #---------------------------------------------------------------------------
 # configuration options related to source browsing
 #---------------------------------------------------------------------------
-SOURCE_BROWSER         = NO
+SOURCE_BROWSER         = YES
 INLINE_SOURCES         = NO
 STRIP_CODE_COMMENTS    = YES
-REFERENCED_BY_RELATION = NO
+REFERENCED_BY_RELATION = YES
 REFERENCES_RELATION    = NO
 USE_HTAGS              = NO
 VERBATIM_HEADERS       = NO
