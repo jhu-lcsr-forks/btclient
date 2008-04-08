@@ -422,7 +422,7 @@ wam_struct* OpenWAM(char *fn, int bus)
 
    /* If the WAM is already zeroed, note it- else, zero it */
    reply = 0;
-   getProperty(wam->act->bus, SAFETY_MODULE, ZERO, &reply);
+   //getProperty(wam->act->bus, SAFETY_MODULE, ZERO, &reply);
 
    if(reply) {
       wam->isZeroed = TRUE;
@@ -499,7 +499,7 @@ void WAMMaintenanceThread(void *data)
    pthread_exit(NULL);
 }
 
-/** This function closes the control loop on the WAM
+/** This function closes the control loop on the WAM.
  
 The WAMControlThread() contains code to:
  - Set up periodic timer for the control loop
@@ -1385,7 +1385,8 @@ void ServiceContinuousTeach(wam_struct *wam)
    evalDL(&(wam->cteach));
 }
 
-/** Register a WAM control loop callback function
+/** Register a WAM control loop callback function.
+
 The registerWAMcallback() function registers a special function to be 
 called from the WAMControlThread() after the positions have been received 
 from the WAM (and after all the kinematics are calculated) but before torques 

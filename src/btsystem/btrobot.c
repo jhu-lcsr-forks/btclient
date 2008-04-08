@@ -622,7 +622,7 @@ void test_btrobot()
 {
    vect_3 *Cpos,*Cpoint;
    btrobot robot;
-   const double pi = 3.14159;
+   //const double pi = 3.14159;
    new_bot(&robot,4);
 
    Cpos = new_v3();

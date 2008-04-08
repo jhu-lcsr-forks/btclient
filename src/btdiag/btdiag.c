@@ -858,7 +858,8 @@ void RenderMAIN_SCREEN()
       
    }
    
-
+line +=4;
+mvprintw(line,0,"");
    entryLine = line;
    refresh();
 }

@@ -33,7 +33,7 @@
 #ifndef _BTCONTROL_VIRT_H
 #define _BTCONTROL_VIRT_H
 
-#include <pthread.h>
+//#include <pthread.h>
 #include "btmath.h"
 #include "btos.h"
 #include "btpath.h"
