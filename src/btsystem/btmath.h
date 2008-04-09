@@ -559,7 +559,16 @@ void print_q(quat* src);
     skewing and reflecting are not.
  */
 //@{
-/** homogeneous 4x4 matrix optimized for robots. 4th row is not computed or stored.
+/** Homogeneous 4x4 matrix optimized for robots. 4th row is not used in calculations.
+    \code
+    [ n0 o0 a0 p0 ] where n = normal vector
+    [ n1 o1 a1 p1 ]       o = orientation vector
+    [ n2 o2 a2 p2 ]       a = approach vector
+    [ 0  0  0  1  ]       p = position vector
+    
+    Can also be cast as a vector:
+    (vect_n*)mh = <n0, o0, a0, p0, n1, o1, a1, p1, n2, o2, a2, p2, 0, 0, 0, 1>
+    \endcode
 */
 typedef struct barrett_matr_h{
   struct barrett_matr_h *ret;

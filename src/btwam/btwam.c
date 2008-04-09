@@ -162,17 +162,19 @@ void InitVectors(wam_struct *wam)
 wam_struct* OpenWAM(char *fn, int bus)
 {
    int            cnt, ret, err;
-   //const double   pi = 3.14159;
-   btreal         theta, d, a, alpha, mass, tmpdbl;
-   vect_3         *com;
+   btreal         theta, d, a, alpha, mass;
    wam_struct     *wam;
    char           key[256];
    long           reply;
    int            link;
-   //char           robotName[256];
    int            actcnt = 0;
+   vect_3         tmp_v3;
 
-   com = new_v3();
+   /* Normally, you should use init_local_vn() for this, but in this case
+      we want a vect_3 structure without assigning the data pointer (it will
+      be assigned later).
+    */
+   tmp_v3.n = 3;
 
    // If no config file was given
    if(!*fn) { 
@@ -219,7 +221,6 @@ wam_struct* OpenWAM(char *fn, int bus)
    // Initialize the PID data structures for joint control
    for (cnt = 0; cnt < wam->dof; cnt ++) {
       init_btPID(&wam->JposControl.pid[cnt]);
-      //setgains_btPID(&wam->JposControl.pid[cnt], getval_vn(wam->Kp,cnt), getval_vn(wam->Kd,cnt), getval_vn(wam->Ki,cnt));
    }
 
    // Initialize a state controller
@@ -251,39 +252,23 @@ wam_struct* OpenWAM(char *fn, int bus)
    /* START of Cartesian Control plugin initialization */
    // Initialize the PID data structures for joint control
    for (cnt = 0; cnt < 12; cnt ++) {
+      // Note: Only the Position (4th) column (XYZ) of the robot homogeneous matrix
+      // is controlled by this statecontrol system. The rotations are controlled
+      // directly from the WAMControlLoop() because of the required vector cross-products.
       init_btPID(&wam->CposControl.pid[cnt]);
-      setgains_btPID(&wam->CposControl.pid[cnt], 5.0, 0.05, 0.0); // r
    }
-   //setgains_btPID(&wam->CposControl.pid[3], 2000.0, 5.0, 0.0); // X
-   //setgains_btPID(&wam->CposControl.pid[7], 2000.0, 5.0, 0.0); // Y
-   //setgains_btPID(&wam->CposControl.pid[11], 2000.0, 5.0, 0.0); // Z
-   setgains_btPID(&wam->CposControl.pid[3], 0.0, 0.0, 0.0); // X
-   setgains_btPID(&wam->CposControl.pid[7], 0.0, 0.0, 0.0); // Y
-   setgains_btPID(&wam->CposControl.pid[11], 0.0, 0.0, 0.0); // Z
-
-   //for (cnt = 3; cnt < 12; cnt++) {
-   //   init_btPID(&(wam->d_pos_ctl[cnt]));
-   //   setgains_btPID(&(wam->d_pos_ctl[cnt]),0.0,0.0,0.0);
-   //}
-   //wam->d_pos_array.pid = wam->d_pos_ctl;
-   //wam->d_pos_array.elements = 12;
-
+   
    // Initialize a state controller
    init_bts(&wam->Csc);
 
    // Assign input and output data locations to the state controller.
    map_btstatecontrol(&wam->Csc, (vect_n*)wam->HMpos, (vect_n*)wam->HMvel, (vect_n*)wam->HMacc,
                       (vect_n*)wam->HMref, (vect_n*)wam->HMtref, (vect_n*)wam->HMft, &wam->dt);
-   //map_btstatecontrol(&wam->Csc, wam->R6pos, wam->R6vel, wam->R6acc,
-   //                   wam->R6ref, wam->R6tref, wam->R6force, &wam->dt);
 
    // Assign a position control method to the controller.
    btposition_interface_mapf_btPID(&wam->Csc, &wam->CposControl);
    /* END of Control plugin initialization */
 
-   //init_pwl(&wam->pth,3,2); //Cartesian move path
-
-   //wam->F = 0.0;
    wam->isZeroed = FALSE;
    wam->cteach.Log_Data = 0; //th cteach
    wam->force_callback = BlankWAMcallback;
@@ -308,6 +293,34 @@ wam_struct* OpenWAM(char *fn, int bus)
    sprintf(key, "%s.world", wam->name);
    parseGetVal(MATRIX, key, (void*)wam->robot.world->origin);
 
+   // Read the Cartesian position control gains
+   sprintf(key, "%s.Px_pdi", wam->name);
+   tmp_v3.q = &wam->CposControl.pid[3].Kp;
+   parseGetVal(VECTOR, key, (void*)&tmp_v3);
+   
+   sprintf(key, "%s.Py_pdi", wam->name);
+   tmp_v3.q = &wam->CposControl.pid[7].Kp;
+   parseGetVal(VECTOR, key, (void*)&tmp_v3);
+   
+   sprintf(key, "%s.Pz_pdi", wam->name);
+   tmp_v3.q = &wam->CposControl.pid[11].Kp;
+   parseGetVal(VECTOR, key, (void*)&tmp_v3);
+   
+   // Read the Cartesian rotation control gains
+   // Note that pid[0,5,10] are just storage locations for Rx, Ry, and Rz gains
+   // The actual control is performed in the WAMControlLoop()
+   sprintf(key, "%s.Rx_pd", wam->name);
+   tmp_v3.q = &wam->CposControl.pid[0].Kp;
+   parseGetVal(VECTOR, key, (void*)&tmp_v3);
+   
+   sprintf(key, "%s.Ry_pd", wam->name);
+   tmp_v3.q = &wam->CposControl.pid[5].Kp;
+   parseGetVal(VECTOR, key, (void*)&tmp_v3);
+   
+   sprintf(key, "%s.Rz_pd", wam->name);
+   tmp_v3.q = &wam->CposControl.pid[10].Kp;
+   parseGetVal(VECTOR, key, (void*)&tmp_v3);
+   
    // Read whether M4 is reversed (new as of 2007 WAMs)
    //sprintf(key, "%s.M4_2007", robotName);
    //wam->M4_reversed = 0; // Default to "pre-2007"
@@ -331,6 +344,7 @@ wam_struct* OpenWAM(char *fn, int bus)
    sprintf(key, "%s.j2mt", wam->name);
    parseGetVal(MATRIX, key, (void*)wam->J2MT);
 
+   tmp_v3.q = tmp_v3.data; // Set pointer to its own storage area
    syslog(LOG_ERR,"OpenWAM(): for link from 0 to %d", wam->dof);
    for(link = 0; link <= wam->dof; link++) {
       // Get the DH parameters
@@ -345,7 +359,7 @@ wam_struct* OpenWAM(char *fn, int bus)
 
       // Get the mass parameters
       sprintf(key, "%s.link[%d].com", wam->name, link);
-      parseGetVal(VECTOR, key, (void*)com);
+      parseGetVal(VECTOR, key, (void*)&tmp_v3);
       sprintf(key, "%s.link[%d].mass", wam->name, link);
       parseGetVal(DOUBLE, key, (void*)&mass);
 
@@ -391,10 +405,10 @@ wam_struct* OpenWAM(char *fn, int bus)
          //setval_vn(wam->acc, link, tmpdbl);
 
          link_geom_bot(&wam->robot, link, theta * pi, d, a, alpha * pi);
-         link_mass_bot(&wam->robot, link, com, mass);
+         link_mass_bot(&wam->robot, link, &tmp_v3, mass);
       } else {
          tool_geom_bot(&wam->robot, theta * pi, d, a, alpha * pi);
-         tool_mass_bot(&wam->robot, com, mass);
+         tool_mass_bot(&wam->robot, &tmp_v3, mass);
       }
    }
 
@@ -436,22 +450,20 @@ wam_struct* OpenWAM(char *fn, int bus)
       syslog(LOG_ERR, "WAM zeroed by application");
    }
 
+   /* Sad, but true. Until we code something to calculate dq and ddq, our
+      control will be limited to static calcs (no Coriolis).
+    */
    fill_vn(wam->robot.dq,0.0);
    fill_vn(wam->robot.ddq,0.0);
 
-   //wam->Gcomp = 0;
    set_gravity_bot(&wam->robot, 0.0);
-
-   //for (cnt = 0; cnt < wam->dof; cnt ++){
-   //   setgains_btPID(&(wam->JposControl.pid[cnt]), getval_vn(wam->Kp,cnt),getval_vn(wam->Kd,cnt),getval_vn(wam->Ki,cnt));
-   //}
 
    test_and_log(
       btrt_mutex_create(&(wam->loop_mutex)),
       "Could not initialize mutex for WAM control loop.");
 
+   // Spin off the maintenance thread
    btrt_thread_create(&wam->maint, "MAINT", 30, (void*)WAMMaintenanceThread, (void*)wam);
-   //btthread_create(&wam->maint, 0, (void*)WAMMaintenanceThread, wam);
 
    return(wam);
 }
@@ -554,32 +566,35 @@ void WAMControlThread(void *data)
    btrt_set_mode_warn();*/
 
    /* Rotation control */
-   vect_3 *ns, *n, *os, *o, *as, *a, *f3, *t3;
-   vect_n *e, *ed, *last_e, *f6;
-   matr_mn *kp, *kd;
-   vect_3 *v3;
+   vect_3 *ns, *n, *os, *o, *as, *a;
+   vect_3 *e, *ed, *last_e;
+   matr_3 *kp, *kd;
 
-   v3 = new_v3();
    ns = new_v3();
    n = new_v3();
    os = new_v3();
    o = new_v3();
    as = new_v3();
    a = new_v3();
-   e = new_vn(6);
-   ed = new_vn(6);
-   last_e = new_vn(6);
-   kp = new_mn(6,6);
-   kd = new_mn(6,6);
-   f6 = new_vn(6);
+   e = new_v3();
+   ed = new_v3();
+   last_e = new_v3();
+   kp = new_m3();
+   kd = new_m3();
 
-   set_mn(kp, scale_mn(10.0, kp)); //20
-   set_mn(kd, scale_mn(0.08, kd)); //0.1
-
-
-   /* Set up timer */
+   /* Get the wam pointer */
    this_thd = (btrt_thread_struct*)data;
    wam = this_thd->data;
+   
+   /* Set up the rotation control gains */
+   ELEM(kp, 0, 0) = wam->CposControl.pid[0].Kp;
+   ELEM(kp, 1, 1) = wam->CposControl.pid[5].Kp;
+   ELEM(kp, 2, 2) = wam->CposControl.pid[10].Kp;
+   ELEM(kd, 0, 0) = wam->CposControl.pid[0].Kd;
+   ELEM(kd, 1, 1) = wam->CposControl.pid[5].Kd;
+   ELEM(kd, 2, 2) = wam->CposControl.pid[10].Kd;
+   
+   /* Set up timer */
    thisperiod = this_thd->period;
    rtime_period = (RTIME)(thisperiod * 1000000000.0);
 
@@ -731,48 +746,35 @@ void WAMControlThread(void *data)
 
       /* Copy the XYZ force terms from the Cartesian controller output into Cforce */
       getcol_m3(wam->Cforce, wam->HMft, 3);
-      
-      //getcol_m3(n, wam->HMft, 0);
-      //getcol_m3(o, wam->HMft, 1);
-      //getcol_m3(a, wam->HMft, 2);
-      //wam->Ctrq->q[0] = -cross_v3(o,a)->q[0] - cross_v3(a,n)->q[0] - cross_v3(n,o)->q[0];
-      //wam->Ctrq->q[1] = -cross_v3(o,a)->q[1] - cross_v3(a,n)->q[1] - cross_v3(n,o)->q[1];
-      //wam->Ctrq->q[2] = -cross_v3(o,a)->q[2] - cross_v3(a,n)->q[2] - cross_v3(n,o)->q[2];
-      
-      wam->Ctrq->q[0] = wam->HMft->q[0] + wam->HMft->q[1] + wam->HMft->q[2];
-      wam->Ctrq->q[1] = wam->HMft->q[4] + wam->HMft->q[5] + wam->HMft->q[6];
-      wam->Ctrq->q[2] = wam->HMft->q[8] + wam->HMft->q[9] + wam->HMft->q[10];
-      //getcol_m3(wam->Ctrq->ret, wam->HMft, 1);
-      //set_v3(wam->Ctrq, add_v3(wam->Ctrq, wam->Ctrq->ret));
-      //getcol_m3(wam->Ctrq->ret, wam->HMft, 2);
-      //set_v3(wam->Ctrq, add_v3(wam->Ctrq, wam->Ctrq->ret));
-#if 0
 
-      set_v3(wam->Cforce,(vect_3*)wam->R6force);
-      //setrange_vn((vect_n*)wam->Ctrq,wam->R6force,0,2,3);
-
-      /* Cartesian Rotation Control */
+      /* Cartesian rotation control */
       fill_v3(wam->Ctrq, 0.0); // Start with zero torque
-      if(getmode_bts(wam->active_sc) > SCMODE_IDLE && wam->active_sc == &wam->Csc) {
-         // Reference rotation
-         setrange_vn((vect_n*)ns, wam->R6ref, 0, 3, 3);
-         setrange_vn((vect_n*)os, wam->R6ref, 0, 6, 3);
-         setrange_vn((vect_n*)as, wam->R6ref, 0, 9, 3);
-
-         // Actual rotation
-         getcol_m3(n, wam->robot.tool->origin, 0);
-         getcol_m3(o, wam->robot.tool->origin, 1);
-         getcol_m3(a, wam->robot.tool->origin, 2);
-
-         setrange_vn(e, (vect_n*)(scale_v3(0.5, add_v3(cross_v3(ns,n), add_v3(cross_v3(os,o), cross_v3(as,a))))), 3, 0, 3);
-         set_vn(ed, scale_vn(1.0/thisperiod, add_vn(e, scale_vn(-1.0, last_e))));
-         set_vn(f6, add_vn(matXvec_mn(kp, e, e->ret), matXvec_mn(kd, ed, ed->ret)));
-         setrange_vn(wam->R6force, f6, 3, 3, 3); // Just for show
-         setrange_vn((vect_n*)wam->Ctrq, f6, 0, 3, 3);
-         //apply_tool_force_bot(&(w->robot), w->Cpoint, f3, t3);
-         set_vn(last_e, e);
+      if(getmode_bts(wam->active_sc) > SCMODE_IDLE && wam->active_sc == &wam->Csc) {      
+         /* Actual rotation */
+         getcol_m3(n, wam->HMpos, 0);
+         getcol_m3(o, wam->HMpos, 1);
+         getcol_m3(a, wam->HMpos, 2);
+         
+         /* Desired rotation */
+         getcol_m3(ns, wam->HMref, 0);
+         getcol_m3(os, wam->HMref, 1);
+         getcol_m3(as, wam->HMref, 2);
+         
+         /* Error = 0.5 [ (ns x n) + (os x o) + (as x a) ] (Luh, Walker, Paul, 1980) */
+         set_v3(e, (scale_v3(0.5, add_v3(cross_v3(ns,n), add_v3(cross_v3(os,o), cross_v3(as,a))))));
+         
+         /* First derivative of the error (simple, no filter) */
+         set_v3(ed, scale_v3(1.0/thisperiod, add_v3(e, scale_v3(-1.0, last_e))));
+         
+         /* Torque = (Kp * e) + (Kd * ed) (PD control) */
+         set_v3(wam->Ctrq, add_v3(matXvec_m3(kp, e), matXvec_m3(kd, ed)));
+         
+         /* Store the last error for the next iteration */
+         set_v3(last_e, e);
+      }else{
+         fill_v3(last_e, 0.0); // Clear last rotation error 
       }
-#endif
+     
 #if 0
       /* Quaternian angular control in Cartesian space */
       R_to_q(wam->qact,T_to_W_trans_bot(&wam->robot));
