@@ -259,7 +259,7 @@ void Startup(void *thd){
           * Note: btsystem.c bounds the outbound torque to 8191, so 9000
           * tells the safety system to never register a critical fault
           */
-         setProperty(i, SAFETY_MODULE, TL2, FALSE, 9000); 
+         setProperty(i, SAFETY_MODULE, TL2, FALSE, 5700); 
          setProperty(i, SAFETY_MODULE, TL1, FALSE, 1800);
          
          /* Set the Max Torque (MT) for each motor
@@ -287,7 +287,7 @@ void Startup(void *thd){
          setProperty(i, 4, MT, FALSE, 4320); // Cable limit = 4320
          setProperty(i, 5, MT, FALSE, 3900); // Cable limit = 3900
          setProperty(i, 6, MT, FALSE, 3900); // Cable limit = 3900
-         setProperty(i, 7, MT, FALSE, 1600); // J7 Gears (max stall)
+         setProperty(i, 7, MT, FALSE, 3200); // J7 Gears (max stall = 1600)
          
       }
       
@@ -369,7 +369,7 @@ void MainEventThread(void *thd){
 	      }
       } 
       
-      /* If there is an obstruction, pause the WAM playback */
+      /* If there is an obstruction, pause the WAM playback 
       for(i = 0; i < busCount; i++){
          for(cnt=0;cnt<wam[i]->dof;cnt++){
             if(fabs(getval_vn(wam[i]->Jtrq,cnt) - getval_vn(wam[i]->Gtrq,cnt)) >
@@ -385,7 +385,7 @@ void MainEventThread(void *thd){
             }
          }
       } 
-      
+      */
       /* Sleep for 0.1s. This roughly defines the event loop frequency */
       usleep(100000);
    }
@@ -805,6 +805,8 @@ void RenderMAIN_SCREEN()
       ++line;
       mvprintw(line, 0, "HMpos      : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMpos));
       line+=5;
+      mvprintw(line, 0, "HMpos      : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMft));
+      line+=5;
       /*
       mvprintw(line, 0, "origin     : \n%s ", sprint_mn(vect_buf1,(matr_mn*)wam[cnt]->robot.tool->origin));
       line+=5;
@@ -956,8 +958,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          keyEvent[eventIdx].c = 0;
       }
       break;
-   case '6'://BHand SC
-      serialWriteString(&p, "\rSC\r");
+   case '6'://BHand GM 8000
+      serialWriteString(&p, "\rGM 8000\r");
       if(cteach){
          keyEvent[eventIdx].c = c;
          keyEvent[eventIdx].t = btrt_get_time() - eventStart;

@@ -252,10 +252,14 @@ wam_struct* OpenWAM(char *fn, int bus)
    // Initialize the PID data structures for joint control
    for (cnt = 0; cnt < 12; cnt ++) {
       init_btPID(&wam->CposControl.pid[cnt]);
+      setgains_btPID(&wam->CposControl.pid[cnt], 5.0, 0.05, 0.0); // r
    }
-   setgains_btPID(&wam->CposControl.pid[3], 2000.0, 5.0, 0.0); // X
-   setgains_btPID(&wam->CposControl.pid[7], 2000.0, 5.0, 0.0); // Y
-   setgains_btPID(&wam->CposControl.pid[11], 2000.0, 5.0, 0.0); // Z
+   //setgains_btPID(&wam->CposControl.pid[3], 2000.0, 5.0, 0.0); // X
+   //setgains_btPID(&wam->CposControl.pid[7], 2000.0, 5.0, 0.0); // Y
+   //setgains_btPID(&wam->CposControl.pid[11], 2000.0, 5.0, 0.0); // Z
+   setgains_btPID(&wam->CposControl.pid[3], 0.0, 0.0, 0.0); // X
+   setgains_btPID(&wam->CposControl.pid[7], 0.0, 0.0, 0.0); // Y
+   setgains_btPID(&wam->CposControl.pid[11], 0.0, 0.0, 0.0); // Z
 
    //for (cnt = 3; cnt < 12; cnt++) {
    //   init_btPID(&(wam->d_pos_ctl[cnt]));
@@ -421,8 +425,8 @@ wam_struct* OpenWAM(char *fn, int bus)
    //syslog(LOG_ERR, "Kinematics loaded, bus = %d", wam->act[0].bus);
 
    /* If the WAM is already zeroed, note it- else, zero it */
-   reply = 0;
-   //getProperty(wam->act->bus, SAFETY_MODULE, ZERO, &reply);
+   //reply = 0;
+   getProperty(wam->act->bus, SAFETY_MODULE, ZERO, &reply);
 
    if(reply) {
       wam->isZeroed = TRUE;
@@ -727,6 +731,21 @@ void WAMControlThread(void *data)
 
       /* Copy the XYZ force terms from the Cartesian controller output into Cforce */
       getcol_m3(wam->Cforce, wam->HMft, 3);
+      
+      //getcol_m3(n, wam->HMft, 0);
+      //getcol_m3(o, wam->HMft, 1);
+      //getcol_m3(a, wam->HMft, 2);
+      //wam->Ctrq->q[0] = -cross_v3(o,a)->q[0] - cross_v3(a,n)->q[0] - cross_v3(n,o)->q[0];
+      //wam->Ctrq->q[1] = -cross_v3(o,a)->q[1] - cross_v3(a,n)->q[1] - cross_v3(n,o)->q[1];
+      //wam->Ctrq->q[2] = -cross_v3(o,a)->q[2] - cross_v3(a,n)->q[2] - cross_v3(n,o)->q[2];
+      
+      wam->Ctrq->q[0] = wam->HMft->q[0] + wam->HMft->q[1] + wam->HMft->q[2];
+      wam->Ctrq->q[1] = wam->HMft->q[4] + wam->HMft->q[5] + wam->HMft->q[6];
+      wam->Ctrq->q[2] = wam->HMft->q[8] + wam->HMft->q[9] + wam->HMft->q[10];
+      //getcol_m3(wam->Ctrq->ret, wam->HMft, 1);
+      //set_v3(wam->Ctrq, add_v3(wam->Ctrq, wam->Ctrq->ret));
+      //getcol_m3(wam->Ctrq->ret, wam->HMft, 2);
+      //set_v3(wam->Ctrq, add_v3(wam->Ctrq, wam->Ctrq->ret));
 #if 0
 
       set_v3(wam->Cforce,(vect_3*)wam->R6force);
