@@ -101,9 +101,9 @@ typedef struct {
   double R,P; //!< Revolute, Prismatic: Joint type multipliers to avoid decision
   
   //storage for dynamic info
-  matr_h* trans; //last computed transform
-  matr_h* origin; //transform to origin
-  matr_mn* Ro; // True 3x3 rot matrix from link to origin
+  matr_h* trans; //!< last computed transform
+  matr_h* origin; //!< transform to origin
+  matr_mn* Ro; //!< True 3x3 rot matrix from link to origin
   
   //forward dynamics results
   vect_3 *w; //!< Angular velocity of link frame wrt frame 0
@@ -123,12 +123,12 @@ typedef struct {
   vect_3 *g; //for jacobian & forward dynamics
   vect_3 *Rl; //!< Vector from the origin of the first link to the COM of this link (Spong: ri+1,ci)
   vect_3 *Rm; //!< Vector from the origin of this link to the COM of this link (Spong: ri,ci)
-  vect_3 *Rp; //vector from external force point to cog
-  vect_n *J; //<! Full Jacobian at link frame
+  vect_3 *Rp; //!< Vector from external force point to cog
+  vect_n *J; //!< Full Jacobian at link frame
   vect_3 *como;
-  matr_mn *Jcom; //<! Full Jacobian at link center-of-mass
-  matr_mn *Jvcom; //<! Upper Jacobian at link center-of-mass
-  matr_mn *Jwcom; //<! Lower Jacobian at link center-of-mass
+  matr_mn *Jcom; //!< Full Jacobian at link center-of-mass
+  matr_mn *Jvcom; //!< Upper Jacobian at link center-of-mass
+  matr_mn *Jwcom; //!< Lower Jacobian at link center-of-mass
   
   double sinAlpha,cosAlpha,sinTheta,cosTheta; //last computed sin and cos for alpha,theta
   
@@ -141,9 +141,8 @@ typedef struct {
   //Sanity check
   int has_geom;
 }btlink;
+
 /** Main robot description and interaction object
-
-
 
   Notes:
     We assume that for any configuration of joint angles we will have to evaluate 
@@ -152,25 +151,24 @@ typedef struct {
     every time the user needs it, we calculate them all in one sweep and then 
     provide the results from our calculation cache.
     
-    
 */
 typedef struct {
- int num_links;  //<! Robot link count
- btlink* user;  //user frame (not implemented yet)
+ int num_links;  //!< Robot link count
+ btlink* user;  //!< user frame (not implemented yet)
  btlink* world;  //!< World frame - gravity is referenced from this frame
- btlink* links;  //<! Pointer to the start of the array of links
- btlink* tool;   //<! Joint frame
- vect_n *q,*dq,*ddq; //<! Joint state inputs
- vect_n *t;      //<! Joint torque outputs
- vect_3 *G;      //<! Gravity vector
- matr_mn *J; //<! Full Jacobian at tool
- matr_mn *Jv; //<! Upper Jacobian at tool frame
- matr_mn *Jw; //<! Lower Jacobian at tool frame
- matr_mn *Jcom; //<! Full Jacobian at tool center-of-mass
- matr_mn *Jvcom; //<! Upper Jacobian at tool center-of-mass
- matr_mn *Jwcom; //<! Lower Jacobian at tool center-of-mass
- matr_mn *M; //<! Mass (inertial) matrix
- vect_n *vv; // Row interchange scaling vector for matrix inverse
+ btlink* links;  //!< Pointer to the start of the array of links
+ btlink* tool;   //!< Joint frame
+ vect_n *q,*dq,*ddq; //!< Joint state inputs
+ vect_n *t;      //!< Joint torque outputs
+ vect_3 *G;      //!< Gravity vector
+ matr_mn *J; //!< Full Jacobian at tool
+ matr_mn *Jv; //!< Upper Jacobian at tool frame
+ matr_mn *Jw; //!< Lower Jacobian at tool frame
+ matr_mn *Jcom; //!< Full Jacobian at tool center-of-mass
+ matr_mn *Jvcom; //!< Upper Jacobian at tool center-of-mass
+ matr_mn *Jwcom; //!< Lower Jacobian at tool center-of-mass
+ matr_mn *M; //!< Mass (inertial) matrix
+ vect_n *vv; //!< Row interchange scaling vector for matrix inverse
 }btrobot;
 
 //an array of links define a robot

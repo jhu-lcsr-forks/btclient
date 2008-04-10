@@ -103,7 +103,7 @@ extern "C"
 #define EPSILON (0.001)
 #define pi (3.14159265359)
 
-typedef double btreal; //<! Typedef floating point type
+typedef double btreal; //!< Typedef floating point type
 
 /** The list of all pointers allocated by btmath
 
