@@ -124,11 +124,11 @@ typedef struct {
   vect_3 *Rl; //!< Vector from the origin of the first link to the COM of this link (Spong: ri+1,ci)
   vect_3 *Rm; //!< Vector from the origin of this link to the COM of this link (Spong: ri,ci)
   vect_3 *Rp; //vector from external force point to cog
-  vect_n *J; 
+  vect_n *J; //<! Full Jacobian at link frame
   vect_3 *como;
-  matr_mn *Jcom;
-  matr_mn *Jvcom;
-  matr_mn *Jwcom;
+  matr_mn *Jcom; //<! Full Jacobian at link center-of-mass
+  matr_mn *Jvcom; //<! Upper Jacobian at link center-of-mass
+  matr_mn *Jwcom; //<! Lower Jacobian at link center-of-mass
   
   double sinAlpha,cosAlpha,sinTheta,cosTheta; //last computed sin and cos for alpha,theta
   
@@ -156,19 +156,19 @@ typedef struct {
 */
 typedef struct {
  int num_links;  //<! Robot link count
- btlink* user;  //user frame
+ btlink* user;  //user frame (not implemented yet)
  btlink* world;  //!< World frame - gravity is referenced from this frame
  btlink* links;  //<! Pointer to the start of the array of links
  btlink* tool;   //<! Joint frame
  vect_n *q,*dq,*ddq; //<! Joint state inputs
  vect_n *t;      //<! Joint torque outputs
  vect_3 *G;      //<! Gravity vector
- matr_mn *J; //<! Full Jacobian
- matr_mn *Jv; //<! Upper Jacobian
- matr_mn *Jw; //<! Lower Jacobian
- matr_mn *Jcom; //<! Full Jacobian
- matr_mn *Jvcom; //<! Upper Jacobian
- matr_mn *Jwcom; //<! Lower Jacobian
+ matr_mn *J; //<! Full Jacobian at tool
+ matr_mn *Jv; //<! Upper Jacobian at tool frame
+ matr_mn *Jw; //<! Lower Jacobian at tool frame
+ matr_mn *Jcom; //<! Full Jacobian at tool center-of-mass
+ matr_mn *Jvcom; //<! Upper Jacobian at tool center-of-mass
+ matr_mn *Jwcom; //<! Lower Jacobian at tool center-of-mass
  matr_mn *M; //<! Mass (inertial) matrix
  vect_n *vv; // Row interchange scaling vector for matrix inverse
 }btrobot;
