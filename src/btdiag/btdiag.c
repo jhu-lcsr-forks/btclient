@@ -776,19 +776,11 @@ void RenderMAIN_SCREEN()
       line+=1;
       mvprintw(line, 0, "Position   : %s ", sprint_vn(vect_buf1,wamData[cnt].active_pos));
       ++line;
-      mvprintw(line, 0, "RxRyRz     : %s ", sprint_vn(vect_buf1,(vect_n*)RtoXYZf_m3(wam[cnt]->robot.tool->origin, RxRyRz)));
+      mvprintw(line, 0, "RxRyRz     : %s ", sprint_vn(vect_buf1,(vect_n*)RtoXYZf_m3((matr_3*)wam[cnt]->HMpos, RxRyRz)));
       ++line;
       mvprintw(line, 0, "HMpos      : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMpos));
       line+=5;
-      mvprintw(line, 0, "HMpos      : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMft));
-      line+=5;
-      /*
-      mvprintw(line, 0, "origin     : \n%s ", sprint_mn(vect_buf1,(matr_mn*)wam[cnt]->robot.tool->origin));
-      line+=5;
-      
-      mvprintw(line, 0, "q->R       : \n%s ", sprint_mn(vect_buf1,(matr_mn*)r_mat));
-      line+=5;
-      */
+
       //mvprintw(line, 0, "Target     : %s ", sprint_vn(vect_buf1,active_bts->qref));
       //++line;
       mvprintw(line, 0, "%s     : %s ", (wamData[cnt].active_bts == &(wam[cnt]->Jsc)) ? "Torque" : "Force ", sprint_vn(vect_buf1,wamData[cnt].active_trq));

@@ -1,30 +1,22 @@
-LIB_OBJS =  btwam.o gimbals.o 
+### Makefile for Barrett Software (libbtwam)
+
+# Be sure to edit config.mk to match your installation
+include ../../config.mk
+include ../../common.mk
+
+LIB_OBJS = btwam.o gimbals.o
+LIB_TARG = libbtwam.a
+SLIB_TARG = libbtwam.so
 INCL_FILES = btwam.h gimbals.h
-LIB_TARG = ./libbtwam.a
-SLIB_TARG = ./libbtwam.so
-CC = gcc
-PATH_INCLUDE = -I./include -I/usr/realtime/include -I../btsystem -I/usr/xenomai/include
-PATH_INSTALL = ../..
+PATH_INSTALL_LIB = ../../lib
+PATH_INSTALL_INC = ../../include
 
-#set BTOLDCFG to -DBTOLDCONFIG for RIC,MIT,Ualberta,BPW
-#ex: #export BTOLDCFG=-DBTOLDCONFIG
-CFLAGS += -g -DUSE_RTAI31  ${PATH_INCLUDE} ${BTOLDCFG}
-#CFLAGS += -g -DUSE_RTAI31  ${PATH_INCLUDE} -DBTOLDCONFIG
-
-#Replace -lrtai with -llxrt
-LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L/usr/local/lib -L./lib 
-LDFLAGS += -lm -lpthread -llxrt -lntcan -lgsl
-
-#Make *.o files rebuild on any change to *.h
-$(LIB_OBJS) : $(INCL_FILES)
+# Done with defines, now for the real work
 
 default: lib
 
-clean: 
-	rm *.o ${LIB_TARG} $(PATH_INSTALL)/${LIB_TARG}
-
-small:
-	rm *.o *~ *.bak
+# Make *.o files rebuild on any change to *.h
+$(LIB_OBJS) : $(INCL_FILES)
 
 lib: ${LIB_OBJS}
 	$(AR) rcs $(LIB_TARG) ${LIB_OBJS}
@@ -32,8 +24,11 @@ lib: ${LIB_OBJS}
 
 slib: ${LIB_OBJS}
 	${CC} -g ${LDFLAGS} -shared -o ${SLIB_TARG} ${LIB_OBJS}
-
+   
+clean: 
+	rm *.o ${LIB_TARG} $(PATH_INSTALL_LIB)/${LIB_TARG}
+   
 install:
-	cp $(LIB_TARG) $(PATH_INSTALL)/lib
-	cp $(INCL_FILES) $(PATH_INSTALL)/include  
+	cp $(LIB_TARG) $(PATH_INSTALL_LIB)
+	cp $(INCL_FILES) $(PATH_INSTALL_INC)
 

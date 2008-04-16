@@ -1,3 +1,9 @@
+### Makefile for Barrett Software (libbtsystem)
+
+# Be sure to edit config.mk to match your installation
+include ../../config.mk
+include ../../common.mk
+
 LIB_OBJS =  btsystem.o \
             btlogger.o btcan_peakesd.o btrobot.o btmath.o \
             btos.o btpath.o btcontrol.o btserial.o bthaptics.o btstatecontrol.o \
@@ -5,29 +11,18 @@ LIB_OBJS =  btsystem.o \
 INCL_FILES = btcan.h btsystem.h  btlogger.h \
             btmath.h btrobot.h btos.h btpath.h btcontrol.h btserial.h bthaptics.h \
             btstatecontrol.h btgeometry.h btparser.h btseg.h
-LIB_TARG = ./libbtsystem.a
-SLIB_TARG = ./libbtsystem.so
-CC = gcc
-PATH_INCLUDE = -I./include -I/usr/realtime/include -I/usr/xenomai/include
-PATH_INSTALL = ../..
+            
+LIB_TARG = libbtsystem.a
+SLIB_TARG = libbtsystem.so
+PATH_INSTALL_LIB = ../../lib
+PATH_INSTALL_INC = ../../include
 
-#set BTOLDCFG to -DBTOLDCONFIG for RIC,MIT,Ualberta,BPW
-#ex: #export BTOLDCFG=-DBTOLDCONFIG
-CFLAGS += -DUSE_RTAI31  ${PATH_INCLUDE} ${BTOLDCFG}
-#Debugging - Comment out line below for more speed
-CFLAGS += -g -DBT_NULL_PTR_GUARD -DBT_ARRAY_BOUNDS_CHECK -DBTDEBUG  
-
-LDFLAGS += -L/usr/realtime/lib -L/usr/lib -L./lib -lm -lpthread -llxrt -lntcan
-
-$(LIB_OBJS) : $(INCL_FILES)
+# Done with defines, now for the real work
 
 default: lib
 
-clean: 
-	rm *.o ${LIB_TARG} 
-
-small:
-	rm *.o *~ *.bak
+# Make *.o files rebuild on any change to *.h
+$(LIB_OBJS) : $(INCL_FILES)
 
 lib: ${LIB_OBJS}
 	$(AR) rcs $(LIB_TARG) ${LIB_OBJS}
@@ -35,8 +30,12 @@ lib: ${LIB_OBJS}
 
 slib: ${LIB_OBJS}
 	${CC} -g ${LDFLAGS} -shared -o ${SLIB_TARG} ${LIB_OBJS}
-
+   
+clean: 
+	rm *.o ${LIB_TARG} $(PATH_INSTALL_LIB)/${LIB_TARG}
+   
 install:
-	cp $(LIB_TARG) $(PATH_INSTALL)/lib
-	cp $(INCL_FILES) $(PATH_INSTALL)/include  
-#-lm -Llib -lcan -lmitop
+	cp $(LIB_TARG) $(PATH_INSTALL_LIB)
+	cp $(INCL_FILES) $(PATH_INSTALL_INC)
+
+

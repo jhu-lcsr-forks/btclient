@@ -46,7 +46,7 @@ See #btwam_struct
 extern int gimbalsInit;
 extern bus_struct *buses;
 
-#define LOW_TRQ_COEFFICIENT (0.75)
+//#define LOW_TRQ_COEFFICIENT (0.75)
 //#define BTDOUBLETIME
 
 /*==============================*
@@ -781,12 +781,6 @@ void WAMControlThread(void *data)
       set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));
       //set_vn(wam->R6pos,(vect_n*)wam->Cpos);
 
-      /* Append the rMatrix to R6pos */
-      //for(cnt = 0; cnt < 3; cnt++){
-      //   getcol_mh(v3, wam->robot.tool->origin, cnt);
-      //   setrange_vn(wam->R6pos, (vect_n*)v3, 3+3*cnt, 0, 3);
-      //}
-
       pos1_time = btrt_get_time(); //th prof
       /* Evaluate the Cartesian state controller */
       eval_bts(&(wam->Csc));
@@ -798,8 +792,7 @@ void WAMControlThread(void *data)
 
       /* Cartesian rotation control */
       fill_v3(wam->Ctrq, 0.0); // Start with zero torque
-      if(getmode_bts(wam->active_sc) > SCMODE_IDLE && wam->active_sc == &wam->Csc) {   
-         syslog(LOG_ERR, "Rotation control");
+      if(getmode_bts(wam->active_sc) > SCMODE_IDLE && wam->active_sc == &wam->Csc) {
          /* Actual rotation */
          getcol_m3(n, wam->HMpos, 0);
          getcol_m3(o, wam->HMpos, 1);
@@ -987,7 +980,9 @@ void WAMControlThread(void *data)
       if(firstLoop)
          firstLoop = 0;
    }
-   rt_task_set_mode(T_WARNSW, 0, NULL);
+#ifdef XENOMAI
+   rt_task_set_mode(T_WARNSW, 0, NULL); // Disable mode switch warning
+#endif
    syslog(LOG_ERR, "WAM Control Thread: exiting");
    syslog(LOG_ERR, "----------WAM Control Thread Statistics:--------------");
    DEBUG(
@@ -1019,7 +1014,6 @@ void WAMControlThread(void *data)
       /*syslog(LOG_ERR, "            Stdev: %.4f", stdev4);*/
       /*syslog(LOG_ERR, "Skips %d", counter);*/
    );
-
 
    syslog(LOG_ERR,"WAMControl Skipped cycles %d, Max dt: %lf", skipcnt, wam->skipmax);
    //syslog(LOG_ERR,"WAMControl Times: Readpos: %lld, Calcs: %lld, SendTrq: %lld",wam->readpos_time,wam->loop_time-wam->writetrq_time-wam->readpos_time,wam->writetrq_time);
