@@ -31,6 +31,8 @@ See #btwam_struct
 #include <syslog.h>
 #include <stdio.h>
 #include <math.h>
+#include <fcntl.h>
+#include <signal.h>
 
 /*==============================*
  * INCLUDES - Project Files     *
@@ -66,6 +68,38 @@ int BlankWAMcallback(struct btwam_struct *wam);
 /*==============================*
  * Functions                    *
  *==============================*/
+ 
+/* For Debugging: This function will execute when a RealTime thread switches to 
+ * secondary mode.  Also, one can look at /proc/xenomai/stat and MSW will 
+ * tell you the number of switches a thread has made.
+ */
+void warn_upon_switch(int sig __attribute__((unused)))
+{
+    void *bt[32];
+    int nentries;
+    int fd;
+ 
+     // Open backtrace file as APPEND. Create new file if necessary (chmod 644)
+    fd = open("sigxcpu.txt", O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+    
+    /* Dump a backtrace of the frame which caused the switch to secondary mode
+       To decipher a backtrace:
+       1) Look at the line of the backtrace originating in your application (not a library,
+          and not the warn_upon_switch function)
+       2) Take note of the memory address of that line, ex: [0x80588d5]
+       3) Run "gdb <progname>"
+       4) Type "list *0x80588d5" (substitute your actual memory address)
+       5) gdb will show the function() (file:line) information for your error, followed by 
+          a listing of several surrounding lines
+    */
+    nentries = backtrace(bt, sizeof(bt) / sizeof(bt[0]));
+    backtrace_symbols_fd(bt, nentries, fd);
+    write(fd, "-----\n", 6); // Output a separator line
+    
+    close(fd);
+    syslog(LOG_ERR, "Switched out of RealTime, see sigxcpu.txt for details (frame backtrace)");
+}
+
 /** Allocate memory for components of the WAM data structure
  
   This function allocates and initializes memory for many vectors and matrices
@@ -533,7 +567,7 @@ The WAMControlThread() contains code to:
  - Convert from joint torques to motor torques
  - Send the torques to the WAM
  
- \todo Make control loop profiling a compiler switch so it is not normally compiled
+ \todo Clean up control loop profiling code. It is too distracting.
  
 */
 void WAMControlThread(void *data)
@@ -617,6 +651,21 @@ void WAMControlThread(void *data)
 
    /*Set up as hard real time*/
    btrt_set_mode_hard();
+
+   /* Install a signal handler to log when the thread is changing over to secondary mode.
+      Almost any I/O in a realtime thread will cause the thread to be pulled out
+      of the realtime domain and placed in the domain of the standard Linux scheduler.
+      This includes printf(), syslog(), send(), receive(), read(), write(), and many
+      other system calls. To keep the control loop in the realtime domain, you should
+      avoid calling these functions from a realtime thread. Excessive latencies, 
+      heartbeat errors, and unstable control can all result from the control loop
+      being forced out of primary mode (realtime domain) by a realtime-unfriendly
+      function call!
+    */
+#ifdef XENOMAI
+   signal(SIGXCPU, warn_upon_switch); // Catch the SIGXCPU signal
+   btrt_set_mode_warn(); // Enable the warning
+#endif
 
 #ifdef XENOMAI
    /*Make task periodic*/
@@ -749,7 +798,8 @@ void WAMControlThread(void *data)
 
       /* Cartesian rotation control */
       fill_v3(wam->Ctrq, 0.0); // Start with zero torque
-      if(getmode_bts(wam->active_sc) > SCMODE_IDLE && wam->active_sc == &wam->Csc) {      
+      if(getmode_bts(wam->active_sc) > SCMODE_IDLE && wam->active_sc == &wam->Csc) {   
+         syslog(LOG_ERR, "Rotation control");
          /* Actual rotation */
          getcol_m3(n, wam->HMpos, 0);
          getcol_m3(o, wam->HMpos, 1);
@@ -937,6 +987,7 @@ void WAMControlThread(void *data)
       if(firstLoop)
          firstLoop = 0;
    }
+   rt_task_set_mode(T_WARNSW, 0, NULL);
    syslog(LOG_ERR, "WAM Control Thread: exiting");
    syslog(LOG_ERR, "----------WAM Control Thread Statistics:--------------");
    DEBUG(
@@ -970,7 +1021,7 @@ void WAMControlThread(void *data)
    );
 
 
-   syslog(LOG_ERR,"WAMControl Skipped cycles %d, Max dt: %lf",skipcnt, wam->skipmax);
+   syslog(LOG_ERR,"WAMControl Skipped cycles %d, Max dt: %lf", skipcnt, wam->skipmax);
    //syslog(LOG_ERR,"WAMControl Times: Readpos: %lld, Calcs: %lld, SendTrq: %lld",wam->readpos_time,wam->loop_time-wam->writetrq_time-wam->readpos_time,wam->writetrq_time);
 
    /*Delete thread when done*/

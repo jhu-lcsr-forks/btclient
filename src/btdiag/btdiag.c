@@ -111,6 +111,7 @@ btrt_mutex disp_mutex;
 int entryLine;
 int useGimbals      = FALSE;
 int done            = FALSE;
+int alldone         = FALSE;
 int quiet           = FALSE;
 //int prev_mode;
 int cteach = 0;
@@ -194,25 +195,7 @@ int  WAMcallback(struct btwam_struct *wam);
  * Functions                    *
  *==============================*/
  
-/* For Debugging: This function will signal SIGXCPU if rt thread switches to 
- * secontary mode.  Also one can look at /proc/xenomai/stat and MSW will 
- * tell you the number of switches a thread has made.
- */
-void warn_upon_switch(int sig __attribute__((unused)))
-{
-    void *bt[32];
-    int nentries;
-    int errfiled;
- 
-    errfiled= open ("/root/btclient/src/btdiag/WAMerror.txt", 1);//open WAMerror text as a write
-    
-    // Dump a backtrace of the frame which caused the switch to
-    // secondary mode: 
-    nentries = backtrace(bt,sizeof(bt) / sizeof(bt[0]));
-    backtrace_symbols_fd(bt,nentries,errfiled);
-    close(errfiled);
-    syslog(LOG_ERR, "Switched out of RealTime, see WAMerror.txt for details");
-}
+
 
 void Cleanup(){
    int i;
@@ -389,7 +372,9 @@ void MainEventThread(void *thd){
       /* Sleep for 0.1s. This roughly defines the event loop frequency */
       usleep(100000);
    }
+   alldone = TRUE;
    btrt_thread_exit((btrt_thread_struct*)thd);
+   
 }
 
 /** Entry point for the application.
@@ -403,18 +388,9 @@ int main(int argc, char **argv)
    
    mlockall(MCL_CURRENT | MCL_FUTURE);
    
-   // Test to see when thread is changing over to secondary mode
-   signal(SIGXCPU, warn_upon_switch);
-   
 #ifdef RTAI
    rt_allow_nonroot_hrt();
 #endif
-
-/* XENOMAI nonroot_hrt is trickier:
-   XENO_OPT_SECURITY_ACCESS=n
-   /usr/src/linux/include/linux/resource.h
-      #define MLOCK_LIMIT (4096 * PAGE_SIZE)
-*/
 
    /* Figure out what the keys do and print it on screen.
     * Parses this source file for lines containing "case '", because
@@ -514,11 +490,10 @@ int main(int argc, char **argv)
    /* Spin off the main event loop */
    btrt_thread_create(&event_thd, "EVENT", 20, (void*)MainEventThread, NULL);
    
-   while(!done){
+   while(!alldone){
       usleep(100000);
    }
    
-   usleep(100000);
    Cleanup();
    exit(1);
 }

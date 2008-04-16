@@ -442,7 +442,6 @@ pthread_t* btperiodic_create(btthread *thd,int priority, double period, void *fu
 
 //****************Real Time Calls***************************//
 
-//NOT USEABLE YET FOR ANYTHING BUT XENOMAI
 #ifdef XENOMAI
 //will start a xenomai realtime task
 void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, void *function, void *args)
@@ -459,11 +458,11 @@ void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, voi
 
 
    //create task
-   btrt_set_mode_hard();
+   //btrt_set_mode_hard();
    ret = rt_task_create(&(thd->task), name, 0, prio, T_JOINABLE);
    if(ret)
    {
-      syslog(LOG_ERR, "btthread_xenomai_create: Could not create task!");
+      syslog(LOG_ERR, "btthread_xenomai_create: Could not create task! %d", ret);
       exit(-1);
    }
    ret = rt_task_start(&(thd->task), function, thd);
