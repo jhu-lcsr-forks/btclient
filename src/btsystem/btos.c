@@ -2,18 +2,13 @@
  *  Module .............libbtsystem
  *  File ...............btos.c
  *  Author .............Traveler Hauptman
+ *                      Lauren White
+ *                      Brian Zenowich
  *  Creation Date ......Mar 28, 2005
  *                                                                      *
  *  *********************************************************************
  *
- * Copyright (C) 2005   Barrett Technology <support@barrett.com>        *
- *
- *
- *  NOTES:
- *   
- *
- *  REVISION HISTORY:
- *  TH 051101 - Final pass. Needs testing. Esp. Periodic threads.
+ * Copyright (C) 2005   Barrett Technology <support@barrett.com>        
  *
  *======================================================================*/
 #ifdef S_SPLINT_S
