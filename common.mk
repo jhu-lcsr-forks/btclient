@@ -4,7 +4,7 @@ CFLAGS  += ${BTOLDCFG}
 CC = gcc 
 
 # Compiler flags common to every system
-CFLAGS += -g -I../../include -I/usr/include
+CFLAGS += -g -I./include -I../../include -I/usr/include
 LDFLAGS += -L/usr/lib -L/usr/local/lib -L../../lib 
 LDFLAGS += -lpthread -lncurses -lm -lbtwam -lbtsystem
 LDFLAGS += -Wl,-Map=$(TARG).map,--cref

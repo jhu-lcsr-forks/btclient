@@ -258,8 +258,8 @@ int main(int argc, char **argv)
     * WAMControlThread()'s TriggerDL() function call.
     */
     
-   /* Configure the logdivider: 1 = every control cycle, 2 = every other cycle, etc. */
-   wam->logdivider = 5;
+   /* Configure the logDivider: 1 = every control cycle, 2 = every other cycle, etc. */
+   wam->logDivider = 5;
    
    /* Prepare the datalogger with the max number of btreal fields per record */
    PrepDL(&(wam->log), 35);

@@ -33,6 +33,7 @@ See #btwam_struct
 #include <math.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <sys/stat.h>
 
 /*==============================*
  * INCLUDES - Project Files     *
@@ -80,7 +81,7 @@ void warn_upon_switch(int sig __attribute__((unused)))
     int fd;
  
      // Open backtrace file as APPEND. Create new file if necessary (chmod 644)
-    fd = open("sigxcpu.txt", O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+    fd = open("sigxcpu.txt", O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     
     /* Dump a backtrace of the frame which caused the switch to secondary mode
        To decipher a backtrace:
