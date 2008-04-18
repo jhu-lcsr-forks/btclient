@@ -354,23 +354,22 @@ void MainEventThread(void *thd){
 	      }
       } 
       
-      /* If there is an obstruction, pause the WAM playback 
+      /* If there is an obstruction, pause the WAM playback */
       for(i = 0; i < busCount; i++){
          for(cnt=0;cnt<wam[i]->dof;cnt++){
-            if(fabs(getval_vn(wam[i]->Jtrq,cnt) - getval_vn(wam[i]->Gtrq,cnt)) >
-               getval_vn(wam[i]->torq_limit,cnt)){
-               syslog(LOG_ERR, "OverTorque on J%d, Jtrq[]=%s, Jpos[]=%s, Jref[]=%s", 
-                 cnt+1, sprint_vn(vect_buf1, wam[i]->Jtrq),
-		 sprint_vn(vect_buf2, wam[i]->Jpos),
-		 sprint_vn(vect_buf2, wam[i]->Jtref));
-                 //sprintf(vect_buf4, "< %ld, %ld, %ld, %ld>", wam[i]->act[0].puck.position, wam[i]->act[1].puck.position, wam[i]->act[2].puck.position, wam[i]->act[3].puck.position));
+            if(fabs(getval_vn(wam[i]->Jtrq,cnt) - getval_vn(wam[i]->Gtrq,cnt)) > getval_vn(wam[i]->torq_limit,cnt)){
+               //syslog(LOG_ERR, "OverTorque on J%d, Jtrq[]=%s, Jpos[]=%s, Jref[]=%s", 
+               //cnt+1, sprint_vn(vect_buf1, wam[i]->Jtrq),
+               //sprint_vn(vect_buf2, wam[i]->Jpos),
+               //sprint_vn(vect_buf2, wam[i]->Jtref));
+               //sprintf(vect_buf4, "< %ld, %ld, %ld, %ld>", wam[i]->act[0].puck.position, wam[i]->act[1].puck.position, wam[i]->act[2].puck.position, wam[i]->act[3].puck.position));
                pauseCnt = 50;
                pause_trj_bts(wamData[i].active_bts,5);
                break;
             }
          }
       } 
-      */
+      
       /* Sleep for 0.1s. This roughly defines the event loop frequency */
       usleep(100000);
    }
