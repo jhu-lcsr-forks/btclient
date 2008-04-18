@@ -137,8 +137,10 @@ keyEventStruct keyEvent[500];
 double vel = 0.5, acc = 2.0;
 char active_file[250];
 char *user_def = "User edited point list";
-matr_3 *r_mat;
-vect_3 *xyz, *RxRyRz;
+matr_h *cdest;
+//vect_n *entry;
+//vect_3 *xyz;
+vect_3 *RxRyRz;
 
 int startDone = FALSE;
 btrt_thread_struct  StartupThread;
@@ -455,8 +457,7 @@ int main(int argc, char **argv)
    while(!startDone)
       usleep(10000);
    
-   r_mat = new_m3();
-   xyz = new_v3();
+   cdest = new_mh();
    RxRyRz = new_v3();
    
    /* Initialize the haptic scene */
@@ -772,19 +773,13 @@ void RenderMAIN_SCREEN()
       mvprintw(line, 0, "Accel      : %+8.4f  ",acc);
       ++line;
       */
-      mvprintw(line, 0, "Destination: %s ",sprint_vn(vect_buf1,wamData[cnt].active_dest));
-      line+=1;
-      mvprintw(line, 0, "Position   : %s ", sprint_vn(vect_buf1,wamData[cnt].active_pos));
-      ++line;
-      mvprintw(line, 0, "RxRyRz     : %s ", sprint_vn(vect_buf1,(vect_n*)RtoXYZf_m3((matr_3*)wam[cnt]->HMpos, RxRyRz)));
-      ++line;
-      mvprintw(line, 0, "HMpos      : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMpos));
-      line+=5;
 
-      //mvprintw(line, 0, "Target     : %s ", sprint_vn(vect_buf1,active_bts->qref));
-      //++line;
-      mvprintw(line, 0, "%s     : %s ", (wamData[cnt].active_bts == &(wam[cnt]->Jsc)) ? "Torque" : "Force ", sprint_vn(vect_buf1,wamData[cnt].active_trq));
-      line+=2;
+      mvprintw(line, 0, "J Position : %s ", sprint_vn(vect_buf1, wam[cnt]->Jpos));
+      line+=1;
+      mvprintw(line, 0, "J Torque   : %s ", sprint_vn(vect_buf1, wam[cnt]->Jtrq));
+      line+=1;
+      mvprintw(line, 0, "C Position : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMpos));
+      line+=6;
       
       if (*wamData[cnt].vta != NULL) { // print current point
          vr = get_vr_vta(*wamData[cnt].vta);
@@ -803,19 +798,23 @@ void RenderMAIN_SCREEN()
    
          // Current
          if (nrows > 0) {
-            if (nrows != cpt)
+            if (nrows != cpt) {
                mvprintw(line+1, 13 , "%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt)));
-            else
+            } else {
                mvprintw(line+1, 13 , "END OF LIST");
-         } else
+            }
+         } else {
             mvprintw(line+1, 13 , "EMPTY LIST");
+         }
    
          // Next
-         if (nrows > 1)
-            if (cpt < nrows-1)
+         if (nrows > 1) {
+            if (cpt < nrows-1) {
                mvprintw(line+2, 13,"%s ", sprint_vn(vect_buf1,idx_vr(vr,cpt+1)));
-            else if (cpt == nrows-1)
+            } else if (cpt == nrows-1) {
                mvprintw(line+2, 13, "END OF LIST");
+            }
+         }
          line += 3;
       } else {
          line++;
@@ -823,12 +822,10 @@ void RenderMAIN_SCREEN()
          mvprintw(line, 0 ,   "No Playlist loaded. [l] to load one from a file, [n] to create a new one.");
          line += 2;
       }
-      line += 2;
-      
    }
    
-line +=4;
-mvprintw(line,0,"");
+   line +=1;
+   mvprintw(line,0,"");
    entryLine = line;
    refresh();
 }
@@ -1177,54 +1174,44 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       }
       finish_entry();
       break;
-#if 0
+
    case 'N'://Toggle angular hold
-      if(angular) {
-         angular = 0;
-         for(i = 0; i < busCount; i++){
-            stop_btPID(&(wam[i]->pid[3]));
-         }
-      } else {
-         angular = 1;
-         for(i = 0; i < busCount; i++){
-            set_q(wam[i]->qref, wam[i]->qact);
-            start_btPID(&(wam[i]->pid[3]));
-         }
-      }
       break;
-#endif      
+
    case 'M'://Move to a location
       if(getmode_bts(wamData[0].active_bts)!=SCMODE_TRJ) {
          start_entry();
          addstr("Enter comma seperated destination \".2,.4,...\": ");
          refresh();
-         getstr( fn);
+         getstr(fn); // Read a user-entered string
          strcat(fn,"\n");
          //syslog(LOG_ERR,"Moveto:%s",fn);
          finish_entry();
-         fill_vn(wamData[0].active_dest,0.25);
-         csvto_vn(wamData[0].active_dest,fn);
-         if(wamData[0].active_bts == &(wam[cnt]->Csc)){
-            // Convert from RxRyRz to RotMatrix
-            // active_dest[3] = Rx;
-            // active_dest[4] = Ry;
-            // active_dest[5] = Rz;
-            setrange_vn((vect_n*)xyz, wamData[0].active_dest, 0, 3, 3);
-            XYZftoR_m3(r_mat, xyz);
-            getcol_m3(xyz, r_mat, 0);
-            setrange_vn(wamData[0].active_dest, (vect_n*)xyz, 3, 0, 3);
-            getcol_m3(xyz, r_mat, 1);
-            setrange_vn(wamData[0].active_dest, (vect_n*)xyz, 6, 0, 3);
-            getcol_m3(xyz, r_mat, 2);
-            setrange_vn(wamData[0].active_dest, (vect_n*)xyz, 9, 0, 3);
+         //fill_vn(wamData[0].active_dest,0.25);
+         csvto_vn(wamData[0].active_dest, fn); // Convert from string to vector
+         
+         // If we are performing a Cartesian move
+         if(wamData[0].active_bts == &(wam[0]->Csc)){
+            // Convert from X, Y, Z, Rx, Ry, Rz to a homogeneous matrix
+            setrange_vn((vect_n*)RxRyRz, wamData[0].active_dest, 0, 3, 3); // Extract the rotations
+            XYZftoR_m3((matr_3*)cdest, RxRyRz); // Convert from RxRyRz to R[3x3]
+            ELEM(cdest, 0, 3) = wamData[0].active_dest->q[0]; // Insert the X position
+            ELEM(cdest, 1, 3) = wamData[0].active_dest->q[1]; // Insert the Y position
+            ELEM(cdest, 2, 3) = wamData[0].active_dest->q[2]; // Insert the Z position
+            set_vn(wamData[0].active_dest, (vect_n*)cdest); // Copy the result back to the command dest
          }
          
+         // Set up the move velocity and acceleration
          moveparm_bts(wamData[0].active_bts,vel,acc);
+         
+         // Enter position control mode, if we are not there already
          if (getmode_bts(wamData[0].active_bts) != SCMODE_POS)
-            setmode_bts(wamData[0].active_bts,SCMODE_POS);
+            setmode_bts(wamData[0].active_bts, SCMODE_POS);
 
-         if(moveto_bts(wamData[0].active_bts,wamData[0].active_dest))
+         // Start the move
+         if(moveto_bts(wamData[0].active_bts, wamData[0].active_dest))
             syslog(LOG_ERR,"Moveto Aborted");
+         
 
       } else {
          start_entry();

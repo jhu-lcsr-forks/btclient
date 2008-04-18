@@ -95,6 +95,7 @@ where command is:
 
 enum{SCREEN_MAIN, SCREEN_HELP};
 #define MAX_WATCH (20)
+#define SET_SLEEP (4000)
 
 int screen = SCREEN_MAIN;
 int entryLine;
@@ -836,59 +837,65 @@ void paramDefaults(int newID,int targID)
    
    switch(role & 0x00FF){
       case ROLE_TATER:
-      for(i = 0; taterDefs[i].key; i++)
+      for(i = 0; taterDefs[i].key; i++){
          setProperty(0, newID, *taterDefs[i].key, 0, taterDefs[i].val);
+         usleep(SET_SLEEP);
+      }
       if(role & 0x0100)
-         setProperty(0, newID, CTS, 0, 4096);
+         setProperty(0, newID, CTS, 0, 4096); usleep(SET_SLEEP);
       
       if(targID <= 4) { //4DOF
-         setProperty(0,newID,IKCOR,0,1638);
-         setProperty(0,newID,IKP,0,8192);
-         setProperty(0,newID,IKI,0,3276);
-         setProperty(0,newID,IPNM,0,2700);//2755);
+         setProperty(0,newID,IKCOR,0,1638); usleep(SET_SLEEP);
+         setProperty(0,newID,IKP,0,8192); usleep(SET_SLEEP);
+         setProperty(0,newID,IKI,0,3276); usleep(SET_SLEEP);
+         setProperty(0,newID,IPNM,0,2700); usleep(SET_SLEEP);//2755);
          //setProperty(0,newID,IPNM,0,2562);//2755);
-         setProperty(0,newID,POLES,0,12);
-         setProperty(0,newID,GRPA,0,0);
-         setProperty(0,newID,GRPB,0,1);
-         setProperty(0,newID,GRPC,0,4);
+         setProperty(0,newID,POLES,0,12); usleep(SET_SLEEP);
+         setProperty(0,newID,GRPA,0,0); usleep(SET_SLEEP);
+         setProperty(0,newID,GRPB,0,1); usleep(SET_SLEEP);
+         setProperty(0,newID,GRPC,0,4); usleep(SET_SLEEP);
    
       } else if(targID <= 7) { //Wrist
-         setProperty(0,newID,IKCOR,0,819);
-         setProperty(0,newID,IKP,0,4096);
-         setProperty(0,newID,IKI,0,819);
-         setProperty(0,newID,GRPA,0,0);
-         setProperty(0,newID,GRPB,0,2);
-         setProperty(0,newID,GRPC,0,5);
+         setProperty(0,newID,IKCOR,0,819); usleep(SET_SLEEP);
+         setProperty(0,newID,IKP,0,4096); usleep(SET_SLEEP);
+         setProperty(0,newID,IKI,0,819); usleep(SET_SLEEP);
+         setProperty(0,newID,GRPA,0,0); usleep(SET_SLEEP);
+         setProperty(0,newID,GRPB,0,2); usleep(SET_SLEEP);
+         setProperty(0,newID,GRPC,0,5); usleep(SET_SLEEP);
          if(targID != 7) {
-            setProperty(0,newID,IPNM,0,6500);
+            setProperty(0,newID,IPNM,0,6500); usleep(SET_SLEEP);
             //setProperty(0,newID,IPNM,0,4961);
-            setProperty(0,newID,POLES,0,8);
+            setProperty(0,newID,POLES,0,8); usleep(SET_SLEEP);
          } else {
-            setProperty(0,newID,IPNM,0,17474);
-            setProperty(0,newID,POLES,0,6);
+            setProperty(0,newID,IPNM,0,17474); usleep(SET_SLEEP);
+            setProperty(0,newID,POLES,0,6); usleep(SET_SLEEP);
          }
       }
       
-      setProperty(0,newID,JIDX,0,targID);
-      setProperty(0,newID,PIDX,0,((targID-1)%4)+1);
+      setProperty(0,newID,JIDX,0,targID); usleep(SET_SLEEP);
+      setProperty(0,newID,PIDX,0,((targID-1)%4)+1); usleep(SET_SLEEP);
       break;
       
       case ROLE_SAFETY:
-      for(i = 0; safetyDefs[i].key; i++)
+      for(i = 0; safetyDefs[i].key; i++){
          setProperty(0, newID, *safetyDefs[i].key, 0, safetyDefs[i].val);
+         usleep(SET_SLEEP);
+      }
       
-      setProperty(0, newID, SAFE, 0, 4);
-      setProperty(0, newID, SAFE, 0, 5);
+      setProperty(0, newID, SAFE, 0, 4); usleep(SET_SLEEP);
+      setProperty(0, newID, SAFE, 0, 5); usleep(SET_SLEEP);
       usleep(1000000); // Wait a sec
-      setProperty(0, newID, FIND, 0, VBUS);
+      setProperty(0, newID, FIND, 0, VBUS); usleep(SET_SLEEP);
       usleep(1000000); // Wait a sec
-      setProperty(0, newID, SAFE, 0, 0);
+      setProperty(0, newID, SAFE, 0, 0); usleep(SET_SLEEP);
       
       break;
       
       case ROLE_WRAPTOR:
-      for(i = 0; wraptorDefs[i].key; i++)
+      for(i = 0; wraptorDefs[i].key; i++){
          setProperty(0, newID, *wraptorDefs[i].key, 0, wraptorDefs[i].val);
+         usleep(SET_SLEEP);
+      }
       
       if(targID < 4){
          // Set inner link parameters
@@ -931,17 +938,18 @@ void paramDefaults(int newID,int targID)
 void changeID(int oldID, int newID, int role)
 {
    wakePuck(0,oldID);
-   setProperty(0, oldID, _LOCK, 0, 18384);
-   setProperty(0, oldID, _LOCK, 0, 23);
-   setProperty(0, oldID, _LOCK, 0, 3145);
-   setProperty(0, oldID, _LOCK, 0, 1024);
-   setProperty(0, oldID, _LOCK, 0, 1);
+   //syslog(LOG_ERR, "_LOCK=%d", _LOCK);
+   setProperty(0, oldID, _LOCK, 0, 18384); usleep(SET_SLEEP);
+   setProperty(0, oldID, _LOCK, 0, 23); usleep(SET_SLEEP);
+   setProperty(0, oldID, _LOCK, 0, 3145); usleep(SET_SLEEP);
+   setProperty(0, oldID, _LOCK, 0, 1024); usleep(SET_SLEEP);
+   setProperty(0, oldID, _LOCK, 0, 1); usleep(SET_SLEEP);
    if(role >= 0){
-      setProperty(0, oldID, ROLE, 0, role);
-      setProperty(0, oldID, SAVE, 0, ROLE);
+      setProperty(0, oldID, ROLE, 0, role); usleep(SET_SLEEP);
+      setProperty(0, oldID, SAVE, 0, ROLE); usleep(5000000);
    }
-   setProperty(0, oldID, ID, 0, newID);
-   setProperty(0, oldID, SAVE, 0, ID);
+   setProperty(0, oldID, ID, 0, newID); usleep(SET_SLEEP);
+   setProperty(0, oldID, SAVE, 0, ID); usleep(5000000);
    
    setProperty(0, oldID, STAT, 0, STATUS_RESET);
 }
