@@ -143,7 +143,7 @@ void InitVectors(wam_struct *wam)
    wam->Cvel = new_v3();
    wam->Cacc = new_v3();
    wam->Cpoint = new_v3();
-   wam->Cref = new_v3();
+   //wam->Cref = new_v3();
    wam->Cforce = new_v3();
    wam->Ctrq = new_v3();
    //wam->Ckp = new_v3();
@@ -539,7 +539,6 @@ void WAMMaintenanceThread(void *data)
             start_trj_bts(wam->active_sc);
          } else if (wam->idle_when_done) {
             setmode_bts(wam->active_sc,SCMODE_IDLE);
-            wam->idle_when_done = 0;
          }
       }
       evalDL(&(wam->log));
@@ -1248,12 +1247,9 @@ void MoveWAM(wam_struct* wam, vect_n* dest)
    int present_state;
    present_state = getmode_bts(wam->active_sc);
    if (present_state != SCMODE_POS) {
-      //wam->idle_when_done = 1; // Commented out. We want the WAM to
-      //hold position when the move is done.
       setmode_bts(wam->active_sc,SCMODE_POS);
-   } else {
-      wam->idle_when_done = 0;
    }
+   
    if(moveto_bts(wam->active_sc,dest))
       syslog(LOG_ERR,"MoveWAM:Aborted");
 }
