@@ -305,10 +305,17 @@ wam_struct* OpenWAM(char *fn, int bus)
    /* END of Control plugin initialization */
 
    wam->isZeroed = FALSE;
-   wam->cteach.Log_Data = 0; //th cteach
    wam->force_callback = BlankWAMcallback;
-   wam->log_time = 0.0;
+   
+   wam->cteach.Log_Data = 0; // Default to logOff
+   wam->teachDivider = 1;
+   wam->teachCounter = 0;
+   wam->teach_time = 0.0;
+   
+   wam->log.Log_Data = 0; // Default to logOff
    wam->logDivider = 1;
+   wam->logCounter = 0;
+   wam->log_time = 0.0;
 
    SetEngrUnits(1);
 
