@@ -37,9 +37,5 @@ cd ../ex7-serial
 make clean
 make
 
-cd ../ex8-sdl
-make clean
-make
-
 cd ../../
 
