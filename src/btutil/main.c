@@ -95,7 +95,7 @@ where command is:
 
 enum{SCREEN_MAIN, SCREEN_HELP};
 #define MAX_WATCH (20)
-#define SET_SLEEP (4000)
+#define SET_SLEEP (100)
 
 int screen = SCREEN_MAIN;
 int entryLine;
@@ -158,6 +158,11 @@ struct fcnStruct fcn[] = {
  * Functions                    *
  *==============================*/
 
+int setPropertySlow(int bus, int id, int property, int verify, long value){
+   setProperty(bus, id, property, verify, value);
+   usleep(SET_SLEEP);
+}
+
 void enumeratePucks(void *data){
    int id;
    int x;
@@ -181,13 +186,13 @@ void enumeratePucks(void *data){
          getProperty(0, id, VERS, &monVers);
          wakePuck(0, id);
          getProperty(0, id, VERS, &mainVers);
-         setProperty(0, id, STAT, FALSE, 0); // Reset the puck
+         setPropertySlow(0, id, STAT, FALSE, 0); // Reset the puck
          mvprintw(y++, x, "%3d %4ld %4ld", id, monVers, mainVers);
          break;
          case 2: // Ready
          getProperty(0, id, VERS, &mainVers);
          if(id != SAFETY_MODULE){
-            setProperty(0, id, STAT, FALSE, 0); // Reset the puck
+            setPropertySlow(0, id, STAT, FALSE, 0); // Reset the puck
             usleep(500000);
             getProperty(0, id, VERS, &monVers);
          }
@@ -238,7 +243,7 @@ void terminalMode(void *data){
    scanw("%ld\n", &val);
    finish_entry();
    
-   setProperty(0, id, prop, FALSE, val);
+   setPropertySlow(0, id, prop, FALSE, val);
    
 }
 
@@ -296,7 +301,7 @@ void checkHalls(int arg1){
    long        vers, reply, cts, startPos;
    
    wakePuck(0,arg1);
-   setProperty(0, arg1, ADDR, 0, 28900); // GPBDAT
+   setPropertySlow(0, arg1, ADDR, 0, 28900); // GPBDAT
    printf("\nPlease turn motor %d approx one revolution...\n");
    vers = -1;
    getProperty(0, arg1, AP, &startPos);
@@ -343,7 +348,7 @@ cableTension(int motor){
 
    //printf("\nTension Cable\nTension which motor: ");
    //scanf("%d", &motor);
-   setProperty(0,GROUPID(0),cmd,FALSE,0);
+   setPropertySlow(0,GROUPID(0),cmd,FALSE,0);
    wakePuck(0,GROUPID(0));
    if(nm == 0.0){
    printf("\nHow much tension (Nm): ");
@@ -358,28 +363,28 @@ cableTension(int motor){
 	break;
    }
    
-   setProperty(0,GROUPID(0),MODE,FALSE,MODE_TORQUE);
+   setPropertySlow(0,GROUPID(0),MODE,FALSE,MODE_TORQUE);
    printf("\nPlease move cable to shaft end, then press <Enter>");
    mygetch();
    mygetch();
-   if(motor == 6) setProperty(0,5,TENSION,FALSE,1);
-   else setProperty(0,motor,TENSION,FALSE,1);
-   setProperty(0,motor,cmd,FALSE,500);
+   if(motor == 6) setPropertySlow(0,5,TENSION,FALSE,1);
+   else setPropertySlow(0,motor,TENSION,FALSE,1);
+   setPropertySlow(0,motor,cmd,FALSE,500);
    printf("\nPlease rotate shaft until tensioner engages, "
           "then press <Enter>");
    mygetch();
-   if(motor == 6) setProperty(0,5,TENSION,FALSE,0);
-   else setProperty(0,motor,TENSION,FALSE,0);
+   if(motor == 6) setPropertySlow(0,5,TENSION,FALSE,0);
+   else setPropertySlow(0,motor,TENSION,FALSE,0);
    getProperty(0,motor,AP,&startPos);
-   setProperty(0,motor,cmd,FALSE,tens);
+   setPropertySlow(0,motor,cmd,FALSE,tens);
    usleep(1000000);
    getProperty(0,motor,AP,&endPos);
-   setProperty(0,motor,cmd,FALSE,0);
+   setPropertySlow(0,motor,cmd,FALSE,0);
    printf("\nTook up %ld encoder cts of cable", abs(startPos-endPos));
    printf("\nPlease work the tension through the cable, "
           "then press <Enter>");
    mygetch();
-   setProperty(0,GROUPID(0),MODE,FALSE,MODE_IDLE);
+   setPropertySlow(0,GROUPID(0),MODE,FALSE,MODE_IDLE);
 }
 
 void tensionCable(void *data){
@@ -745,9 +750,9 @@ int firmwareDL(int id, char *fn)
       return(1);
    }
    
-   setProperty(0, id, STAT, FALSE, 0L); // Reset
+   setPropertySlow(0, id, STAT, FALSE, 0L); // Reset
    usleep(1000000); // Wait a sec
-   setProperty(0, id, VERS, FALSE, 0x000000AA);
+   setPropertySlow(0, id, VERS, FALSE, 0x000000AA);
    // For each line in the file
    //sendData[0] = 0x80 | VERS;
    //sendData[1] = 0x00;
@@ -816,9 +821,9 @@ void checkAutotensioner(int puckID){
    wakePuck(0, puckID);
    
    while(cycles--){
-      setProperty(0, puckID, FET1, 0, 1);
+      setPropertySlow(0, puckID, FET1, 0, 1);
       usleep(250000);
-      setProperty(0, puckID, FET1, 0, 0);
+      setPropertySlow(0, puckID, FET1, 0, 0);
       usleep(250000);
    }
    
@@ -838,63 +843,63 @@ void paramDefaults(int newID,int targID)
    switch(role & 0x00FF){
       case ROLE_TATER:
       for(i = 0; taterDefs[i].key; i++){
-         setProperty(0, newID, *taterDefs[i].key, 0, taterDefs[i].val);
-         usleep(SET_SLEEP);
+         setPropertySlow(0, newID, *taterDefs[i].key, 0, taterDefs[i].val);
+         
       }
       if(role & 0x0100)
-         setProperty(0, newID, CTS, 0, 4096); usleep(SET_SLEEP);
+         setPropertySlow(0, newID, CTS, 0, 4096); 
       
       if(targID <= 4) { //4DOF
-         setProperty(0,newID,IKCOR,0,1638); usleep(SET_SLEEP);
-         setProperty(0,newID,IKP,0,8192); usleep(SET_SLEEP);
-         setProperty(0,newID,IKI,0,3276); usleep(SET_SLEEP);
-         setProperty(0,newID,IPNM,0,2700); usleep(SET_SLEEP);//2755);
-         //setProperty(0,newID,IPNM,0,2562);//2755);
-         setProperty(0,newID,POLES,0,12); usleep(SET_SLEEP);
-         setProperty(0,newID,GRPA,0,0); usleep(SET_SLEEP);
-         setProperty(0,newID,GRPB,0,1); usleep(SET_SLEEP);
-         setProperty(0,newID,GRPC,0,4); usleep(SET_SLEEP);
+         setPropertySlow(0,newID,IKCOR,0,1638); 
+         setPropertySlow(0,newID,IKP,0,8192); 
+         setPropertySlow(0,newID,IKI,0,3276); 
+         setPropertySlow(0,newID,IPNM,0,2700); //2755);
+         //setPropertySlow(0,newID,IPNM,0,2562);//2755);
+         setPropertySlow(0,newID,POLES,0,12); 
+         setPropertySlow(0,newID,GRPA,0,0); 
+         setPropertySlow(0,newID,GRPB,0,1); 
+         setPropertySlow(0,newID,GRPC,0,4); 
    
       } else if(targID <= 7) { //Wrist
-         setProperty(0,newID,IKCOR,0,819); usleep(SET_SLEEP);
-         setProperty(0,newID,IKP,0,4096); usleep(SET_SLEEP);
-         setProperty(0,newID,IKI,0,819); usleep(SET_SLEEP);
-         setProperty(0,newID,GRPA,0,0); usleep(SET_SLEEP);
-         setProperty(0,newID,GRPB,0,2); usleep(SET_SLEEP);
-         setProperty(0,newID,GRPC,0,5); usleep(SET_SLEEP);
+         setPropertySlow(0,newID,IKCOR,0,819); 
+         setPropertySlow(0,newID,IKP,0,4096); 
+         setPropertySlow(0,newID,IKI,0,819); 
+         setPropertySlow(0,newID,GRPA,0,0); 
+         setPropertySlow(0,newID,GRPB,0,2); 
+         setPropertySlow(0,newID,GRPC,0,5); 
          if(targID != 7) {
-            setProperty(0,newID,IPNM,0,6500); usleep(SET_SLEEP);
-            //setProperty(0,newID,IPNM,0,4961);
-            setProperty(0,newID,POLES,0,8); usleep(SET_SLEEP);
+            setPropertySlow(0,newID,IPNM,0,6500); 
+            //setPropertySlow(0,newID,IPNM,0,4961);
+            setPropertySlow(0,newID,POLES,0,8); 
          } else {
-            setProperty(0,newID,IPNM,0,17474); usleep(SET_SLEEP);
-            setProperty(0,newID,POLES,0,6); usleep(SET_SLEEP);
+            setPropertySlow(0,newID,IPNM,0,17474); 
+            setPropertySlow(0,newID,POLES,0,6); 
          }
       }
       
-      setProperty(0,newID,JIDX,0,targID); usleep(SET_SLEEP);
-      setProperty(0,newID,PIDX,0,((targID-1)%4)+1); usleep(SET_SLEEP);
+      setPropertySlow(0,newID,JIDX,0,targID); 
+      setPropertySlow(0,newID,PIDX,0,((targID-1)%4)+1); 
       break;
       
       case ROLE_SAFETY:
       for(i = 0; safetyDefs[i].key; i++){
-         setProperty(0, newID, *safetyDefs[i].key, 0, safetyDefs[i].val);
-         usleep(SET_SLEEP);
+         setPropertySlow(0, newID, *safetyDefs[i].key, 0, safetyDefs[i].val);
+         
       }
       
-      setProperty(0, newID, SAFE, 0, 4); usleep(SET_SLEEP);
-      setProperty(0, newID, SAFE, 0, 5); usleep(SET_SLEEP);
+      setPropertySlow(0, newID, SAFE, 0, 4); 
+      setPropertySlow(0, newID, SAFE, 0, 5); 
       usleep(1000000); // Wait a sec
-      setProperty(0, newID, FIND, 0, VBUS); usleep(SET_SLEEP);
+      setPropertySlow(0, newID, FIND, 0, VBUS); 
       usleep(1000000); // Wait a sec
-      setProperty(0, newID, SAFE, 0, 0); usleep(SET_SLEEP);
+      setPropertySlow(0, newID, SAFE, 0, 0); 
       
       break;
       
       case ROLE_WRAPTOR:
       for(i = 0; wraptorDefs[i].key; i++){
-         setProperty(0, newID, *wraptorDefs[i].key, 0, wraptorDefs[i].val);
-         usleep(SET_SLEEP);
+         setPropertySlow(0, newID, *wraptorDefs[i].key, 0, wraptorDefs[i].val);
+         
       }
       
       if(targID < 4){
@@ -915,21 +920,21 @@ void paramDefaults(int newID,int targID)
       
    }
    
-   setProperty(0,newID,SAVE,0,-1); // Save All
+   setPropertySlow(0,newID,SAVE,0,-1); // Save All
    
    /*
    
     else if(targID <= 8) {//Gimbals
-      setProperty(0,newID,CTS,0,1);
-      setProperty(0,newID,OFFSET1,0,-11447);
-      setProperty(0,newID,OFFSET2,0,-19834);
-      setProperty(0,newID,OFFSET3,0,-12606);
-      setProperty(0,newID,GAIN1,0,10981);
-      setProperty(0,newID,GAIN2,0,27566);
-      setProperty(0,newID,GAIN3,0,26782);
-      setProperty(0,newID,GRPA,0,0);
-      setProperty(0,newID,GRPB,0,2);
-      setProperty(0,newID,GRPC,0,5);
+      setPropertySlow(0,newID,CTS,0,1);
+      setPropertySlow(0,newID,OFFSET1,0,-11447);
+      setPropertySlow(0,newID,OFFSET2,0,-19834);
+      setPropertySlow(0,newID,OFFSET3,0,-12606);
+      setPropertySlow(0,newID,GAIN1,0,10981);
+      setPropertySlow(0,newID,GAIN2,0,27566);
+      setPropertySlow(0,newID,GAIN3,0,26782);
+      setPropertySlow(0,newID,GRPA,0,0);
+      setPropertySlow(0,newID,GRPB,0,2);
+      setPropertySlow(0,newID,GRPC,0,5);
    }
 */
 
@@ -939,19 +944,19 @@ void changeID(int oldID, int newID, int role)
 {
    wakePuck(0,oldID);
    //syslog(LOG_ERR, "_LOCK=%d", _LOCK);
-   setProperty(0, oldID, _LOCK, 0, 18384); usleep(SET_SLEEP);
-   setProperty(0, oldID, _LOCK, 0, 23); usleep(SET_SLEEP);
-   setProperty(0, oldID, _LOCK, 0, 3145); usleep(SET_SLEEP);
-   setProperty(0, oldID, _LOCK, 0, 1024); usleep(SET_SLEEP);
-   setProperty(0, oldID, _LOCK, 0, 1); usleep(SET_SLEEP);
+   setPropertySlow(0, oldID, _LOCK, 0, 18384); 
+   setPropertySlow(0, oldID, _LOCK, 0, 23); 
+   setPropertySlow(0, oldID, _LOCK, 0, 3145); 
+   setPropertySlow(0, oldID, _LOCK, 0, 1024); 
+   setPropertySlow(0, oldID, _LOCK, 0, 1); 
    if(role >= 0){
-      setProperty(0, oldID, ROLE, 0, role); usleep(SET_SLEEP);
-      setProperty(0, oldID, SAVE, 0, ROLE); usleep(5000000);
+      setPropertySlow(0, oldID, ROLE, 0, role); 
+      setPropertySlow(0, oldID, SAVE, 0, ROLE); usleep(5000000);
    }
-   setProperty(0, oldID, ID, 0, newID); usleep(SET_SLEEP);
-   setProperty(0, oldID, SAVE, 0, ID); usleep(5000000);
+   setPropertySlow(0, oldID, ID, 0, newID); 
+   setPropertySlow(0, oldID, SAVE, 0, ID); usleep(5000000);
    
-   setProperty(0, oldID, STAT, 0, STATUS_RESET);
+   setPropertySlow(0, oldID, STAT, 0, STATUS_RESET);
 }
 
 void setMofst(int newID)
@@ -979,7 +984,7 @@ void setMofst(int newID)
 	max = -2E9;
 	min = +2E9;
 	for(i = 0; i < samples; i++){
-		setProperty(0,newID,FIND,0,IOFST);
+		setPropertySlow(0,newID,FIND,0,IOFST);
       getProperty(0,newID,IOFST,&dat);
 		if(dat > max) max = dat;
 		if(dat < min) min = dat;
@@ -1005,19 +1010,19 @@ void setMofst(int newID)
       printf(" -- FAIL");
       ++err;
    }
-   setProperty(0, newID, IOFST, 0, (long)mean);
+   setPropertySlow(0, newID, IOFST, 0, (long)mean);
    printf("\nThe new IOFST is:%d\n",(int)mean);
    
    if(!err){
-      setProperty(0,newID,MODE,0,MODE_TORQUE);
+      setPropertySlow(0,newID,MODE,0,MODE_TORQUE);
       getProperty(0,newID,MOFST,&dat);
       printf("\nThe old MOFST was:%d\n",dat);
    
       if(vers <= 39){
-         setProperty(0,newID,ADDR,0,32971);
-         setProperty(0,newID,VALUE,0,1);
+         setPropertySlow(0,newID,ADDR,0,32971);
+         setPropertySlow(0,newID,VALUE,0,1);
       }else{
-         setProperty(0,newID,FIND,0,MOFST);
+         setPropertySlow(0,newID,FIND,0,MOFST);
       }
       //printf("\nPress enter when the index pulse is found: ");
       //mygetch();
@@ -1025,16 +1030,16 @@ void setMofst(int newID)
       printf("\nPlease wait (10 sec)...\n");
       usleep(10000000); // Sleep for 10 sec
       if(vers <= 39){
-         setProperty(0,newID,ADDR,0,32970);
+         setPropertySlow(0,newID,ADDR,0,32970);
          getProperty(0,newID,VALUE,&dat);
       }else{
          getProperty(0,newID,MOFST,&dat);
       }
       printf("\nThe new MOFST is:%d\n",dat);
-      setProperty(0,newID,MODE,0,MODE_IDLE);
+      setPropertySlow(0,newID,MODE,0,MODE_IDLE);
       if(vers <= 39){
-         setProperty(0,newID,MOFST,0,dat);
-         setProperty(0,newID,SAVE,0,MOFST);
+         setPropertySlow(0,newID,MOFST,0,dat);
+         setPropertySlow(0,newID,SAVE,0,MOFST);
       }
    }
    
@@ -1299,14 +1304,14 @@ void tensionCable2(void)
 
    printf("\nTorque Motor...\nWhich motor: ");
    scanf("%d", &motor);
-   setProperty(0,GROUPID(0),TORQ,FALSE,0);
+   setPropertySlow(0,GROUPID(0),TORQ,FALSE,0);
    wakePuck(0,GROUPID(0));
-   setProperty(0,GROUPID(0),MODE,FALSE,MODE_TORQUE);
+   setPropertySlow(0,GROUPID(0),MODE,FALSE,MODE_TORQUE);
 
-   setProperty(0,motor,ECMAX,FALSE,0);
-   setProperty(0,motor,ECMIN,FALSE,0);
-   //setProperty(0,motor,MOFST,FALSE,-1);
-   setProperty(0,motor,TORQ,FALSE,500);
+   setPropertySlow(0,motor,ECMAX,FALSE,0);
+   setPropertySlow(0,motor,ECMIN,FALSE,0);
+   //setPropertySlow(0,motor,MOFST,FALSE,-1);
+   setPropertySlow(0,motor,TORQ,FALSE,500);
    printf("\nRunning at 500 Torq");
    for(cnt = 0;cnt<500;cnt++) {
 
@@ -1320,8 +1325,8 @@ void tensionCable2(void)
    }
    mygetch();
 
-   setProperty(0,motor,TORQ,FALSE,0);
-   setProperty(0,GROUPID(0),MODE,FALSE,MODE_IDLE);
+   setPropertySlow(0,motor,TORQ,FALSE,0);
+   setPropertySlow(0,GROUPID(0),MODE,FALSE,MODE_IDLE);
 }
 /* Firmware download sample code.
  
@@ -1566,15 +1571,15 @@ void calibrateGimbals(void)
    double gain, offset;
 
    wakePuck(0,5); // Wake gimbals
-   setProperty(0,5,DIG0,0,1);
-   setProperty(0,5,DIG1,0,1);
+   setPropertySlow(0,5,DIG0,0,1);
+   setPropertySlow(0,5,DIG1,0,1);
 
-   setProperty(0,5,GAIN1,0,4096);
-   setProperty(0,5,GAIN2,0,4096);
-   setProperty(0,5,GAIN3,0,4096);
-   setProperty(0,5,OFFSET1,0,0);
-   setProperty(0,5,OFFSET2,0,0);
-   setProperty(0,5,OFFSET3,0,0);
+   setPropertySlow(0,5,GAIN1,0,4096);
+   setPropertySlow(0,5,GAIN2,0,4096);
+   setPropertySlow(0,5,GAIN3,0,4096);
+   setPropertySlow(0,5,OFFSET1,0,0);
+   setPropertySlow(0,5,OFFSET2,0,0);
+   setPropertySlow(0,5,OFFSET3,0,0);
    printf("\nJ5=J6=J7=0: \n");
    mygetch();
    getPositions(0,WHOLE_ARM,3,z);
@@ -1588,24 +1593,24 @@ void calibrateGimbals(void)
    offset = -z[5] * gain;
    gain *= 1L << 24;
    offset *= 1L << 12;
-   setProperty(0,5,GAIN1,0,(long)gain);
-   setProperty(0,5,OFFSET1,0,(long)offset);
+   setPropertySlow(0,5,GAIN1,0,(long)gain);
+   setPropertySlow(0,5,OFFSET1,0,(long)offset);
    printf("J5: GAIN=%ld, OFFSET=%ld\n", (long)gain, (long)offset);
    gain = 1.57 / (p[6] - z[6]);
    offset = -z[6] * gain;
    gain *= 1L << 24;
    offset *= 1L << 12;
-   setProperty(0,5,GAIN2,0,(long)gain);
-   setProperty(0,5,OFFSET2,0,(long)offset);
+   setPropertySlow(0,5,GAIN2,0,(long)gain);
+   setPropertySlow(0,5,OFFSET2,0,(long)offset);
    printf("J6: GAIN=%ld, OFFSET=%ld\n", (long)gain, (long)offset);
    gain = 1.57 / (p[7] - z[7]);
    offset = -z[7] * gain;
    gain *= 1L << 24;
    offset *= 1L << 12;
-   setProperty(0,5,GAIN3,0,(long)gain);
-   setProperty(0,5,OFFSET3,0,(long)offset);
+   setPropertySlow(0,5,GAIN3,0,(long)gain);
+   setPropertySlow(0,5,OFFSET3,0,(long)offset);
    printf("J7: GAIN=%ld, OFFSET=%ld\n", (long)gain, (long)offset);
-   setProperty(0,5,SAVE,0,-1); // Save all
+   setPropertySlow(0,5,SAVE,0,-1); // Save all
 }
 
 

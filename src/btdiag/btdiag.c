@@ -48,6 +48,7 @@ it to properly establish the time values.
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <asm/io.h>
 
 /*==============================*
  * INCLUDES - Project Files     *
@@ -105,7 +106,7 @@ wamData_struct wamData[4];
 int mode;
 int constraint;
 int haptics;
-int pauseCnt = 0;
+int pauseCnt = -2;
 int screen = SCREEN_MAIN;
 btrt_mutex disp_mutex;
 int entryLine;
@@ -314,6 +315,119 @@ void Startup(void *thd){
 void MainEventThread(void *thd){
    char     chr;
    int      i, cnt;
+   
+   /* Main event loop, ~10Hz */
+   while (!done) {
+      /* Check the active trajectory for completion for each bus */
+      for(i = 0; i < busCount; i++){ 
+         if (get_trjstate_bts(wamData[i].active_bts) == BTTRAJ_DONE && !wamData[i].active_bts->loop_trj) {  // BZ-16Nov2005
+            stop_trj_bts(wamData[i].active_bts);
+            //setmode_bts(active_bts,prev_mode);
+            cplay = 0;
+         }
+         
+         /* Handle the data logger */
+         //evalDL(&(wam[i]->log));
+      }
+      /* Check and handle user keypress */
+      if ((chr = getch()) != ERR)
+         ProcessInput(chr);
+      
+      /* If we are in playback mode, handle the BarrettHand teach commands */
+      if(cplay){
+         if(keyEvent[eventIdx].c){
+            if((btrt_get_time() - eventStart) > keyEvent[eventIdx].t){
+               ProcessInput(keyEvent[eventIdx].c);
+               ++eventIdx;  
+            }
+         }
+      }
+#if 1   
+      /* If the WAM has paused due to obstruction, wait */
+      if(pauseCnt > 0){
+	      pauseCnt--;
+	      if(pauseCnt == 0){
+            for(i = 0; i < busCount; i++){
+               const_vn(wamData[i].active_dest, 0.0, 0.0, 0.0, 2.6, 0.0, 0.0, 0.0);
+               
+               MoveSetup(wam[i], vel, acc);
+               MoveWAM(wam[i], wamData[i].active_dest);
+               
+               //moveparm_bts(wamData[i].active_bts,vel,acc);
+               //if (getmode_bts(wamData[i].active_bts) != SCMODE_POS)
+               //   setmode_bts(wamData[i].active_bts,SCMODE_POS);
+               //if(moveto_bts(wamData[i].active_bts,wamData[i].active_dest))
+               //   syslog(LOG_ERR,"Moveto Aborted");
+            }
+            /* Wait for move completion */
+            while(!MoveIsDone(wam[0])){
+               usleep(10000);
+            }
+            
+            /* Enable the haptic scene */
+            bth.state = 1;
+            setmode_bts(wamData[0].active_bts, SCMODE_IDLE);
+            pauseCnt = -2;
+	      }
+      }
+      
+      if(pauseCnt <= -2){
+         /* Continue to wait while there is (interactive) movement */
+         for(i = 0; i < busCount; i++){
+            if((fabs(wamData[i].pstate.vel->q[0]) > 0.01) ||
+               (fabs(wamData[i].pstate.vel->q[1]) > 0.01) ||
+               (fabs(wamData[i].pstate.vel->q[2]) > 0.01) ){
+               pauseCnt = -2;
+            }
+         }
+         
+         /* Check for loaded trajectory */
+         for(i = 0; i < busCount; i++){
+            if(numrows_vr(get_vr_vta(*wamData[i].vta)) > 10){
+               pauseCnt--;
+               break;
+            }
+         }
+         
+         /* Turn off haptics and start playback */
+         if(pauseCnt < -300){
+            bth.state = 0;
+            pauseCnt = -1;
+            for(i = 0; i < busCount; i++){
+               moveparm_bts(wamData[i].active_bts,vel,acc);
+               wamData[i].active_bts->loop_trj = 1;
+               if (getmode_bts(wamData[i].active_bts) != SCMODE_POS)
+                  setmode_bts(wamData[i].active_bts,SCMODE_POS);
+               start_trj_bts(wamData[i].active_bts);
+            }
+         }
+      }
+      
+      /* If there is an obstruction, pause the WAM playback */
+      if(pauseCnt == -1){
+         for(i = 0; i < busCount; i++){
+            for(cnt=0; cnt < wam[i]->dof; cnt++){
+               if(fabs(getval_vn(wam[i]->Jtrq,cnt) - getval_vn(wam[i]->Gtrq,cnt)) >
+                  getval_vn(wam[i]->torq_limit,cnt)){
+                  pauseCnt = 50;
+                  pause_trj_bts(wamData[i].active_bts,5);
+                  break;
+               }
+            }
+         }
+      }
+#endif
+
+      /* Sleep for 0.1s. This roughly defines the event loop frequency */
+      usleep(100000);
+   }
+   alldone = TRUE;
+   btrt_thread_exit((btrt_thread_struct*)thd);
+}
+
+void xMainEventThread(void *thd){
+   char     chr;
+   int      i, cnt;
    char     vect_buf1[500], vect_buf2[500], vect_buf3[500], vect_buf4[500];
    long     pos[7];
    
@@ -494,6 +608,7 @@ int main(int argc, char **argv)
       usleep(100000);
    }
    
+   usleep(100000);
    Cleanup();
    exit(1);
 }
@@ -779,6 +894,8 @@ void RenderMAIN_SCREEN()
       line+=1;
       mvprintw(line, 0, "C Position : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMpos));
       line+=6;
+      mvprintw(line, 0, "TrajState  : %d ", wamData[cnt].active_bts->btt.state);
+      line+=1;
       
       if (*wamData[cnt].vta != NULL) { // print current point
          vr = get_vr_vta(*wamData[cnt].vta);
@@ -822,6 +939,9 @@ void RenderMAIN_SCREEN()
          line += 2;
       }
    }
+   
+   mvprintw(line, 0, "PauseCnt   : %d    ", pauseCnt);
+   ++line;
    
    line +=1;
    mvprintw(line,0,"");
@@ -872,7 +992,12 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
 
    switch (c)
    {
-
+   case 'e':
+      wam[0]->JposControl.pid[0].Kp = 0.0;
+      wam[0]->JposControl.pid[0].Kd = 0.0;
+      wam[0]->JposControl.pid[0].Ki = 0.0;
+      
+   break;
    case 'x'://eXit
    case  'X'://eXit
       done = 1;
@@ -958,6 +1083,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       }
       break;
    case '0'://BHand HI
+      if (ioperm(0x378,1,1)) 
+         fprintf(stderr, "ERROR: Can't gain access to parallel port\n"), exit(1);
+      outb((unsigned char)0x05, 0x378); 	// Output Data to the Parallel Port
+      sleep(1);
+      
       serialWriteString(&p, "\rHI\r");
       if(cteach){
          keyEvent[eventIdx].c = c;
@@ -1045,7 +1175,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
                setmode_bts(wamData[i].active_bts,SCMODE_POS);
             
             start_trj_bts(wamData[i].active_bts);
-            
+            pauseCnt = -2;
          } else {
             start_entry();
             addstr("You must stop the running trajectory first!: ");
@@ -1077,6 +1207,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
             finish_entry();
          }
       }
+      pauseCnt = -1;
       break;
 
    case '/'://Stop loaded trajectory
@@ -1084,6 +1215,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          stop_trj_bts(wamData[i].active_bts);
          //setmode_bts(active_bts,prev_mode);
          wamData[i].active_bts->loop_trj = 0;
+         pauseCnt = -1;
       }
       break;
    case 'Y'://Start continuous teach
@@ -1201,16 +1333,18 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          }
          
          // Set up the move velocity and acceleration
-         moveparm_bts(wamData[0].active_bts,vel,acc);
+         MoveSetup(wam[0], vel, acc);
+         //moveparm_bts(wamData[0].active_bts,vel,acc);
          
+         // Start the move
+         MoveWAM(wam[0], wamData[0].active_dest);
          // Enter position control mode, if we are not there already
-         if (getmode_bts(wamData[0].active_bts) != SCMODE_POS)
-            setmode_bts(wamData[0].active_bts, SCMODE_POS);
+         //if (getmode_bts(wamData[0].active_bts) != SCMODE_POS)
+         //   setmode_bts(wamData[0].active_bts, SCMODE_POS);
 
          // Start the move
-         if(moveto_bts(wamData[0].active_bts, wamData[0].active_dest))
-            syslog(LOG_ERR,"Moveto Aborted");
-         
+         //if(moveto_bts(wamData[0].active_bts, wamData[0].active_dest))
+         //   syslog(LOG_ERR,"Moveto Aborted");
 
       } else {
          start_entry();
