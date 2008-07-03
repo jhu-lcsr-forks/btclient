@@ -894,8 +894,8 @@ void RenderMAIN_SCREEN()
       line+=1;
       mvprintw(line, 0, "C Position : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMpos));
       line+=6;
-      mvprintw(line, 0, "TrajState  : %d ", wamData[cnt].active_bts->btt.state);
-      line+=1;
+      //mvprintw(line, 0, "TrajState  : %d ", wamData[cnt].active_bts->btt.state);
+      //line+=1;
       
       if (*wamData[cnt].vta != NULL) { // print current point
          vr = get_vr_vta(*wamData[cnt].vta);
@@ -940,8 +940,8 @@ void RenderMAIN_SCREEN()
       }
    }
    
-   mvprintw(line, 0, "PauseCnt   : %d    ", pauseCnt);
-   ++line;
+   //mvprintw(line, 0, "PauseCnt   : %d    ", pauseCnt);
+   //++line;
    
    line +=1;
    mvprintw(line,0,"");
