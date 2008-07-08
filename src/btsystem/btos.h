@@ -167,17 +167,17 @@ typedef RT_MUTEX btrt_mutex;
 typedef pthread_mutex_t btrt_mutex;
 #endif
 
+
+
 /* Realtime mutexes - must be used from realtime threads */
 int btrt_mutex_init(btrt_mutex* btm);
-int btrt_mutex_init(btrt_mutex* mutex);
-int btrt_mutex_create(btrt_mutex* mutex);
+int btrt_mutex_create(btrt_mutex* btm);
 BTINLINE int btrt_mutex_lock(btrt_mutex* btm);
 BTINLINE int btrt_mutex_unlock(btrt_mutex *btm);
 
 /* Non-realtime mutexes - must be used from non-realtime threads */
 int btmutex_init(btmutex* btm);
-int btmutex_init(btmutex* mutex);
-int btmutex_create(btmutex* mutex);
+/*int btmutex_create(btmutex* btm); -- not implemented */
 BTINLINE int btmutex_lock(btmutex* btm);
 BTINLINE int btmutex_unlock(btmutex *btm);
 
@@ -283,6 +283,7 @@ pthread_t* btperiodic_create(btthread *thd,int priority, double period, void *fu
 
 //RT Abstractions 
 //@{
+RTIME btrt_get_time(void);
 void btrt_set_mode_soft(void);
 void btrt_set_mode_hard(void);
 void btrt_set_mode_warn(void);
