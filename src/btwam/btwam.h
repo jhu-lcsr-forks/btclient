@@ -84,7 +84,8 @@ typedef struct btwam_struct
    
    //user callback
    int (*force_callback)(struct btwam_struct *wam); //!< W: A pointer to a function registered with #registerWAMcallback().
-
+	int (*motor_callback)(struct btwam_struct *wam); //!< W: A pointer to a function registered with #registerWAMmotorcallback().
+	
    //Actuator info
    actuator_struct *act; //!< R: Low-level actuator data. You probably do not need to worry about this.
    int num_actuators; //!< R: Low-level actuator count. Copied from buses[bus].num_pucks
@@ -193,6 +194,7 @@ wam_struct* OpenWAM(char *wamfile, int bus); //NULL -> wam.conf
 void CloseWAM(wam_struct* wam); //Cleanupint BlankWAMcallback(struct btwam_struct *wam);
 
 void registerWAMcallback(wam_struct* wam,void *func);
+void registerWAMmotorcallback(wam_struct* wam,void *func);
 void WAMControlThread(void *data); //data points to wam_struct* wam
 void WAMControlThread1(void *data); //data points to wam_struct* wam
 void WAMControlThread2(void *data); //data points to wam_struct* wam

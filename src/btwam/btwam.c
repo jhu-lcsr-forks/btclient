@@ -306,6 +306,7 @@ wam_struct* OpenWAM(char *fn, int bus)
 
    wam->isZeroed = FALSE;
    wam->force_callback = BlankWAMcallback;
+	wam->motor_callback = BlankWAMcallback;
    
    wam->cteach.Log_Data = 0; // Default to logOff
    wam->teachDivider = 1;
@@ -871,6 +872,9 @@ void WAMControlThread(void *data)
             setval_vn(wam->Mtrq, 7, getval_vn(wam->Jref, 7));
       }
 #endif
+
+		/*  callback function for individual motor (not joint) torques */ 
+		(*wam->motor_callback)(wam);
 
       /* Move motor torques from Mtrq into actuator database */
       Mtrq2ActTrq(wam,wam->Mtrq);
@@ -1476,6 +1480,14 @@ void registerWAMcallback(wam_struct* wam, void *func)
       wam->force_callback = func;
    else
       wam->force_callback = BlankWAMcallback;
+}
+
+void registerWAMmotorcallback(wam_struct* wam, void *func)
+{
+   if (func != NULL)
+      wam->motor_callback = func;
+   else
+      wam->motor_callback = BlankWAMcallback;
 }
 
 /** A blank (default) WAM control loop callback function
