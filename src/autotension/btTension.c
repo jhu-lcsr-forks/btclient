@@ -281,7 +281,7 @@ vect_n* getJointPosition(){
 	
 	for(i = 0; i < DOF; i++){
 		positions[i] = ((vect_n*)wam->Jpos)->q[i];
-		printf("\njoint positions: positions[%d] is %f", i, positions[i]);
+		//printf("\njoint positions: positions[%d] is %f", i, positions[i]);
 	}
 	
 	const_vn(toReturn, positions[0], positions[1], positions[2],
@@ -303,7 +303,7 @@ vect_n* getMotorPosition(){
 	
 	for(i = 0; i < DOF; i++){
 		positions[i] = ((vect_n*)wam->Mpos)->q[i];
-		printf("\nmotor positions: positions[%d] is %f", i, positions[i]);
+		//printf("\nmotor positions: positions[%d] is %f", i, positions[i]);
 	}
 	
 	const_vn(toReturn, positions[0], positions[1], positions[2],
@@ -347,7 +347,7 @@ vect_n* motorToJointPosition(vect_n* motorPos){
 							 JointPositions[6]);
 	
 	for(i = 0; i < 7; i++){
-		printf("\nJointPosition[%d]: %f", (i+1), toReturn->q[i]);
+		//printf("\nJointPosition[%d]: %f", (i+1), toReturn->q[i]);
 	}
 						
 	// return the new jointspace vector
@@ -360,9 +360,9 @@ vect_n* motorToJointPosition(vect_n* motorPos){
 	output: none
 	function: sets the WAM to a neutral position in jointspace */
 void setToNeutralPosition(){
-	printf("\nMoving WAM to a neutral position.\n");
+	//printf("\nMoving WAM to a neutral position.\n");
 	setToPosition(neutral);
-	printf("\nAt Neutral Position \n");
+	//printf("\nAt Neutral Position \n");
 }
 
 /* setToHomePosition:
@@ -372,9 +372,9 @@ void setToNeutralPosition(){
 void setToHomePosition(){
 	setToNeutralPosition();
 	
-	printf("\nMoving WAM home.\n");
+	//printf("\nMoving WAM home.\n");
 	setToPosition(home);
-	printf("\nAt Home \n");
+	//printf("\nAt Home \n");
 }
 
 /* setToPosition:
@@ -383,7 +383,7 @@ void setToHomePosition(){
 	function: sets to a position in jointspace and returns when done*/
 void setToPosition(vect_n* Pos){
 		MoveWAM(wam,Pos);
-		printf("\nMovingwam \n");
+		//printf("\nMovingwam \n");
 		int stillMoving = 1;
 		float ref[6], pos[6], diff[6];
 		
@@ -402,7 +402,7 @@ void setToPosition(vect_n* Pos){
 			for(i = 0; i < DOF; i++){
 				pos[i] = ((vect_n*)wam->Jpos)->q[i];
 				diff[i] = ref[i]-pos[i];
-				printf("\n pos is: %f ref is %f\n", pos[i], ref[i]);
+				//printf("\n pos is: %f ref is %f\n", pos[i], ref[i]);
 				
 				if(fabs(diff[i]) < .001 && stillMoving == 0){
 					stillMoving = 0;
@@ -456,8 +456,8 @@ void findJointStop(int motorID, int direction) {
 	do { /*continue requesting position until told to stop
 		    (WAMcallback will tell findJointStop when a joint stop is found*/
 			usleep(100000);
-			printf("\nCurrent position is %f", ((vect_n*)wam->Jpos)->q[motorID-1]);
-			printf("\nJoint Torque is %f", ((vect_n*)wam->Jtrq)->q[motorID-1]);
+			//printf("\nCurrent position is %f", ((vect_n*)wam->Jpos)->q[motorID-1]);
+			//printf("\nJoint Torque is %f", ((vect_n*)wam->Jtrq)->q[motorID-1]);
 	} while(findingJointStop);
 
 	// backs off a little from the joint stop once it is found
@@ -476,7 +476,7 @@ void findJointStop(int motorID, int direction) {
 	
 	setToPosition(temp);
 	
-	printf("Found jointstop on motor %d\n", motorID); 
+	//printf("Found jointstop on motor %d\n", motorID); 
 }
 
 /* 
@@ -502,9 +502,9 @@ void findTangStop(int motorID, int direction){
 	do { /*continue requesting position until difference in 
 		    current joint position is less than 0.005 radians*/
 			usleep(150000);
-			printf("\nPrevious position is %f", previousPosition);
-			printf("\nCurrent position is %f", ((vect_n*)wam->Jpos)->q[motorID-1]);
-			printf("\nJoint Torque is %f", ((vect_n*)wam->Jtrq)->q[motorID-1]);
+			//printf("\nPrevious position is %f", previousPosition);
+			//printf("\nCurrent position is %f", ((vect_n*)wam->Jpos)->q[motorID-1]);
+			//printf("\nJoint Torque is %f", ((vect_n*)wam->Jtrq)->q[motorID-1]);
 			
 			diff = previousPosition - ((vect_n*)wam->Jpos)->q[motorID-1];
 			if (fabs(diff) < .005){
@@ -516,7 +516,7 @@ void findTangStop(int motorID, int direction){
 	// findingTang flag remains true even though tang is found so that torque is still being applied
 	// (torque remains so tensioning is easier to do)
 	
-	printf("\nFound Tang.\n");
+	//printf("\nFound Tang.\n");
 }
 
 /* getTorques:
@@ -540,7 +540,7 @@ void prepareMotor(int motorID, int direction){
 	/** find the first jointstop */
 	setToNeutralPosition();
 	
-	printf("\nSetting to Approximated Joint Stop.");
+	//printf("\nSetting to Approximated Joint Stop.");
 	setToPosition(jointStopApprox[motorID-1][1]);
 	
 	switch(motorID){
@@ -567,14 +567,14 @@ void prepareMotor(int motorID, int direction){
 	}
 	
 	//save the joint stop position
-	printf("\nFound the first jointstop of motor%d",motorID);
+	//printf("\nFound the first jointstop of motor%d",motorID);
 	usleep(2000000);
 	jointStop[motorID-1][1] = getJointPosition();
 	
 	/** find the second jointstop */
 	setToNeutralPosition();
 	
-	printf("\nSetting to Approximated Joint Stop.");
+	//printf("\nSetting to Approximated Joint Stop.");
 	setToPosition(jointStopApprox[motorID-1][0]);
 	
 	switch(motorID){
@@ -600,7 +600,7 @@ void prepareMotor(int motorID, int direction){
 		default: break;
 	}
 	        
-	printf("\nFound the second jointstop of motor%d",motorID);
+	//printf("\nFound the second jointstop of motor%d",motorID);
 	//save the joint stop position
 	usleep(2000000);
 	jointStop[motorID-1][0] = getJointPosition();
@@ -645,7 +645,7 @@ void engageMotor(int motorID, int direction){
 	for(i = 0; i < 3; i++){
 		setToPosition(tensionPos[i]);
 		usleep(8000000);
-		printf("\nTension Position %d set\n", (i+1));
+		//printf("\nTension Position %d set\n", (i+1));
 		
 		//activate tang
 		setProperty(0,motorID,TENSION,FALSE,1);
@@ -670,7 +670,7 @@ void engageMotor(int motorID, int direction){
 		diff = startPos - endPos;
 		
 		//output the net encoder counts taken up
-		printf("\nTook up %ld encoder cts of cable", abs(diff));
+		//printf("\nTook up %ld encoder cts of cable", abs(diff));
 		//save encoder counts taken up at this step
 		lastTensionedMotorValues[i] = abs(diff);
 		
@@ -742,7 +742,7 @@ void engageWrist(int motorID, int direction){
 	
 	//move to tension positions to find the tang
 	for(i = 0; i < 60; i++){
-		printf("\nAbout to set to position %d: ", i);
+		//printf("\nAbout to set to position %d: ", i);
 		//set to a position
 		setToPosition(tensionPos[i]);
 		usleep(5000000);
@@ -758,7 +758,7 @@ void engageWrist(int motorID, int direction){
 		
 		//find the difference in motor position
 		diff = ((vect_n*)wam->Mpos)->q[referenceMotor-1] - referencePos;
-		printf("referencePos is: %f  currentPos is: %f  diffPos is: %f", referencePos, ((vect_n*)wam->Mpos)->q[referenceMotor-1], diff);
+		//printf("referencePos is: %f  currentPos is: %f  diffPos is: %f", referencePos, ((vect_n*)wam->Mpos)->q[referenceMotor-1], diff);
 		
 		//check to see if the opposite motor is engaged
 		if(fabs(diff) < (2.0 * 3.14159)){
@@ -773,7 +773,7 @@ void engageWrist(int motorID, int direction){
 			usleep(1000000);
 			
 			getTorques();
-			printf("\nI think I found one tang on the wrist?\n");
+			//printf("\nI think I found one tang on the wrist?\n");
 			//if it is, try to engage the current motor
 			
 			referencePos = ((vect_n*)wam->Mpos)->q[motorID-1];
@@ -782,7 +782,7 @@ void engageWrist(int motorID, int direction){
 			diff = ((vect_n*)wam->Mpos)->q[motorID-1] - referencePos;
 			
 			if(abs(diff) < 3.14/5.0){
-				printf("\nI think I found the second tang and i'm about to tension");
+				//printf("\nI think I found the second tang and i'm about to tension");
 				//deactivate tang (motors should still be engaged in tang at this point as they are stuck)
 				setProperty(0,5,TENSION,FALSE,0);
 				usleep(500000);
@@ -802,7 +802,7 @@ void engageWrist(int motorID, int direction){
 				//calculate tension amount taken up and output it
 				diffPos = startPos - endPos;
 				//output the net encoder counts taken up
-				printf("\nTook up %ld encoder cts of cable", abs(diffPos));
+				//printf("\nTook up %ld encoder cts of cable", abs(diffPos));
 				
 				//move the value of 1 up by 10 (move by half a revolution on the motor as to not tension the same spot twice on the shaft)
 				
@@ -819,7 +819,7 @@ void engageWrist(int motorID, int direction){
 					i = 60;
 				}
 			} else {
-				printf("\nAh, false alarm.  I didn't find it");
+				//printf("\nAh, false alarm.  I didn't find it");
 			}
 		} 
 		
