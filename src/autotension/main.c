@@ -2,14 +2,7 @@
  *  Module .............WAM autotension
  *  File ...............main.c
  *  Author .............Kevin Doo
- *  Creation Date ......20 June 2008
- *                                                                      *
- *  ******************************************************************  *
- *                                                                      *
- *  NOTES:
- *
- *  REVISION HISTORY:
- * 
+ *  Creation Date ......12 Aug 2008
  *                                                                      *
  *======================================================================*/
 
@@ -39,6 +32,7 @@
 #include <sys/mman.h>
 #include <termios.h>
 #include <unistd.h>
+#include <stdio.h>
 #include <math.h>
 #include <time.h>
 
@@ -53,7 +47,7 @@
 
 
 /* Define the realtime threads */
-btrt_thread_struct    rt_thd, wam_thd, main_thd;
+btrt_thread_struct    rt_thd, wam_thd, autotension_thd;
 
 /* OpenWAM() will populate the WAM data structure */
 wam_struct  *wam;
@@ -66,14 +60,20 @@ int startDone;
 extern int findingJointStop; //  0 = false, 1 = true
 extern int findingTang;      //  0 = false, 1 = true
 extern int tensioning;       //  0 = false, 1 = true
+extern int hasTool;          //  0 = false, 1 = true
+extern int autotensioning;   //  0 = false, 1 = true
 extern int currentDirection; //  1  = Positive Direction
 									  // -1  = Negative Direction
 extern int currentJoint;     //  Joints are from 0 to 6
+extern float numerator;    // 0 to 100%
+extern float denominator;
 extern float currentTorque[6];
 extern float radianInc;  
-const float maxJointTorque[6] = {75.6, 50.85, 30.26, 28.8, 6.8, 6.8};
 
-int DOF = -1;
+const float maxJointTorque[6] = {75.6, 50.85, 30.26, 28.8, 6.8, 6.8};
+const float maxT[6] = {0.9,0.9,0.9,0.8,0.3,0.3};
+
+int DOF = -1;                //initially set to -1 (default)
 
 /* Function prototypes */
 void Cleanup();
@@ -124,7 +124,7 @@ void rt_thread(void *thd){
 /* Exit the realtime threads and close the system */
 void Cleanup(){
 	/* close the main Thread*/
-	main_thd.done = TRUE;
+	autotension_thd.done = TRUE;
    /* Tell the WAM control thread to exit */
    wam_thd.done = TRUE;
    
@@ -154,15 +154,23 @@ int WAMcallback(wam_struct *w)
 		
 		/* sets how much percent of maxTorque is to be used for finding a JointStop */
 		if(DOF == 6 && (currentJoint == 2 || currentJoint == 3 || currentJoint == 4)){
-			adjustment = 0.75;
-		} else if (DOF == 4 && (currentJoint == 2 || currentJoint == 3)){
-			adjustment = .5;
+			if(hasTool){
+				adjustment = 1.0;
+			} else {
+				adjustment = 0.75;
+			}
+		} else if (DOF == 4 && (currentJoint == 2 || currentJoint == 3 || currentJoint == 4)){
+			if(hasTool){
+				adjustment = 0.75;
+			} else {
+				adjustment = 0.5;
+			}
 		} else {
-			adjustment = .3;
+			adjustment = .4;
 		}
 		
 		/* is the currentJoint torque is below the set percent amount, move the joint slightly */
-		if(fabs(((vect_n*)w->Jtrq)->q[currentJoint-1]) < adjustment * (maxJointTorque[currentJoint-1])){
+		if(fabs(((vect_n*)w->Mtrq)->q[currentJoint-1]) < adjustment * (maxT[currentJoint-1])){
 			((vect_n*)w->Jref)->q[currentJoint-1] += (radianInc/50.)*currentDirection;
 		} else {
 		/* if the joint torque is above the set percent amount, most likely the joint stop has 
@@ -182,42 +190,38 @@ int WAMcallback(wam_struct *w)
 int WAMmotorcallback(wam_struct *w)
 {
 	if(findingTang || tensioning){
-		float adjustment, change[2], maxT[6] = {0.9,0.9,0.9,0.8,0.3,0.3};
+		float adjustment = 0.0, change;
 		
 		/* sets how much percent of maxTorque is to be used for finding a JointStop */
 		if(findingTang && !tensioning){
 			if(currentJoint == 1){
-				adjustment = .25;
+				adjustment = .30;
 			} else {
 				adjustment = .15;
 			}
-		} else if (tensioning) {
-			adjustment = .85;
-		}
+		} 
 
 		/* decides how much relative tension is to be applied to the current motor */
 		switch(currentJoint){
-			case 1: change[0] = currentTorque[0] + (0.9 * adjustment);                 
+			case 1: change = currentTorque[0] + (0.9 * adjustment);                 
 					  break;
-			case 2: change[0] = currentTorque[1] + (0.9 * adjustment);
+			case 2: change = currentTorque[1] + (0.9 * adjustment);
 					  break;
-			case 3: change[0] = currentTorque[2] + (0.9 * adjustment);
+			case 3: change = currentTorque[2] + (0.9 * adjustment);
 					  break;
-			case 4: change[0] = currentTorque[3] + (0.8 * adjustment);
+			case 4: change = currentTorque[3] + (0.8 * adjustment);
 					  break;
 			/* cases 5 and 6 are in testing */
 		   case 5: if (findingTang == 1) {
-					  	change[0] = currentTorque[5] + (0.3 * adjustment);
+					  	change = currentTorque[5] + (0.3 * adjustment);
 					  } else if (findingTang == 2) {
-						change[0] = currentTorque[4] + (0.3 * adjustment);
-						change[1] = currentTorque[5] + (0.3 * adjustment);
+						change = currentTorque[4] + (0.3 * adjustment);
 				     }
 					  break;
 			case 6: if (findingTang == 1) {
-					  	change[0] = currentTorque[4] + (0.3 * adjustment);
+					  	change = currentTorque[4] + (0.3 * adjustment);
 					  } else if (findingTang == 2) {
-						change[0] = currentTorque[4] + (0.3 * adjustment);
-						change[1] = currentTorque[5] + (0.3 * adjustment);
+						change = currentTorque[5] + (0.3 * adjustment);
 				     }
 					  break;
 			default:
@@ -228,42 +232,51 @@ int WAMmotorcallback(wam_struct *w)
 		   (we do not want to overtension any motors) */
 			
 		/* NOTE: currentJoint here should be treated as currentMotor */
-			
-		if(findingTang == 1){
-			if(change[0] > maxT[currentJoint - 1]){
-				change[0] = maxT[currentJoint - 1];
-			} else if (change[0] < -1.0 * maxT[currentJoint - 1]){
-				change[0] = -1.0 * maxT[currentJoint - 1];
-			}
-		} else if (findingTang == 2) {
-			int i;
-			
-			for(i = 0; i < 2; i++){
-				if(change[i] > maxT[i + 4]){
-					change[i] = maxT[i + 4];
-				} else if (change[i] < -1.0 * maxT[i + 4]){
-					change[i] = -1.0 * maxT[i + 4];
-				}
-			}
+		
+		/* works fine as motors 5 and 6 have the same max Torque */
+		if(change > maxT[currentJoint - 1]){
+			change = maxT[currentJoint - 1];
+		} else if (change < -1.0 * maxT[currentJoint - 1]){
+			change = -1.0 * maxT[currentJoint - 1];
 		}
 			
+		if(tensioning){
+			switch(currentJoint){
+				case 1: change = 0.9;               
+						  break;
+				case 2: change = 0.9;      
+						  break;
+				case 3: change = 0.9;      
+						  break;
+				case 4: change = 0.8;      
+						  break;
+				case 5: change = 0.3;
+						  break;
+				case 6: change = 0.3;
+						  break;
+				default:
+						  break;
+			}
+		}
+		
 		/* set the motor torque's value to the change value */
 		if(currentJoint != 5 && currentJoint != 6){
-			((vect_n*)w->Mtrq)->q[currentJoint-1] = change[0];
+			((vect_n*)w->Mtrq)->q[currentJoint-1] = change;
 		} else {
+			/* wrist motors require special cases for locking in double tang */
 			if (findingTang == 1) {
 				if(currentJoint == 5) {
-					((vect_n*)w->Mtrq)->q[5] = change[0];
+					((vect_n*)w->Mtrq)->q[5] = change;
 				} else if (currentJoint == 6) {
-					((vect_n*)w->Mtrq)->q[4] = change[0];
+					((vect_n*)w->Mtrq)->q[4] = change;
 				}
 			} else if (findingTang == 2) {
 				if(currentJoint == 5){
 					((vect_n*)w->Mtrq)->q[5] = 0.0;
-					((vect_n*)w->Mtrq)->q[4] = change[0];
+					((vect_n*)w->Mtrq)->q[4] = change;
 				} else if (currentJoint == 6){
 					((vect_n*)w->Mtrq)->q[4] = 0.0;
-					((vect_n*)w->Mtrq)->q[5] = change[1];
+					((vect_n*)w->Mtrq)->q[5] = change;
 				}
 			}
 		}
@@ -274,10 +287,14 @@ int WAMmotorcallback(wam_struct *w)
 
 void mainLoop(void *thd) {
 	
+	FILE * logFile;
+	
+	logFile = (FILE *)fopen ("tensionData.log","a");
+	
 	printf("\nInitializing WAM arm.\n");
 	
 	/*sets initial parameters*/
-	initialize(wam);
+	initialize(wam, logFile);
 	DOF = getDOF();
 	int i;	
 	
@@ -291,6 +308,9 @@ void mainLoop(void *thd) {
 		
 	setToHomePosition();
 	printf("\nAutotensioning is complete.\n");
+	
+	fclose(logFile);
+	
 	promptNextStep();
 	btrt_thread_exit((btrt_thread_struct*)thd);
 }
@@ -350,14 +370,31 @@ int main(int argc, char **argv)
 	promptNextStep();
 	printf("\nStarting the main thread");
 	/* Spin off another thread to run autotensioning functions */
-	btrt_thread_create(&main_thd, "main", 90, (void*)mainLoop, (void*)wam);
+	btrt_thread_create(&autotension_thd, "main", 90, (void*)mainLoop, (void*)wam);
+	
+	int i;
+	float toFill;
 	
    while(1) {
-      /* Display the WAM's joint angles on-screen (see **NOTE below) */
+      /* Print out the current progress of autotensioning (percentage) */
 		
-		//printf("\rPosition (rad) = %s\t",sprint_vn(buf,(vect_n*)wam->Jpos));
-      //fflush(stdout);
-      usleep(10000); // Wait a moment
+		if(autotensioning){
+			
+			toFill = ((numerator/denominator) * 100)/2.0;
+			
+			printf("\rProgress: ");
+			for(i = 1; i <= 50; i++){
+				if( i == 25){
+					printf("%.2f%%", (toFill * 2.0));
+				} else if(i <= (int)toFill){
+					printf("+");
+				} else {
+					printf(".");
+				}
+			}
+			fflush(stdout);
+  		}
+      usleep(100000); // Wait a moment
    }
    
    /* We will never get here, but the compiler (probably) does not know this,
@@ -366,11 +403,23 @@ int main(int argc, char **argv)
    return(0); 
 }
 
-/**NOTE:
- * sprint_vn() and vect_n are from our own math library. 
- * See src/btsystem/btmath.c. They are specialized tools for handling vectors. 
- * The WAM's joint positions are stored in the "wam" data structure as a vector 
- * (wam->Jpos). sprint_vn() is like sprintf() for our vector data structure.
- */
- 
+/*======================================================================*
+ *                                                                      *
+ *          Copyright (c) 2003-2008 Barrett Technology, Inc.            *
+ *                        625 Mount Auburn St                           *
+ *                    Cambridge, MA  02138,  USA                        *
+ *                                                                      *
+ *                        All rights reserved.                          *
+ *                                                                      *
+ *  ******************************************************************  *
+ *                            DISCLAIMER                                *
+ *                                                                      *
+ *  This software and related documentation are provided to you on      *
+ *  an as is basis and without warranty of any kind.  No warranties,    *
+ *  express or implied, including, without limitation, any warranties   *
+ *  of merchantability or fitness for a particular purpose are being    *
+ *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
+ *  Technology, Inc. be liable for any lost development expenses, lost  *
+ *  lost profits, or any incidental, special, or consequential damage.  *
+ *======================================================================*/
 

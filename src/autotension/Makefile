@@ -20,12 +20,12 @@ clean:
 	rm *.o
 
 system:
-	$(MAKE) -C ../../src/btsystem lib
-	$(MAKE) -C ../../src/btsystem install
+	$(MAKE) -C ../btsystem lib
+	$(MAKE) -C ../btsystem install
 
 wam:
-	$(MAKE) -C ../../src/btwam lib
-	$(MAKE) -C ../../src/btwam install
+	$(MAKE) -C ../btwam lib
+	$(MAKE) -C ../btwam install
    
 all: system wam autotension
 

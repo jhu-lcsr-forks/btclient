@@ -1,0 +1,87 @@
+******************************************************************
+               __          __                       .__               
+_____   __ ___/  |_  _____/  |_  ____   ____   _____|__| ____   ____  
+\__  \ |  |  \   __\/  _ \   __\/ __ \ /    \ /  ___/  |/  _ \ /    \ 
+ / __ \|  |  /|  | (  <_> )  | \  ___/|   |  \\___ \|  (  <_> )   |  \
+(____  /____/ |__|  \____/|__|  \___  >___|  /____  >__|\____/|___|  /
+     \/                             \/     \/     \/               \/  
+******************************************************************
+
+The autotensioning software enables the user to autonomously 
+tension the cables in the WAM, removing any excess slack that
+has been accumulated through use.  
+
+The WAM arm consists of 4 motors:
+Motor 1        operates joint 1
+Motors 2 and 3 operate  joints 2 and 3
+Motor 4        operates joint 4
+Motors 5 and 6 operate  joints 5 and 6 (wrist)
+Motor 7        operates joint 7
+
+Only motors 1-6 need to be autotensioned from time to time as
+these motors are cable-driven, whereas motor 7 is gear-driven.
+
+******************************************************************
+**               Instructions for autotensioning                **
+******************************************************************
+
+1) Power on WAM and make sure it is properly connected through 
+   wireless, CAN, etc.
+
+2) Setup the wam.conf file for the proper degrees of freedom on
+   the WAM.  
+
+3) run sh makeall in the btclient directory
+
+4) change directory into btwam and make sure btwam has been compiled
+   (cd ~/btclient/src/btwam/  and then run make clean lib install slib)
+
+5) change directory into autotension and make sure autotension has 
+   been compiled 
+   (cd ~/btclient/src/autotension/ and then run make clean autotension)
+
+6) run autotension
+
+7) select from the menu which motors to tension
+
+8) repeat for selected motors until the encoder count difference
+   is minimal (around +/- 5 encoder counts)
+
+   (record encounter counts taken up from the first set of three
+   tensions then compare to the second set of three tensions) 
+
+------------------------------------------------------------------
+ Note: Autotensioning will not over tension the cables.  The 
+ program should be run two or three times every month or more
+ frequently depending on use.  The WAM cables do not need to be
+ fully tensioned in order to run properly (fine as long as 
+ there is minimal slack)
+------------------------------------------------------------------
+
+******************************************************************
+**                        Troubleshooting                       **
+******************************************************************
+
+If the WAM is noticeably shaking during autotensioning:
+------------------------------------------------------------------
+Go into the current wam.conf file and change the gains 
+of joints 2 and 4 to be less rigid.
+
+Joint       Kp       Kd       Ki
+2           2500     10       5            
+4           500      1.5      0.5
+------------------------------------------------------------------
+
+
+If the WAM torque faults while running autotensioning for Joint 2,3, or 4:
+------------------------------------------------------------------
+Most likely the cables for that motor(s) are extremely loose,
+meaning the WAM cannot support its full load.  If there is a 
+tool on the end, remove the tool and try to run it again.  If 
+that still does not work and there is a wrist attached, remove
+the wrist and replace it temporarily with an outer link and 
+run it again (make sure to hit the E-stop on the pendant before
+changing the wrist/outer link).  
+------------------------------------------------------------------
+
+
