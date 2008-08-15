@@ -37,5 +37,10 @@ cd ../ex7-serial
 make clean
 make
 
+cd ../../src/autotension
+make clean
+make autotension
+make all
+
 cd ../../
 
