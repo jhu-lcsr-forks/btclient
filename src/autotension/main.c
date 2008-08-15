@@ -365,7 +365,7 @@ int main(int argc, char **argv)
    printf("\nPress Ctrl-C to exit...\n");
 	
 	printf("\nMake sure WAM is in the home position");
-	printf("\nHit enter twice to continue...\n");
+	printf("\nActivate the WAM and Hit enter twice to continue...\n");
 	
 	promptNextStep();
 	printf("\nStarting the main thread");
