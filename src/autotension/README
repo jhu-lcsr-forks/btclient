@@ -33,12 +33,7 @@ these motors are cable-driven, whereas motor 7 is gear-driven.
 
 3) run sh makeall in the btclient directory
 
-4) change directory into btwam and make sure btwam has been compiled
-   (cd ~/btclient/src/btwam/  and then run make clean lib install slib)
-
-5) change directory into autotension and make sure autotension has 
-   been compiled 
-   (cd ~/btclient/src/autotension/ and then run make clean autotension)
+4) change directory into btclient/src/autotension
 
 6) run autotension
 
@@ -63,6 +58,8 @@ these motors are cable-driven, whereas motor 7 is gear-driven.
 ******************************************************************
 
 If the WAM is noticeably shaking during autotensioning:
+(may need to change gains manually but gains are already configured
+ within autotension so you most likely do not need to worry about this)
 ------------------------------------------------------------------
 Go into the current wam.conf file and change the gains 
 of joints 2 and 4 to be less rigid.

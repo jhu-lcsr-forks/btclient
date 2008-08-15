@@ -263,7 +263,8 @@ int menu(){
 	numerator = 0.0;
 	denominator = fabs(end-start + 1.0) * 2.0;
 	autotensioning = 1;
-	//percentDone = 0.0;
+	
+	//write to log file the current time
 	time_t timer = time(NULL);
 	char * currentTime = ctime(&timer);
 	
@@ -279,6 +280,7 @@ int menu(){
 		
 		prepareMotor(i, 1);
 		
+		//tension for a minimum of 2 times and then more if necessary
 		for (k = 0; k < 5 && !tensioned; k++) {
 			switch(i){		
 				case 1: case 2: case 3: case 4:
@@ -291,6 +293,7 @@ int menu(){
 			}		
 			oscillateMotor(i);
 			
+			//output encoder counts both to console and a log file
 			printf("\rEncoder counts taken up for motor %d:                                       \n", i);
 			fprintf(logFile, "Encoder counts taken up for motor %d:         \n", i);
 			
@@ -309,13 +312,22 @@ int menu(){
 				tensioned = 1;
 			}
 			
+			//numerator and denominator keep track of percentage complete of autotensioning
+			//method of computing percentage done can be improved (very elementary!)
 			numerator += 1.0;
 			if(k >= 2){
 				denominator += 1.0;
 			}
 			
+			if(i == end && k == 2){
+				denominator += 1.0;
+			}
+			
 			previousSum = tensionSum;
 			tensionSum = 0;
+		}
+		if(i == end){
+			numerator += 1.0;
 		}
 	}
 	
@@ -644,8 +656,6 @@ void prepareMotor(int motorID, int direction){
 	usleep(2000000);
 	jointStop[motorID-1][1] = getJointPosition();
 	
-	//percentDone += (10.0)/numMotorsToTension;
-	
 	/** find the second jointstop */
 	setToNeutralPosition();
 	
@@ -675,7 +685,6 @@ void prepareMotor(int motorID, int direction){
 	//save the joint stop position
 	usleep(2000000);
 	jointStop[motorID-1][0] = getJointPosition();
-	//percentDone += (10.0)/numMotorsToTension;
 }          
            
 /** Note on tensioning:
@@ -728,7 +737,6 @@ void engageMotor(int motorID, int direction){
 	//cycle through three tension positons.  4th is needed to disengage tang after third tensioning.
 	for(i = 0; i < 3; i++){
 		setToPosition(tensionPos[i]);
-		//percentDone += (5.0)/numMotorsToTension;
 		//printf("\nTension Position %d set\n", (i+1));
 		//activate tang
 		setProperty(0,motorID,TENSION,FALSE,1);
@@ -761,7 +769,6 @@ void engageMotor(int motorID, int direction){
 	}
 	//disengage tang from motor
 	setToPosition(tensionPos[3]);    
-	//percentDone += (5.0)/numMotorsToTension;
 }                                                         
 	                                       
 /*
@@ -855,7 +862,6 @@ void engageWrist(int motorID, int direction){
 				//calculate tension amount taken up and save it
 				diffPos = startPos - endPos;
 				lastTensionedMotorValues[counter] = abs(diffPos);
-				//percentDone += (10.0)/numMotorsToTension;
 				counter++;
 				
 				//go ahead 18/20ths of a revolution
@@ -867,7 +873,6 @@ void engageWrist(int motorID, int direction){
 		deactivateTorque();
 		//make sure tang is deactivated
 		setProperty(0,5,TENSION,FALSE,0);
-		//percentDone += (10.0)/numMotorsToTension;
 	}                                                    
 	
 	//disengage motor from tang if it is engaged
@@ -896,19 +901,11 @@ void oscillateMotor(int motorID){
 	//moves wam between the two jointstops
 	for(i = 0; i < 10; i++){
 		setToPosition(jointStop[motorID-1][1]);
-		//percentDone += val/numMotorsToTension;
 		setToPosition(jointStop[motorID-1][0]);
-		//percentDone += val/numMotorsToTension;
 	}
 	
 	//moves WAM back to a safe position
 	MoveSetup(wam,1.0,0.3);
-
-	if(motorID != 5 && motorID != 6){
-		//percentDone += 5.0/numMotorsToTension;
-	} else {
-		//percentDone += 2.0/numMotorsToTension;
-	}
 }
 
 /*======================================================================*
