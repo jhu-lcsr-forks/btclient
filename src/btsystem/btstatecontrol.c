@@ -391,7 +391,9 @@ int get_trjstate_bts(btstatecontrol *sc)
       exit(1);
 #endif
 
-   if (!btptr_chk(sc->btt.dat)) {
+   /* If we're NOT doing a prep_only move,
+    * we expect some trajectory data in btt.dat: */
+   if (!sc->prep_only && !btptr_chk(sc->btt.dat)) {
       return BTTRAJ_OFF;
    } else
       return sc->btt.state;
