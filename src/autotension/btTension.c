@@ -740,7 +740,7 @@ void engageMotor(int motorID, int direction){
 		//reads the current position of the motor
 		getProperty(0,motorID,AP,&startPos);
 		//tensions the motor with accounting for the current torques of all the motors
-//tensioning = 1;
+		tensioning = 1;
 		//wait one second  
 		usleep(1000000);   
 		//read the end positon
