@@ -21,6 +21,12 @@ Motor 7        operates joint 7
 Only motors 1-6 need to be autotensioned from time to time as
 these motors are cable-driven, whereas motor 7 is gear-driven.
 
+------------------------------------------------------------------
+ Note: The autotension software produces a logfile containing 
+ information regarding encoder counts taken up for each motor 
+ during tensioning.
+------------------------------------------------------------------
+
 ******************************************************************
 **               Instructions for autotensioning                **
 ******************************************************************
@@ -39,11 +45,7 @@ these motors are cable-driven, whereas motor 7 is gear-driven.
 
 7) select from the menu which motors to tension
 
-8) repeat for selected motors until the encoder count difference
-   is minimal (around +/- 5 encoder counts)
-
-   (record encounter counts taken up from the first set of three
-   tensions then compare to the second set of three tensions) 
+8) if necessary, select more motors to tension or exit
 
 ------------------------------------------------------------------
  Note: Autotensioning will not over tension the cables.  The 
