@@ -72,8 +72,11 @@ int main()
    int err;         /* Generic error variable for function calls */
    int busCount;    /* Number of WAMs defined in the configuration file;
                      * unused here. */
+   char vect_buf[2500]; /* String buffer for printing vector data */
    vect_n * vector; /* A generic vector */
-   matr_3 * matrix; /* A generic 4x4 transform matrix */
+   vect_3 * RxRyRz; /* A vector to store the Cartesian rotation */
+   matr_h * matrix; /* A generic 4x4 transform matrix */
+   
    
    /* This keeps this program's memory from being swapped out, reducing
     * the chance of disruptions from other programs on the system. */
@@ -140,25 +143,28 @@ int main()
    
    
    /* Start the joint space move */
-   printf("Press [Enter] to start a joint space move,\n");
-   printf("  with velocity = %f, acceleration = %f.", 0.5, 0.5);
-   while (getchar()!='\n') usleep(10000);
-   SetJointSpace(wam);
-   MoveSetup( wam, 0.5, 0.5 );
    vector = new_vn( wam->dof );
    const_vn( vector, 0.1, -1.57, 0.79, 1.57,
                      1.57, -0.79, 0.79 ); /* Note: 4-DOF will ignore these */
-   MoveWAM(wam,vector);
+   printf("Press [Enter] to start a joint space move,\n");
+   printf("  to position <J1 J2 J3 J4 J5 J6 J7>: %s\n", sprint_vn(vect_buf, vector));
+   printf("  with velocity = %f, acceleration = %f.", 0.5, 0.5);
+   while (getchar()!='\n') usleep(10000);
+   
+   SetJointSpace(wam);
+   MoveSetup( wam, 0.5, 0.5 );
+   
+   MoveWAM(wam, vector);
    destroy_vn(&vector);
 
-   /* Stop the joint space move */
+   /* Wait for the move to complete */
    while (!MoveIsDone(wam)) usleep(10000);
    printf("  ... done.\n");
 
    /* Disable the position constraint (back to just gravity comp) */   
    printf("Press [Enter] to disable the joint-space position constraint.\n");
    while (getchar()!='\n') usleep(10000);
-   SetPositionConstraint(wam,0);
+   SetPositionConstraint(wam, FALSE);
    
    
    /* Start the Cartesian space move
@@ -177,36 +183,39 @@ int main()
     *           Rx_pd = <10.0, 0.04>
     *           Ry_pd = <10.0, 0.04>
     *           Rz_pd = <10.0, 0.04>   */
+   vector = new_vn( 6 );
+   const_vn( vector, 0.0, 0.0, 0.65, -0.34, 1.11, 0.0);
    printf("Press [Enter] to start a cartesian space move,\n");
+   printf("  to position <X Y Z Rx Ry Rz>: %s\n", sprint_vn(vect_buf, vector));
    printf("  with velocity = %f, acceleration = %f.", 0.5, 0.5);
    while (getchar()!='\n') usleep(10000);
+   
+   /* Convert from X, Y, Z, Rx, Ry, Rz to a homogeneous matrix */
+   matrix = new_mh();
+   RxRyRz = new_v3();
+   setrange_vn((vect_n*)RxRyRz, vector, 0, 3, 3); // Extract the rotations
+   XYZftoR_m3((matr_3*)matrix, RxRyRz); // Convert from RxRyRz to R[3x3]
+   ELEM(matrix, 0, 3) = vector->q[0]; // Insert the X position
+   ELEM(matrix, 1, 3) = vector->q[1]; // Insert the Y position
+   ELEM(matrix, 2, 3) = vector->q[2]; // Insert the Z position
+   
    SetCartesianSpace(wam);
    MoveSetup( wam, 0.5, 0.5 );
-   matrix = new_m3();
-   /* Insert the X, Y, and Z locations */
-   setval_mn((matr_mn *)matrix, 0, 3, 0.0);
-   setval_mn((matr_mn *)matrix, 1, 3, 0.0);
-   setval_mn((matr_mn *)matrix, 2, 3, 0.65);
-   /* Set rotation matrix from RxRyRz Euler angles */
-   vector = new_vn( 3 );
-   const_vn( vector, -0.34, 1.11,     0 );
-   XYZftoR_m3(matrix, (vect_3 *)vector);
-   destroy_vn(&vector);
-   /* Copy the matrix elements into a 16-element vector */
-   vector = new_vn( 16 );
-   set_vn(vector,(vect_n *)matrix);
-   MoveWAM(wam,vector);
+   
+   /* In Cartesian space, MoveWAM() expects the full homogeneous matrix in vector format */
+   MoveWAM(wam, (vect_n*)matrix); 
    destroy_vn(&vector);
    destroy_mn((matr_mn **)&matrix);
+   destroy_vn((vect_n **)&RxRyRz);
    
-   /* Stop the Cartesian space move */
+   /* Wait for the move to complete */
    while (!MoveIsDone(wam)) usleep(10000);
    printf("  ... done.\n");
 
    /* Disable the position constraint (back to just gravity comp) */   
    printf("Press [Enter] to disable the Cartesian position constraint.\n");
    while (getchar()!='\n') usleep(10000);
-   SetPositionConstraint(wam,0);
+   SetPositionConstraint(wam, FALSE);
    
    
    /* Allow the user to re-home and shift-idle the WAM*/
