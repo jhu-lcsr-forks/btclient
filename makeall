@@ -16,6 +16,10 @@ cd ../btdiag
 make clean
 make all
 
+cd ../btutil
+make clean
+make
+
 # Make each example
 cd ../../examples/ex1-jointposition
 make clean
@@ -39,8 +43,7 @@ make
 
 cd ../../src/autotension
 make clean
-make autotension
-make all
+make
 
 cd ../../
 
