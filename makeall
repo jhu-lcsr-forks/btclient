@@ -37,6 +37,10 @@ cd ../ex4-haptics
 make clean
 make
 
+cd ../ex5-simplemove
+make clean
+make
+
 cd ../ex7-serial
 make clean
 make
