@@ -67,8 +67,8 @@ Go into the current wam.conf file and change the gains
 of joints 2 and 4 to be less rigid.
 
 Joint       Kp       Kd       Ki
-2           2500     10       5            
-4           500      1.5      0.5
+2           2500     10       0.0            
+4           500      1.5      0.0
 ------------------------------------------------------------------
 
 
