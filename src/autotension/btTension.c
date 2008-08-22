@@ -717,6 +717,9 @@ void engageMotor(int motorID, int direction){
 	        
 	currentJoint = motorID;
 	
+	//find tangs at least one motor revolution back from the joint stop
+	motorOffset[motorID-1] += (-2 * 3.14159);
+	
 	// find tension positions for tensionPos[4]
 	for(i = 0; i < 4; i++){
 		motorOffset[motorID-1] = (i+1) * (-2 * 3.14159);
