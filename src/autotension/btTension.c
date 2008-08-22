@@ -588,6 +588,8 @@ void findTangStop(int motorID, int direction){
 			previousPosition = ((vect_n*)wam->Jpos)->q[motorID-1];
 	} while(findingTang);
 	
+	usleep(1000000);
+	
 	// findingTang flag remains true even though tang is found so that torque is still being applied
 	// (torque remains so tensioning is easier to do)
 	
