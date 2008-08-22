@@ -26,7 +26,7 @@ $(LIB_OBJS) : $(INCL_FILES)
 
 lib: ${LIB_OBJS}
 	$(AR) rcs $(LIB_TARG) ${LIB_OBJS}
-	$(RM) $*.o
+	$(RM) *.o
 
 slib: ${LIB_OBJS}
 	${CC} -g ${LDFLAGS} -shared -o ${SLIB_TARG} ${LIB_OBJS}
@@ -37,5 +37,8 @@ clean:
 install:
 	cp $(LIB_TARG) $(PATH_INSTALL_LIB)
 	cp $(INCL_FILES) $(PATH_INSTALL_INC)
+
+listing: ${LIB_OBJS}
+	objdump -S $< > $@
 
 

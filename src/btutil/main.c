@@ -1092,6 +1092,10 @@ getParams(int newID)
    printf("IPNM = %ld\n",reply);
    getProperty(0,newID,MT,&reply);
    printf("MT = %ld\n",reply);
+   getProperty(0,newID,MOFST,&reply);
+   printf("MOFST = %ld\n",reply);
+   getProperty(0,newID,IOFST,&reply); 
+   printf("IOFST = %ld\n",reply);
    getProperty(0,newID,OFFSET1,&reply);
    printf("OFFSET1 = %ld\n",reply);
    getProperty(0,newID,OFFSET2,&reply);
@@ -1104,8 +1108,20 @@ getParams(int newID)
    printf("PIDX = %ld\n",reply);
    getProperty(0,newID,PTEMP,&reply);
    printf("PTEMP = %ld\n",reply);
-   getProperty(0,newID,POLES,&reply);
+   getProperty(0,newID,POLES,&reply); 
    printf("POLES = %ld\n",reply);
+
+   getProperty(0,newID,GRPA,&reply); 
+   printf("GRPA = %ld\n",reply);
+   getProperty(0,newID,GRPB,&reply); 
+   printf("GRPB = %ld\n",reply);
+   getProperty(0,newID,GRPC,&reply); 
+   printf("GRPC = %ld\n",reply);
+
+   getProperty(0,newID,40,&reply); 
+   printf("40 = %ld\n",reply);
+   getProperty(0,newID,41,&reply); 
+   printf("41 = %ld\n",reply);
 }
 
 void handleMenu(int argc, char **argv)

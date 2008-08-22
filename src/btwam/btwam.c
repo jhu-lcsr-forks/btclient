@@ -482,7 +482,7 @@ wam_struct* OpenWAM(char *fn, int bus)
    //syslog(LOG_ERR, "Kinematics loaded, bus = %d", wam->act[0].bus);
 
    /* If the WAM is already zeroed, note it- else, zero it */
-   //reply = 0;
+   //reply = TRUE;
    getProperty(wam->act->bus, SAFETY_MODULE, ZERO, &reply);
 
    if(reply) {
@@ -1434,7 +1434,8 @@ void StartContinuousTeach(wam_struct *wam, int divider, char *filename)
    AddDataDL(&(wam->cteach),&(wam->teach_time),sizeof(btreal),4,"Time");
 
    if(wam->active_sc == &wam->Jsc) { // Record joint positions
-      AddDataDL(&(wam->cteach), valptr_vn(wam->Jpos), sizeof(btreal)*wam->num_actuators, BTLOG_BTREAL, "Jpos");
+      //AddDataDL(&(wam->cteach), valptr_vn(wam->Jpos), sizeof(btreal)*wam->num_actuators, BTLOG_BTREAL, "Jpos");
+      AddDataDL(&(wam->cteach), valptr_vn(wam->Jpos), sizeof(btreal)*wam->dof, BTLOG_BTREAL, "Jpos");
    } else if(wam->active_sc == &wam->Csc) { // Record Cartesian positions
       AddDataDL(&(wam->cteach), valptr_vn((vect_n*)wam->HMpos), sizeof(btreal)*12, BTLOG_BTREAL, "HMpos");
    } else { // Unknown control state (user-defined?)

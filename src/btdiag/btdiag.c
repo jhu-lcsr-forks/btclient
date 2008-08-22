@@ -312,7 +312,7 @@ void Startup(void *thd){
    btrt_thread_exit((btrt_thread_struct*)thd);
 }
 
-void MainEventThread(void *thd){
+void xMainEventThread(void *thd){
    char     chr;
    int      i, cnt;
    
@@ -383,9 +383,11 @@ void MainEventThread(void *thd){
          
          /* Check for loaded trajectory */
          for(i = 0; i < busCount; i++){
-            if(numrows_vr(get_vr_vta(*wamData[i].vta)) > 10){
-               pauseCnt--;
-               break;
+            if(*wamData[i].vta != NULL){
+               if(numrows_vr(get_vr_vta(*wamData[i].vta)) > 10){
+                  pauseCnt--;
+                  break;
+               }
             }
          }
          
@@ -425,7 +427,7 @@ void MainEventThread(void *thd){
    btrt_thread_exit((btrt_thread_struct*)thd);
 }
 
-void xMainEventThread(void *thd){
+void MainEventThread(void *thd){
    char     chr;
    int      i, cnt;
    char     vect_buf1[500], vect_buf2[500], vect_buf3[500], vect_buf4[500];
@@ -893,7 +895,12 @@ void RenderMAIN_SCREEN()
       mvprintw(line, 0, "J Torque   : %s ", sprint_vn(vect_buf1, wam[cnt]->Jtrq));
       line+=1;
       mvprintw(line, 0, "C Position : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMpos));
-      line+=6;
+      line+=5;
+      /* Get rotation matrix in RxRyRz format */
+      RtoXYZf_m3( wam[cnt]->HMpos, RxRyRz );
+      mvprintw(line, 0, "C Rotation : %s ", sprint_vn(vect_buf1, RxRyRz));
+      line+=2;
+
       //mvprintw(line, 0, "TrajState  : %d ", wamData[cnt].active_bts->btt.state);
       //line+=1;
       
