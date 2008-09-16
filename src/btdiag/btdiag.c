@@ -862,6 +862,11 @@ void RenderMAIN_SCREEN()
       mvprintw(line, 0, "Constraint : UNDEFINED!");
    ++line;
    
+   // Show the state of gravity compensation
+   mvprintw(line, 0, "GravityComp: %3.1f, %s", GetGravityComp(wam[0]),
+            GetGravityUsingCalibrated(wam[0]) ? "Calibrated   " : "Uncalibrated " );
+   ++line;
+   
    // Show the state of the haptic scene
    if (bth.state) {
       mvprintw(line, 0, "Haptics    : ON    ");
@@ -896,11 +901,12 @@ void RenderMAIN_SCREEN()
       line+=1;
       mvprintw(line, 0, "C Position : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMpos));
       line+=5;
+      
       /* Get rotation matrix in RxRyRz format */
       RtoXYZf_m3( wam[cnt]->HMpos, RxRyRz );
       mvprintw(line, 0, "C Rotation : %s ", sprint_vn(vect_buf1, RxRyRz));
       line+=2;
-
+      
       //mvprintw(line, 0, "TrajState  : %d ", wamData[cnt].active_bts->btt.state);
       //line+=1;
       
@@ -1115,6 +1121,14 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       }
       finish_entry();
       break;
+   
+   case 'G'://Toggle gcravity compensation mode
+      if (GetGravityUsingCalibrated(wam[0]))
+         SetGravityUsingCalibrated(wam[0],0);
+      else
+         SetGravityUsingCalibrated(wam[0],1);
+      break;
+      
    case '_'://Refresh display
       clearScreen();
       break;

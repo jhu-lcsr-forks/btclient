@@ -95,6 +95,8 @@ typedef struct {
   matr_mn *I; //!< Inertial matrix for this link
   vect_3 *rotorI; //!< Rotor inertia, added to the link's inertial matrix in #OpenWAM()
   
+  vect_3 *gcal_mu; //!< First-moment-of-the-mass vector for each link
+  
   //geometry info
   double Alpha,Theta,A,D; //!< Denavit-Hartenberg link parameters
   int type;
@@ -161,6 +163,8 @@ typedef struct {
  vect_n *q,*dq,*ddq; //!< Joint state inputs
  vect_n *t;      //!< Joint torque outputs
  vect_3 *G;      //!< Gravity vector
+ int gcal_iscalibrated; //!< Was the WAM gravity-calibrated?
+ int gcal_flag; //!< Flag for using calibrated gravity using mu vectors - 0=no, 1=yes
  matr_mn *J; //!< Full Jacobian at tool
  matr_mn *Jv; //!< Upper Jacobian at tool frame
  matr_mn *Jw; //!< Lower Jacobian at tool frame
@@ -188,6 +192,9 @@ void tool_mass_bot(btrobot* robot, vect_3 *cog,double m);
 void make_transform_btlink(btlink* link,double q); //set the transform matrix
 void set_gravity_bot(btrobot* robot, double Gscale); //set percent effect of gravity
 btreal get_gravity_bot(btrobot* robot);
+void set_gravity_bot_calibrated(btrobot* robot, int onoff); //set whether to use calibrated gravity values
+int get_gravity_bot_calibrated(btrobot* robot);
+int get_gravity_bot_is_calibrated(btrobot* robot);
 //void set_jacobian_scheme_bot(btrobot* robot,int scheme); //how to handle extra dof
 
 
@@ -207,7 +214,10 @@ void eval_fd_bot(btrobot* robot); //forward dynamics
 void apply_force_bot(btrobot* robot,int link, vect_3* pos, vect_3 *force, vect_3* torque);
 void apply_tool_force_bot(btrobot* robot, vect_3* pos, vect_3 *force, vect_3* torque);
 void eval_bd_bot(btrobot* robot); //backward kinematics
+void get_gravity_torques(btrobot* robot,vect_n* t);
 void get_t_bot(btrobot* robot,vect_n* t);
+
+
 
 int new_linkforce(btrobot* robot,btlinkforce *force); 
 int release_linkforce(btrobot* robot, btlinkforce *force);

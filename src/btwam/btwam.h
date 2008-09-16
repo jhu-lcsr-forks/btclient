@@ -203,6 +203,9 @@ void DefineWAMpos(wam_struct *w,vect_n *wv);
 
 btreal GetGravityComp(wam_struct *w);
 void SetGravityComp(wam_struct *w,btreal scale);
+void SetGravityUsingCalibrated(wam_struct *w, int onoff);
+int GetGravityUsingCalibrated(wam_struct *w);
+int GetGravityIsCalibrated(wam_struct *w);
 
 void SetCartesianSpace(wam_struct* wam);
 void SetJointSpace(wam_struct* wam);

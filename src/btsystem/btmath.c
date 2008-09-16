@@ -648,6 +648,29 @@ BTINLINE vect_n* e_mul_vn(vect_n* a, vect_n* b)
    return a->ret;
 }
 
+/** Per Element Divide
+ 
+ret[i] = a[i] / b[i]
+*/
+BTINLINE vect_n* e_div_vn(vect_n* a, vect_n* b)
+{
+   // Per Element multiply
+   int cnt;
+
+   //th Add vector size checking code here
+   for (cnt=0;cnt < a->n;cnt++)
+   {
+      // Check for divide by zero ...
+      if (b->q[cnt] == 0.0)
+      {
+         syslog(LOG_ERR,"Attempt to divide by 0 in e_div_vn!");
+         return a;
+      }
+      a->ret->q[cnt] = a->q[cnt] / b->q[cnt];
+   }
+   return a->ret;
+}
+
 /** Per element power
   ret[i] = a[i]^b
 */

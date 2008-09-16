@@ -387,6 +387,9 @@ wam_struct* OpenWAM(char *fn, int bus)
    sprintf(key, "%s.j2mt", wam->name);
    parseGetVal(MATRIX, key, (void*)wam->J2MT);
 
+   //Assume we're gravity-calibrated until we can't find a mu vector ...
+   wam->robot.gcal_iscalibrated = 1;
+
    tmp_v3.q = tmp_v3.data; // Set pointer to its own storage area
    syslog(LOG_ERR,"OpenWAM(): for link from 0 to %d", wam->dof);
    for(link = 0; link <= wam->dof; link++) {
@@ -419,6 +422,15 @@ wam_struct* OpenWAM(char *fn, int bus)
 
       // If this is not the tool...
       if(link != wam->dof) {
+         // Get first-moment-of-the-mass vector for calibrated gravity stuff,
+         // if it's in the config file
+         if ( wam->robot.gcal_iscalibrated )
+         {
+            sprintf(key, "%s.calibrated-gravity.mu%d", wam->name, link+1);
+            err = parseGetVal(VECTOR, key, (void*)wam->robot.links[link].gcal_mu);
+            if (err) wam->robot.gcal_iscalibrated = 0;
+         }
+         
          // Read joint PID parameters
          sprintf(key, "%s.link[%d].pid.kp", wam->name, link);
          parseGetVal(DOUBLE, key, (void*)&wam->JposControl.pid[link].Kp);
@@ -488,9 +500,76 @@ wam_struct* OpenWAM(char *fn, int bus)
    if(reply) {
       wam->isZeroed = TRUE;
       syslog(LOG_ERR, "WAM was already zeroed");
-   } else {
-      DefineWAMpos(wam, wam->park_location);
-      syslog(LOG_ERR, "WAM zeroed by application");
+   }
+   else
+   {
+      int err;
+      vect_n *zeromag;
+      zeromag = new_vn(wam->dof);
+      sprintf(key, "%s.zeromag", wam->name);
+      err = parseGetVal(VECTOR, key, zeromag);
+      if (err)
+      {
+         /* No zeromag entry ... fall back to default*/
+         DefineWAMpos(wam, wam->park_location);
+         syslog(LOG_ERR, "WAM zeroed by application (no zeromag)");
+      }
+      else
+      {
+         int m;
+         vect_n *curmag;
+         vect_n *errmag;
+         vect_n *numcounts;
+         curmag = new_vn(wam->dof);
+         errmag = new_vn(wam->dof);
+         numcounts = new_vn(wam->dof);
+         /* Grab each motor's magnetic encoder value into curmag */
+         for (m=0; m<wam->dof; m++)
+         {
+            long reply;
+            getProperty(0,m+1,MECH,&reply);
+            setval_vn(curmag,m,(double)reply);
+         }
+         /* Grab each motor's number of encoder counts into numcounts */
+         for (m=0; m<wam->dof; m++)
+         {
+            long reply;
+            getProperty(0,m+1,CTS,&reply);
+            setval_vn(numcounts,m,(double)reply);
+         }
+         /* Calculate the error in encoder counts */
+         Jpos2Mpos(wam,wam->park_location,wam->Mpos);
+         
+         set_vn(errmag, add_vn( scale_vn(1.0/(2*pi),
+                                         e_mul_vn(numcounts,wam->Mpos)),
+                                sub_vn( zeromag, curmag )));
+         for (m=0; m<wam->dof; m++)
+            while (errmag->q[m] > numcounts->q[m]/2.0)
+               errmag->q[m] -= numcounts->q[m];
+         for (m=0; m<wam->dof; m++)
+            while (errmag->q[m] < -numcounts->q[m]/2.0)
+               errmag->q[m] += numcounts->q[m];
+         /* Define a zero error for any pucks with a sucky version number */
+         for (m=0; m<wam->dof; m++)
+         {
+            if ( GetProp(m,VERS) < 118 || GetProp(m,ROLE) != 256 )
+               errmag->q[m] = 0.0;
+         }
+         /* Define a zero error for any pucks with a -1 zeromag value */
+         for (m=0; m<wam->dof; m++)
+            if (getval_vn(zeromag,m) < 0) errmag->q[m] = 0.0;
+         /* Subtract the error from the park location
+          * to set the current location */
+         Mpos2Jpos(wam, scale_vn((2*pi),e_div_vn(errmag,numcounts)), wam->Jpos);
+         DefineWAMpos(wam, sub_vn(wam->park_location,wam->Jpos));
+         syslog(LOG_ERR, "WAM zeroed by application (using zeromag)");
+         set_vn(wam->Jpos,wam->park_location);
+         /* Done. */
+         destroy_vn(&curmag);
+         destroy_vn(&errmag);
+         destroy_vn(&numcounts);
+      }
+      destroy_vn(&zeromag);
    }
 
    /* Sad, but true. Until we code something to calculate dq and ddq, our
@@ -781,10 +860,9 @@ void WAMControlThread(void *data)
       /* Evaluate the Forward Dynamics */
       eval_fd_bot(&wam->robot);
 
-      /* Evaluate the Backward Dynamics to get just the torques due to gravity */
-      eval_bd_bot(&wam->robot);
-      get_t_bot(&wam->robot, wam->Gtrq);
-
+      /* Get gravity torques */
+      get_gravity_torques(&wam->robot, wam->Gtrq);
+      
       /* Fill in the Cartesian tool XYZ */
       set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));
       //set_vn(wam->R6pos,(vect_n*)wam->Cpos);
@@ -850,10 +928,13 @@ void WAMControlThread(void *data)
       wam->user_time = pos2_time - pos1_time; //th prof
 
       /* Evaluate the Backward Dynamics: Calculate robot->t, given link forces and torques (+gravity) */
-      eval_bd_bot(&wam->robot); //
+      eval_bd_bot(&wam->robot);
 
       /* Copy the RNE joint torques from robot->t into Ttrq */
       get_t_bot(&wam->robot,wam->Ttrq);
+      
+      /* Copy in gravity compensation torques */
+      set_vn(wam->Ttrq,add_vn(wam->Ttrq,wam->Gtrq));
 
       /* If the WAM is zeroed, add the joint torques due to the Cartesian controller into the Jtrq output */
       if(wam->isZeroed) {
@@ -1305,7 +1386,8 @@ void ParkWAM(wam_struct* wam)
 }
 
 /** Returns the present anti-gravity scaling
- 
+  
+   \retval The present anti-gravity scaling
 */
 btreal GetGravityComp(wam_struct *w)
 {
@@ -1316,13 +1398,32 @@ btreal GetGravityComp(wam_struct *w)
 */
 void SetGravityComp(wam_struct *w,btreal scale)
 {
-   if (scale == 0.0) {
-      //w->Gcomp = 0;
-      set_gravity_bot(&w->robot, 0.0);
-   } else {
-      //w->Gcomp = 1;
-      set_gravity_bot(&w->robot, scale);
-   }
+   set_gravity_bot(&w->robot, scale); 
+}
+
+/** Enable or disable using calibrated gravity compensation
+*/
+void SetGravityUsingCalibrated(wam_struct *w, int onoff)
+{
+   set_gravity_bot_calibrated(&w->robot,onoff);
+}
+
+/** Returns present use-calibrated-gravity setting
+
+   \retval Whether the WAM is currently using calibrated gravity compensation
+ */
+int GetGravityUsingCalibrated(wam_struct *w)
+{
+   return (get_gravity_bot_calibrated(&w->robot) == 1) ? 1 : 0;
+}
+
+/** Returns whether the WAM has gravity-calibration vectors
+
+   \retval Whether the WAM is has calibrated gravity information
+ */
+int GetGravityIsCalibrated(wam_struct *w)
+{
+   return (get_gravity_bot_is_calibrated(&w->robot) == 1) ? 1 : 0;
 }
 
 /** Sample the torques required to hold a given position

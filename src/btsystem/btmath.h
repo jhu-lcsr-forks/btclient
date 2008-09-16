@@ -294,6 +294,7 @@ vect_n* bound_vn(vect_n* a, btreal min, btreal max);
  */
 //@{
 vect_n* e_mul_vn(vect_n* a, vect_n* b); // Per Element multiply
+vect_n* e_div_vn(vect_n* a, vect_n* b); // Per Element divide
 vect_n* e_pow_vn(vect_n* a, btreal b);
 vect_n* e_sqrt_vn(vect_n* a);
 vect_n* e_sqr_vn(vect_n* a);
