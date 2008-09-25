@@ -28,11 +28,28 @@ extern "C"
 
 
 
-/**
-A parabolic function.
-Starts at time 0, ends at time tf;
+/** A parabolic function object.
+
+This object stores individual segments of the piecewise 
+parabolic function (pararray) and implements the mathematics for these segments.
+
+Given final values for position, velocity, acceleration and time (sf, spf, sppf,
+and tf respectively) calculate position and/or velocity for any point in time 
+prior to tf.
+
 As time approaches tf, s & sp approach sf & spf;
 sppf is constant;
+
+Symbols:
+s: length (dependant) parameter
+t: time (independent) parameter
+0: initial value (t0 = initial time)
+f: final value
+p: prime (d/dt) (velocity)
+pp: (d/dt^2) (acceleration)
+
+f_of_t: f(t) (s_of_t=>s(t))
+
 
 */
 typedef struct parabolic_s{
@@ -42,14 +59,18 @@ typedef struct parabolic_s{
 }parabolic;
 
 void dump_pb(parabolic *p,FILE *out);
+
+//Evaluation functions
 btreal sp_of_t_pb(parabolic *p, btreal t);
 btreal s_of_t_pb(parabolic *p, btreal t);
 btreal s_of_t_pbl(parabolic **pin, btreal t);
+
+//Definition & Initial Calcs from various combinations of boundary conditions.
 btreal boundary_pb(parabolic *b,btreal t0, btreal s0,btreal sf,btreal sp0,btreal spf);
 btreal blend_pb(parabolic *b,btreal t0, btreal st,btreal sp0,btreal spf,btreal t);
 btreal s0sfspftf_pb(parabolic *b,btreal t0, btreal s0,btreal sf,btreal spf,btreal tf);
 
-/** Parabolic segment trajectory controller Ideas:
+/** Parabolic segment trajectory controller Design Ideas: (not necessarily implemented)
 Circular buffer.
 Adding a segment to an empty list when it is "on" starts playing that segment using
 the present time as t0.
@@ -61,9 +82,17 @@ You can pause
 
 Time starts at 0.0 from reset.
 */
-/** Array of parabolic segments
 
+/** One dimensional piecewise parabolic function.
+This object stores a piecewise parabolic function (in one dimension), evaluates the
+function relative to independent variable t, and keeps state information for t.
 
+reset_pa() will initialize t to 0.
+eval_pa() will increment t by dt until t > tf of the final segment after which it 
+will return sf of the final segment. 
+
+Symbols:
+tF: tf of the last segment in the list.
 */
 typedef struct pararray_s{
   parabolic *pb;
@@ -82,8 +111,12 @@ btreal add_bseg_pa(pararray* pa,parabolic* p);
 btreal  reset_pa(pararray* pa);
 btreal eval_pa(pararray* pa,btreal dt);
 
-/** A group of parabolic lists.
-Inputs and outputs are vect_n's
+/** Multi-dimensional piecewise parabolic functions.
+A multi-dimensional version of pararray.
+
+Inputs and outputs are vect_n's.
+
+getstate_pavn() returns BTTRAJ_RUN until all t > tF for all dimensions.
 */
 typedef struct pararray_vns{
   pararray **pa;

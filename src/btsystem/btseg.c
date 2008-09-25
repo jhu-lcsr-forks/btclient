@@ -342,6 +342,7 @@ vect_n* eval_pavn(pararray_vn* pavn,btreal dt)
 }
 
 /** Return the state of the trajectories
+Returns BTTRAJ_RUN until t > tF for all dimensions.
 */
 int getstate_pavn(pararray_vn* pavn)
 {
@@ -355,7 +356,7 @@ int getstate_pavn(pararray_vn* pavn)
 }
 
 /**
-Convert a vectray of time/points to a segment list
+Convert a vectray of time/points to a piecewise parabolic function.
  
 Time in the first value;
 Time values must be monotonically increasing. Results are otherwize undefined.
@@ -389,7 +390,8 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
    // For each column of pavn
    for (cnt = 0; cnt < pavn->elements; cnt ++) {
       acc = fabs(acceleration);
-      /* First acceleration segment */
+
+      /* First acceleration segment calcs*/
       t1 = getval_vn(idx_vr(vr,0),0);
       t2 = getval_vn(idx_vr(vr,1),0);
       x1 = getval_vn(idx_vr(vr,0),cnt+1);
@@ -425,7 +427,7 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
       setval_vn(idx_vr(vr,0),cnt+1,x2-dt*v2);
       idx = numrows_vr(vr)-1;
 
-      /* Last acceleration segment */
+      /* Last velocity and acceleration segment calcs */
       acc = fabs(acceleration);
       t1 = getval_vn(idx_vr(vr,idx-1),0);
       t2 = getval_vn(idx_vr(vr,idx),0);
@@ -450,7 +452,7 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
       t_last = tacc;
       setval_vn(idx_vr(vr,idx),cnt+1,x1+dt*v1_last);
 
-
+      /*Internal (remaining) segments calcs*/
       acc = fabs(acceleration);
       for(idx = 1; idx < numrows_vr(vr)-1; idx++) {
 
@@ -495,10 +497,10 @@ pararray_vn* vr2pararray(vectray* vr,btreal acceleration)
       }
 
       v2 = 0.0;
-      tf_prev = s0sfspftf_pb(&pa,tf_prev,saf,sa0_last,v1_last,t3-t_last); //velocity seg
+      tf_prev = s0sfspftf_pb(&pa,tf_prev,saf,sa0_last,v1_last,t3-t_last); //last velocity seg
       add_bseg_pa(pavn->pa[cnt],&pa);
 
-      tf_prev = s0sfspftf_pb(&pa,tf_prev,sa0_last,saf_last,v2,t3);  //acc seg starting at time 0.0
+      tf_prev = s0sfspftf_pb(&pa,tf_prev,sa0_last,saf_last,v2,t3);  //acc seg ending at tf
       add_bseg_pa(pavn->pa[cnt],&pa);
 
    }
