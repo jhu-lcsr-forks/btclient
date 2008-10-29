@@ -470,6 +470,8 @@ void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, voi
 #else
 void btrt_thread_create(btrt_thread_struct *thd, const char *name, int prio, void *function, void *args)
 {
+   strncpy(thd->name,name,4);
+   thd->name[4] = '\0';
    btthread_create((btthread*)thd, prio, function, args);
 }
 

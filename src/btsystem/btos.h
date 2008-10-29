@@ -232,6 +232,7 @@ typedef struct {
    void* data;
    btmutex mutex;
 
+   char name[5];
    RTIME actual_period,proc_time;
 }btthread;
 
@@ -255,6 +256,7 @@ typedef struct {
    
    btrt_mutex mutex;
 
+   char name[5];
    RTIME actual_period,proc_time;
 
 }btrt_thread_struct;

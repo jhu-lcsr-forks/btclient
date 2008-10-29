@@ -251,7 +251,6 @@ int init_bts(btstatecontrol *sc)
    sc->btt.dat = NULL;
    sc->btp.dat = NULL;
    sc->prep_only = 0;
-   sc->loop_trj = 0;
    sc->vel = 0.25; //Safe value for units of radians and meters
    sc->acc = 0.25;
    sc->local_dt = 0.0;
@@ -498,13 +497,17 @@ int start_trj_bts(btstatecontrol *sc)
       //syslog(LOG_ERR, "start_trj_bts: dest=%s", sprint_vn(vect_buf1, dest));
       
       setprofile_traptrj(&(sc->trj), sc->vel, sc->acc);
-      
-      // This is expecting a pointer to the trj and the total trj time (or total arclen)
-      start_traptrj(&(sc->trj), arclength_pwl(&(sc->pth)));
-      //start_traptrj(&(sc->trj), vr->data[(vr->num_rows-1)*vr->n] - vr->data[0]);
-      set_btramp(&(sc->ramp),BTRAMP_MAX);
-      sc->btt.state = BTTRAJ_INPREP;
-      sc->prep_only = 0;
+
+      if (arclength_pwl(&(sc->pth)) < 0.0001) {
+         sc->btt.state = BTTRAJ_RUN;
+      } else {      
+         // This is expecting a pointer to the trj and the total trj time (or total arclen)
+         start_traptrj(&(sc->trj), arclength_pwl(&(sc->pth)));
+         //start_traptrj(&(sc->trj), vr->data[(vr->num_rows-1)*vr->n] - vr->data[0]);
+         set_btramp(&(sc->ramp),BTRAMP_MAX);
+         sc->btt.state = BTTRAJ_INPREP;
+         sc->prep_only = 0;
+      }
       ret = 0;
       btrt_mutex_unlock(&(sc->mutex));
    } else {

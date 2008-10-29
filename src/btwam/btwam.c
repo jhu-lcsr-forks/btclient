@@ -46,6 +46,7 @@ See #btwam_struct
 //wam_struct WAM;
 extern int gimbalsInit;
 extern bus_struct *buses;
+int numMaintThreads = 0;
 
 //#define LOW_TRQ_COEFFICIENT (0.75)
 //#define BTDOUBLETIME
@@ -204,6 +205,8 @@ wam_struct* OpenWAM(char *fn, int bus)
    int            link;
    int            actcnt = 0;
    vect_3         tmp_v3;
+   char           thd_maintname[5];
+
 
    /* Normally, you should use init_local_vn() for this, but in this case
       we want a vect_3 structure without assigning the data pointer (it will
@@ -585,7 +588,12 @@ wam_struct* OpenWAM(char *fn, int bus)
       "Could not initialize mutex for WAM control loop.");
 
    // Spin off the maintenance thread
-   btrt_thread_create(&wam->maint, "MAINT", 30, (void*)WAMMaintenanceThread, (void*)wam);
+   {
+      strcpy(thd_maintname,"MAIx");
+      thd_maintname[3] = '0' + numMaintThreads;
+      btrt_thread_create(&wam->maint, thd_maintname, 30, (void*)WAMMaintenanceThread, (void*)wam);
+      numMaintThreads++;
+   }
 
    return(wam);
 }
@@ -622,9 +630,7 @@ void WAMMaintenanceThread(void *data)
 
    while (!btrt_thread_done(this_thd)) {
       if (get_trjstate_bts(wam->active_sc) == BTTRAJ_DONE) {
-         if(wam->active_sc->loop_trj) {
-            start_trj_bts(wam->active_sc);
-         } else if (wam->idle_when_done) {
+         if (wam->idle_when_done) {
             setmode_bts(wam->active_sc,SCMODE_IDLE);
          }
       }
@@ -725,7 +731,7 @@ void WAMControlThread(void *data)
    rt_set_periodic_mode();
    start_rt_timer(sampleCount);
 
-   WAMControlThreadTask = rt_task_init(nam2num("WAM1"), 5, 0, 0);
+   WAMControlThreadTask = rt_task_init(nam2num(this_thd->name), 5, 0, 0);
    rt_task_make_periodic_relative_ns(WAMControlThreadTask, rtime_period, rtime_period);
 
 #endif

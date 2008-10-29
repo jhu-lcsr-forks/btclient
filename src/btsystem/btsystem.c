@@ -226,6 +226,7 @@ int InitializeSystem(void)
 
    num_actuators = 0;
    for(bus_number = 0; bus_number < num_buses; bus_number++) {
+      err = getBusStatus(bus_number, status);
       // Query each node for ID, CPR, IPNM, PIDX, GRPx
       firstPos[bus_number] = TRUE;
       for(id = 0; id < MAX_NODES; id++) {
