@@ -74,6 +74,7 @@ where command is:
 #include <termios.h>
 #include <unistd.h>
 #include <math.h>
+#include <sys/io.h>
 
 #ifdef XENOMAI
 #include <native/task.h>
@@ -1471,6 +1472,10 @@ int BHFirmwareDL(char *fname)
    Write('X'); //Write to MC68HC811 e<X>ternal EEPROM
 
    printf( "\nPower up the hand to begin download...\n" );
+   
+   /* Turn on the hand power via the parallel port ...*/
+   outb((unsigned char)0x05, 0x378); 	// Output Data to the Parallel Port
+   
    while ( Read() != ':' && errcnt<50) {
       errcnt++; //Wait for RESET
    }
@@ -1562,6 +1567,12 @@ int BHandDL(void)
 
    /** Set the baud rate */
    serialSetBaud(&p, 9600);
+   
+   /* Turn off power via the parallel port (will be re-enabled in BHFirmwareDL())*/
+   if (ioperm(0x378,1,1)) 
+         fprintf(stderr, "ERROR: Can't gain access to parallel port\n"), exit(1);
+   outb((unsigned char)0x00, 0x378); 	// Output Data to the Parallel Port
+   sleep(3);
 
    if(err = BHFirmwareDL(fn)) {
       printf("\nDownload failed! Err = %d\n", err);
