@@ -1280,9 +1280,9 @@ void handleMenu(int argc, char **argv)
    //case 'R':
    //   tensionCable2();
    //   break;
-   //case 'B':
-   //   BHandDL();
-   //   break;
+   case 'B':
+      BHandDL();
+      break;
    case 'Q':
    //   printf("\n\n");
       done = TRUE;
@@ -1344,6 +1344,8 @@ void tensionCable2(void)
    setPropertySlow(0,motor,TORQ,FALSE,0);
    setPropertySlow(0,GROUPID(0),MODE,FALSE,MODE_IDLE);
 }
+#endif
+
 /* Firmware download sample code.
  
    Note: ReadSerial(char *inputBuffer, int charCt); 
@@ -1573,7 +1575,7 @@ int BHandDL(void)
 
    return(0);
 }
-#endif
+
 
 #if 0
 
