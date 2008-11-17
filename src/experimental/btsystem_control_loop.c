@@ -1,16 +1,44 @@
-/*======================================================================*
- *  Module .............libbt
- *  File ...............btsystem_control_loop.c
- *  Author .............Traveler Hauptman
- *  Creation Date ......16 Mar 2003
- *                                                                      *
- *  ******************************************************************  *
- *                                                                      *
- *  NOTES:
+/* ======================================================================== *
+ *  Module ............. experimental
+ *  File ............... btsystem_control_loop.c
+ *  Creation Date ...... 16 Mar 2003
+ *  Author ............. Traveler Hauptman
+ *                                                                          *
+ *  **********************************************************************  *
+ *                                                                          *
+ *  Copyright (C) 2003-2008 Barrett Technology, Inc. <support@barrett.com>
+ *                          625 Mount Auburn St
+ *                          Cambridge, MA 02138, USA
  *
- *  REVISION HISTORY:
+ *  All rights reserved.
  *
- *======================================================================*/
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY BARRETT TECHNOLOGY, INC AND CONTRIBUTORS
+ *  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL BARRETT
+ *  TECHNOLOGY, INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ *  OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ *  TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+ *  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  The views and conclusions contained in the software and documentation
+ *  are those of the authors and should not be interpreted as representing
+ *  official policies, either expressed or implied, of Barrett Technology.
+ *                                                                          *
+ * ======================================================================== */
 
 #include <semaphore.h>
 
@@ -51,30 +79,3 @@ void BTsystemControlThread(void *data)
   }
   pthread_exit(NULL);
 }
-
-/*======================================================================*
- *                                                                      *
- *             Copyright (c) 2003 Barrett Technology, Inc.              *
- *                        139 Main Street                               *
- *                       Kendall/MIT Square                             *
- *                  Cambridge, MA  02142-1528  USA                      *
- *                                                                      *
- *                        All rights reserved.                          *
- *                                                                      *
- *  ******************************************************************  *
- *                            DISCLAIMER                                *
- *                                                                      *
- *  This software and related documentation are provided to you on      *
- *  an as is basis and without warranty of any kind.  No warranties,    *
- *  express or implied, including, without limitation, any warranties   *
- *  of merchantability or fitness for a particular purpose are being    *
- *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
- *  Technology, Inc. be liable for any lost development expenses, lost  *
- *  lost profits, or any incidental, special, or consequential damage.  *
- *  ******************************************************************  *
- *                                                                      
- * CVS info: $Id$
- * CVS automatic log (prune as desired):
- * $Log$
- *
- *======================================================================*/

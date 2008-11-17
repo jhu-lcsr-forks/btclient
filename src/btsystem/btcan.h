@@ -1,24 +1,52 @@
-/*======================================================================*
- *  Module .............libbtsystem
- *  File ...............btcan.h
- *  Author .............Brian Zenowich
- *  Creation Date ......24 Mar 2003
- *  Addtl Authors ......Traveler Hauptman, Sam Clanton
- *                                                                      *
- *  ******************************************************************  *
- *                                                                      *
- * Copyright (C) 2005   Barrett Technology <support@barrett.com>
+/* ======================================================================== *
+ *  Module ............. libbtsystem
+ *  File ............... btcan.h
+ *  Creation Date ...... 24 Mar 2003
+ *  Author ............. Traveler Hauptman
+ *  Addtl Authors ...... Brian Zenowich
+ *                                                                          *
+ *  **********************************************************************  *
+ *                                                                          *
+ *  Note: This file may be linked against a closed-source proprietary
+ *        driver library (libntcan) from esd electronics
+ *        (http://esd-electronics.com) 
+ *                                                                          *
+ *  **********************************************************************  *
+ *                                                                          *
+ *  Copyright (C) 2003-2008 Barrett Technology, Inc. <support@barrett.com>
+ *                          625 Mount Auburn St
+ *                          Cambridge, MA 02138, USA
  *
+ *  All rights reserved.
  *
- *  NOTES:
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
  *
- *  REVISION HISTORY:
- *  24 Mar 2003 - BZ
- *    File created & documented. 
- *  16 Dec 2004 - BZ, SC, TH
- *    Initial port to linux + RTAI
- *                                                                      *
- *======================================================================*/
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY BARRETT TECHNOLOGY, INC AND CONTRIBUTORS
+ *  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL BARRETT
+ *  TECHNOLOGY, INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ *  OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ *  TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+ *  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  The views and conclusions contained in the software and documentation
+ *  are those of the authors and should not be interpreted as representing
+ *  official policies, either expressed or implied, of Barrett Technology.
+ *                                                                          *
+ * ======================================================================== */
+
 /** \file btcan.h
 Handles all communication with the robot over the CAN bus.
     Requires library files "libcan.a" and "libmitop.a".
@@ -292,25 +320,3 @@ int LCTC;
 }
 #endif/* __cplusplus */
 #endif /*_BTCAN_H */
-
-/*======================================================================*
- *                                                                      *
- *          Copyright (c) 2003-2008 Barrett Technology, Inc.            *
- *                        625 Mount Auburn St                           *
- *                    Cambridge, MA  02138,  USA                        *
- *                                                                      *
- *                        All rights reserved.                          *
- *                                                                      *
- *  ******************************************************************  *
- *                            DISCLAIMER                                *
- *                                                                      *
- *  This software and related documentation are provided to you on      *
- *  an as is basis and without warranty of any kind.  No warranties,    *
- *  express or implied, including, without limitation, any warranties   *
- *  of merchantability or fitness for a particular purpose are being    *
- *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
- *  Technology, Inc. be liable for any lost development expenses, lost  *
- *  lost profits, or any incidental, special, or consequential damage.  *
- *======================================================================*/
- 
-

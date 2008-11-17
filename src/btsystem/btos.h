@@ -1,21 +1,46 @@
-
-/*======================================================================*
- *  Module .............libbtsystem
- *  File ...............btos.h
- *  Author .............Traveler Hauptman
- *  Creation Date ......Mar 28, 2005 
- *                                                                      *
- *  ******************************************************************  *
- *                                                                      
- * Copyright (C) 2005   Barrett Technology <support@barrett.com>
+/* ======================================================================== *
+ *  Module ............. libbtsystem
+ *  File ............... btos.h
+ *  Creation Date ...... 28 Mar 2005
+ *  Author ............. Traveler Hauptman
+ *  Addtl Authors ...... Lauren White
+ *                       Brian Zenowich
+ *                                                                          *
+ *  **********************************************************************  *
+ *                                                                          *
+ *  Copyright (C) 2005-2008 Barrett Technology, Inc. <support@barrett.com>
+ *                          625 Mount Auburn St
+ *                          Cambridge, MA 02138, USA
  *
+ *  All rights reserved.
  *
- *  NOTES:                                                              
- *   Operating system abstractions and helpers                       
- *                                                                      
- *  REVISION HISTORY:                                                   
- *                                                                      
- *======================================================================*/
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY BARRETT TECHNOLOGY, INC AND CONTRIBUTORS
+ *  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL BARRETT
+ *  TECHNOLOGY, INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ *  OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ *  TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+ *  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  The views and conclusions contained in the software and documentation
+ *  are those of the authors and should not be interpreted as representing
+ *  official policies, either expressed or implied, of Barrett Technology.
+ *                                                                          *
+ * ======================================================================== */
 
 /** \file btos.h
     \brief Operating system abstractions and helpers.
@@ -297,24 +322,3 @@ void btrt_task_wait_period(void);
 }
 #endif/* __cplusplus */
 #endif/* _SIMPLECONTROL_H */
-
-/*======================================================================*
- *                                                                      *
- *          Copyright (c) 2003-2008 Barrett Technology, Inc.            *
- *                        625 Mount Auburn St                           *
- *                    Cambridge, MA  02138,  USA                        *
- *                                                                      *
- *                        All rights reserved.                          *
- *                                                                      *
- *  ******************************************************************  *
- *                            DISCLAIMER                                *
- *                                                                      *
- *  This software and related documentation are provided to you on      *
- *  an as is basis and without warranty of any kind.  No warranties,    *
- *  express or implied, including, without limitation, any warranties   *
- *  of merchantability or fitness for a particular purpose are being    *
- *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
- *  Technology, Inc. be liable for any lost development expenses, lost  *
- *  lost profits, or any incidental, special, or consequential damage.  *
- *======================================================================*/
- 

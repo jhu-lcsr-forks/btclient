@@ -1,18 +1,45 @@
-/*======================================================================*
- *  Module .............btdiag
- *  File ...............btdiag.c
- *  Author .............Traveler Hauptman
- *                      Brian Zenowich
- *  Creation Date ......14 Oct 2005
- *                                                                      *
- *  ******************************************************************  *
- *                                                                      *
- *  NOTES:
-    This is the primary WAM demo application. It shows off many
-    features of the WAM library.
-    This application is also used for diagnostics and testing.
- *                                                                      *
- *======================================================================*/
+/* ======================================================================== *
+ *  Module ............. btdiag
+ *  File ............... btdiag.c
+ *  Creation Date ...... 14 Oct 2005
+ *  Author ............. Traveler Hauptman
+ *  Addtl Authors ...... Brian Zenowich
+ *                                                                          *
+ *  **********************************************************************  *
+ *                                                                          *
+ *  Copyright (C) 2005-2008 Barrett Technology, Inc. <support@barrett.com>
+ *                          625 Mount Auburn St
+ *                          Cambridge, MA 02138, USA
+ *
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *  1. Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY BARRETT TECHNOLOGY, INC AND CONTRIBUTORS
+ *  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL BARRETT
+ *  TECHNOLOGY, INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ *  OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ *  TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+ *  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  The views and conclusions contained in the software and documentation
+ *  are those of the authors and should not be interpreted as representing
+ *  official policies, either expressed or implied, of Barrett Technology.
+ *                                                                          *
+ * ======================================================================== */
 
 /** \file btdiag.c
     \brief An interactive demo of WAM capabilities.
@@ -20,6 +47,10 @@
     This is a full-featured demo. If the source is intimidating, I suggest
     you start with the examples in the ../../examples directory. You will
     be a WAM code expert in no time!
+ 
+    This is the primary WAM demo application. It shows off many
+    features of the WAM library.
+    This application is also used for diagnostics and testing.
  
 The user can switch between Cartesian space and joint space. The toggle 
 variable is a pointer to the present btstatecontroller.
@@ -1629,24 +1660,3 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       break;
    }
 }
-
-/*======================================================================*
- *                                                                      *
- *          Copyright (c) 2003-2008 Barrett Technology, Inc.            *
- *                        625 Mount Auburn St                           *
- *                    Cambridge, MA  02138,  USA                        *
- *                                                                      *
- *                        All rights reserved.                          *
- *                                                                      *
- *  ******************************************************************  *
- *                            DISCLAIMER                                *
- *                                                                      *
- *  This software and related documentation are provided to you on      *
- *  an as is basis and without warranty of any kind.  No warranties,    *
- *  express or implied, including, without limitation, any warranties   *
- *  of merchantability or fitness for a particular purpose are being    *
- *  provided by Barrett Technology, Inc.  In no event shall Barrett     *
- *  Technology, Inc. be liable for any lost development expenses, lost  *
- *  lost profits, or any incidental, special, or consequential damage.  *
- *======================================================================*/
- 
