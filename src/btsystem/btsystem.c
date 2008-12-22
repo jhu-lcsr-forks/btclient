@@ -689,8 +689,8 @@ void GetPositions(int bus)
 
       /* Check for a valid value */
       if(newPosition != 0x80000000) {
-         /* Check for a sane value, 200 cts/ms is the limit */
-         if(abs(newPosition - act[idx].puck.position) < 1000) {
+         /* Check for a sane value, 1/4 rev / cycle is the limit */
+         if(labs(newPosition - act[idx].puck.position) < (act[idx].motor.counts_per_rev / 4)) {
             act[idx].puck.position = newPosition;
          } else {
             insanePos[act[idx].puck.ID]++;

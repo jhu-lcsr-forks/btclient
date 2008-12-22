@@ -895,8 +895,16 @@ void WAMControlThread(void *data)
       /* Evaluate the Forward Kinematics */
       eval_fk_bot(&wam->robot);
 
-      /* Evaluate the Forward Jacobian (and mass matrix) */
-      eval_fj_bot(&wam->robot);
+      /* Evaluate the Forward Jacobian (and mass matrix)
+       * Note - since these calculations are not needed for gravity
+       * compensation, basic joint-space or Cartesian-space control, or
+       * teach & play, they are left out of the control loop by default.
+       * These calculations take approximately 1100 us to compute on the
+       * WAM's internal PC104 computer, limiting the control loop rate to
+       * ~450Hz.  With this line disabled, control loop frequency is 750Hz.
+       * For a faster control frequency, use an external WAM PC,
+       * capable of a 1kHz control loop. */
+      /*eval_fj_bot(&wam->robot);*/
 
       /* Evaluate the Forward Dynamics */
       eval_fd_bot(&wam->robot);
