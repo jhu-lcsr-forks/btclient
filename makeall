@@ -24,10 +24,6 @@ cd ../calibrate
 make clean
 make
 
-cd ../autotension
-make clean
-make
-
 # Make each example
 cd ../../examples/ex1-jointposition
 make clean
