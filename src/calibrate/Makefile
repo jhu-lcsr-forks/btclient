@@ -14,7 +14,7 @@ calibrate: ${OBJS}
 	$(CC) -o ${TARG} ${OBJS} ${LDFLAGS}
   
 clean:
-	rm *.o ${TARG} 
+	rm -f *.o ${TARG} 
 
 system:
 	$(MAKE) -C ../btsystem lib

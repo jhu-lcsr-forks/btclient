@@ -26,7 +26,7 @@ slib: ${LIB_OBJS}
 	${CC} -g ${LDFLAGS} -shared -o ${SLIB_TARG} ${LIB_OBJS}
    
 clean: 
-	rm *.o ${LIB_TARG} $(PATH_INSTALL_LIB)/${LIB_TARG}
+	rm -f *.o ${LIB_TARG} $(PATH_INSTALL_LIB)/${LIB_TARG}
    
 install:
 	cp $(LIB_TARG) $(PATH_INSTALL_LIB)

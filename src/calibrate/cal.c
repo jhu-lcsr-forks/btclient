@@ -203,6 +203,7 @@ int main(int argc, char **argv)
 
 /* ------------------------------------------------------------------------ *
  * Things common to all calibration modes                                   */
+int ignore_calibration;
 btrt_thread_struct can_thd, wam_thd;
 wam_struct * wam;
 int startDone;
@@ -228,7 +229,12 @@ void can_thd_function(void *thd)
    }
     
    /* Initialize and get a handle to the robot on the first bus */
-   if((wam = OpenWAM("../../wam.conf", 0)) == NULL){
+   if (ignore_calibration)
+      wam = OpenWAM("*../../wam.conf", 0);
+   else
+      wam = OpenWAM("../../wam.conf", 0);   
+   if(!wam)
+   {
       syslog(LOG_ERR, "OpenWAM failed");
       exit(1);
    }
@@ -338,6 +344,7 @@ int do_mode_zero()
    
    /* Spin off the CAN thread */
    startDone = 0;
+   ignore_calibration = 1;
    btrt_thread_create(&can_thd,"can",45,(void*)can_thd_function,NULL);
    while (!startDone) usleep(10000);
    
@@ -781,6 +788,7 @@ int do_mode_mu()
    
    /* Spin off the CAN thread */
    startDone = 0;
+   ignore_calibration = 0;
    btrt_thread_create(&can_thd,"can",45,(void*)can_thd_function,NULL);
    while (!startDone) usleep(10000);
    

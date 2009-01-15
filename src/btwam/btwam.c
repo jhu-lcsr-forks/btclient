@@ -223,6 +223,13 @@ void InitVectors(wam_struct *wam)
  
   This function may kill the process using exit() if it runs into problems.
   
+  Note: if the filename begins with an asterisk character (*), OpenWAM
+  will ignore the calibration value "zeromag" in the configuration file.
+  This used primarily from the calibration program itself, to ignore
+  an existing calibration.  If you must begin your filename with an asterisk,
+  you must escape it; for example, OpenWAM("\*wam.conf",0) will open the
+  file named "*wam.conf".
+  
   \param fn WAM configuration filename
   \param bus Index into the bus data structure ("System" order in wam.conf)
   \retval NULL Some error occured during initialization. Check /var/log/syslog.
@@ -241,8 +248,8 @@ wam_struct* OpenWAM(char *fn, int bus)
    int            actcnt = 0;
    vect_3         tmp_v3;
    char           thd_maintname[5];
-
-
+   int            ignore_calibration;
+   
    /* Normally, you should use init_local_vn() for this, but in this case
       we want a vect_3 structure without assigning the data pointer (it will
       be assigned later).
@@ -253,6 +260,18 @@ wam_struct* OpenWAM(char *fn, int bus)
    if(!*fn) { 
       strcpy(key, "wam.conf"); // Default to wam.conf
       fn = key;
+   }
+   
+   /* Check for * at the beginning of the filename (to ignore calibration) */
+   ignore_calibration = 0;
+   if (fn[0] == '*')
+   {
+      ignore_calibration = 1;
+      fn++;
+   }
+   else if (fn[0] == '\\' && fn[1] == '*')
+   {
+      fn++;
    }
    
    // Parse config file
@@ -546,7 +565,7 @@ wam_struct* OpenWAM(char *fn, int bus)
       zeromag = new_vn(wam->dof);
       sprintf(key, "%s.zeromag", wam->name);
       err = parseGetVal(VECTOR, key, zeromag);
-      if (err)
+      if (ignore_calibration || err)
       {
          /* No zeromag entry ... fall back to default*/
          DefineWAMpos(wam, wam->park_location);
