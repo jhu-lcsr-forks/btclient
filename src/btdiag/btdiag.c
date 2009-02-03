@@ -301,8 +301,8 @@ void Startup(void *thd){
           */
           
          setProperty(i, 1, MT, FALSE, 4860); // Cable limit = 4860
-         setProperty(i, 2, MT, FALSE, 7500); // Cable limit = 4860
-         setProperty(i, 3, MT, FALSE, 7500); // Cable limit = 4860
+         setProperty(i, 2, MT, FALSE, 4860); // Cable limit = 4860
+         setProperty(i, 3, MT, FALSE, 4860); // Cable limit = 4860
          setProperty(i, 4, MT, FALSE, 4320); // Cable limit = 4320
          setProperty(i, 5, MT, FALSE, 3900); // Cable limit = 3900
          setProperty(i, 6, MT, FALSE, 3900); // Cable limit = 3900
