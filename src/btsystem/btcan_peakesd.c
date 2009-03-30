@@ -124,7 +124,7 @@ typedef unsigned long DWORD;
 *==============================*/
 HANDLE        canDev[MAX_BUS]; // typedef int HANDLE (ntcan.h)
 btrt_mutex    commMutex[MAX_BUS];
-int accept[MAX_FILTERS];
+int can_accept[MAX_FILTERS];
 int mask[MAX_FILTERS];
 
 /* keyword, index, readFunction, writeFunction, defaultVal, type */
@@ -384,9 +384,9 @@ int initCAN(int bus, int port)
 #endif
 
    // Mask 3E0: 0000 0011 1110 0000
-   accept[0] = 0x0000; mask[0] = 0x03E0;
-   accept[1] = 0x0403; mask[1] = 0x03E0;
-   accept[2] = 0x0406; mask[2] = 0x03E0;
+   can_accept[0] = 0x0000; mask[0] = 0x03E0;
+   can_accept[1] = 0x0403; mask[1] = 0x03E0;
+   can_accept[2] = 0x0406; mask[2] = 0x03E0;
    //allowMessage(bus, 0x0000, 0x03E0); // Messages sent directly to host
    //allowMessage(bus, 0x0403, 0x03E0); // Group 3 messages
    //allowMessage(bus, 0x0406, 0x03E0); // Group 6 messages
@@ -434,7 +434,7 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
          retvalue = LINUX_CAN_Read(canDev[bus], &msg);
          /* Apply private acceptance filter 
          for(i = 0; i < MAX_FILTERS; i++){
-            if((msg.Msg.ID & ~mask[i]) == accept[i]){
+            if((msg.Msg.ID & ~mask[i]) == can_accept[i]){
                filterOK = 1;
             }
          }*/
@@ -479,7 +479,7 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
          retvalue = canRead(canDev[bus], &msg, &msgCt, NULL);
          /* Apply private acceptance filter 
          for(i = 0; i < MAX_FILTERS; i++){
-            if((msg.id & ~mask[i]) == accept[i]){
+            if((msg.id & ~mask[i]) == can_accept[i]){
                filterOK = 1;
             }
          }*/
