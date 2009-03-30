@@ -476,7 +476,7 @@ void Startup(void *thd){
    serialSetBaud(&p, 9600);
    
    if(argc > 1){
-      getBusStatus(0, status);
+      //getBusStatus(0, status);
       handleMenu(argc, argv);
    } else {
       /* Initialize the ncurses screen library */
@@ -496,7 +496,7 @@ void Startup(void *thd){
       for(i = 0; i < MAX_WATCH; i++)
          watch[i].puckID = 0;
       //enumeratePucks(NULL);
-      getBusStatus(0, status);
+      //getBusStatus(0, status);
       
       while (!done) {
          /* Check and handle user keypress */
@@ -775,9 +775,9 @@ int firmwareDL(int id, char *fn)
       return(1);
    }
    
-   setPropertySlow(0, id, STAT, FALSE, 0L); // Reset
+   setPropertySlow(0, id, 5, FALSE, 0L); // Reset
    usleep(1000000); // Wait a sec
-   setPropertySlow(0, id, VERS, FALSE, 0x000000AA);
+   setPropertySlow(0, id, 0, FALSE, 0x000000AA);
    // For each line in the file
    //sendData[0] = 0x80 | VERS;
    //sendData[1] = 0x00;
@@ -967,21 +967,21 @@ void paramDefaults(int newID,int targID)
 
 void changeID(int oldID, int newID, int role)
 {
-   wakePuck(0,oldID);
+   //wakePuck(0,oldID);
    //syslog(LOG_ERR, "_LOCK=%d", _LOCK);
-   setPropertySlow(0, oldID, _LOCK, 0, 18384); 
-   setPropertySlow(0, oldID, _LOCK, 0, 23); 
-   setPropertySlow(0, oldID, _LOCK, 0, 3145); 
-   setPropertySlow(0, oldID, _LOCK, 0, 1024); 
-   setPropertySlow(0, oldID, _LOCK, 0, 1); 
+   setPropertySlow(0, oldID, 8, 0, 18384); 
+   setPropertySlow(0, oldID, 8, 0, 23); 
+   setPropertySlow(0, oldID, 8, 0, 3145); 
+   setPropertySlow(0, oldID, 8, 0, 1024); 
+   setPropertySlow(0, oldID, 8, 0, 1); 
    if(role >= 0){
-      setPropertySlow(0, oldID, ROLE, 0, role); 
-      setPropertySlow(0, oldID, SAVE, 0, ROLE); usleep(5000000);
+      setPropertySlow(0, oldID, 1, 0, role); 
+      setPropertySlow(0, oldID, 9, 0, 1); usleep(5000000);
    }
-   setPropertySlow(0, oldID, ID, 0, newID); 
-   setPropertySlow(0, oldID, SAVE, 0, ID); usleep(5000000);
+   setPropertySlow(0, oldID, 3, 0, newID); 
+   setPropertySlow(0, oldID, 9, 0, 3); usleep(5000000);
    
-   setPropertySlow(0, oldID, STAT, 0, STATUS_RESET);
+   setPropertySlow(0, oldID, 5, 0, STATUS_RESET);
 }
 
 void setMofst(int newID)
@@ -1001,7 +1001,7 @@ void setMofst(int newID)
    
    // Get a valid IOFST
    #define IOFST_MIN (1950)
-   #define IOFST_MAX (2160)
+   #define IOFST_MAX (2180)
    #define IOFST_STDEV (3)
    
    // Collect stats
