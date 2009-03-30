@@ -336,7 +336,7 @@ void checkHalls(int arg1){
       reply = (reply >> 8) & 0x00000007;
       if(reply != vers){
          printf("%d, ", vers = reply);
-	 fflush(stdout);
+         fflush(stdout);
       }
       getProperty(0, arg1, AP, &reply);
       if(abs(reply-startPos) > cts)
@@ -360,15 +360,15 @@ cableTension(int motor){
    // Set the default tension
    // Comment out this section to enter your own values
    switch(motor){
-	   case 1: case 2: case 3: 
-		   nm = 0.9;
-	break;
-	   case 4:
-		nm = 0.8;
-		break;
-	   case 5: case 6:
-	nm = 0.3;
-	break;
+      case 1: case 2: case 3: 
+         nm = 0.9;
+         break;
+      case 4:
+         nm = 0.8;
+         break;
+      case 5: case 6:
+         nm = 0.3;
+         break;
    }
 
    //printf("\nTension Cable\nTension which motor: ");
@@ -380,12 +380,12 @@ cableTension(int motor){
    scanf("%lf", &nm);
    }
    switch(motor){
-	   case 1: case 2: case 3: case 4:
-		   tens = nm * 2700;
-	break;
-	   case 5: case 6:
-	tens = nm * 5000;
-	break;
+      case 1: case 2: case 3: case 4:
+         tens = nm * 2700;
+         break;
+      case 5: case 6:
+         tens = nm * 5000;
+         break;
    }
    
    setPropertySlow(0,GROUPID(0),MODE,FALSE,MODE_TORQUE);
@@ -515,9 +515,9 @@ void Startup(void *thd){
 }
 
 void Cleanup(){
-	/* Exit the CANbus thread gracefully */
-	StartupThread.done = 1;
-	exit(0);
+   /* Exit the CANbus thread gracefully */
+   StartupThread.done = 1;
+   exit(0);
 }
 
 
@@ -791,9 +791,9 @@ int firmwareDL(int id, char *fn)
       mvprintw(entryLine, 1, "Download progress: %d%%", (int)(100.0 * lineCt / lineTotal));
 
       }else{
-	      printf("\rDownload progress: %d%%   ", (int)(100.0 * lineCt /
-				      lineTotal));
-	      fflush(stdout);
+         printf("\rDownload progress: %d%%   ", (int)(100.0 * lineCt /
+               lineTotal));
+         fflush(stdout);
       }
       while(line[i] >= '0') {
          // Wait for n "Get VERS"
@@ -811,7 +811,7 @@ int firmwareDL(int id, char *fn)
    if(curses)
    mvprintw(entryLine, 1, "Download complete!               ");
    else
-	   printf("\nDownload complete!   ");
+      printf("\nDownload complete!   ");
    
    return(0);
 }
@@ -968,12 +968,14 @@ void paramDefaults(int newID,int targID)
 /* changeID for Puck Monitor vers 5+ */
 void changeID(int oldID, int newID, int role)
 {
+   int _LOCK, _SAVE;
+   
    setPropertySlow(0, oldID, 5, 0, 0); /* RESET back to Monitor */ 
    usleep(2000000); /* Wait 2s */ 
     
    if(oldID == 10){ /* Safety puck's LOCK/SAVE commands are different */ 
       _LOCK = 13; _SAVE = 30; 
-   else 
+   }else{ 
       _LOCK = 8; _SAVE = 9; 
    } 
    /* Unlock the ID/ROLE for writing */ 
@@ -1016,20 +1018,20 @@ void setMofst(int newID)
    #define IOFST_STDEV (3)
    
    // Collect stats
-	sumX = sumX2 = 0;
-	max = -2E9;
-	min = +2E9;
-	for(i = 0; i < samples; i++){
-		setPropertySlow(0,newID,FIND,0,IOFST);
+   sumX = sumX2 = 0;
+   max = -2E9;
+   min = +2E9;
+   for(i = 0; i < samples; i++){
+      setPropertySlow(0,newID,FIND,0,IOFST);
       getProperty(0,newID,IOFST,&dat);
-		if(dat > max) max = dat;
-		if(dat < min) min = dat;
-		sumX += dat;
-		sumX2 += dat * dat;
+      if(dat > max) max = dat;
+      if(dat < min) min = dat;
+      sumX += dat;
+      sumX2 += dat * dat;
       usleep(1000000/16);
-	}
-	mean = 1.0 * sumX / samples;
-	stdev = sqrt((1.0 * samples * sumX2 - sumX * sumX) / (samples * samples - samples));
+   }
+   mean = 1.0 * sumX / samples;
+   stdev = sqrt((1.0 * samples * sumX2 - sumX * sumX) / (samples * samples - samples));
    printf("\nMIN IOFST = %ld", min);
    if(min < IOFST_MIN){
       printf(" -- FAIL");
@@ -1040,8 +1042,8 @@ void setMofst(int newID)
       printf(" -- FAIL");
       ++err;
    }
-	printf("\nMEAN IOFST = %.2f", mean);
-	printf("\nSTDEV IOFST = %.2f", stdev);
+   printf("\nMEAN IOFST = %.2f", mean);
+   printf("\nSTDEV IOFST = %.2f", stdev);
    if(stdev > IOFST_STDEV){
       printf(" -- FAIL");
       ++err;
@@ -1516,7 +1518,7 @@ int BHFirmwareDL(char *fname)
    printf( "\nPower up the hand to begin download...\n" );
    
    /* Turn on the hand power via the parallel port ...*/
-   outb((unsigned char)0x05, 0x378); 	// Output Data to the Parallel Port
+   outb((unsigned char)0x05, 0x378); // Output Data to the Parallel Port
    
    while ( Read() != ':' && errcnt<50) {
       errcnt++; //Wait for RESET
@@ -1613,7 +1615,7 @@ int BHandDL(void)
    /* Turn off power via the parallel port (will be re-enabled in BHFirmwareDL())*/
    if (ioperm(0x378,1,1)) 
          fprintf(stderr, "ERROR: Can't gain access to parallel port\n"), exit(1);
-   outb((unsigned char)0x00, 0x378); 	// Output Data to the Parallel Port
+   outb((unsigned char)0x00, 0x378); // Output Data to the Parallel Port
    sleep(3);
 
    if(err = BHFirmwareDL(fn)) {
