@@ -496,7 +496,7 @@ void Startup(void *thd){
       for(i = 0; i < MAX_WATCH; i++)
          watch[i].puckID = 0;
       //enumeratePucks(NULL);
-      //getBusStatus(0, status);
+      getBusStatus(0, status);
       
       while (!done) {
          /* Check and handle user keypress */
@@ -965,22 +965,33 @@ void paramDefaults(int newID,int targID)
 
 }
 
+/* changeID for Puck Monitor vers 5+ */
 void changeID(int oldID, int newID, int role)
 {
-   //wakePuck(0,oldID);
-   //syslog(LOG_ERR, "_LOCK=%d", _LOCK);
-   setPropertySlow(0, oldID, 8, 0, 18384); 
-   setPropertySlow(0, oldID, 8, 0, 23); 
-   setPropertySlow(0, oldID, 8, 0, 3145); 
-   setPropertySlow(0, oldID, 8, 0, 1024); 
-   setPropertySlow(0, oldID, 8, 0, 1); 
+   setPropertySlow(0, oldID, 5, 0, 0); /* RESET back to Monitor */ 
+   usleep(2000000); /* Wait 2s */ 
+    
+   if(oldID == 10){ /* Safety puck's LOCK/SAVE commands are different */ 
+      _LOCK = 13; _SAVE = 30; 
+   else 
+      _LOCK = 8; _SAVE = 9; 
+   } 
+   /* Unlock the ID/ROLE for writing */ 
+   setPropertySlow(0, oldID, _LOCK, 0, 18384);  
+   setPropertySlow(0, oldID, _LOCK, 0, 23);  
+   setPropertySlow(0, oldID, _LOCK, 0, 3145);  
+   setPropertySlow(0, oldID, _LOCK, 0, 1024);  
+   setPropertySlow(0, oldID, _LOCK, 0, 1);  
+    
+   /* Set the ROLE */
    if(role >= 0){
       setPropertySlow(0, oldID, 1, 0, role); 
-      setPropertySlow(0, oldID, 9, 0, 1); usleep(5000000);
-   }
-   setPropertySlow(0, oldID, 3, 0, newID); 
-   setPropertySlow(0, oldID, 9, 0, 3); usleep(5000000);
-   
+      setPropertySlow(0, oldID, _SAVE, 0, 1); usleep(2000000); 
+ 	} 
+ 	setPropertySlow(0, oldID, 3, 0, newID); /* Set the new ID */ 
+ 	setPropertySlow(0, oldID, _SAVE, 0, 3); usleep(2000000); /* Save the new values to EEPROM */ 
+ 	 
+ 	/* Reset to load the new ID */
    setPropertySlow(0, oldID, 5, 0, STATUS_RESET);
 }
 
@@ -1162,6 +1173,13 @@ void handleMenu(int argc, char **argv)
    while(*c == '-') c++;
    *c = toupper(*c);
    
+   switch(*c) { /* Only getBusStatus if not BHandDL, PuckDL, PuckID, or Quit */ 
+ 	case 'B': case 'D': case 'I': case 'Q': 
+ 	break; 
+ 	default: 
+ 	   getBusStatus(0, status); 
+ 	} 
+   
    switch(*c) {
    case 'H':
       printf("\n\nCheck hall feedback on motor: ");
@@ -1203,7 +1221,7 @@ void handleMenu(int argc, char **argv)
       break;
    case 'E':
       printf("\n\nCAN bus enumeration (status)\n");
-      getBusStatus(0, status);
+      //getBusStatus(0, status);
       for(i = 0; i < MAX_NODES; i++) {
          if(status[i]>=0) {
             getProperty(0,i,VERS,&vers);
