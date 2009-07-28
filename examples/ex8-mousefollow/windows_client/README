@@ -1,0 +1,4 @@
+Notes for btclient's ex8-mousefollow windows_client program:
+
+This program is built in Linux using mingw32. In Ubuntu 9.04, this is
+provided by the mingw32, mingw32-runtime, and mingw32-binutils packages.
