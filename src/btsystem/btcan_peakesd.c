@@ -936,13 +936,9 @@ int parseMessage(
       *property = messageData[0] & 0x7F;
       //syslog(LOG_ERR, "Received property: %d", *property);
       /* Store the value, second byte of message is zero (for DSP word alignment) */
-      *value = 0;
-      for (i = 0; i < len - 2; i++)
-         *value |= ((unsigned long)messageData[i + 2] << (i * 8))
-                   & (0x000000FF << (i * 8));
-
-      if (*value & (1 << ((i*8) - 1)))
-         *value |= 0xFFFFFFFF << (i * 8); /* Sign extend the value */
+      *value = messageData[len-1] & 0x80 ? -1L : 0;
+      for (i = len-1; i >= 2; i--)
+         *value = *value << 8 | messageData[i];
 
       //syslog(LOG_ERR, "Received normal set property: %d from node: %d value:%d", *property, *node, *value);
       //syslog(LOG_ERR,"parsemessage after %d",value);
