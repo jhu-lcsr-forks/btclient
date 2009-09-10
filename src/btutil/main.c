@@ -1000,7 +1000,7 @@ void changeID(int oldID, int newID, int role)
 void setMofst(int newID)
 {
    long dat, vers;
-   int dummy, i, samples = 16;
+   int dummy, i, samples = 1024;
    
    long max, min;
    double sumX, sumX2, mean, stdev;
@@ -1015,7 +1015,7 @@ void setMofst(int newID)
    // Get a valid IOFST
    #define IOFST_MIN (1950)
    #define IOFST_MAX (2180)
-   #define IOFST_STDEV (3)
+   #define IOFST_STDEV (1.5)
    
    // Collect stats
    sumX = sumX2 = 0;
@@ -1028,7 +1028,7 @@ void setMofst(int newID)
       if(dat < min) min = dat;
       sumX += dat;
       sumX2 += dat * dat;
-      usleep(1000000/16);
+      usleep(1000000/samples);
    }
    mean = 1.0 * sumX / samples;
    stdev = sqrt((1.0 * samples * sumX2 - sumX * sumX) / (samples * samples - samples));
