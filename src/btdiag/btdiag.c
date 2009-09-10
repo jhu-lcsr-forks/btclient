@@ -180,6 +180,8 @@ int startDone = FALSE;
 btrt_thread_struct  StartupThread;
 btrt_thread_struct  event_thd;
 
+extern long jointPosition[];
+
 #if 0
 vectray *vr;
 via_trj_array **vta = NULL,*vt_j = NULL,*vt_c = NULL;
@@ -242,6 +244,13 @@ void Cleanup(){
       //btrt_thread_exit(&wamData[i].wam_thd); // Delete task
    }
    usleep(10000);
+   
+   /* Close the log file */
+   CloseDL(&(wam[0]->log));
+   
+   /* Decode the file from binary->text */
+   DecodeDL("datafile.dat", "dat.csv", 1);
+   
    CloseSystem(); // Free the actuator memory and CAN device(s)
    StartupThread.done = 1;
    //btrt_thread_stop(&StartupThread);
@@ -614,7 +623,7 @@ void MainEventThread(void *thd){
             }
          }
       } 
-      
+#if 0
       /* If there is an obstruction, pause the WAM playback */
       for(i = 0; i < busCount; i++){
          for(cnt=0;cnt<wam[i]->dof;cnt++){
@@ -635,7 +644,7 @@ void MainEventThread(void *thd){
          /* double-break if we've paused */
          if (cnt != wam[i]->dof) break;
       } 
-      
+#endif     
       /* Sleep for 0.1s. This roughly defines the event loop frequency */
       usleep(100000);
    }
@@ -722,6 +731,32 @@ int main(int argc, char **argv)
    btrt_thread_create(&StartupThread, "StTT", 45, (void*)Startup, NULL);
    while(!startDone)
       usleep(10000);
+   
+   /* NOTE: Buffer dumps are handled by the WAMMaintenanceThread() which is spun
+    * off inside OpenWAM(). Buffer data is recorded automatically from the 
+    * WAMControlThread()'s TriggerDL() function call.
+    */
+    
+   /* Configure the logDivider: 1 = every control cycle, 2 = every other cycle, etc. */
+   wam[0]->logDivider = 1;
+   
+   /* Prepare the datalogger with the max number of btreal fields per record */
+   PrepDL(&(wam[0]->log), 35);
+   
+   /* Add a pointers to some data to log */
+   /* NOTE: log_time begins counting seconds when the WAMControlThread() is started */
+   AddDataDL(&(wam[0]->log), &(wam[0]->log_time), sizeof(double), BTLOG_DOUBLE, "Time(s)");
+   AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Jpos),sizeof(btreal) * len_vn((vect_n*)wam[0]->Jpos), BTLOG_BTREAL,"Jpos(rad)");
+   AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Mpos),sizeof(btreal) * len_vn((vect_n*)wam[0]->Mpos), BTLOG_BTREAL,"Mpos(rad)");
+   AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Jtrq),sizeof(btreal) * len_vn((vect_n*)wam[0]->Jtrq), BTLOG_BTREAL,"Jtrq(rad)");
+   AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Mtrq),sizeof(btreal) * len_vn((vect_n*)wam[0]->Mtrq), BTLOG_BTREAL,"Mtrq(rad)");
+   AddDataDL(&(wam[0]->log), (void*)(jointPosition+1), sizeof(long) * len_vn((vect_n*)wam[0]->Mtrq), BTLOG_LONG, "JointEncoder(cts)");
+
+   /* Initialize the datalogging buffer size and output file.
+    * Once the buffer is full, the data is written to disk. Datalogging continues
+    * even as the buffer is being written out.
+    */
+   InitDL(&(wam[0]->log), 1000, "datafile.dat");
    
    cdest = new_mh();
    RxRyRz = new_v3();
@@ -1049,6 +1084,9 @@ void RenderMAIN_SCREEN()
       ++line;
       */
 
+	  mvprintw(line, 0, "J Encoder  : <%ld, %ld, %ld, %ld> ", 
+	  	jointPosition[1], jointPosition[2], jointPosition[3], jointPosition[4]);
+      line+=1;
       mvprintw(line, 0, "J Position : %s ", sprint_vn(vect_buf1, wam[cnt]->Jpos));
       line+=1;
       mvprintw(line, 0, "J Torque   : %s ", sprint_vn(vect_buf1, wam[cnt]->Jtrq));

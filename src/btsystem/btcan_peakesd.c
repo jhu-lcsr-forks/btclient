@@ -126,6 +126,7 @@ HANDLE        canDev[MAX_BUS]; // typedef int HANDLE (ntcan.h)
 btrt_mutex    commMutex[MAX_BUS];
 int can_accept[MAX_FILTERS];
 int mask[MAX_FILTERS];
+long jointPosition[32];
 
 /* keyword, index, readFunction, writeFunction, defaultVal, type */
 const int dataType[]=
@@ -925,11 +926,20 @@ int parseMessage(
       *value |= ( (long)messageData[0] << 16) & 0x003F0000;
       *value |= ( (long)messageData[1] << 8 ) & 0x0000FF00;
       *value |= ( (long)messageData[2] ) & 0x000000FF;
-
+      
       if (*value & 0x00200000) /* If negative */
          *value |= 0xFFC00000; /* Sign-extend */
 
       *property = AP;
+      
+      jointPosition[*node] = 0;
+      jointPosition[*node] |= ( (long)messageData[3] << 16) & 0x003F0000;
+      jointPosition[*node] |= ( (long)messageData[4] << 8 ) & 0x0000FF00;
+      jointPosition[*node] |= ( (long)messageData[5] ) & 0x000000FF;
+      
+      if (jointPosition[*node] & 0x00200000) /* If negative */
+         jointPosition[*node] |= 0xFFC00000; /* Sign-extend */
+        
       //syslog(LOG_ERR,"Received packed set property: %d from node: %d value:%d",*property,*node,*value);
       break;
    case 2:  /* Data is normal, SET */
