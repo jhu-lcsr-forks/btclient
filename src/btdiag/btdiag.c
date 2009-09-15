@@ -1084,9 +1084,9 @@ void RenderMAIN_SCREEN()
       ++line;
       */
 
-	  mvprintw(line, 0, "J Encoder  : <%ld, %ld, %ld, %ld> ", 
-	  	jointPosition[1], jointPosition[2], jointPosition[3], jointPosition[4]);
-      line+=1;
+	  //mvprintw(line, 0, "J Encoder  : <%ld, %ld, %ld, %ld> ", 
+	  	//jointPosition[1], jointPosition[2], jointPosition[3], jointPosition[4]);
+      //line+=1;
       mvprintw(line, 0, "J Position : %s ", sprint_vn(vect_buf1, wam[cnt]->Jpos));
       line+=1;
       mvprintw(line, 0, "J Torque   : %s ", sprint_vn(vect_buf1, wam[cnt]->Jtrq));
