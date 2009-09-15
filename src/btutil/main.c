@@ -1015,7 +1015,7 @@ void setMofst(int newID)
    // Get a valid IOFST
    #define IOFST_MIN (1950)
    #define IOFST_MAX (2180)
-   #define IOFST_STDEV (1.5)
+   #define IOFST_STDEV (5.0)
    
    // Collect stats
    sumX = sumX2 = 0;
