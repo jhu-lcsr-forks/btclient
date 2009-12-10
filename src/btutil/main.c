@@ -442,7 +442,7 @@ void ProcessWatch(void){
    long value;
    
    canClearMsg(0); 
-   clearScreen();
+   //clearScreen();
    for(i = 0; i < MAX_WATCH; i++){
       if(watch[i].puckID){
          getProperty(0, watch[i].puckID, watch[i].prop, &value);
@@ -1176,6 +1176,57 @@ getParams(int newID)
    printf("41 = %ld\n",reply);
 }
 
+/* Command enumeration. Append only. */
+enum {
+	CMD_LOAD, CMD_SAVE,	CMD_RESET, CMD_DEF, CMD_GET, CMD_FIND, CMD_SET, CMD_HOME,	
+	CMD_KEEP, CMD_LOOP, CMD_PASS, CMD_VERS, CMD_ERR, CMD_HI, CMD_IC, CMD_IO,
+	CMD_TC, CMD_TO, CMD_C, CMD_M, CMD_O, CMD_T, CMD_HELP, CMD_END
+};
+
+void cycleHand(void){
+	int err;
+	int id_in, len_in;
+	char data[8];
+	int bus = 0;
+	
+	wakePuck(0, 11);
+	wakePuck(0, 12);
+	wakePuck(0, 13);
+	wakePuck(0, 14);
+	
+	setPropertySlow(0,11,CMD,0,CMD_HI);
+	setPropertySlow(0,12,CMD,0,CMD_HI);
+	setPropertySlow(0,13,CMD,0,CMD_HI);
+	setPropertySlow(0,14,CMD,0,CMD_HI);
+	
+	while(1){
+		canClearMsg(0);
+		setPropertySlow(0,11,CMD,0,CMD_C);
+		setPropertySlow(0,12,CMD,0,CMD_C);
+		setPropertySlow(0,13,CMD,0,CMD_C);
+		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
+		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
+		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
+		
+		canClearMsg(0);
+		setPropertySlow(0,11,CMD,0,CMD_O);
+		setPropertySlow(0,12,CMD,0,CMD_O);
+		setPropertySlow(0,13,CMD,0,CMD_O);
+		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
+		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
+		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
+		
+		canClearMsg(0);
+		setPropertySlow(0,14,CMD,0,CMD_C);
+		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
+		
+		canClearMsg(0);
+		setPropertySlow(0,14,CMD,0,CMD_O);
+		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
+	}
+	
+}
+
 void handleMenu(int argc, char **argv)
 {
    long        status[MAX_NODES];
@@ -1233,6 +1284,7 @@ void handleMenu(int argc, char **argv)
       break;
 
    case 'C':
+      cycleHand();
       //calibrateGimbals();
       break;
    case 'E':
