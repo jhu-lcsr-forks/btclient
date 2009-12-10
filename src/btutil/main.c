@@ -441,10 +441,12 @@ void ProcessWatch(void){
    int i;
    long value;
    
+   canClearMsg(0); 
+   clearScreen();
    for(i = 0; i < MAX_WATCH; i++){
       if(watch[i].puckID){
          getProperty(0, watch[i].puckID, watch[i].prop, &value);
-         mvprintw(watchY+i, watchX + 2, "ID=%d   PROP=%d   VAL=%ld            ", 
+         mvprintw(watchY+i, watchX + 2, "ID=%d   PROP=%d   VAL=%ld", 
             watch[i].puckID, watch[i].prop, value);
       }
    }
@@ -504,7 +506,7 @@ void Startup(void *thd){
             ProcessInput(chr);
          ProcessWatch();
          
-         usleep(100000); // Sleep for 0.1s
+         usleep(1000); // Sleep for 0.1s
       }
    }
    
@@ -867,12 +869,13 @@ void paramDefaults(int newID,int targID)
    
    switch(role & 0x00FF){
       case ROLE_TATER:
-      for(i = 0; taterDefs[i].key; i++){
-         setPropertySlow(0, newID, *taterDefs[i].key, 0, taterDefs[i].val);
-         
+      if(targID >= 1 && targID <= 7) { // WAM pucks
+		  for(i = 0; taterDefs[i].key; i++){
+			 setPropertySlow(0, newID, *taterDefs[i].key, 0, taterDefs[i].val);
+		  }
       }
-      if(role & 0x0100)
-         setPropertySlow(0, newID, CTS, 0, 4096); 
+      //if(role & 0x0100)
+      //   setPropertySlow(0, newID, CTS, 0, 4096); 
       
       if(targID <= 4) { //4DOF
          setPropertySlow(0,newID,IKCOR,0,1638); 
@@ -886,9 +889,9 @@ void paramDefaults(int newID,int targID)
          setPropertySlow(0,newID,GRPC,0,4); 
    
       } else if(targID <= 7) { //Wrist
-         setPropertySlow(0,newID,IKCOR,0,819); 
-         setPropertySlow(0,newID,IKP,0,4096); 
-         setPropertySlow(0,newID,IKI,0,819); 
+         setPropertySlow(0,newID,IKCOR,0,102); 
+         setPropertySlow(0,newID,IKP,0,500); 
+         setPropertySlow(0,newID,IKI,0,204); 
          setPropertySlow(0,newID,GRPA,0,0); 
          setPropertySlow(0,newID,GRPB,0,2); 
          setPropertySlow(0,newID,GRPC,0,5); 
@@ -900,6 +903,17 @@ void paramDefaults(int newID,int targID)
             setPropertySlow(0,newID,IPNM,0,17474); 
             setPropertySlow(0,newID,POLES,0,6); 
          }
+      }
+      
+      if(targID >= 11 && targID <= 14){ // BH8-280
+		  for(i = 0; bh8Defs[i].key; i++){
+			 setPropertySlow(0, newID, *bh8Defs[i].key, 0, bh8Defs[i].val);
+		  }
+		  if(targID = 14) { // Spread on BH8-280
+			  setPropertySlow(0,newID,CT,0,-35950); 
+			  setPropertySlow(0,newID,DP,0,-17975); 
+			  setPropertySlow(0,newID,MV,0,50); 
+      	  }
       }
       
       setPropertySlow(0,newID,JIDX,0,targID); 
@@ -1000,7 +1014,7 @@ void changeID(int oldID, int newID, int role)
 void setMofst(int newID)
 {
    long dat, vers;
-   int dummy, i, samples = 1024;
+   int dummy, i, samples = 16;
    
    long max, min;
    double sumX, sumX2, mean, stdev;
@@ -1015,7 +1029,7 @@ void setMofst(int newID)
    // Get a valid IOFST
    #define IOFST_MIN (1950)
    #define IOFST_MAX (2180)
-   #define IOFST_STDEV (10.0)
+   #define IOFST_STDEV (10)
    
    // Collect stats
    sumX = sumX2 = 0;
@@ -1028,7 +1042,7 @@ void setMofst(int newID)
       if(dat < min) min = dat;
       sumX += dat;
       sumX2 += dat * dat;
-      usleep(1000000/samples);
+      usleep(1000000/16);
    }
    mean = 1.0 * sumX / samples;
    stdev = sqrt((1.0 * samples * sumX2 - sumX * sumX) / (samples * samples - samples));
