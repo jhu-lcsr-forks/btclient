@@ -446,7 +446,7 @@ void ProcessWatch(void){
    for(i = 0; i < MAX_WATCH; i++){
       if(watch[i].puckID){
          getProperty(0, watch[i].puckID, watch[i].prop, &value);
-         mvprintw(watchY+i, watchX + 2, "ID=%d   PROP=%d   VAL=%ld", 
+         mvprintw(watchY+i, watchX + 2, "ID=%d   PROP=%d   VAL=%ld\t\t", 
             watch[i].puckID, watch[i].prop, value);
       }
    }
@@ -909,7 +909,7 @@ void paramDefaults(int newID,int targID)
 		  for(i = 0; bh8Defs[i].key; i++){
 			 setPropertySlow(0, newID, *bh8Defs[i].key, 0, bh8Defs[i].val);
 		  }
-		  if(targID = 14) { // Spread on BH8-280
+		  if(targID == 14) { // Spread on BH8-280
 			  setPropertySlow(0,newID,CT,0,-35950); 
 			  setPropertySlow(0,newID,DP,0,-17975); 
 			  setPropertySlow(0,newID,MV,0,50); 
@@ -1188,6 +1188,7 @@ void cycleHand(void){
 	int id_in, len_in;
 	char data[8];
 	int bus = 0;
+	long reply;
 	
 	wakePuck(0, 11);
 	wakePuck(0, 12);
@@ -1195,34 +1196,34 @@ void cycleHand(void){
 	wakePuck(0, 14);
 	
 	setPropertySlow(0,11,CMD,0,CMD_HI);
+usleep(2e6);
 	setPropertySlow(0,12,CMD,0,CMD_HI);
+usleep(2e6);
 	setPropertySlow(0,13,CMD,0,CMD_HI);
+usleep(2e6);
 	setPropertySlow(0,14,CMD,0,CMD_HI);
+usleep(2e6);
 	
 	while(1){
 		canClearMsg(0);
 		setPropertySlow(0,11,CMD,0,CMD_C);
 		setPropertySlow(0,12,CMD,0,CMD_C);
 		setPropertySlow(0,13,CMD,0,CMD_C);
-		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
-		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
-		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
-		
+do getProperty(0,11,MODE,&reply); while (reply == 5);
+
 		canClearMsg(0);
 		setPropertySlow(0,11,CMD,0,CMD_O);
 		setPropertySlow(0,12,CMD,0,CMD_O);
 		setPropertySlow(0,13,CMD,0,CMD_O);
-		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
-		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
-		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
-		
+do getProperty(0,11,MODE,&reply); while (reply == 5);
+
 		canClearMsg(0);
 		setPropertySlow(0,14,CMD,0,CMD_C);
-		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
+do getProperty(0,14,MODE,&reply); while (reply == 5);
 		
 		canClearMsg(0);
 		setPropertySlow(0,14,CMD,0,CMD_O);
-		err = canReadMsg(bus, &id_in, &len_in, data, TRUE);
+do getProperty(0,14,MODE,&reply); while (reply == 5);
 	}
 	
 }
