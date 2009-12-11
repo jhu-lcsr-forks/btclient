@@ -506,7 +506,7 @@ void Startup(void *thd){
             ProcessInput(chr);
          ProcessWatch();
          
-         usleep(1000); // Sleep for 0.1s
+         usleep(100000); // Sleep for 0.1s
       }
    }
    
@@ -889,9 +889,9 @@ void paramDefaults(int newID,int targID)
          setPropertySlow(0,newID,GRPC,0,4); 
    
       } else if(targID <= 7) { //Wrist
-         setPropertySlow(0,newID,IKCOR,0,102); 
-         setPropertySlow(0,newID,IKP,0,500); 
-         setPropertySlow(0,newID,IKI,0,204); 
+         setPropertySlow(0,newID,IKCOR,0,819); 
+         setPropertySlow(0,newID,IKP,0,4096); 
+         setPropertySlow(0,newID,IKI,0,819); 
          setPropertySlow(0,newID,GRPA,0,0); 
          setPropertySlow(0,newID,GRPB,0,2); 
          setPropertySlow(0,newID,GRPC,0,5); 
@@ -1014,7 +1014,7 @@ void changeID(int oldID, int newID, int role)
 void setMofst(int newID)
 {
    long dat, vers;
-   int dummy, i, samples = 16;
+   int dummy, i, samples = 1024;
    
    long max, min;
    double sumX, sumX2, mean, stdev;
@@ -1029,7 +1029,7 @@ void setMofst(int newID)
    // Get a valid IOFST
    #define IOFST_MIN (1950)
    #define IOFST_MAX (2180)
-   #define IOFST_STDEV (10)
+   #define IOFST_STDEV (10.0)
    
    // Collect stats
    sumX = sumX2 = 0;
@@ -1042,7 +1042,7 @@ void setMofst(int newID)
       if(dat < min) min = dat;
       sumX += dat;
       sumX2 += dat * dat;
-      usleep(1000000/16);
+      usleep(1000000/samples);
    }
    mean = 1.0 * sumX / samples;
    stdev = sqrt((1.0 * samples * sumX2 - sumX * sumX) / (samples * samples - samples));
