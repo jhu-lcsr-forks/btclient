@@ -612,7 +612,7 @@ int canClearMsg(int bus)
 
    retvalue = LINUX_CAN_Extended_Status(canDev[bus], &pendread, &pendwrite);
 
-   while(pendread!=0)
+   while(!retvalue && pendread)
    {
       retvalue =  canReadMsg(bus, &id, &len, d, 1);
       //retvalue = LINUX_CAN_Read(canDev[bus], &msg);
@@ -637,7 +637,7 @@ int canClearMsg(int bus)
 int wakePuck(int bus, int who)
 {
    setProperty(bus, who, 5, FALSE, STATUS_READY); // Must use '5' for STAT
-   usleep(300000); // Wait 300ms for puck to initialize
+   usleep(500000); // Wait 500ms for puck to initialize
 
    return(0);
 }

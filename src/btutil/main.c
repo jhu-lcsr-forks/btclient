@@ -1106,74 +1106,78 @@ getParams(int newID)
 
    printf("\n...Puck %d...\n",newID);
    wakePuck(0,newID);
+   
+   /* General */
    getProperty(0,newID,SN,&reply);
-   printf("Serial Number = %ld\n",reply);
+   printf("SN = %ld\n",reply);
    getProperty(0,newID,VERS,&reply);
    printf("VERS = %ld\n",reply);
    getProperty(0,newID,ROLE,&reply);
-   printf("ROLE = %ld\n",reply);
-   getProperty(0,newID,ACCEL,&reply);
-   printf("ACCEL = %ld\n",reply);
-   getProperty(0,newID,AP,&reply);
-   printf("AP = %ld\n",reply);
-   getProperty(0,newID,HALLS,&reply);
-   printf("HALLS = %ld\n",reply);
-   getProperty(0,newID,HALLH,&reply);
-   printf("HALLH = %ld\n",reply);
-   getProperty(0,newID,CT,&reply);
-   printf("CT = %ld\n",reply);
-   getProperty(0,newID,CTS,&reply);
-   printf("CTS = %ld\n",reply);
-   getProperty(0,newID,DP,&reply);
-   printf("DP = %ld\n",reply);
-   getProperty(0,newID,EN,&reply);
-   printf("EN = %ld\n",reply);
-   getProperty(0,newID,GAIN1,&reply);
-   printf("GAIN1 = %ld\n",reply);
-   getProperty(0,newID,GAIN2,&reply);
-   printf("GAIN2 = %ld\n",reply);
-   getProperty(0,newID,GAIN3,&reply);
-   printf("GAIN3 = %ld\n",reply);
-   getProperty(0,newID,IKCOR,&reply);
-   printf("IKCOR = %ld\n",reply);
-   getProperty(0,newID,IKP,&reply);
-   printf("IKP = %ld\n",reply);
-   getProperty(0,newID,IKI,&reply);
-   printf("IKI = %ld\n",reply);
-   getProperty(0,newID,IPNM,&reply);
-   printf("IPNM = %ld\n",reply);
-   getProperty(0,newID,MT,&reply);
-   printf("MT = %ld\n",reply);
-   getProperty(0,newID,MOFST,&reply);
-   printf("MOFST = %ld\n",reply);
-   getProperty(0,newID,IOFST,&reply); 
-   printf("IOFST = %ld\n",reply);
-   getProperty(0,newID,OFFSET1,&reply);
-   printf("OFFSET1 = %ld\n",reply);
-   getProperty(0,newID,OFFSET2,&reply);
-   printf("OFFSET2 = %ld\n",reply);
-   getProperty(0,newID,OFFSET3,&reply);
-   printf("OFFSET3 = %ld\n",reply);
+   printf("ROLE = 0x%04X\n",reply);
    getProperty(0,newID,JIDX,&reply);
    printf("JIDX = %ld\n",reply);
    getProperty(0,newID,PIDX,&reply);
    printf("PIDX = %ld\n",reply);
+   
+   /* Motor control */
+   getProperty(0,newID,ACCEL,&reply);
+   printf("ACCEL = %ld\n",reply);
+   getProperty(0,newID,OT,&reply);
+   printf("OT = %ld\n",reply);
+   getProperty(0,newID,CT,&reply);
+   printf("CT = %ld\n",reply);
+   getProperty(0,newID,DP,&reply);
+   printf("DP = %ld\n",reply);
+   getProperty(0,newID,IPNM,&reply);
+   printf("IPNM = %ld\n",reply);
+   getProperty(0,newID,MT,&reply);
+   printf("MT = %ld\n",reply);
+   getProperty(0,newID,KP,&reply);
+   printf("KP = %ld\n",reply);
+   getProperty(0,newID,KD,&reply);
+   printf("KD = %ld\n",reply);
+   getProperty(0,newID,KI,&reply);
+   printf("KI = %ld\n",reply);
+   
+   /* Active values */
+   getProperty(0,newID,P,&reply);
+   printf("P = %ld\n",reply);
+   getProperty(0,newID,MECH,&reply);
+   printf("MECH = %ld\n",reply);
+   getProperty(0,newID,HALLS,&reply);
+   printf("HALLS = 0x%04lX\n",reply);
+   getProperty(0,newID,HALLH,&reply);
+   printf("HALLH = %ld\n",reply);
    getProperty(0,newID,PTEMP,&reply);
    printf("PTEMP = %ld\n",reply);
+   
+   /* Commutation data */
+   getProperty(0,newID,CTS,&reply);
+   printf("CTS = %ld\n",reply);
    getProperty(0,newID,POLES,&reply); 
    printf("POLES = %ld\n",reply);
-
+   getProperty(0,newID,IKP,&reply);
+   printf("IKP = %ld\n",reply);
+   getProperty(0,newID,IKI,&reply);
+   printf("IKI = %ld\n",reply);
+   getProperty(0,newID,IKCOR,&reply);
+   printf("IKCOR = %ld\n",reply);
+   getProperty(0,newID,IOFST,&reply); 
+   printf("IOFST = %ld\n",reply);
+   getProperty(0,newID,MOFST,&reply);
+   printf("MOFST = %ld\n",reply);
+   
+   /* Communication */
+   getProperty(0,newID,EN,&reply);
+   printf("EN = 0x%08lX\n",reply);
    getProperty(0,newID,GRPA,&reply); 
    printf("GRPA = %ld\n",reply);
    getProperty(0,newID,GRPB,&reply); 
    printf("GRPB = %ld\n",reply);
    getProperty(0,newID,GRPC,&reply); 
    printf("GRPC = %ld\n",reply);
-
-   getProperty(0,newID,40,&reply); 
-   printf("40 = %ld\n",reply);
-   getProperty(0,newID,41,&reply); 
-   printf("41 = %ld\n",reply);
+   //getProperty(0,newID,TIE,&reply); 
+   //printf("TIE = %ld\n",reply);
 }
 
 /* Command enumeration. Append only. */
@@ -1245,6 +1249,7 @@ void handleMenu(int argc, char **argv)
    case 'B': case 'D': case 'I': case 'Q':
    break;
    default:
+      //canClearMsg(0);
       getBusStatus(0, status);
    }
    
@@ -1293,6 +1298,7 @@ void handleMenu(int argc, char **argv)
       //getBusStatus(0, status);
       for(i = 0; i < MAX_NODES; i++) {
          if(status[i]>=0) {
+            //canClearMsg(0);
             getProperty(0,i,VERS,&vers);
             printf("\nNode %2d: %15s vers=%2d", i,
                    statusTxt[status[i]+1], vers);
