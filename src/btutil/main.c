@@ -1113,7 +1113,7 @@ getParams(int newID)
    getProperty(0,newID,VERS,&reply);
    printf("VERS = %ld\n",reply);
    getProperty(0,newID,ROLE,&reply);
-   printf("ROLE = 0x%04X\n",reply);
+   printf("ROLE = %ld (ROLE = %d, OPT = 0x%02X)\n",reply, reply & 0x00FF, (reply >> 8) & 0x00FF);
    getProperty(0,newID,JIDX,&reply);
    printf("JIDX = %ld\n",reply);
    getProperty(0,newID,PIDX,&reply);
@@ -1133,11 +1133,15 @@ getParams(int newID)
    getProperty(0,newID,MT,&reply);
    printf("MT = %ld\n",reply);
    getProperty(0,newID,KP,&reply);
-   printf("KP = %ld\n",reply);
+   printf("KP = %ld (0x%04X)\n",reply, reply);
    getProperty(0,newID,KD,&reply);
-   printf("KD = %ld\n",reply);
+   printf("KD = %ld (0x%04X)\n",reply, reply);
    getProperty(0,newID,KI,&reply);
-   printf("KI = %ld\n",reply);
+   printf("KI = %ld (0x%04X)\n",reply, reply);
+   getProperty(0,newID,TSTOP,&reply);
+   printf("TSTOP = %ld\n",reply);
+   getProperty(0,newID,HOLD,&reply);
+   printf("HOLD = %ld\n",reply);
    
    /* Active values */
    getProperty(0,newID,P,&reply);
@@ -1193,41 +1197,51 @@ void cycleHand(void){
 	char data[8];
 	int bus = 0;
 	long reply;
+	int kp, kd;
 	
 	wakePuck(0, 11);
 	wakePuck(0, 12);
 	wakePuck(0, 13);
 	wakePuck(0, 14);
-	
+
+
 	setPropertySlow(0,11,CMD,0,CMD_HI);
-usleep(2e6);
+    usleep(2e6);
+#if 1
 	setPropertySlow(0,12,CMD,0,CMD_HI);
-usleep(2e6);
+    usleep(2e6);
 	setPropertySlow(0,13,CMD,0,CMD_HI);
-usleep(2e6);
+    usleep(2e6);
 	setPropertySlow(0,14,CMD,0,CMD_HI);
-usleep(2e6);
-	
+    usleep(2e6);
+#endif
 	while(1){
-		canClearMsg(0);
+	    //printf("KP KD: "); scanf("%d %d", &kp, &kd);
+	    
+		//canClearMsg(0);
 		setPropertySlow(0,11,CMD,0,CMD_C);
+#if 1
 		setPropertySlow(0,12,CMD,0,CMD_C);
 		setPropertySlow(0,13,CMD,0,CMD_C);
-do getProperty(0,11,MODE,&reply); while (reply == 5);
+#endif
+        do getProperty(0,11,MODE,&reply); while (reply == 5);
 
-		canClearMsg(0);
+		//canClearMsg(0);
 		setPropertySlow(0,11,CMD,0,CMD_O);
+#if 1
 		setPropertySlow(0,12,CMD,0,CMD_O);
 		setPropertySlow(0,13,CMD,0,CMD_O);
-do getProperty(0,11,MODE,&reply); while (reply == 5);
-
+#endif
+        do getProperty(0,11,MODE,&reply); while (reply == 5);
+#if 1
 		canClearMsg(0);
 		setPropertySlow(0,14,CMD,0,CMD_C);
-do getProperty(0,14,MODE,&reply); while (reply == 5);
+        do getProperty(0,14,MODE,&reply); while (reply == 5);
 		
 		canClearMsg(0);
 		setPropertySlow(0,14,CMD,0,CMD_O);
-do getProperty(0,14,MODE,&reply); while (reply == 5);
+        do getProperty(0,14,MODE,&reply); while (reply == 5);
+#endif
 	}
 	
 }

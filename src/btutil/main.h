@@ -105,8 +105,8 @@ struct defaultStruct bh8Defs[] =
    &IOFF, 0,
    &IVEL, 75,
    &_DS, -2560,
-   &KP, 2000,
-   &KD, 8000,
+   &KP, 500,
+   &KD, 5000,
    &KI, 0,
    &IPNM, 20000,
    
