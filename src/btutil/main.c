@@ -1198,6 +1198,9 @@ void cycleHand(void){
 	int bus = 0;
 	long reply;
 	int kp, kd;
+	long temp1, temp2, temp3, temp4;
+	long therm1, therm2, therm3, therm4;
+	long cycle = 0;
 	
 	wakePuck(0, 11);
 	wakePuck(0, 12);
@@ -1215,7 +1218,9 @@ void cycleHand(void){
 	setPropertySlow(0,14,CMD,0,CMD_HI);
     usleep(2e6);
 #endif
+    printf("\nBH8-280 Cycle Program - Motor: TEMP/THERM (press ctrl-c to exit)\n");
 	while(1){
+	    ++cycle;
 	    //printf("KP KD: "); scanf("%d %d", &kp, &kd);
 	    
 		//canClearMsg(0);
@@ -1242,6 +1247,55 @@ void cycleHand(void){
 		setPropertySlow(0,14,CMD,0,CMD_O);
         do getProperty(0,14,MODE,&reply); while (reply == 5);
 #endif
+        // Get temps
+        getProperty(0,11,TEMP,&temp1);
+		getProperty(0,12,TEMP,&temp2);
+		getProperty(0,13,TEMP,&temp3);
+		getProperty(0,14,TEMP,&temp4);
+		getProperty(0,11,THERM,&therm1);
+		getProperty(0,12,THERM,&therm2);
+		getProperty(0,13,THERM,&therm3);
+		getProperty(0,14,THERM,&therm4);
+		
+		printf("Cycle: %ld -- M1: %ld/%ld, M2: %ld/%ld, M3: %ld/%ld, M4: %ld/%ld\t\t\r",
+		cycle, temp1, therm1, temp2, therm2, temp3, therm3, temp4, therm4);
+		fflush(stdout);
+	}
+	
+}
+
+void strainHand(void){
+	int err;
+	int id_in, len_in;
+	char data[8];
+	int bus = 0;
+	long strain1, strain2, strain3;
+	int kp, kd;
+	
+	wakePuck(0, 11);
+	wakePuck(0, 12);
+	wakePuck(0, 13);
+	//wakePuck(0, 14);
+
+
+	setPropertySlow(0,11,CMD,0,CMD_HI);
+    usleep(2e6);
+	setPropertySlow(0,12,CMD,0,CMD_HI);
+    usleep(2e6);
+	setPropertySlow(0,13,CMD,0,CMD_HI);
+    usleep(2e6);
+	//setPropertySlow(0,14,CMD,0,CMD_HI);
+    //usleep(2e6);
+
+    printf("\nStrain Gages... (press ctrl-c to exit)\n");
+	while(1){
+
+		getProperty(0,11,SG,&strain1);
+		getProperty(0,12,SG,&strain2);
+		getProperty(0,13,SG,&strain3);
+		printf("F1: %8ld, F2: %8ld, F3: %8ld\r", strain1, strain2, strain3);
+		fflush(stdout);
+		usleep(1e5);
 	}
 	
 }
@@ -1305,6 +1359,10 @@ void handleMenu(int argc, char **argv)
 
    case 'C':
       cycleHand();
+      //calibrateGimbals();
+      break;
+   case 'J':
+      strainHand();
       //calibrateGimbals();
       break;
    case 'E':
