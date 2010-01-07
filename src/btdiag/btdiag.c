@@ -1357,6 +1357,7 @@ int Command(char *cmd){
 void DemoThread()
 {
    int result, i;
+#if 0
    while(!demo) usleep(250000);
    setProperty(0,11,CMD,FALSE,13);
    waitForStop();
@@ -1366,7 +1367,7 @@ void DemoThread()
         waitForStop();
         setProperty(0,14,CMD,FALSE,13);
         waitForStop();
-        
+#endif
    /* Loop forever, rendering the appropriate screen information */
    while (!done) {
       
