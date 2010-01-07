@@ -100,9 +100,13 @@ enum{SCREEN_MAIN, SCREEN_HELP};
 #define Ts (0.002)
 #endif
 
+
 /*==============================*
  * PRIVATE MACRO definitions    *
  *==============================*/
+#define _kbhit() (0)
+#define _getch()
+#define Error()
 
 /*==============================*
  * PRIVATE typedefs and structs *
@@ -152,6 +156,7 @@ int angular = 0;
 int cplay = 0;
 int move_prep = 0; /* Are we currently in move prep? */
 int loop_trj = 0;  /* Are we looping the trajectory? */
+int demo = 0;
 
 /* Global data */
 btthread audio_thd;
@@ -219,6 +224,7 @@ void RenderCARTSPACE_SCREEN(void);
 void ProcessInput(int c);
 void Shutdown(void);
 void DisplayThread(void);
+void DemoThread(void);
 void AudioThread(void);
 void StartDisplayThread(void);
 void clearScreen(void);
@@ -787,6 +793,9 @@ int main(int argc, char **argv)
       
    /* Spin off the display thread */
    btrt_thread_create(&disp_thd, "DISP", 10, (void*)DisplayThread, NULL);
+   
+   /* Spin off the BHand demo thread */
+   btrt_thread_create(&disp_thd, "DEMO", 10, (void*)DemoThread, NULL);
    //btthread_create(&disp_thd, 0, (void*)DisplayThread, NULL);
    
    /* Spin off the audio thread */
@@ -944,6 +953,840 @@ void sigint_handler()
 {
    Cleanup();
    exit(1);
+}
+
+int waitForStop(){
+    double F1, F2, F3, F4;
+    double EPS = 0.001;
+    
+    do{
+        F1 = wam[0]->Jpos->q[wam[0]->dof-4];
+        F2 = wam[0]->Jpos->q[wam[0]->dof-3];
+        F3 = wam[0]->Jpos->q[wam[0]->dof-2];
+        F4 = wam[0]->Jpos->q[wam[0]->dof-1];
+        usleep(250000); // Sleep for 1/4 sec
+    }while(fabs(F1 - wam[0]->Jpos->q[wam[0]->dof-4]) > EPS ||
+       fabs(F2 - wam[0]->Jpos->q[wam[0]->dof-3]) > EPS ||
+       fabs(F3 - wam[0]->Jpos->q[wam[0]->dof-2]) > EPS ||
+       fabs(F4 - wam[0]->Jpos->q[wam[0]->dof-1]) > EPS );
+       
+    return(0);
+}
+    
+int Command(char *cmd){
+    while(!demo) usleep(250000);
+    
+    if(!strcmp("123FSET MCV 200",cmd)){
+        setProperty(0,11,MCV,FALSE,400);
+        setProperty(0,12,MCV,FALSE,400);
+        setProperty(0,13,MCV,FALSE,400);
+        return 0;
+    }
+    if(!strcmp("123FSET MOV 200",cmd)){
+        setProperty(0,11,MOV,FALSE,400);
+        setProperty(0,12,MOV,FALSE,400);
+        setProperty(0,13,MOV,FALSE,400);
+        return 0;
+    }
+    if(!strcmp("4FSET MCV 100",cmd)){
+        setProperty(0,14,MCV,FALSE,200);
+        return 0;
+    }
+    if(!strcmp("4FSET MOV 100",cmd)){
+        setProperty(0,14,MOV,FALSE,200);
+        return 0;
+    }
+    if(!strcmp("GO",cmd)){
+        setProperty(0,11,CMD,FALSE,20);
+        setProperty(0,12,CMD,FALSE,20);
+        setProperty(0,13,CMD,FALSE,20);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("SO",cmd)){
+        setProperty(0,14,CMD,FALSE,20);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("123C",cmd)){
+        setProperty(0,11,CMD,FALSE,18);
+        setProperty(0,12,CMD,FALSE,18);
+        setProperty(0,13,CMD,FALSE,18);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("123O",cmd)){
+        setProperty(0,11,CMD,FALSE,20);
+        setProperty(0,12,CMD,FALSE,20);
+        setProperty(0,13,CMD,FALSE,20);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("SC",cmd)){
+        setProperty(0,14,CMD,FALSE,18);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("GC",cmd)){
+        setProperty(0,11,CMD,FALSE,18);
+        setProperty(0,12,CMD,FALSE,18);
+        setProperty(0,13,CMD,FALSE,18);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("C",cmd)){
+        setProperty(0,11,CMD,FALSE,18);
+        setProperty(0,12,CMD,FALSE,18);
+        setProperty(0,13,CMD,FALSE,18);
+        setProperty(0,14,CMD,FALSE,18);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("123M",cmd)){
+        setProperty(0,11,MODE,FALSE,5);
+        setProperty(0,12,MODE,FALSE,5);
+        setProperty(0,13,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("SIC",cmd)){
+        setProperty(0,14,CMD,FALSE,14);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("123M 11000",cmd)){
+        setProperty(0,11,E,FALSE,-130000);
+        setProperty(0,12,E,FALSE,-130000);
+        setProperty(0,13,E,FALSE,-130000);
+        
+        setProperty(0,11,MODE,FALSE,5);
+        setProperty(0,12,MODE,FALSE,5);
+        setProperty(0,13,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("123M 11500",cmd)){
+        setProperty(0,11,E,FALSE,-135300);
+        setProperty(0,12,E,FALSE,-135300);
+        setProperty(0,13,E,FALSE,-135300);
+        
+        setProperty(0,11,MODE,FALSE,5);
+        setProperty(0,12,MODE,FALSE,5);
+        setProperty(0,13,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("4FSET DS 630",cmd)){
+        setProperty(0,14,_DS,FALSE,-7300);
+        return 0;
+    }
+    if(!strcmp("123FSET DP 4000",cmd)){
+        setProperty(0,11,E,FALSE,-47000);
+        setProperty(0,12,E,FALSE,-47000);
+        setProperty(0,13,E,FALSE,-47000);
+        return 0;
+    }
+    if(!strcmp("SFSET MCV 100",cmd)){
+        setProperty(0,14,MCV,FALSE,200);
+        return 0;
+    }
+    if(!strcmp("1234O",cmd)){
+        setProperty(0,11,CMD,FALSE,20);
+        setProperty(0,12,CMD,FALSE,20);
+        setProperty(0,13,CMD,FALSE,20);
+        setProperty(0,14,CMD,FALSE,20);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("3M 9000",cmd)){
+        setProperty(0,13,E,FALSE,-106000);
+        setProperty(0,13,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("2M 9000",cmd)){
+        setProperty(0,12,E,FALSE,-106000);
+        setProperty(0,12,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("1M 9000",cmd)){
+        setProperty(0,11,E,FALSE,-106000);
+        setProperty(0,11,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("3M 17000",cmd)){
+        setProperty(0,13,CMD,FALSE,18);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("2M 17000",cmd)){
+        setProperty(0,12,CMD,FALSE,18);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("1M 17000",cmd)){
+        setProperty(0,11,CMD,FALSE,18);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("3M 13000",cmd)){
+        setProperty(0,13,E,FALSE,-153000);
+        setProperty(0,13,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("2M 13000",cmd)){
+        setProperty(0,12,E,FALSE,-153000);
+        setProperty(0,12,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("1M 13000",cmd)){
+        setProperty(0,11,E,FALSE,-153000);
+        setProperty(0,11,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("3FSET MCV 75",cmd)){
+        setProperty(0,13,MCV,FALSE,150);
+        return 0;
+    }
+    if(!strcmp("2FSET MCV 75",cmd)){
+        setProperty(0,12,MCV,FALSE,150);
+        return 0;
+    }
+    if(!strcmp("1FSET MCV 75",cmd)){
+        setProperty(0,11,MCV,FALSE,150);
+        return 0;
+    }
+    if(!strcmp("SFSET MCV 50",cmd)){
+        setProperty(0,14,MCV,FALSE,100);
+        return 0;
+    }
+    if(!strcmp("3FSET MCV 65",cmd)){
+        setProperty(0,13,MCV,FALSE,130);
+        return 0;
+    }
+    if(!strcmp("2FSET MCV 65",cmd)){
+        setProperty(0,12,MCV,FALSE,130);
+        return 0;
+    }
+    if(!strcmp("1FSET MCV 65",cmd)){
+        setProperty(0,11,MCV,FALSE,130);
+        return 0;
+    }
+    if(!strcmp("O",cmd)){
+        setProperty(0,11,CMD,FALSE,20);
+        setProperty(0,12,CMD,FALSE,20);
+        setProperty(0,13,CMD,FALSE,20);
+        setProperty(0,14,CMD,FALSE,20);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("3M 11500",cmd)){
+        setProperty(0,13,E,FALSE,-135300);
+        setProperty(0,13,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("2M 14000",cmd)){
+        setProperty(0,12,E,FALSE,-164700);
+        setProperty(0,12,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("SM 1000",cmd)){
+        setProperty(0,14,E,FALSE,-11600);
+        setProperty(0,14,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("123M 2000",cmd)){
+        setProperty(0,11,E,FALSE,-23500);
+        setProperty(0,12,E,FALSE,-23500);
+        setProperty(0,13,E,FALSE,-23500);
+        
+        setProperty(0,11,MODE,FALSE,5);
+        setProperty(0,12,MODE,FALSE,5);
+        setProperty(0,13,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("123M 5000",cmd)){
+        setProperty(0,11,E,FALSE,-58800);
+        setProperty(0,12,E,FALSE,-58800);
+        setProperty(0,13,E,FALSE,-58800);
+        
+        setProperty(0,11,MODE,FALSE,5);
+        setProperty(0,12,MODE,FALSE,5);
+        setProperty(0,13,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("3FSET MCV 200",cmd)){
+        setProperty(0,13,MCV,FALSE,400);
+        return 0;
+    }
+    if(!strcmp("3FSET MCV 85",cmd)){
+        setProperty(0,13,MCV,FALSE,170);
+        return 0;
+    }
+    if(!strcmp("2FSET MCV 200",cmd)){
+        setProperty(0,12,MCV,FALSE,400);
+        return 0;
+    }
+    if(!strcmp("1FSET MCV 200",cmd)){
+        setProperty(0,11,MCV,FALSE,400);
+        return 0;
+    }
+    if(!strcmp("2FSET DP 11500",cmd)){
+        setProperty(0,12,E,FALSE,-135300);
+        return 0;
+    }
+    if(!strcmp("GM",cmd)){
+        setProperty(0,11,MODE,FALSE,5);
+        setProperty(0,12,MODE,FALSE,5);
+        setProperty(0,13,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("1FSET DP 6000",cmd)){
+        setProperty(0,11,E,FALSE,-70000);
+        return 0;
+    }
+    if(!strcmp("2FSET DP 6000",cmd)){
+        setProperty(0,12,E,FALSE,-70000);
+        return 0;
+    }
+    if(!strcmp("1FSET DP 11500",cmd)){
+        setProperty(0,11,E,FALSE,-135300);
+        return 0;
+    }
+    if(!strcmp("3FSET DP 11500",cmd)){
+        setProperty(0,13,E,FALSE,-135300);
+        return 0;
+    }
+    if(!strcmp("3C",cmd)){
+        setProperty(0,13,CMD,FALSE,18);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("2C",cmd)){
+        setProperty(0,12,CMD,FALSE,18);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("1C",cmd)){
+        setProperty(0,11,CMD,FALSE,18);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("12M 11500",cmd)){
+        setProperty(0,11,E,FALSE,-135300);
+        setProperty(0,12,E,FALSE,-135300);
+        setProperty(0,11,MODE,FALSE,5);
+        setProperty(0,12,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("SM 1570",cmd)){
+        setProperty(0,14,E,FALSE,-17975);
+        setProperty(0,14,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("3O",cmd)){
+        setProperty(0,13,CMD,FALSE,20);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("2O",cmd)){
+        setProperty(0,12,CMD,FALSE,20);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("1O",cmd)){
+        setProperty(0,11,CMD,FALSE,20);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("123SC",cmd)){
+        setProperty(0,11,CMD,FALSE,18);
+        setProperty(0,12,CMD,FALSE,18);
+        setProperty(0,13,CMD,FALSE,18);
+        setProperty(0,14,CMD,FALSE,18);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("123SO",cmd)){
+        setProperty(0,11,CMD,FALSE,20);
+        setProperty(0,12,CMD,FALSE,20);
+        setProperty(0,13,CMD,FALSE,20);
+        setProperty(0,14,CMD,FALSE,20);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("2M 15000",cmd)){
+        setProperty(0,12,E,FALSE,-176500);
+        setProperty(0,12,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("3M 10000",cmd)){
+        setProperty(0,13,E,FALSE,-117600);
+        setProperty(0,13,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    if(!strcmp("1M 5000",cmd)){
+        setProperty(0,11,E,FALSE,-58800);
+        setProperty(0,11,MODE,FALSE,5);
+        waitForStop();
+        return 0;
+    }
+    
+    syslog(LOG_ERR, "Unhandled BHand command: %s", cmd);
+
+}
+
+/** Spins in a loop, updating the BHand.
+    Runs as its own thread.
+*/
+void DemoThread()
+{
+   int result, i;
+   while(!demo) usleep(250000);
+   setProperty(0,11,CMD,FALSE,13);
+   waitForStop();
+        setProperty(0,12,CMD,FALSE,13);
+        waitForStop();
+        setProperty(0,13,CMD,FALSE,13);
+        waitForStop();
+        setProperty(0,14,CMD,FALSE,13);
+        waitForStop();
+        
+   /* Loop forever, rendering the appropriate screen information */
+   while (!done) {
+      
+	/* Set up FPG, SAMPLE, ACCEL, and Max Velocities for fingers 1-3 - BZ 19Sep2003 */
+	if( result=Command ( "123FSET FPG 5" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123FSET TSTOP 300" ) )
+		Error();
+	if( _kbhit() )
+		;
+	
+	if( result=Command ( "123FSET MCV 200" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123FSET MOV 200" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123FSET SAMPLE 63" ) )
+		Error();
+	if( _kbhit() )
+		;
+	
+	if( result=Command ( "123FSET ACCEL 4" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	/* Set up FPG, SAMPLE, ACCEL, and Max Velocities for spread - BZ 19Sep2003 */
+	if( result=Command ( "4FSET FPG 5" ) )
+		Error();
+	if( _kbhit() )
+		;
+	
+	if( result=Command ( "4FSET MCV 100" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "4FSET MOV 100" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "4FSET SAMPLE 200" ) )
+		Error();
+	if( _kbhit() )
+		;
+	
+	if( result=Command ( "4FSET ACCEL 8" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	/* Perform supervisory demonstration */
+	if( result=Command ( "GO" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "SO" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123C" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123O" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "SC" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123C" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123O" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "1M 5000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "3M 10000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "2M 15000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123SO" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+//AC 010711 Removed following command because it was casing fingers to hit eachother (version 4.21)
+
+	//if( result=Command ( "123SC" ) )
+	//	Error();
+	//if( _kbhit() )
+	//	;
+
+	if( result=Command ( "SC" ) )
+		Error();
+	if( _kbhit() )
+		;
+	
+	if( result=Command ( "123C" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "1O" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "3O" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "2O" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "SM 1570" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "12M 11500" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "3C" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123O" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	
+	/* Do the "Back and Forth" */
+	if( result=Command ( "3FSET DP 11500" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	for(i = 0; i < 3; i++)
+	{
+		if( result=Command ( "1FSET DP 11500" ) )
+			Error();
+		if( _kbhit() )
+			;
+
+		if( result=Command ( "2FSET DP 6000" ) )
+			Error();
+		if( _kbhit() )
+			;
+
+		if( result=Command ( "GM" ) )
+			Error();
+		if( _kbhit() )
+			;
+		
+		if( result=Command ( "1FSET DP 6000" ) )
+			Error();
+		if( _kbhit() )
+			;
+
+		if( result=Command ( "2FSET DP 11500" ) )
+			Error();
+
+		if( result=Command ( "GM" ) )
+			Error();
+		if( _kbhit() )
+			;
+	}
+
+	if( result=Command ( "123M 11500" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	/* End of Back and Forth */
+
+	if( result=Command ( "1FSET MCV 200" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "2FSET MCV 200" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "3FSET MCV 200" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123M 5000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "SC" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123C" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123M 2000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	/* Do finger jumble */
+
+	if( result=Command ( "SM 1000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "1C" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "2M 14000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "3M 11500" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "O" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	/* End finger Jumble */
+
+	if( result=Command ( "1FSET MCV 65" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "2FSET MCV 65" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "3FSET MCV 85" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "SFSET MCV 50" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123SC" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "1FSET MCV 75" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "2FSET MCV 75" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "3FSET MCV 75" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "1M 13000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "3M 13000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "2M 13000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "1M 17000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "3M 17000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "2M 17000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "1M 9000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "3M 9000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "2M 9000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "1234O" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	/* Do Spread Inc Close with finger movement */
+
+	if( result=Command ( "SFSET MCV 100" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123FSET MCV 200" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "123FSET DP 4000" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "4FSET DS 630" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	for(i = 0; i < 5; i++)
+	{
+		if( result=Command ( "123M 11000" ) )
+			Error();
+		if( _kbhit() )
+			;
+
+		if( result=Command ( "123M" ) )
+			Error();
+		if( _kbhit() )
+			;
+
+		if( result=Command ( "SIC" ) )
+			Error();
+		if( _kbhit() )
+			;
+	}
+
+
+	if( result=Command ( "C" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+	if( result=Command ( "GO" ) )
+		Error();
+	if( _kbhit() )
+		;
+
+   }
+
 }
 
 /** Spins in a loop, updating the screen.
@@ -1665,6 +2508,8 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       screen = !screen;
       break;
 
+    case ' '://Toggle BHand Demo
+    demo = !demo;
    case 27://Handle and discard extended keyboard characters (like arrows)
       if ((chr = getch()) != ERR) {
          if (chr == 91) {

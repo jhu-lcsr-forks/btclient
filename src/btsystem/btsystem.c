@@ -768,7 +768,8 @@ void SetTorques(int bus)
             data[cnt3] = act[idx].puck.torque_cmd;
          }
       }
-      setTorques(cnt, buses[cnt].group[cnt2].group_number, data);
+      if(buses[cnt].group[cnt2].group_number != 7) /* xxx Temp hack for BHand demo */
+        setTorques(cnt, buses[cnt].group[cnt2].group_number, data);
    }
    //}
 

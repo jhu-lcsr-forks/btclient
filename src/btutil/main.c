@@ -913,10 +913,12 @@ void paramDefaults(int newID,int targID)
 			  setPropertySlow(0,newID,CT,0,-35950); 
 			  setPropertySlow(0,newID,DP,0,-17975); 
 			  setPropertySlow(0,newID,MV,0,50); 
+			  setPropertySlow(0,newID,HSG,0,0); 
+			  setPropertySlow(0,newID,LSG,0,0); 
       	  }
       }
       
-      setPropertySlow(0,newID,JIDX,0,targID); 
+      setPropertySlow(0,newID,JIDX,0,targID-6); 
       setPropertySlow(0,newID,PIDX,0,((targID-1)%4)+1); 
       break;
       
@@ -1142,6 +1144,16 @@ getParams(int newID)
    printf("TSTOP = %ld\n",reply);
    getProperty(0,newID,HOLD,&reply);
    printf("HOLD = %ld\n",reply);
+
+
+   /* Sensors */
+   getProperty(0,newID,SG,&reply);
+   printf("SG = %ld\n",reply);
+   getProperty(0,newID,HSG,&reply);
+   printf("HSG = %ld\n",reply);
+   getProperty(0,newID,LSG,&reply);
+   printf("LSG = %ld\n",reply);
+   
    
    /* Active values */
    getProperty(0,newID,P,&reply);
@@ -1154,6 +1166,7 @@ getParams(int newID)
    printf("HALLH = %ld\n",reply);
    getProperty(0,newID,PTEMP,&reply);
    printf("PTEMP = %ld\n",reply);
+
    
    /* Commutation data */
    getProperty(0,newID,CTS,&reply);

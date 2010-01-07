@@ -95,7 +95,7 @@ struct defaultStruct bh8Defs[] =
    &MOV, 200,
    &OT, 0,
    &HOLD, 0,
-   &TSTOP, 1000,
+   &TSTOP, 0,
    &OTEMP, 60,
    &PTEMP, 0,
    &POLES, 6,
@@ -109,6 +109,11 @@ struct defaultStruct bh8Defs[] =
    &KD, 5000,
    &KI, 0,
    &IPNM, 20000,
+   &HSG, 2700,
+   &LSG, 1500,
+   &GRPA, 0,
+   &GRPB, 7,
+   &GRPC, 8,
    
    NULL, 0
 };
