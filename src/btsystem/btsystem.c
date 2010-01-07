@@ -210,6 +210,7 @@ int InitializeSystem(void)
       //err = parseGetVal(STRING, key, (void*)valStr);
       // Get bus address
       //sprintf(key, "system.bus[%d].address", bus_number);
+      
       // If this is a CANbus
       if(buses[bus_number].type == CAN) {
          //err = parseGetVal(INT, key, (void*)&canAddr);
@@ -218,8 +219,8 @@ int InitializeSystem(void)
          if(err = initCAN(bus_number, buses[bus_number].address))
             syslog(LOG_ERR, "Could not initialize can bus %d, err = %d", bus_number, err);
 
-         syslog(LOG_ERR, "Waking all pucks");
-         wakePuck(bus_number, GROUPID(WHOLE_ARM));
+         
+         //wakePuck(bus_number, GROUPID(WHOLE_ARM));
 
          // Enumerate nodes on the bus
          err = getBusStatus(bus_number, status);
@@ -267,6 +268,7 @@ int InitializeSystem(void)
             case STATUS_READY:
                // Make sure the puck is in IDLE mode
                setProperty(bus_number, id, MODE, FALSE, MODE_IDLE);
+               usleep(250000);
 
                // Assign the bus
                act[num_actuators].bus = bus_number;

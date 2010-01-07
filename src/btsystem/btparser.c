@@ -72,6 +72,8 @@ int multi = 0;
 /*==============================*
  * Defines                      *
  *==============================*/
+/* NOTE: The MAX_LINE_LENGTH must be long enough to hold a full matrix (not just one line of it). */
+#define MAX_LINE_LENGTH (2048)
 
 /*==============================*
  * Functions                    *
@@ -212,7 +214,7 @@ Use btParseClose() to delete these files.
 int btParseFile(btparser *parse_obj,char *filename)
 {
    FILE    *inFile;
-   char    line[1024], srch[1024], key1[255], key2[255];
+   char    line[MAX_LINE_LENGTH], srch[MAX_LINE_LENGTH], key1[255], key2[255];
    int  addBrace, index;
    long stepPos, srchPos;
 
@@ -231,7 +233,7 @@ int btParseFile(btparser *parse_obj,char *filename)
    // Pass 1 = Structure -> Flat File
    hdr[0] = '\0';
    while(1) {
-      if(fgets(line, 255, inFile) == NULL)
+      if(fgets(line, MAX_LINE_LENGTH, inFile) == NULL)
          break;
       line[strlen(line)-1] = '\0';  // Overwrite newline with termination
       stripComments(line);    // Strip the comments
@@ -242,7 +244,7 @@ int btParseFile(btparser *parse_obj,char *filename)
          do{
 	    assignLine(line); // ASGN
             if(multi){
-	       fgets(line, 255, inFile);
+	       fgets(line, MAX_LINE_LENGTH, inFile);
                line[strlen(line)-1] = '\0';  // Overwrite newline with termination
                stripComments(line);    // Strip the comments
 	    }
@@ -261,7 +263,7 @@ int btParseFile(btparser *parse_obj,char *filename)
    outFile = fopen(parse_obj->flatfile,"w");
    while(1) {
       index = 0;
-      if(fgets(line, 1024, inFile) == NULL)
+      if(fgets(line, MAX_LINE_LENGTH, inFile) == NULL)
          break;
       line[strlen(line)-1] = '\0';  // Overwrite newline with termination
       stepPos = ftell(inFile);
@@ -271,7 +273,7 @@ int btParseFile(btparser *parse_obj,char *filename)
       addBrace = (strchr(key1, '[') == NULL); // If dup found, add brace?
       while(1) {
          srchPos = ftell(inFile);
-         if(fgets(srch, 1024, inFile) == NULL)
+         if(fgets(srch, MAX_LINE_LENGTH, inFile) == NULL)
             break;
          srch[strlen(srch)-1] = '\0';  // Overwrite newline with termination
          getKey(key2, srch);
@@ -348,8 +350,8 @@ int btParseGetVal(btparser *parse_obj,int type, char *find, void *loc)
    long longVal;
    double doubleVal;
    char key[255];
-   char str[1024];
-   char buf[1024];
+   char str[MAX_LINE_LENGTH];
+   char buf[MAX_LINE_LENGTH];
    char *val = NULL, *s;
    FILE *inFile;
 
@@ -358,7 +360,7 @@ int btParseGetVal(btparser *parse_obj,int type, char *find, void *loc)
 
    inFile = fopen(parse_obj->flatfile,"r");
    while(1) {
-      if(fgets(str, 1024, inFile) == NULL)
+      if(fgets(str, MAX_LINE_LENGTH, inFile) == NULL)
          break;
       getKey(key, str);
       if(!strcmp(key,find)) {
