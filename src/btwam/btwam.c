@@ -56,6 +56,7 @@ See #btwam_struct
 */
 #define TWOPI (2.0 * 3.14159265359)
 #define DEBUG(x) x
+#define MAX_DOF (32)
 
 /*==============================*
  * INCLUDES - System Files      *
@@ -1227,9 +1228,9 @@ int Mtrq2ActTrq(wam_struct *wam,vect_n *Mtrq)
 void Mpos2Jpos(wam_struct *wam,vect_n * Mpos, vect_n * Jpos)
 {
    vect_n tmp_vn[2];
-   btreal tmp_btreal[8];
+   btreal tmp_btreal[MAX_DOF];
 
-   init_local_vn(tmp_vn,tmp_btreal,8);
+   init_local_vn(tmp_vn,tmp_btreal,wam->dof);
 
    set_vn(Jpos,matXvec_mn(wam->M2JP,Mpos,tmp_vn));
 }
@@ -1240,12 +1241,12 @@ void Mpos2Jpos(wam_struct *wam,vect_n * Mpos, vect_n * Jpos)
 void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos)
 {
    vect_n tmp_vn[2];
-   btreal tmp_btreal[8];
+   btreal tmp_btreal[MAX_DOF];
 
    //btreal pos[10];
    //btreal mN[10];
    //btreal mn[10];
-   init_local_vn(tmp_vn,tmp_btreal,8);
+   init_local_vn(tmp_vn,tmp_btreal,wam->dof);
    /*
    extract_vn(pos,Jpos);
    extract_vn(mN,wam->N);
@@ -1272,11 +1273,11 @@ void Jpos2Mpos(wam_struct *wam,vect_n * Jpos, vect_n * Mpos)
 void Jtrq2Mtrq(wam_struct *wam,vect_n * Jtrq, vect_n * Mtrq)
 {
    vect_n tmp_vn[2];
-   btreal tmp_btreal[8];
+   btreal tmp_btreal[MAX_DOF];
    //btreal trq[10];
    //btreal mN[10];
    //btreal mn[10];
-   init_local_vn(tmp_vn,tmp_btreal,8);
+   init_local_vn(tmp_vn,tmp_btreal,wam->dof);
    /*
    extract_vn(trq,Jtrq);
    extract_vn(mN,wam->N);
@@ -1305,13 +1306,13 @@ void DefineWAMpos(wam_struct *wam, vect_n *wv)
    //vect_n   *motor_angle;
    long     pos;
    vect_n   motor_angle[2];
-   btreal   tmp_btreal[8];
+   btreal   tmp_btreal[MAX_DOF];
 
-   init_local_vn(motor_angle, tmp_btreal, 8);
+   init_local_vn(motor_angle, tmp_btreal, wam->dof);
    //motor_angle = new_vn(wam->dof);
 
    /* Tell the safety logic to ignore the next several faults (position will appear to be changing rapidly) */
-   SetByID(wam->act->bus, SAFETY_MODULE, IFAULT, 8);
+   SetByID(wam->act->bus, SAFETY_MODULE, IFAULT, wam->dof);
 
    // Convert from joint space to motor space
    Jpos2Mpos(wam, wv, motor_angle);

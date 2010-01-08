@@ -918,7 +918,7 @@ void paramDefaults(int newID,int targID)
       	  }
       }
       
-      setPropertySlow(0,newID,JIDX,0,targID-6); 
+      setPropertySlow(0,newID,JIDX,0,targID-3); 
       setPropertySlow(0,newID,PIDX,0,((targID-1)%4)+1); 
       break;
       
