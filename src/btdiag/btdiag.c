@@ -2656,6 +2656,36 @@ void clearScreen(void)
    btrt_mutex_unlock(&(disp_mutex));
 }
 
+void runBatch(char *filename){
+    FILE    *inFile;
+   char    line[1024];
+   COMMAND cmd;
+   long ms = 0L;
+
+   if((inFile=fopen(filename,"r"))==NULL) {
+      return;
+   }
+
+   while(1) {
+      if(fgets(line, 1024, inFile) == NULL)
+         break;
+      line[strlen(line)-1] = '\0';  // Overwrite newline with termination
+      uppercase(line);
+      //syslog(LOG_ERR, "%s", line);
+      if(strstr(line, "DELAY")){
+          sscanf(line, "%*s%ld", &ms);
+          //syslog(LOG_ERR, "delay = %ld", ms);
+          usleep(ms * 1000);
+      }else{
+          //stripComments(line);    // Strip the comments
+          strcpy(cmd.command, line);
+          parseInput(&cmd);
+          usleep(250000);
+      }
+   }
+   fclose(inFile);
+}
+
 /** Process user input.
     Handles the user's keypress, and performs the function desired by the user.
 */
@@ -2963,6 +2993,16 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
          sleep(1);
       }
       finish_entry();
+      break;
+    case 'B'://Batch commands for BHand
+      start_entry();
+      
+     addstr("Enter batch file name to run: ");
+     refresh();
+     getstr(fn);
+     
+      finish_entry();
+      runBatch(fn);
       break;
    case 'w'://Save trajectory to a file
       start_entry();
