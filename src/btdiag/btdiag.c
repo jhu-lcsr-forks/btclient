@@ -95,9 +95,9 @@ it to properly establish the time values.
 enum{SCREEN_MAIN, SCREEN_HELP};
 
 #ifdef XENOMAI
-#define Ts (0.002)
+#define Ts (0.004)
 #else 
-#define Ts (0.002)
+#define Ts (0.004)
 #endif
 
 
@@ -239,7 +239,635 @@ int  WAMcallback(struct btwam_struct *wam);
  * Functions                    *
  *==============================*/
  
+/* Define character identification macros */
+#define isAlpha(c) 		((c >= 'A') && (c <= 'Z'))
+#define isDigit(c) 		((c >= '0') && (c <= '9'))
+#define isSpace(c) 		( c == SP )
+#define toUpper(c) 		( ((c >= 'a') && (c <= 'z')) ? (c - 'a' + 'A') : (c) )
 
+#define INVALID   (0)
+/* Define NONE as (N)egative (ONE), tee hee */
+#define NONE	  (-1)
+#define MAX_INT   (0x7FFF)
+
+
+#define US        (0x0008)
+#define MAX_CMD_LEN (32)
+#define D(x) 
+
+typedef struct
+{
+	char	*ptr;
+	char	command[MAX_CMD_LEN];
+}COMMAND;
+
+
+
+struct textKey {
+	char	key[8];
+	int	idx;
+};
+
+
+
+#define ROLE_OPT_MAG_SER (0x0100)
+#define ROLE_OPT_MAG_HALL (0x0200)
+#define ROLE_OPT_MAG_ENC (0x0400)
+#define ROLE_OPT_STRAIN (0x0800)
+#define ROLE_OPT_PPS (0x1000)
+
+
+
+
+/* Command enumeration. Append only. */
+enum {
+	xCMD_LOAD, xCMD_SAVE,	xCMD_RESET, xCMD_DEF, xCMD_GET, xCMD_FIND, xCMD_SET, xCMD_HOME,	
+	xCMD_KEEP, xCMD_LOOP, xCMD_PASS, xCMD_VERS, xCMD_ERR, xCMD_HI, xCMD_IC, xCMD_IO,
+	xCMD_TC, xCMD_TO, xCMD_C, xCMD_M, xCMD_O, xCMD_T, xCMD_HELP, xCMD_END
+};
+
+
+/* Command text. Keyword, enumeration. Add alphabetically. */
+const struct textKey cmdTxt[]={
+	{ "FLOAD", xCMD_LOAD },	
+	{ "FSAVE", xCMD_SAVE },	
+	{ "RESET", xCMD_RESET },	
+	{ "FDEF", xCMD_DEF },	
+	{ "FGET", xCMD_GET },	
+	{ "FIND", xCMD_FIND },	
+	{ "FSET", xCMD_SET },	
+	{ "HOME", xCMD_HOME },	
+	{ "KEEP", xCMD_KEEP },	
+	{ "LOAD", xCMD_LOAD },	
+	{ "LOOP", xCMD_LOOP },	
+	{ "PASS", xCMD_PASS },	
+	{ "SAVE", xCMD_SAVE },	
+	{ "VERS", xCMD_VERS },	
+	{ "DEF", xCMD_DEF },	
+	{ "ERR", xCMD_ERR },	
+	{ "GET", xCMD_GET },	
+	{ "SET", xCMD_SET },	
+	{ "HI", xCMD_HI },
+	{ "IC", xCMD_IC },
+	{ "IO", xCMD_IO },                                   
+	{ "TC", xCMD_TC },
+	{ "TO", xCMD_TO },
+	{ "C", xCMD_C },
+	{ "M", xCMD_M },
+	{ "O", xCMD_O },
+	{ "T", xCMD_T },
+	{ "?", xCMD_HELP },
+
+	{ "", NONE }
+};
+
+/* Common */
+enum {
+	xVERS = 0,
+	xROLE, /* P=PRODUCT, R=ROLE: XXXX PPPP XXXX RRRR */
+	xSN,
+	xID,
+	xERROR,
+	xSTAT,
+	xADDR,
+	xVALUE,
+	xMODE,
+	xTEMP,
+	xPTEMP,
+	xOTEMP,
+	xBAUD,
+	xLOCK,
+	xDIG0,
+	xDIG1,
+	xFET0,
+	xFET1,
+	xANA0,
+	xANA1,
+	xTHERM,
+	xVBUS,
+	xIMOTOR,
+	xVLOGIC,
+	xILOGIC,
+	xSG,
+	xGRPA,
+	xGRPB,
+	xGRPC,
+	xCMD, /* For commands w/o values: RESET,HOME,KEEP,PASS,LOOP,HI,IC,IO,TC,TO,C,O,T */
+	xSAVE,
+	xLOAD,
+	xDEF,
+	xFIND,
+	xX0,
+	xX1,
+	xX2,
+	xX3,
+	xX4,
+	xX5,
+	xX6,
+	xX7,
+	
+	xCOMMON_END
+};
+
+
+
+/* Tater */
+enum {
+	xT = xCOMMON_END,
+	xMT,
+	xV,
+	xMV,
+	xMCV,
+	xMOV,
+	xP, /* 32-Bit Present Position */
+	xP2,
+	xDP, /* 32-Bit Default Position */
+	xDP2,
+	xE, /* 32-Bit Endpoint */
+	xE2,
+	xOT, /* 32-Bit Open Target */
+	xOT2,
+	xCT, /* 32-Bit Close Target */
+	xCT2,
+	xM, /* 32-Bit Move command for CAN*/
+	xM2,
+	xDS,
+	xMOFST,
+	xIOFST,
+	xUPSECS,
+	xOD,
+	xMDS,
+	xMECH, /* 32-Bit */
+	xMECH2,
+	xCTS, /* 32-Bit */
+	xCTS2,
+	xPIDX,
+	xHSG,
+	xLSG,
+	xIVEL,
+	xIOFF, /* 32-Bit */
+	xIOFF2,
+	xMPE,
+	xHOLD,
+	xTSTOP,
+	xKP,
+	xKD,
+	xKI,
+	xACCEL,
+	xTENST,
+	xTENSO,
+	xJIDX,
+	xIPNM,
+	xHALLS,
+	xHALLH, /* 32-Bit */
+	xHALLH2,
+	xPOLES,
+	xIKP,
+	xIKI,
+	xIKCOR,
+	xEN, /* 32-Bit */
+	xEN2,
+	xJP, /* 32-Bit */
+	xJP2,
+	xJOFST, /* 32-Bit */
+	xJOFST2,
+	xTIE,
+	xECMAX,
+	xECMIN,
+	xLFLAGS,
+	xLCTC,
+	xLCVC,
+	
+	xPROP_END
+};
+
+const struct textKey propTxtCommon[]={
+    { "ILOGIC", xILOGIC }, /* Logic current (tbd) */
+    { "IMOTOR", xIMOTOR }, /* Motor current (2048+205/1A) */
+    { "VLOGIC", xVLOGIC }, /* Logic voltage (tbd) */
+    { "ERROR", xERROR }, /* Error (tbd) */
+    { "OTEMP", xOTEMP }, /* Over temperature alarm (tbd) */
+    { "PTEMP", xPTEMP }, /* Peak temperature recorded (tbd) */
+    { "THERM", xTHERM }, /* Thermistor (motor) temperature */
+    { "VALUE", xVALUE }, /* Value to poke/peek */
+    { "ADDR", xADDR }, /* Address to peek/poke */
+    { "ANA0", xANA0 }, /* Analog input (pin 4:0-3V, 3:Gnd) */
+    { "ANA1", xANA1 }, /* Analog input (pin 2:0-3V, 3:Gnd) */
+    { "BAUD", xBAUD }, /* Baud rate/100. 96=9600 bps */
+    { "DIG0", xDIG0 }, /* Dig I/O: -1=In,0=Lo,1=Hi,2-100=%PWM (pin 41:0-3.3V, 44:Gnd) */
+    { "DIG1", xDIG1 }, /* Dig I/O: -1=In,0=Lo,1=Hi (pin 43:0-3.3V, 44:Gnd) */
+    { "FET0", xFET0 }, /* Tensioner output: 0=Off, 1=On */
+    { "FET1", xFET1 }, /* Brake output: 0=Off, 1=On */
+    { "FIND", xFIND }, /* Find command for CAN */
+    { "GRPA", xGRPA }, /* Comm group A */
+    { "GRPB", xGRPB }, /* Comm group B */
+    { "GRPC", xGRPC }, /* Comm group C */
+    { "LOAD", xLOAD }, /* Load command for CAN */
+    { "LOCK", xLOCK }, /* Lock */
+    { "MODE", xMODE }, /* Mode: 0=Idle, 2=Torque, 3=PID, 4=Vel, 5=Trap */
+    { "ROLE", xROLE }, /* P=PRODUCT, R=ROLE: XXXX PPPP XXXX RRRR */
+    { "SAVE", xSAVE }, /* Save command for CAN */
+    { "STAT", xSTAT }, /* Status: 0=Reset/Monitor, 2=Ready/Main */
+    { "TEMP", xTEMP }, /* Temperature (puck internal) */
+    { "VBUS", xVBUS }, /* Bus voltage (V) */
+    { "VERS", xVERS }, /* Firmware version */
+    { "CMD", xCMD }, /* For commands w/o values: RESET,HOME,KEEP,PASS,LOOP,HI,IC,IO,TC,TO,C,O,T */
+    { "DEF", xDEF }, /* Default command for CAN */
+    { "ID", xID }, /* CANbus ID */
+    { "SG", xSG }, /* Strain gage (tbd) */
+    { "SN", xSN }, /* Serial number */
+    { "X0", xX0 }, /* Gimbals offset 1 (Q4.12 rad) */
+    { "X1", xX1 }, /* Gimbals offset 2 (Q4.12 rad) */
+    { "X2", xX2 }, /* Gimbals offset 3 (Q4.12 rad) */
+    { "X3", xX3 }, /* Gimbals/safety gain 1 (Q4.12 rad/3V) */
+    { "X4", xX4 }, /* Gimbals/safety gain 2 (Q4.12 rad/3V) */
+    { "X5", xX5 }, /* Gimbals/safety gain 3 (Q4.12 rad/3V) */
+    { "X6", xX6 }, /* tbd */
+    { "X7", xX7 }, /* tbd */
+
+    { "", NONE }    
+};
+
+
+const struct textKey propTxtTater[]={
+    { "LFLAGS", xLFLAGS }, /* Loop feedback flags */
+    { "UPSECS", xUPSECS }, /* Up seconds in operation (tbd) */
+    { "ACCEL", xACCEL }, /* Acceleration (Q8.8 cts/ms/ms) */
+    { "ECMAX", xECMAX }, /* Encoder correction max value */
+    { "ECMIN", xECMIN }, /* Encoder correction min value */
+    { "HALLH", xHALLH }, /* 32-Bit Hall history bitfield */
+    { "HALLS", xHALLS }, /* Hall feedback bitfield: CBA */
+    { "IKCOR", xIKCOR }, /* Current sense correction factor */
+    { "IOFST", xIOFST }, /* Current offset calibration */
+    { "JOFST", xJOFST }, /* Joint encoder calibration offset */
+    { "MOFST", xMOFST }, /* Mechanical offset calibration */
+    { "POLES", xPOLES }, /* Number of magnets on rotor */
+    { "TENSO", xTENSO }, /* Tension offset (tbd) */
+    { "TENST", xTENST }, /* Tension total (tbd) */
+    { "TSTOP", xTSTOP }, /* Time until considered stopped */
+    { "HOLD", xHOLD }, /* Flag to hold position after move */
+    { "IOFF", xIOFF }, /* Initialization offset */
+    { "IPNM", xIPNM }, /* CommandedCurrent / Nm (ratio) */
+    { "IVEL", xIVEL }, /* Initialization velocity (tbd) */
+    { "JIDX", xJIDX }, /* Joint index */
+    { "LCTC", xLCTC }, /* Loop control torque coefficient */
+    { "LCVC", xLCVC }, /* Loop control velocity coefficient */
+    { "MECH", xMECH }, /* 32-Bit Mechanical angle (cts) */
+    { "PIDX", xPIDX }, /* Puck index for torque */
+    { "CTS", xCTS }, /* 32-Bit Counts per revolution */
+    { "HSG", xHSG }, /* High strain gage (tbd) */
+    { "IKI", xIKI }, /* Current sense integral gain */
+    { "IKP", xIKP }, /* Current sense proportional gain */
+    { "LSG", xLSG }, /* Low strain gage (tbd) */
+    { "MCV", xMCV }, /* Max close velocity (cts/ms) */
+    { "MDS", xMDS }, /* Max duty sum for power limiting (tbd) */
+    { "MOV", xMOV }, /* Max open velocity (cts/ms) */
+    { "MPE", xMPE }, /* Max position error (tbd) */
+    { "TIE", xTIE }, /* Flag to tie inner and outer links */
+    { "CT", xCT }, /* 32-Bit Close Target */
+    { "DP", xDP }, /* 32-Bit Default Position */
+    { "DS", xDS }, /* Default step */
+    { "EN", xEN }, /* Enable bitfield */
+    { "JP", xJP }, /* Joint encoder position */
+    { "KD", xKD }, /* Differential gain */
+    { "KI", xKI }, /* Integral gain */
+    { "KP", xKP }, /* Proportional gain */
+    { "MT", xMT }, /* Max torque */
+    { "MV", xMV }, /* Max velocity (cts/ms) */
+    { "OD", xOD }, /* Odometer (tbd) */
+    { "OT", xOT }, /* 32-Bit Open Target */
+    { "E", xE }, /* 32-Bit Endpoint */
+    { "M", xM }, /* 32-Bit Move command for CAN */
+    { "P", xP }, /* 32-Bit Position. R=Act, W=Cmd */
+    { "T", xT }, /* Torque command */
+    { "V", xV }, /* Velocity (cts/ms).  R=Act, W=Cmd */
+
+    { "", NONE } 
+};
+
+/*==============================*
+ * PRIVATE Function prototypes  *
+ *==============================*/
+void uppercase(char *s);
+long parseMotorSelect(COMMAND *c);
+int parseCommand(COMMAND *c);
+int parseProperty(COMMAND *c);
+inline int parseText(COMMAND *c, const struct textKey *t);
+
+/*==============================*
+ * Functions                    *
+ *==============================*/
+
+void uppercase(char *s)
+{ 
+	while(*s++ = toUpper(*s)) {} 
+}
+
+void parseInput(COMMAND *c)
+{
+	int 	err, i;
+	long 	motorSelect;
+	int 	command;
+	int 	p;
+	long 	value = 0;
+	char	str[12];
+	
+	/* Uppercase the (null terminated) input string */
+	uppercase(c->command);
+
+    //syslog(LOG_ERR,"[%s] ", c->command);
+
+	/* {<WS>} {MotorSelect} {<WS>} Command <WS> {Parameter} <WS> {Value} {<WS>} */
+	D(commWriteSerial(1,"["));
+	D(commWriteSerial(strlen(c->command),c->command));
+	D(commWriteSerial(1,"]"));
+	
+	c->ptr = c->command;
+	
+	/* Skip WhiteSpace */
+	while(*c->ptr == ' ') { ++c->ptr; }
+	
+	/* Determine the motor select */
+	// 0 1 2 3 4 5 6 7 G S IL (InnerLinks) OL (OuterLinks)
+	motorSelect = parseMotorSelect(c);
+	if(!motorSelect){ // If no motors specified
+		
+			motorSelect = 0x001E; // Specify all: 00011110
+	}
+	
+	D(commWriteSerial(4," ms="));
+	D(commWriteSerial(ltoa((long)motorSelect, str), str));
+	
+	/* Skip WhiteSpace */
+	while(*c->ptr == ' ') { ++c->ptr; }
+		
+	/* Determine the command */
+	// RESET FSET SET FGET GET FLOAD LOAD FSAVE SAVE FDEF DEF
+	// HOME IO IC HI VERS ERR O C M T ?
+	
+	command = parseText(c, cmdTxt);
+	
+	D(commWriteSerial(3," c="));
+	D(commWriteSerial(ltoa((long)command, str), str));
+	if(command == NONE) // If no command specified
+	{
+//		serErr(ERR_NO_CMD);
+		return;
+	}
+	
+	/* Skip WhiteSpace */
+	while(*c->ptr == ' ') { ++c->ptr; }
+	
+	/* Determine the property */
+	switch(command){
+	case xCMD_SET: // "SET"
+	case xCMD_GET: // "GET"
+	case xCMD_FIND: // "FIND"
+	case xCMD_LOAD: // LOAD
+	case xCMD_SAVE: // SAVE
+	case xCMD_DEF:  // DEF
+		p = parseText(c, propTxtCommon);
+		if(p == NONE) // If no common property specified
+		{
+				p = parseText(c, propTxtTater); // Check for tater prop
+				
+		}
+		D(commWriteSerial(3," p="));
+		D(commWriteSerial(ltoa((long)p, str), str));
+	
+		/* Skip WhiteSpace */
+		while(*c->ptr == ' ') { ++c->ptr; }
+	}
+	
+	/* Read a value */
+	switch(command){
+	case xCMD_SET: // "SET"
+		/* Determine the value */
+		err = parse_atol(c->ptr, &value);
+		break;
+	case xCMD_M: // "M"
+		/* Determine the value */
+		err = parse_atol(c->ptr, &value);
+		if(!err){ // If we have a value, just do a "SET M"
+			command = xCMD_SET;
+			p = xM;
+		}
+		break;
+	}
+	
+	D(commWriteSerial(3," v="));
+	D(commWriteSerial(ltoa(value, str), str));
+	
+	D(commWriteSerial(4," EN="));
+	D(commWriteSerial(ltoa((long)property[EN], str), str));
+	
+	D(commWriteSerial(4," ID="));
+	D(commWriteSerial(ltoa((long)property[ID], str), str));
+	
+	D(commWriteSerial(4," me="));
+	D(commWriteSerial(ltoa((long)me, str), str));
+	
+	D(commWriteSerial(2,"\015\012")); // CRLF
+	
+	syslog(LOG_ERR,"[%s] m=0x%0.2x, c=%d, p=%d, v=%d", c->command, motorSelect, command, p, value);
+	/* Call the cmd function, dependent on status */
+	//if(property[STAT] == STATUS_READY || p == VERS || p == STAT)
+	//	(cmd[command].f)(motorSelect, p, (void*)&value);
+
+    for( i = 0; i < 4; i++){
+        motorSelect >>= 1;
+        if(motorSelect & 0x01){
+            switch(command){
+                case xCMD_LOAD:
+                setProperty(0,i+11,xLOAD,0,p);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xLOAD, p);
+                break;
+                case xCMD_SAVE:
+                setProperty(0,i+11,xSAVE,0,p);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xSAVE, p);
+                break;
+                case xCMD_RESET:
+                setProperty(0,i+11,xCMD,0,xCMD_RESET);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xCMD,xCMD_RESET);
+                break;
+                case xCMD_DEF:
+                setProperty(0,i+11,xDEF,0,p);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xDEF, p);
+                break;
+                case xCMD_GET:
+                
+                break;
+                case xCMD_SET:
+                setProperty(0,i+11,p,0,value);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, p, value);
+                break;
+                case xCMD_HOME:
+                setProperty(0,i+11,xCMD,0,xCMD_HOME);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xCMD,xCMD_HOME);
+                break;
+                case xCMD_HI:
+                setProperty(0,i+11,xCMD,0,xCMD_HI);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xCMD,xCMD_HI);
+                break;
+                case xCMD_IC:
+                setProperty(0,i+11,xCMD,0,xCMD_IC);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xCMD,xCMD_IC);
+                break;
+                case xCMD_IO:
+                setProperty(0,i+11,xCMD,0,xCMD_IO);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xCMD,xCMD_IO);
+                break;
+                case xCMD_C:
+                setProperty(0,i+11,xCMD,0,xCMD_C);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xCMD,xCMD_C);
+                break;
+                case xCMD_M:
+                setProperty(0,i+11,xCMD,0,xCMD_M);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xCMD,xCMD_M);
+                break;
+                case xCMD_O:
+                setProperty(0,i+11,xCMD,0,xCMD_O);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xCMD,xCMD_O);
+                break;
+                case xCMD_T:
+                setProperty(0,i+11,xCMD,0,xCMD_T);
+                syslog(LOG_ERR, "Hand: %d SET %d to %ld", i+11, xCMD,xCMD_T);
+                break;
+                default:
+                
+                break;
+            }
+        }
+    }
+
+    /* Wait required for movements */
+    waitForStop();
+
+#if 0
+	/* Response required for GET, VERS, ERR, ? */
+	switch(command){
+	case xCMD_GET: // "GET"
+		if(forOnlyMe(motorSelect))
+			commWriteSerial(ltoa(value,str), str);
+		commWriteSerial(2,"\015\012");
+		break;
+		
+	case xCMD_VERS: // "VERS"
+		commWriteSerial(18, "Firmware Version: ");
+		commWriteSerial(ltoa(value,str), str);
+		commWriteSerial(2,"\015\012");
+		break;
+		
+	case xCMD_ERR: // "ERR"
+		commWriteSerial(34, "To err is human.  I'm not human.\015\012");
+		break;
+		
+	case xCMD_HELP: // "?"
+		commWriteSerial(59, "It is pitch dark, you are likely to be eaten by a grue...\015\012");
+		break;
+	}
+#endif
+}
+
+/* Convert [1234567GS][IL][OL] into a Wraptor motor select bitfield */
+long parseMotorSelect(COMMAND *c)
+{
+	long motorSelect; /* XXXXXXXX76543210 */
+
+	motorSelect = 0;
+
+	while (1)
+	{
+		if(isDigit(*c->ptr))
+		{
+				motorSelect |= 1L << (*c->ptr - '0');
+				++c->ptr;
+			
+			continue;
+	}
+		switch (*c->ptr) {
+		case ('S'):
+			// Must NOT be followed by 'E' (for SET)
+			if(*(c->ptr+1) == 'E') return(motorSelect);
+			// Must NOT be followed by 'AV' (for SAVE)
+			if( (*(c->ptr+1) == 'A') && (*(c->ptr+2) == 'V') ) return(motorSelect);
+			motorSelect |= 0x0010; // Motor 4 = 00010000
+			++c->ptr;
+			break;
+		case ('G'):
+			// Must NOT be followed by 'E' (for GET)
+			if(*(c->ptr+1) == 'E') return(motorSelect);
+			motorSelect |= 0x000E; // 1, 2, 3  = 00001110
+			++c->ptr;
+			break;
+		case ('I'):
+			// Must be followed by 'L' (for Inner Link)
+			if(*(c->ptr+1) != 'L') return(motorSelect);
+			motorSelect |= 0x000E; // 1, 2, 3 = 00001110
+			c->ptr += 2;
+			break;
+		case ('O'): // The letter oh
+			// Must be followed by 'L' (for Outer Link)
+			if(*(c->ptr+1) != 'L') return(motorSelect);
+			motorSelect |= 0x00E0; // 5, 6, 7 = 11100000
+			c->ptr += 2;
+			break;
+		default:
+			return(motorSelect);
+			//break;
+		}
+	}
+}
+
+/* Determine the property (for GET FGET SET FSET) */
+inline int parseText(COMMAND *c, const struct textKey *t)
+{
+	int i;
+	
+	i = 0;
+	while(*t[i].key)
+	{
+		if(strstr(c->ptr, t[i].key) == c->ptr) // Command matches, followed by...
+			if(*(c->ptr + strlen(t[i].key)) <= ' ') // ...space (32) or null (0)
+				break; // Found the command
+		++i; 
+	}
+	c->ptr += strlen(t[i].key);
+		
+	return(t[i].idx);
+}
+
+/** Converts a string to a long. 
+
+    \return 0 for successful conversion, 1 for no conversion
+*/
+int parse_atol(
+    char *s /**<. Pointer to string to convert to integer */,
+	long *v /**<. Pointer to location to put the value */)
+{
+    int i = 0;  /* counter */
+    short sign; /* is there a sign in the string */ 
+    long addval; /* the value of the character currently adding */
+    long result;   /* the result of the function */
+    
+    result = 0;
+
+    if((sign = (*s == '-')) || *s == '+')
+        i++;
+    while(*(s+i)>='0' && *(s+i)<='9')
+    {
+        addval = *(s+i) - '0';
+        if (result == (addval = (result * 10 + addval))/10) 
+            result = addval;
+        ++i; 
+    }
+    if(sign) 
+        result = -result;
+	
+	*v = result;
+	
+	return(!i);
+}
 
 void Cleanup(){
    int i;
@@ -666,7 +1294,7 @@ int main(int argc, char **argv)
 {
    char     chr;
    int      i;
-   int      err;
+   int      err = 0;
    char     thd_name[5];
    
    mlockall(MCL_CURRENT | MCL_FUTURE);
@@ -972,7 +1600,10 @@ int waitForStop(){
        
     return(0);
 }
-    
+
+
+
+
 int Command(char *cmd){
     while(!demo) usleep(250000);
     
@@ -2033,7 +2664,7 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
    int cnt,elapsed = 0, i;
    double ftmp,tacc,tvel;
    int dtmp,status;
-
+   COMMAND cmd;
    char fn[250],fn2[250],chr;
    int ret;
    int done1;
@@ -2157,7 +2788,18 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
       }
       finish_entry();
       break;
-   
+   case 'H'://Hand command
+      //gravity = !gravity;
+      start_entry();
+      addstr("GCL BarrettHand Command: ");
+      refresh();
+      getstr( fn);
+      //syslog(LOG_ERR, "fn[%s]", fn);
+      strcpy(cmd.command, fn);
+    //syslog(LOG_ERR, "cmd[%s]", cmd.command);
+      finish_entry();
+      parseInput(&cmd);
+      break;
    case 'G'://Toggle gcravity compensation mode
       if (GetGravityUsingCalibrated(wam[0]))
          SetGravityUsingCalibrated(wam[0],0);
