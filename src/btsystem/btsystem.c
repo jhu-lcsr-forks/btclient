@@ -80,6 +80,7 @@ bus_struct *buses = NULL; //**< Array of bus data
 int num_buses = 0; //**< Number of buses.
 int bus_data_valid = 0; //**< Used to make sure programmer did things right
 extern int gimbalsInit;
+int safetyBoardID[MAX_BUSES];
 int invalidPos[MAX_NODES], insanePos[MAX_NODES], firstPos[MAX_BUSES];
 uint64_t CPU_cycles_per_second;
 
@@ -152,12 +153,12 @@ int ReadSystemFromConfig(char *fn, int *busCount)
 }
 
 /** Load information from configuration files, initialize structures, and open CAN device drivers
- 
- 
+
+
 \return - 0 Success
-      - -1 
+      - -1
       - -2 Error parsing the config file
-      
+
 */
 int InitializeSystem(void)
 {
@@ -179,8 +180,8 @@ int InitializeSystem(void)
    //actuator_struct *act;
 
    /* Goals:
-       Initialize and enumerate each bus (bus_struct buses should already be filled in). 
-       Fill in actuator/motor/puck data structures 
+       Initialize and enumerate each bus (bus_struct buses should already be filled in).
+       Fill in actuator/motor/puck data structures
    */
 
    // Parse config file
@@ -210,7 +211,7 @@ int InitializeSystem(void)
       //err = parseGetVal(STRING, key, (void*)valStr);
       // Get bus address
       //sprintf(key, "system.bus[%d].address", bus_number);
-      
+
       // If this is a CANbus
       if(buses[bus_number].type == CAN) {
          //err = parseGetVal(INT, key, (void*)&canAddr);
@@ -219,7 +220,7 @@ int InitializeSystem(void)
          if(err = initCAN(bus_number, buses[bus_number].address))
             syslog(LOG_ERR, "Could not initialize can bus %d, err = %d", bus_number, err);
 
-         
+
          //wakePuck(bus_number, GROUPID(WHOLE_ARM));
 
          // Enumerate nodes on the bus
@@ -249,15 +250,20 @@ int InitializeSystem(void)
 
    num_actuators = 0;
    for(bus_number = 0; bus_number < num_buses; bus_number++) {
+      safetyBoardID[bus_number] = 0;
       err = getBusStatus(bus_number, status);
       // Query each node for ID, CPR, IPNM, PIDX, GRPx
       firstPos[bus_number] = TRUE;
       for(id = 0; id < MAX_NODES; id++) {
          invalidPos[id] = 0;
          insanePos[id] = 0;
-         if(id == SAFETY_MODULE) {
+         if(status[id] == -1) continue; // If there is no puck here, move on
+         getProperty(bus_number, id, ROLE, &reply);
+         if((reply & 0x000F) == ROLE_SAFETY) {
             if(status[id] != STATUS_READY) {
                syslog(LOG_ERR, "The safety module on bus %d is not functioning properly", bus_number);
+            }else{
+                safetyBoardID[bus_number] = id;
             }
          } else {
             switch(status[id]) {
@@ -407,7 +413,7 @@ int InitializeSystem(void)
 
 
 /** Figure out who is online and error gracefully if it's something other that what our config files tell us.
- 
+
 \todo EnumerateSystem -> btsystemSanityCheck() run if not everything is perfect
 */
 int EnumerateSystem()
@@ -636,12 +642,12 @@ bus_struct * GetBuses(int *Num_buses)
 }
 
 /** Broadcast getpositions for all actuators.
- 
-This function will send act->torque for each actuator in the database. 
+
+This function will send act->torque for each actuator in the database.
 If UseEngrUnits is true, the torque value will
-be converted to puck units. If UseTRC is true, the torque ripple 
+be converted to puck units. If UseTRC is true, the torque ripple
 cancelation value will be added if it is available.
- 
+
 */
 void GetPositions(int bus)
 {
@@ -658,7 +664,7 @@ void GetPositions(int bus)
    /*
    for (cnt = 0; cnt < num_actuators; cnt++) {
       if(act[cnt].bus == bus){
-         gettimeofday(&timev, 0); // if this segfaults put a timezone struct in here 
+         gettimeofday(&timev, 0); // if this segfaults put a timezone struct in here
          act[cnt].lastpos = timev.tv_usec + timev.tv_sec * 1000000;
       }
 }
@@ -787,14 +793,14 @@ void SetTorques(int bus)
 }
 
 /** Get a property from an actuator.
- 
+
   caveats: If called with an invalid act_idx it uses idx=0
- 
+
   \param act_idx Index of the actuator we want to get info from [0..num_actuators]
   \param property Property we want to request. Enumerated in btcan.h.
-  
+
   \retval value
-  
+
   \warning No way out if the bus is dead and doesn't return a value
 */
 long GetProp(int act_idx, int property)
@@ -828,11 +834,11 @@ long GetProp(int act_idx, int property)
 }
 
 /** Set the property of an actuator.
- 
+
  \param actuator_id The id number of the actuator you are setting a property on. The id starts with 0 and counts up in the order that the actuators are listed in actuators.dat.
  \param property The property that you want to set. See the enumerations listed in btwam.h.
  \param data The data you want to send
- 
+
  */
 int SetProp(int actuator_id, int property, long data)
 {
@@ -856,11 +862,11 @@ int SetProp(int actuator_id, int property, long data)
 }
 
 /** Set the property of a device.
- 
- \param CANid The id number of the device you are setting a property on. 
+
+ \param CANid The id number of the device you are setting a property on.
  \param property The property that you want to set. See the enumerations listed in btwam.h.
  \param data The data you want to send
- 
+
 */
 int SetByID(int bus, int CANid, int property, long data)
 {
@@ -936,12 +942,12 @@ int IdleActuators()
 }
 
 /** Turns on or off conversion to and from engineering units.
- 
+
   defaults to on.
-  
+
   When on, actuator angle is calculated as radians based on the number of encoder counts per revolution
   When off, actuator angle equals the motor position in encoder ticks.
-  
+
   When on, actuator torque is converted from Newton meters based on the IperNm value in the motor file.
   When off, actuator torque is in puck units.
 */
@@ -955,7 +961,7 @@ void SetEngrUnits(int onoff)
 }
 
 /** Turns on or off Torque ripple cancelation
- 
+
   If there is no torque ripple cancelation data available this function will do nothing.
 */
 void SetTRC(int onoff)
@@ -977,10 +983,10 @@ void SetTRC(int onoff)
 }
 
 /** Checks to see if torque ripple cancellation data is available for this actuator.
- 
+
   \retval 0 Nope
   \retval 1 Yup
- 
+
 */
 int ThereIsTRC(int act_idx)
 {
@@ -997,10 +1003,10 @@ int ThereIsTRC(int act_idx)
 
 /*============================================== private functions ========================================*/
 /** (internal) Loads data from files into actuator data array
- 
+
   \retval Pointer to actuator array that was allocated
   \retval NULL Unable to allocate actuator array or some other problem occured
- 
+
 */
 actuator_struct * Load_Actuator_File(int *n_act, char * actuator_filename, char * motor_filename, char * puck_filename)
 {
@@ -1153,10 +1159,10 @@ actuator_struct * Load_Actuator_File(int *n_act, char * actuator_filename, char 
 }
 
 /** (internal) Loads information in busses.dat
-        
+
     \retval int number of busses found
     \retval -1 fatal error
-    
+
     \todo fscanf(bla bla , magic_string, bla bla) needs to be checked
 */
 int Load_Bus_File(bus_struct *bus, char * filename)

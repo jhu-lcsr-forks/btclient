@@ -44,15 +44,15 @@
 
 /** \file btwam.c
     \brief Provides functions for controlling a WAM.
- 
+
     The btwam library provides high-level control functions for the Barrett
     WAM. It contains the WAM control loop, plus high-level movement commands
     and Teach & Play routines. It depends on the btsystem library for actuator-
     level communication, kinematics, dynamics, path following, position control,
     config file parsing, data logging, and matrix/vector math.
- 
+
 See #btwam_struct
- 
+
 */
 #define TWOPI (2.0 * 3.14159265359)
 #define DEBUG(x) x
@@ -83,6 +83,7 @@ See #btwam_struct
 extern int gimbalsInit;
 extern bus_struct *buses;
 int numMaintThreads = 0;
+extern int safetyBoardID[];
 
 //#define LOW_TRQ_COEFFICIENT (0.75)
 //#define BTDOUBLETIME
@@ -106,9 +107,9 @@ int BlankWAMcallback(struct btwam_struct *wam);
 /*==============================*
  * Functions                    *
  *==============================*/
- 
-/* For Debugging: This function will execute when a RealTime thread switches to 
- * secondary mode.  Also, one can look at /proc/xenomai/stat and MSW will 
+
+/* For Debugging: This function will execute when a RealTime thread switches to
+ * secondary mode.  Also, one can look at /proc/xenomai/stat and MSW will
  * tell you the number of switches a thread has made.
  */
 void warn_upon_switch(int sig __attribute__((unused)))
@@ -116,10 +117,10 @@ void warn_upon_switch(int sig __attribute__((unused)))
     void *bt[32];
     int nentries;
     int fd;
- 
+
      // Open backtrace file as APPEND. Create new file if necessary (chmod 644)
     fd = open("sigxcpu.txt", O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    
+
     /* Dump a backtrace of the frame which caused the switch to secondary mode
        To decipher a backtrace:
        1) Look at the line of the backtrace originating in your application (not a library,
@@ -127,24 +128,24 @@ void warn_upon_switch(int sig __attribute__((unused)))
        2) Take note of the memory address of that line, ex: [0x80588d5]
        3) Run "gdb <progname>"
        4) Type "list *0x80588d5" (substitute your actual memory address)
-       5) gdb will show the function() (file:line) information for your error, followed by 
+       5) gdb will show the function() (file:line) information for your error, followed by
           a listing of several surrounding lines
     */
     nentries = backtrace(bt, sizeof(bt) / sizeof(bt[0]));
     backtrace_symbols_fd(bt, nentries, fd);
     write(fd, "-----\n", 6); // Output a separator line
-    
+
     close(fd);
     syslog(LOG_ERR, "Switched out of RealTime, see sigxcpu.txt for details (frame backtrace)");
 }
 
 /** Allocate memory for components of the WAM data structure
- 
+
   This function allocates and initializes memory for many vectors and matrices
   defined in the #btwam_struct.
-  
+
   \param wam Pointer to a WAM structure: wam = (wam_struct*)btmalloc(sizeof(wam_struct));
-  
+
   See #btwam_struct for detailed information on the WAM data structure.
 */
 void InitVectors(wam_struct *wam)
@@ -218,24 +219,24 @@ void InitVectors(wam_struct *wam)
 }
 
 /** Initialize a WAM
- 
+
   This function calls the necessary lower-level btsystem functions to set
   up the pucks, enumerate them and scan in the WAM configuration information.
- 
+
   This function may kill the process using exit() if it runs into problems.
-  
+
   Note: if the filename begins with an asterisk character (*), OpenWAM
   will ignore the calibration value "zeromag" in the configuration file.
   This used primarily from the calibration program itself, to ignore
   an existing calibration.  If you must begin your filename with an asterisk,
   you must escape it; for example, OpenWAM("\*wam.conf",0) will open the
   file named "*wam.conf".
-  
+
   \param fn WAM configuration filename
   \param bus Index into the bus data structure ("System" order in wam.conf)
   \retval NULL Some error occured during initialization. Check /var/log/syslog.
   \retval wam_struct* Pointer to wam data structure.
-  
+
   See #btwam_struct
 */
 wam_struct* OpenWAM(char *fn, int bus)
@@ -250,7 +251,7 @@ wam_struct* OpenWAM(char *fn, int bus)
    vect_3         tmp_v3;
    char           thd_maintname[5];
    int            ignore_calibration;
-   
+
    /* Normally, you should use init_local_vn() for this, but in this case
       we want a vect_3 structure without assigning the data pointer (it will
       be assigned later).
@@ -258,11 +259,11 @@ wam_struct* OpenWAM(char *fn, int bus)
    tmp_v3.n = 3;
 
    // If no config file was given
-   if(!*fn) { 
+   if(!*fn) {
       strcpy(key, "wam.conf"); // Default to wam.conf
       fn = key;
    }
-   
+
    /* Check for * at the beginning of the filename (to ignore calibration) */
    ignore_calibration = 0;
    if (fn[0] == '*')
@@ -274,7 +275,7 @@ wam_struct* OpenWAM(char *fn, int bus)
    {
       fn++;
    }
-   
+
    // Parse config file
    err = parseFile(fn);
    if(err) {
@@ -350,7 +351,7 @@ wam_struct* OpenWAM(char *fn, int bus)
       // directly from the WAMControlLoop() because of the required vector cross-products.
       init_btPID(&wam->CposControl.pid[cnt]);
    }
-   
+
    // Initialize a state controller
    init_bts(&wam->Csc);
 
@@ -364,13 +365,13 @@ wam_struct* OpenWAM(char *fn, int bus)
 
    wam->isZeroed = FALSE;
    wam->force_callback = BlankWAMcallback;
-	wam->motor_callback = BlankWAMcallback;
-   
+    wam->motor_callback = BlankWAMcallback;
+
    wam->cteach.Log_Data = 0; // Default to logOff
    wam->teachDivider = 1;
    wam->teachCounter = 0;
    wam->teach_time = 0.0;
-   
+
    wam->log.Log_Data = 0; // Default to logOff
    wam->logDivider = 1;
    wam->logCounter = 0;
@@ -398,30 +399,30 @@ wam_struct* OpenWAM(char *fn, int bus)
    sprintf(key, "%s.Px_pdi", wam->name);
    tmp_v3.q = &wam->CposControl.pid[3].Kp;
    parseGetVal(VECTOR, key, (void*)&tmp_v3);
-   
+
    sprintf(key, "%s.Py_pdi", wam->name);
    tmp_v3.q = &wam->CposControl.pid[7].Kp;
    parseGetVal(VECTOR, key, (void*)&tmp_v3);
-   
+
    sprintf(key, "%s.Pz_pdi", wam->name);
    tmp_v3.q = &wam->CposControl.pid[11].Kp;
    parseGetVal(VECTOR, key, (void*)&tmp_v3);
-   
+
    // Read the Cartesian rotation control gains
    // Note that pid[0,5,10] are just storage locations for Rx, Ry, and Rz gains
    // The actual control is performed in the WAMControlLoop()
    sprintf(key, "%s.Rx_pd", wam->name);
    tmp_v3.q = &wam->CposControl.pid[0].Kp;
    parseGetVal(VECTOR, key, (void*)&tmp_v3);
-   
+
    sprintf(key, "%s.Ry_pd", wam->name);
    tmp_v3.q = &wam->CposControl.pid[5].Kp;
    parseGetVal(VECTOR, key, (void*)&tmp_v3);
-   
+
    sprintf(key, "%s.Rz_pd", wam->name);
    tmp_v3.q = &wam->CposControl.pid[10].Kp;
    parseGetVal(VECTOR, key, (void*)&tmp_v3);
-   
+
    // Read whether M4 is reversed (new as of 2007 WAMs)
    //sprintf(key, "%s.M4_2007", robotName);
    //wam->M4_reversed = 0; // Default to "pre-2007"
@@ -488,7 +489,7 @@ wam_struct* OpenWAM(char *fn, int bus)
             err = parseGetVal(VECTOR, key, (void*)wam->robot.links[link].gcal_mu);
             if (err) wam->robot.gcal_iscalibrated = 0;
          }
-         
+
          // Read joint PID parameters
          sprintf(key, "%s.link[%d].pid.kp", wam->name, link);
          parseGetVal(DOUBLE, key, (void*)&wam->JposControl.pid[link].Kp);
@@ -552,8 +553,13 @@ wam_struct* OpenWAM(char *fn, int bus)
    //syslog(LOG_ERR, "Kinematics loaded, bus = %d", wam->act[0].bus);
 
    /* If the WAM is already zeroed, note it- else, zero it */
-   //reply = TRUE;
-   getProperty(wam->act->bus, SAFETY_MODULE, ZERO, &reply);
+   if(safetyBoardID[wam->act->bus]){
+       getProperty(wam->act->bus, safetyBoardID[wam->act->bus], ZERO, &reply);
+   }else{
+       // DefineWAMpos() interacts with the Safety Board, so don't change this
+       // without making accommodations in DefineWAMpos().
+       reply = TRUE;
+   }
 
    if(reply) {
       wam->isZeroed = TRUE;
@@ -597,7 +603,7 @@ wam_struct* OpenWAM(char *fn, int bus)
          }
          /* Calculate the error in encoder counts */
          Jpos2Mpos(wam,wam->park_location,wam->Mpos);
-         
+
          set_vn(errmag, add_vn( scale_vn(1.0/(2*pi),
                                          e_mul_vn(numcounts,wam->Mpos)),
                                 sub_vn( zeromag, curmag )));
@@ -661,7 +667,7 @@ void CloseWAM(wam_struct* wam)
 }
 
 /**
- Actuator Idx starts at 0 and counts up to number of actuators. 
+ Actuator Idx starts at 0 and counts up to number of actuators.
  MotorID is keyed to the location on the wam (and hense the joint it drives)
  This relationship allows only calculating the control info for the joints that
  are in use.
@@ -672,7 +678,7 @@ BTINLINE int MotorID_From_ActIdx(wam_struct *wam,int idx)
 }
 
 /** Internal: Periodic service routine
-    Services the data logging and teach&play data structures (for writing buffers to disk). 
+    Services the data logging and teach&play data structures (for writing buffers to disk).
     Also handles trajectory playback options including loop_trj and idle_when_done.
 */
 void WAMMaintenanceThread(void *data)
@@ -698,7 +704,7 @@ void WAMMaintenanceThread(void *data)
 }
 
 /** This function closes the control loop on the WAM.
- 
+
 The WAMControlThread() contains code to:
  - Set up periodic timer for the control loop
  - Wait until the start of the next control period
@@ -714,9 +720,9 @@ The WAMControlThread() contains code to:
  - Evaluate the Backward Dynamics (convert link forces to joint torques)
  - Convert from joint torques to motor torques
  - Send the torques to the WAM
- 
+
  \todo Clean up control loop profiling code. It is too distracting.
- 
+
 */
 void WAMControlThread(void *data)
 {
@@ -767,7 +773,7 @@ void WAMControlThread(void *data)
    /* Get the wam pointer */
    this_thd = (btrt_thread_struct*)data;
    wam = this_thd->data;
-   
+
    /* Set up the rotation control gains */
    ELEM(kp, 0, 0) = wam->CposControl.pid[0].Kp;
    ELEM(kp, 1, 1) = wam->CposControl.pid[5].Kp;
@@ -775,7 +781,7 @@ void WAMControlThread(void *data)
    ELEM(kd, 0, 0) = wam->CposControl.pid[0].Kd;
    ELEM(kd, 1, 1) = wam->CposControl.pid[5].Kd;
    ELEM(kd, 2, 2) = wam->CposControl.pid[10].Kd;
-   
+
    /* Set up timer */
    thisperiod = this_thd->period;
    rtime_period = (RTIME)(thisperiod * 1000000000.0);
@@ -805,7 +811,7 @@ void WAMControlThread(void *data)
       of the realtime domain and placed in the domain of the standard Linux scheduler.
       This includes printf(), syslog(), send(), receive(), read(), write(), and many
       other system calls. To keep the control loop in the realtime domain, you should
-      avoid calling these functions from a realtime thread. Excessive latencies, 
+      avoid calling these functions from a realtime thread. Excessive latencies,
       heartbeat errors, and unstable control can all result from the control loop
       being forced out of primary mode (realtime domain) by a realtime-unfriendly
       function call!
@@ -931,7 +937,7 @@ void WAMControlThread(void *data)
 
       /* Get gravity torques */
       get_gravity_torques(&wam->robot, wam->Gtrq);
-      
+
       /* Fill in the Cartesian tool XYZ */
       set_v3(wam->Cpos,T_to_W_bot(&wam->robot,wam->Cpoint));
       //set_vn(wam->R6pos,(vect_n*)wam->Cpos);
@@ -952,27 +958,27 @@ void WAMControlThread(void *data)
          getcol_m3(n, wam->HMpos, 0);
          getcol_m3(o, wam->HMpos, 1);
          getcol_m3(a, wam->HMpos, 2);
-         
+
          /* Desired rotation */
          getcol_m3(ns, wam->HMref, 0);
          getcol_m3(os, wam->HMref, 1);
          getcol_m3(as, wam->HMref, 2);
-         
+
          /* Error = 0.5 [ (ns x n) + (os x o) + (as x a) ] (Luh, Walker, Paul, 1980) */
          set_v3(e, (scale_v3(0.5, add_v3(cross_v3(ns,n), add_v3(cross_v3(os,o), cross_v3(as,a))))));
-         
+
          /* First derivative of the error (simple, no filter) */
          set_v3(ed, scale_v3(1.0/thisperiod, add_v3(e, scale_v3(-1.0, last_e))));
-         
+
          /* Torque = (Kp * e) + (Kd * ed) (PD control) */
          set_v3(wam->Ctrq, add_v3(matXvec_m3(kp, e), matXvec_m3(kd, ed)));
-         
+
          /* Store the last error for the next iteration */
          set_v3(last_e, e);
       }else{
-         fill_v3(last_e, 0.0); // Clear last rotation error 
+         fill_v3(last_e, 0.0); // Clear last rotation error
       }
-     
+
 #if 0
       /* Quaternian angular control in Cartesian space */
       R_to_q(wam->qact,T_to_W_trans_bot(&wam->robot));
@@ -1001,7 +1007,7 @@ void WAMControlThread(void *data)
 
       /* Copy the RNE joint torques from robot->t into Ttrq */
       get_t_bot(&wam->robot,wam->Ttrq);
-      
+
       /* Copy in gravity compensation torques */
       set_vn(wam->Ttrq,add_vn(wam->Ttrq,wam->Gtrq));
 
@@ -1023,8 +1029,8 @@ void WAMControlThread(void *data)
       }
 #endif
 
-		/*  callback function for individual motor (not joint) torques */ 
-		(*wam->motor_callback)(wam);
+        /*  callback function for individual motor (not joint) torques */
+        (*wam->motor_callback)(wam);
 
       /* Move motor torques from Mtrq into actuator database */
       Mtrq2ActTrq(wam,wam->Mtrq);
@@ -1295,7 +1301,7 @@ void Jtrq2Mtrq(wam_struct *wam,vect_n * Jtrq, vect_n * Mtrq)
 }
 
 /** Reset the position sensors on the pucks to the passed in position in units of joint-space radians
- 
+
 Reset the position sensors on the pucks to the passed in position in units of joint-space radians
 The wam must be in idle mode.
 */
@@ -1312,7 +1318,7 @@ void DefineWAMpos(wam_struct *wam, vect_n *wv)
    //motor_angle = new_vn(wam->dof);
 
    /* Tell the safety logic to ignore the next several faults (position will appear to be changing rapidly) */
-   SetByID(wam->act->bus, SAFETY_MODULE, IFAULT, wam->dof);
+   SetByID(wam->act->bus, safetyBoardID[wam->act->bus], IFAULT, wam->dof);
 
    // Convert from joint space to motor space
    Jpos2Mpos(wam, wv, motor_angle);
@@ -1325,7 +1331,7 @@ void DefineWAMpos(wam_struct *wam, vect_n *wv)
    }
 
    /* Tell the safety logic start monitoring tip velocity */
-   SetByID(wam->act->bus, SAFETY_MODULE, ZERO, 1); /* 0 = Joint velocity, 1 = Tip velocity */
+   SetByID(wam->act->bus, safetyBoardID[wam->act->bus], ZERO, 1); /* 0 = Joint velocity, 1 = Tip velocity */
 
    wam->isZeroed = TRUE;
 }
@@ -1365,18 +1371,18 @@ void SetJointSpace(wam_struct* wam)
 }
 
 /** Turns position constraint on/off.
- 
+
 If the robot is being controlled in JointSpace (SetJointSpace), it will apply a PD loop to each joint.
 If the robot is being controlled in CartesianSpace (SetCartesianSpace), it will apply a PD loop to the robot endpoint.
- 
+
 \param wam Pointer to wam structure you want to operate on.
 \param onoff 0:Off !0:On
- 
-    
-We only allow setting position mode if we are idling. 
-Setting position mode while already in position mode will reset the position 
+
+
+We only allow setting position mode if we are idling.
+Setting position mode while already in position mode will reset the position
 constraint causing unexpected behavior for a user at this level
- 
+
 */
 void SetPositionConstraint(wam_struct* wam, int onoff)
 {
@@ -1399,7 +1405,7 @@ void MoveSetup(wam_struct* wam, btreal vel, btreal acc)
 /** Begins a point-to-point move in your active space (joint or Cartesian)
 You should call #MoveSetup() before you call this.
 Your destination should have the correct dimensions for your active space.
- 
+
 \param wam A pointer to your WAM structure
 \param dest The desired destination
 */
@@ -1410,7 +1416,7 @@ void MoveWAM(wam_struct* wam, vect_n* dest)
    if (present_state != SCMODE_POS) {
       setmode_bts(wam->active_sc,SCMODE_POS);
    }
-   
+
    if(moveto_bts(wam->active_sc,dest))
       syslog(LOG_ERR,"MoveWAM:Aborted");
 }
@@ -1440,7 +1446,7 @@ void MoveStop(wam_struct* wam)
 
 
 /** Find the center of a joint range and move to the zero_offsets position relative to the center
- 
+
 \todo Add code to check the puck for IsZerod so that we
 know whether we have to zero or not...
 */
@@ -1455,7 +1461,7 @@ void ParkWAM(wam_struct* wam)
 }
 
 /** Returns the present anti-gravity scaling
-  
+
    \retval The present anti-gravity scaling
 */
 btreal GetGravityComp(wam_struct *w)
@@ -1467,7 +1473,7 @@ btreal GetGravityComp(wam_struct *w)
 */
 void SetGravityComp(wam_struct *w,btreal scale)
 {
-   set_gravity_bot(&w->robot, scale); 
+   set_gravity_bot(&w->robot, scale);
 }
 
 /** Enable or disable using calibrated gravity compensation
@@ -1550,19 +1556,19 @@ void setSafetyLimits(int bus, double jointVel, double tipVel, double elbowVel)
    if((jointVel > 0) && (jointVel < 7)) /* If the vel (rad/s) is reasonable */
    {
       conversion = jointVel * 0x1000; /* Convert to Q4.12 rad/s */
-      SetByID(bus, SAFETY_MODULE, VL2, conversion);
+      SetByID(bus, safetyBoardID[bus], VL2, conversion);
    }
 
    if((tipVel > 0) && (tipVel < 7)) /* If the vel (m/s) is reasonable */
    {
       conversion = tipVel * 0x1000; /* Convert to Q4.12 rad/s */
-      SetByID(bus, SAFETY_MODULE, VL2, conversion);
+      SetByID(bus, safetyBoardID[bus], VL2, conversion);
    }
 
    if((elbowVel > 0) && (elbowVel < 7)) /* If the vel (m/s) is reasonable */
    {
       conversion = elbowVel * 0x1000; /* Convert to Q4.12 rad/s */
-      SetByID(bus, SAFETY_MODULE, VL2, conversion);
+      SetByID(bus, safetyBoardID[bus], VL2, conversion);
    }
 
 }
@@ -1587,10 +1593,10 @@ void DumpWAM2Syslog(wam_struct *wam)
 }
 
 /** Initialize Continuous teach and play
- 
-Notes: 
+
+Notes:
  - Variable numbers of joints are handled by polling the robot structure
- 
+
 \param divider 1 = Log data every control cycle, 2 = Log data every 2nd control cycle, etc.
 \param filename The output file for the path
 */
@@ -1632,16 +1638,16 @@ void ServiceContinuousTeach(wam_struct *wam)
 
 /** Register a WAM control loop callback function.
 
-The registerWAMcallback() function registers a special function to be 
-called from the WAMControlThread() after the positions have been received 
-from the WAM (and after all the kinematics are calculated) but before torques 
+The registerWAMcallback() function registers a special function to be
+called from the WAMControlThread() after the positions have been received
+from the WAM (and after all the kinematics are calculated) but before torques
 are sent to the WAM.
- - Since this function becomes part of the control loop, it must execute 
+ - Since this function becomes part of the control loop, it must execute
 quickly to support the strict realtime periodic scheduler requirements.
- - For proper operation, you must avoid using any system calls that 
-cause this thread to drop out of realtime mode. Avoid syslog, printf, and 
+ - For proper operation, you must avoid using any system calls that
+cause this thread to drop out of realtime mode. Avoid syslog, printf, and
 most other forms of I/O.
- 
+
 \param wam A pointer to your WAM structure
 \param func A pointer to the function you want to register
 */
