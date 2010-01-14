@@ -40,7 +40,7 @@
  *                                                                          *
  * ======================================================================== */
 
-char *statusTxt[] = 
+char *statusTxt[] =
 {
    "STATUS_OFFLINE",
    "STATUS_RESET",
@@ -54,7 +54,7 @@ struct defaultStruct
    long val;
 };
 
-struct defaultStruct taterDefs[] = 
+struct defaultStruct taterDefs[] =
 {
    &TIE, 0,
    &ACCEL, 100,
@@ -76,11 +76,11 @@ struct defaultStruct taterDefs[] =
    &KP, 2000,
    &KD, 8000,
    &KI, 0,
-   
+
    NULL, 0
 };
 
-struct defaultStruct bh8Defs[] = 
+struct defaultStruct bh8Defs[] =
 {
    &TIE, 0,
    &ACCEL, 200,
@@ -95,7 +95,7 @@ struct defaultStruct bh8Defs[] =
    &MOV, 200,
    &OT, 0,
    &HOLD, 0,
-   &TSTOP, 0,
+   &TSTOP, 1000,
    &OTEMP, 60,
    &PTEMP, 0,
    &POLES, 6,
@@ -104,7 +104,7 @@ struct defaultStruct bh8Defs[] =
    &IKCOR, 102,
    &IOFF, 0,
    &IVEL, 75,
-   &_DS, -2560,
+   &_DS, -25600,
    &KP, 500,
    &KD, 5000,
    &KI, 0,
@@ -114,11 +114,11 @@ struct defaultStruct bh8Defs[] =
    &GRPA, 0,
    &GRPB, 7,
    &GRPC, 8,
-   
+
    NULL, 0
 };
 
-struct defaultStruct wraptorDefs[] = 
+struct defaultStruct wraptorDefs[] =
 {
    &TIE, 0,
    &ACCEL, 100,
@@ -145,11 +145,11 @@ struct defaultStruct wraptorDefs[] =
    &GRPC, 4,
    &POLES, 6,
    &IPNM, 20000,
-   
+
    NULL, 0
 };
 
-struct defaultStruct safetyDefs[] = 
+struct defaultStruct safetyDefs[] =
 {
    &TIE, 0,
    &VOLTL1, 36,
@@ -159,7 +159,7 @@ struct defaultStruct safetyDefs[] =
    &GRPA, 1,
    &GRPB, 2,
    &GRPC, 3,
-   
+
    NULL, 0
 };
 

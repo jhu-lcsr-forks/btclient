@@ -9,7 +9,7 @@
  *                                                                          *
  *  Note: This file may be linked against a closed-source proprietary
  *        driver library (libntcan) from esd electronics
- *        (http://esd-electronics.com) 
+ *        (http://esd-electronics.com)
  *                                                                          *
  *  **********************************************************************  *
  *                                                                          *
@@ -113,10 +113,13 @@ enum {
 };
 
 enum {
-   ROLE_TATER = 0,
-   ROLE_GIMBALS = 1,
-   ROLE_SAFETY = 2,
-   ROLE_WRAPTOR = 3
+    ROLE_TATER,
+    ROLE_GIMBALS,
+    ROLE_SAFETY,
+    ROLE_WRAPTOR,
+    ROLE_TRIGGER,
+    ROLE_BHAND,
+    ROLE_FORCE
 };
 
 /*! Control_mode states */

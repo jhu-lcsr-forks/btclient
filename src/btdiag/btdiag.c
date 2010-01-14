@@ -759,11 +759,12 @@ int main(int argc, char **argv)
     /* Add a pointers to some data to log */
     /* NOTE: log_time begins counting seconds when the WAMControlThread() is started */
     AddDataDL(&(wam[0]->log), &(wam[0]->log_time), sizeof(double), BTLOG_DOUBLE, "Time(s)");
-    AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Jpos),sizeof(btreal) * len_vn((vect_n*)wam[0]->Jpos), BTLOG_BTREAL,"Jpos(rad)");
-    AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Mpos),sizeof(btreal) * len_vn((vect_n*)wam[0]->Mpos), BTLOG_BTREAL,"Mpos(rad)");
-    AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Jtrq),sizeof(btreal) * len_vn((vect_n*)wam[0]->Jtrq), BTLOG_BTREAL,"Jtrq(rad)");
-    AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Mtrq),sizeof(btreal) * len_vn((vect_n*)wam[0]->Mtrq), BTLOG_BTREAL,"Mtrq(rad)");
-    AddDataDL(&(wam[0]->log), (void*)(jointPosition+1), sizeof(long) * len_vn((vect_n*)wam[0]->Mtrq), BTLOG_LONG, "JointEncoder(cts)");
+    AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Jpos), sizeof(btreal) * len_vn((vect_n*)wam[0]->Jpos), BTLOG_BTREAL,"Jpos(rad)");
+    AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Mpos), sizeof(btreal) * len_vn((vect_n*)wam[0]->Mpos), BTLOG_BTREAL,"Mpos(rad)");
+    AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Jtrq), sizeof(btreal) * len_vn((vect_n*)wam[0]->Jtrq), BTLOG_BTREAL,"Jtrq(rad)");
+    AddDataDL(&(wam[0]->log), valptr_vn((vect_n*)wam[0]->Mtrq), sizeof(btreal) * len_vn((vect_n*)wam[0]->Mtrq), BTLOG_BTREAL,"Mtrq(rad)");
+    AddDataDL(&(wam[0]->log), (void*)&wam[0]->act[0].puck.position, sizeof(long), BTLOG_LONG, "MagEnc(cts)");
+    AddDataDL(&(wam[0]->log), (void*)(jointPosition+1), sizeof(long), BTLOG_LONG, "OptEnc(cts)");
 
     /* Initialize the datalogging buffer size and output file.
      * Once the buffer is full, the data is written to disk. Datalogging continues

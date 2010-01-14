@@ -41,42 +41,42 @@
  * ======================================================================== */
 
 /** \file btutil.c
- 
+
 Puck utilities:
- 
+
 Bus enumeration - Prints out what is alive
-Bus Enumeration (debug)- Broadcast request; Print CANid,Serial,Status 
- 
-Bus enumeration and puck status - 
+Bus Enumeration (debug)- Broadcast request; Print CANid,Serial,Status
+
+Bus enumeration and puck status -
   Prints out all interesting puck values.
-  
+
 Puck Find motor offsets
- 
+
 Puck - Load WAM enumeration information.
- 
+
 Puck - Load new firmware
- 
+
 */
 
 /** Usage:
- 
+
 btutil [-c configfile] command [detail]
- 
+
 where command is:
- 
+
   enum - List what is on the can bus and what their state is.
   stat - List paramers of interest
     all - dump all parameters
     init - dump parameters that are important to initial startup
-    
+
   moffst # - Find motor offset for puck id #
   writefirmware # filename - write the specified firmware file
   writewaminfo # - write default wam enumeration info to puck id #
   copyparameters filename - read all parameters and store them to a file
-  writeparameters filename - write all parameters stored in a file  
-  
- 
- 
+  writeparameters filename - write all parameters stored in a file
+
+
+
 */
 
 
@@ -164,7 +164,7 @@ void tensionCable(void *data);
 void findOffset(void *data);
 void exitProgram(void *data);
 
-struct fcnStruct fcn[] = { 
+struct fcnStruct fcn[] = {
    activePuck, "Change active puck (1-9)",
    enumeratePucks, "Enumerate bus",
    firmwarePuck, "Download firmware (tek/out)",
@@ -175,7 +175,7 @@ struct fcnStruct fcn[] = {
    //tensionCable, "Tension cable",
    //findOffset, "Find motor offset (Optic/Magnetic)",
    exitProgram, "Exit program",
-   
+
    NULL, ""
 };
 
@@ -194,9 +194,9 @@ void enumeratePucks(void *data){
    int y;
    long status[MAX_NODES];
    long monVers, mainVers;
-   
+
    x = enumX; y = enumY;
-   
+
    clearScreen();
    getBusStatus(0, status);
    usleep(500000);
@@ -226,10 +226,10 @@ void enumeratePucks(void *data){
          default: // Strange
          break;
       }
-      
+
    }
 }
- 
+
 void activePuck(void *data){
    start_entry();
    addstr("Change active puck to: ");
@@ -240,13 +240,13 @@ void activePuck(void *data){
 
 void firmwarePuck(void *data){
    char fn[64];
-   
+
    start_entry();
    addstr("Download firmware file: ");
    refresh();
    scanw("%s\n", fn);
    finish_entry();
-   
+
    firmwareDL(id, fn);
    usleep(2000000);
    enumeratePucks(NULL);
@@ -255,33 +255,33 @@ void firmwarePuck(void *data){
 void terminalMode(void *data){
    int prop;
    long val;
-   
+
    start_entry();
    addstr("Which property: ");
    refresh();
    scanw("%d\n", &prop);
    finish_entry();
-   
+
    start_entry();
    addstr("What value: ");
    refresh();
    scanw("%ld\n", &val);
    finish_entry();
-   
+
    setPropertySlow(0, id, prop, FALSE, val);
-   
+
 }
 
 void watchProperty(void *data){
    char prop[64];
    int i;
-   
+
    start_entry();
    addstr("Which property (or \"clear\"): ");
    refresh();
    scanw("%s\n", prop);
    finish_entry();
-   
+
    if(!strcmp(prop, "clear")){
       for(i = 0; i < MAX_WATCH; i++){
          watch[i].puckID = 0;
@@ -290,7 +290,7 @@ void watchProperty(void *data){
       clearScreen();
       return;
    }
-   
+
    i = 0;
    while(i < MAX_WATCH){
       if(!watch[i].puckID){
@@ -303,28 +303,28 @@ void watchProperty(void *data){
       ++i;
    }
    return;
-   
+
 }
 
 void setDefaults(void *data){
    int altID;
    char questionTxt[256];
-   
+
    sprintf(questionTxt, "Set defaults for puck %d to typical defaults for puck [%d]: ", id, id);
    start_entry();
    addstr(questionTxt);
    refresh();
    scanw("%d\n",  &altID);
    finish_entry();
-   
+
    paramDefaults(id, altID);
-   
+
    mvprintw(entryLine, 1, "Done setting defaults                                          ");
 }
 
 void checkHalls(int arg1){
    long        vers, reply, cts, startPos;
-   
+
    wakePuck(0,arg1);
    setPropertySlow(0, arg1, ADDR, 0, 28900); // GPBDAT
    printf("\nPlease turn motor %d approx one revolution...\n");
@@ -355,12 +355,12 @@ cableTension(int motor){
    int tens;
    long startPos, endPos;
    double nm = 0.0;
-   
+
    cmd = T;
    // Set the default tension
    // Comment out this section to enter your own values
    switch(motor){
-      case 1: case 2: case 3: 
+      case 1: case 2: case 3:
          nm = 0.9;
          break;
       case 4:
@@ -387,7 +387,7 @@ cableTension(int motor){
          tens = nm * 5000;
          break;
    }
-   
+
    setPropertySlow(0,GROUPID(0),MODE,FALSE,MODE_TORQUE);
    printf("\nPlease move cable to shaft end, then press <Enter>");
    mygetch();
@@ -440,13 +440,13 @@ void init_ncurses(void)
 void ProcessWatch(void){
    int i;
    long value;
-   
-   canClearMsg(0); 
+
+   canClearMsg(0);
    //clearScreen();
    for(i = 0; i < MAX_WATCH; i++){
       if(watch[i].puckID){
          getProperty(0, watch[i].puckID, watch[i].prop, &value);
-         mvprintw(watchY+i, watchX + 2, "ID=%d   PROP=%d   VAL=%ld\t\t", 
+         mvprintw(watchY+i, watchX + 2, "ID=%d   PROP=%d   VAL=%ld\t\t",
             watch[i].puckID, watch[i].prop, value);
       }
    }
@@ -460,23 +460,23 @@ void Startup(void *thd){
    int pID;
    int i;
    long status[MAX_NODES];
-   
+
    argc = args.a;
    argv = args.b;
-   
+
    //printf("a=%d, s=%s\n", argc, argv[1]);
-   
+
    /* Initialize CAN */
    if(err = initCAN(0, 0)) {
       syslog(LOG_ERR, "initCAN returned err=%d", err);
    }
-   
+
    /* Open serial port */
    if(err = serialOpen(&p, "/dev/ttyS0")) {
       syslog(LOG_ERR, "Error opening serial port: %d", err);
    }
    serialSetBaud(&p, 9600);
-   
+
    if(argc > 1){
       //getBusStatus(0, status);
       handleMenu(argc, argv);
@@ -485,34 +485,34 @@ void Startup(void *thd){
       init_ncurses();
       atexit((void*)endwin);
       curses = TRUE;
-      
+
       /* Initialize the display mutex */
       test_and_log(
          btrt_mutex_init(&(disp_mutex)),
          "Could not initialize mutex for displays.");
-      
+
       /* Spin off the display thread */
       btrt_thread_create(&disp_thd, "DISP", 10, (void*)DisplayThread, NULL);
       //btthread_create(&disp_thd,0,(void*)DisplayThread,NULL);
-   
+
       for(i = 0; i < MAX_WATCH; i++)
          watch[i].puckID = 0;
       //enumeratePucks(NULL);
       getBusStatus(0, status);
-      
+
       while (!done) {
          /* Check and handle user keypress */
          if ((chr = getch()) != ERR)
             ProcessInput(chr);
          ProcessWatch();
-         
+
          usleep(100000); // Sleep for 0.1s
       }
    }
-   
-   freeCAN(0); 
+
+   freeCAN(0);
    startDone = 1;
-   
+
    btrt_thread_exit((btrt_thread_struct*)thd);
 }
 
@@ -527,16 +527,16 @@ int main( int argc, char **argv )
 {
    args.a = argc;
    args.b = argv;
-   
+
    mlockall(MCL_CURRENT | MCL_FUTURE);
-   
+
    /* Initialize syslogd */
    openlog("PUCK", LOG_CONS | LOG_NDELAY, LOG_USER);
    syslog(LOG_ERR, "...Starting Puck Utility Program...");
 
    /* Register the ctrl-c interrupt handler */
    signal(SIGINT, Cleanup);
-   
+
    /* RT task for setup of CAN Bus */
    btrt_thread_create(&StartupThread,"StTT", 45, (void*)Startup, NULL);
    while(!startDone)
@@ -549,7 +549,7 @@ int main( int argc, char **argv )
 void DisplayThread()
 {
    int cnt,err;
-   
+
    clear();
    refresh();
    while (!done) {
@@ -561,7 +561,7 @@ void DisplayThread()
          break;
       }
       btrt_mutex_unlock(&(disp_mutex));
-      
+
       usleep(100000);
    }
 
@@ -605,24 +605,24 @@ void RenderMAIN_SCREEN()
    x = 5;
 
    mvprintw(y, 0, "Barrett Technology - Puck Utility  *** Active puck = %d ***  ", id); y+=2;
-   
+
    i = 0;
    while(fcn[i].f){
       mvprintw(y++, x, fcn[i].title);
       i++;
    }
-   
+
    mvprintw(arrow, 1, "-->");
-   
+
    y++;
    entryLine = y;
-   
+
    mvprintw(termY-2, termX, " __________");
    mvprintw(termY-1, termX, "| TERMINAL \\____________________________");
-   
+
    mvprintw(watchY-2, watchX, " __________");
    mvprintw(watchY-1, watchX, "| WATCH    \\____________________________");
-   
+
    mvprintw(entryLine, 0, "");
    refresh();
 }
@@ -657,11 +657,11 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
    case '7': id = 7; break;
    case '8': id = 8; break;
    case '9': id = 9; break;
-   
+
    case 10: // <Enter Key>
       (fcn[arrow-2].f)(NULL);
       break;
-   
+
    case '_'://Refresh display
       clearScreen();
       break;
@@ -685,12 +685,12 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
                }
                else if (chr == 67) //Right arrow
                {
-                 
+
                }
                else if (chr == 68) //Left arrow
                {
-                  
-               } 
+
+               }
                else {
                   while(getch()!=ERR) {
                      // Do nothing
@@ -765,18 +765,18 @@ int firmwareDL(int id, char *fn)
    if((fp=fopen(fn, "r"))==NULL) {
       return(1);
    }
-   
+
    // Count the lines
    lineTotal = 0;
    while(fgets(line, 99, fp) != NULL)
       ++lineTotal;
-   
+
    // Reset the file pointer
    fclose(fp);
    if((fp=fopen(fn, "r"))==NULL) {
       return(1);
    }
-   
+
    setPropertySlow(0, id, 5, FALSE, 0L); // Reset
    usleep(1000000); // Wait a sec
    setPropertySlow(0, id, 0, FALSE, 0x000000AA);
@@ -814,14 +814,14 @@ int firmwareDL(int id, char *fn)
    mvprintw(entryLine, 1, "Download complete!               ");
    else
       printf("\nDownload complete!   ");
-   
+
    return(0);
 }
 
 void checkTemp(int puckID){
    long dat;
    int err = 0;
-   
+
    wakePuck(0, puckID);
    getProperty(0, puckID, TEMP, &dat);
    printf("\nTEMP = %ld", dat);
@@ -837,23 +837,23 @@ void checkTemp(int puckID){
       err++;
    }
    */
-   
+
    printf("\nDone. ");
    printf("\n");
 }
 
 void checkAutotensioner(int puckID){
    int i, cycles = 8;
-   
+
    wakePuck(0, puckID);
-   
+
    while(cycles--){
       setPropertySlow(0, puckID, FET1, 0, 1);
       usleep(250000);
       setPropertySlow(0, puckID, FET1, 0, 0);
       usleep(250000);
    }
-   
+
    printf("\nDone. ");
    printf("\n");
 }
@@ -862,109 +862,111 @@ void paramDefaults(int newID,int targID)
 {
    int i;
    long vers, role;
-   
+
    wakePuck(0,newID);
    //getProperty(0, newID, VERS, &vers);
    getProperty(0, newID, ROLE, &role);
-   
+
    switch(role & 0x00FF){
       case ROLE_TATER:
+      case ROLE_BHAND:
       if(targID >= 1 && targID <= 7) { // WAM pucks
-		  for(i = 0; taterDefs[i].key; i++){
-			 setPropertySlow(0, newID, *taterDefs[i].key, 0, taterDefs[i].val);
-		  }
+          for(i = 0; taterDefs[i].key; i++){
+             setPropertySlow(0, newID, *taterDefs[i].key, 0, taterDefs[i].val);
+          }
       }
       //if(role & 0x0100)
-      //   setPropertySlow(0, newID, CTS, 0, 4096); 
-      
+      //   setPropertySlow(0, newID, CTS, 0, 4096);
+
       if(targID <= 4) { //4DOF
-         setPropertySlow(0,newID,IKCOR,0,1638); 
-         setPropertySlow(0,newID,IKP,0,8192); 
-         setPropertySlow(0,newID,IKI,0,3276); 
+         setPropertySlow(0,newID,IKCOR,0,1638);
+         setPropertySlow(0,newID,IKP,0,8192);
+         setPropertySlow(0,newID,IKI,0,3276);
          setPropertySlow(0,newID,IPNM,0,2700); //2755);
          //setPropertySlow(0,newID,IPNM,0,2562);//2755);
-         setPropertySlow(0,newID,POLES,0,12); 
-         setPropertySlow(0,newID,GRPA,0,0); 
-         setPropertySlow(0,newID,GRPB,0,1); 
-         setPropertySlow(0,newID,GRPC,0,4); 
-   
+         setPropertySlow(0,newID,POLES,0,12);
+         setPropertySlow(0,newID,GRPA,0,0);
+         setPropertySlow(0,newID,GRPB,0,1);
+         setPropertySlow(0,newID,GRPC,0,4);
+
       } else if(targID <= 7) { //Wrist
-         setPropertySlow(0,newID,IKCOR,0,819); 
-         setPropertySlow(0,newID,IKP,0,4096); 
-         setPropertySlow(0,newID,IKI,0,819); 
-         setPropertySlow(0,newID,GRPA,0,0); 
-         setPropertySlow(0,newID,GRPB,0,2); 
-         setPropertySlow(0,newID,GRPC,0,5); 
+         setPropertySlow(0,newID,IKCOR,0,819);
+         setPropertySlow(0,newID,IKP,0,4096);
+         setPropertySlow(0,newID,IKI,0,819);
+         setPropertySlow(0,newID,GRPA,0,0);
+         setPropertySlow(0,newID,GRPB,0,2);
+         setPropertySlow(0,newID,GRPC,0,5);
          if(targID != 7) {
-            setPropertySlow(0,newID,IPNM,0,6500); 
+            setPropertySlow(0,newID,IPNM,0,6500);
             //setPropertySlow(0,newID,IPNM,0,4961);
-            setPropertySlow(0,newID,POLES,0,8); 
+            setPropertySlow(0,newID,POLES,0,8);
          } else {
-            setPropertySlow(0,newID,IPNM,0,17474); 
-            setPropertySlow(0,newID,POLES,0,6); 
+            setPropertySlow(0,newID,IPNM,0,17474);
+            setPropertySlow(0,newID,POLES,0,6);
          }
       }
-      
+
       if(targID >= 11 && targID <= 14){ // BH8-280
-		  for(i = 0; bh8Defs[i].key; i++){
-			 setPropertySlow(0, newID, *bh8Defs[i].key, 0, bh8Defs[i].val);
-		  }
-		  if(targID == 14) { // Spread on BH8-280
-			  setPropertySlow(0,newID,CT,0,-35950); 
-			  setPropertySlow(0,newID,DP,0,-17975); 
-			  setPropertySlow(0,newID,MV,0,50); 
-			  setPropertySlow(0,newID,HSG,0,0); 
-			  setPropertySlow(0,newID,LSG,0,0); 
-      	  }
+          for(i = 0; bh8Defs[i].key; i++){
+             setPropertySlow(0, newID, *bh8Defs[i].key, 0, bh8Defs[i].val);
+          }
+          if(targID == 14) { // Spread on BH8-280
+              setPropertySlow(0,newID,CT,0,-35950);
+              setPropertySlow(0,newID,DP,0,-17975);
+              setPropertySlow(0,newID,MV,0,50);
+              setPropertySlow(0,newID,HSG,0,0);
+              setPropertySlow(0,newID,LSG,0,0);
+              setPropertySlow(0,newID,HOLD,0,1);
+            }
       }
-      
-      setPropertySlow(0,newID,JIDX,0,targID-3); 
-      setPropertySlow(0,newID,PIDX,0,((targID-1)%4)+1); 
+
+      setPropertySlow(0,newID,JIDX,0,targID-3);
+      setPropertySlow(0,newID,PIDX,0,((targID-1)%4)+1);
       break;
-      
+
       case ROLE_SAFETY:
       for(i = 0; safetyDefs[i].key; i++){
          setPropertySlow(0, newID, *safetyDefs[i].key, 0, safetyDefs[i].val);
-         
+
       }
-      
-      setPropertySlow(0, newID, SAFE, 0, 4); 
-      setPropertySlow(0, newID, SAFE, 0, 5); 
+
+      setPropertySlow(0, newID, SAFE, 0, 4);
+      setPropertySlow(0, newID, SAFE, 0, 5);
       usleep(1000000); // Wait a sec
-      setPropertySlow(0, newID, FIND, 0, VBUS); 
+      setPropertySlow(0, newID, FIND, 0, VBUS);
       usleep(1000000); // Wait a sec
-      setPropertySlow(0, newID, SAFE, 0, 0); 
-      
+      setPropertySlow(0, newID, SAFE, 0, 0);
+
       break;
-      
+
       case ROLE_WRAPTOR:
       for(i = 0; wraptorDefs[i].key; i++){
          setPropertySlow(0, newID, *wraptorDefs[i].key, 0, wraptorDefs[i].val);
-         
+
       }
-      
+
       if(targID < 4){
          // Set inner link parameters
-         
+
       }else if(targID == 4){
          // Set spread puck parameters: KP=1500 KD=KI=0, ACCEL=10, MV=20, DP=18500, CT=37000, HOLD=1
-         
+
       }else if(targID > 4){
          // Set outer link parameters
-         
+
       }
       break;
-      
+
       default:
-      
+
       break;
-      
+
    }
-   
+
    setPropertySlow(0,newID,SAVE,0,-1); // Save All
-   
+
    /*
-   
+
     else if(targID <= 8) {//Gimbals
       setPropertySlow(0,newID,CTS,0,1);
       setPropertySlow(0,newID,OFFSET1,0,-11447);
@@ -985,30 +987,30 @@ void paramDefaults(int newID,int targID)
 void changeID(int oldID, int newID, int role)
 {
    int _LOCK, _SAVE;
-   
+
    setPropertySlow(0, oldID, 5, 0, 0); /* RESET back to Monitor */
    usleep(2000000); /* Wait 2s */
-   
+
    if(oldID == 10){ /* Safety puck's LOCK/SAVE commands are different */
       _LOCK = 13; _SAVE = 30;
    }else{
       _LOCK = 8; _SAVE = 9;
    }
    /* Unlock the ID/ROLE for writing */
-   setPropertySlow(0, oldID, _LOCK, 0, 18384); 
-   setPropertySlow(0, oldID, _LOCK, 0, 23); 
-   setPropertySlow(0, oldID, _LOCK, 0, 3145); 
-   setPropertySlow(0, oldID, _LOCK, 0, 1024); 
-   setPropertySlow(0, oldID, _LOCK, 0, 1); 
-   
+   setPropertySlow(0, oldID, _LOCK, 0, 18384);
+   setPropertySlow(0, oldID, _LOCK, 0, 23);
+   setPropertySlow(0, oldID, _LOCK, 0, 3145);
+   setPropertySlow(0, oldID, _LOCK, 0, 1024);
+   setPropertySlow(0, oldID, _LOCK, 0, 1);
+
    /* Set the ROLE */
    if(role >= 0){
-      setPropertySlow(0, oldID, 1, 0, role); 
+      setPropertySlow(0, oldID, 1, 0, role);
       setPropertySlow(0, oldID, _SAVE, 0, 1); usleep(2000000);
    }
    setPropertySlow(0, oldID, 3, 0, newID); /* Set the new ID */
    setPropertySlow(0, oldID, _SAVE, 0, 3); usleep(2000000); /* Save the new values to EEPROM */
-   
+
    /* Reset to load the new ID */
    setPropertySlow(0, oldID, 5, 0, STATUS_RESET);
 }
@@ -1017,22 +1019,22 @@ void setMofst(int newID)
 {
    long dat, vers;
    int dummy, i, samples = 1024;
-   
+
    long max, min;
    double sumX, sumX2, mean, stdev;
    int err = 0;
-   
+
    wakePuck(0,newID);
    getProperty(0,newID,VERS,&vers);
 
    getProperty(0,newID,IOFST,&dat);
    printf("\nThe old IOFST was: %d",dat);
-   
+
    // Get a valid IOFST
    #define IOFST_MIN (1950)
    #define IOFST_MAX (2180)
    #define IOFST_STDEV (10.0)
-   
+
    // Collect stats
    sumX = sumX2 = 0;
    max = -2E9;
@@ -1052,7 +1054,7 @@ void setMofst(int newID)
    if(min < IOFST_MIN){
       printf(" -- FAIL");
       ++err;
-   } 
+   }
    printf("\nMAX IOFST = %ld", max);
    if(max > IOFST_MAX){
       printf(" -- FAIL");
@@ -1066,12 +1068,12 @@ void setMofst(int newID)
    }
    setPropertySlow(0, newID, IOFST, 0, (long)mean);
    printf("\nThe new IOFST is:%d\n",(int)mean);
-   
+
    if(!err){
       setPropertySlow(0,newID,MODE,0,MODE_TORQUE);
       getProperty(0,newID,MOFST,&dat);
       printf("\nThe old MOFST was:%d\n",dat);
-   
+
       if(vers <= 39){
          setPropertySlow(0,newID,ADDR,0,32971);
          setPropertySlow(0,newID,VALUE,0,1);
@@ -1096,7 +1098,7 @@ void setMofst(int newID)
          setPropertySlow(0,newID,SAVE,0,MOFST);
       }
    }
-   
+
    printf("\nDone. ");
    printf("\n");
 }
@@ -1108,7 +1110,7 @@ getParams(int newID)
 
    printf("\n...Puck %d...\n",newID);
    wakePuck(0,newID);
-   
+
    /* General */
    getProperty(0,newID,SN,&reply);
    printf("SN = %ld\n",reply);
@@ -1120,7 +1122,7 @@ getParams(int newID)
    printf("JIDX = %ld\n",reply);
    getProperty(0,newID,PIDX,&reply);
    printf("PIDX = %ld\n",reply);
-   
+
    /* Motor control */
    getProperty(0,newID,ACCEL,&reply);
    printf("ACCEL = %ld\n",reply);
@@ -1153,8 +1155,8 @@ getParams(int newID)
    printf("HSG = %ld\n",reply);
    getProperty(0,newID,LSG,&reply);
    printf("LSG = %ld\n",reply);
-   
-   
+
+
    /* Active values */
    getProperty(0,newID,P,&reply);
    printf("P = %ld\n",reply);
@@ -1167,11 +1169,11 @@ getParams(int newID)
    getProperty(0,newID,PTEMP,&reply);
    printf("PTEMP = %ld\n",reply);
 
-   
+
    /* Commutation data */
    getProperty(0,newID,CTS,&reply);
    printf("CTS = %ld\n",reply);
-   getProperty(0,newID,POLES,&reply); 
+   getProperty(0,newID,POLES,&reply);
    printf("POLES = %ld\n",reply);
    getProperty(0,newID,IKP,&reply);
    printf("IKP = %ld\n",reply);
@@ -1179,138 +1181,138 @@ getParams(int newID)
    printf("IKI = %ld\n",reply);
    getProperty(0,newID,IKCOR,&reply);
    printf("IKCOR = %ld\n",reply);
-   getProperty(0,newID,IOFST,&reply); 
+   getProperty(0,newID,IOFST,&reply);
    printf("IOFST = %ld\n",reply);
    getProperty(0,newID,MOFST,&reply);
    printf("MOFST = %ld\n",reply);
-   
+
    /* Communication */
    getProperty(0,newID,EN,&reply);
    printf("EN = 0x%08lX\n",reply);
-   getProperty(0,newID,GRPA,&reply); 
+   getProperty(0,newID,GRPA,&reply);
    printf("GRPA = %ld\n",reply);
-   getProperty(0,newID,GRPB,&reply); 
+   getProperty(0,newID,GRPB,&reply);
    printf("GRPB = %ld\n",reply);
-   getProperty(0,newID,GRPC,&reply); 
+   getProperty(0,newID,GRPC,&reply);
    printf("GRPC = %ld\n",reply);
-   //getProperty(0,newID,TIE,&reply); 
+   //getProperty(0,newID,TIE,&reply);
    //printf("TIE = %ld\n",reply);
 }
 
 /* Command enumeration. Append only. */
 enum {
-	CMD_LOAD, CMD_SAVE,	CMD_RESET, CMD_DEF, CMD_GET, CMD_FIND, CMD_SET, CMD_HOME,	
-	CMD_KEEP, CMD_LOOP, CMD_PASS, CMD_VERS, CMD_ERR, CMD_HI, CMD_IC, CMD_IO,
-	CMD_TC, CMD_TO, CMD_C, CMD_M, CMD_O, CMD_T, CMD_HELP, CMD_END
+    CMD_LOAD, CMD_SAVE,    CMD_RESET, CMD_DEF, CMD_GET, CMD_FIND, CMD_SET, CMD_HOME,
+    CMD_KEEP, CMD_LOOP, CMD_PASS, CMD_VERS, CMD_ERR, CMD_HI, CMD_IC, CMD_IO,
+    CMD_TC, CMD_TO, CMD_C, CMD_M, CMD_O, CMD_T, CMD_HELP, CMD_END
 };
 
 void cycleHand(void){
-	int err;
-	int id_in, len_in;
-	char data[8];
-	int bus = 0;
-	long reply;
-	int kp, kd;
-	long temp1, temp2, temp3, temp4;
-	long therm1, therm2, therm3, therm4;
-	long cycle = 0;
-	
-	wakePuck(0, 11);
-	wakePuck(0, 12);
-	wakePuck(0, 13);
-	wakePuck(0, 14);
+    int err;
+    int id_in, len_in;
+    char data[8];
+    int bus = 0;
+    long reply;
+    int kp, kd;
+    long temp1, temp2, temp3, temp4;
+    long therm1, therm2, therm3, therm4;
+    long cycle = 0;
+
+    wakePuck(0, 11);
+    wakePuck(0, 12);
+    wakePuck(0, 13);
+    wakePuck(0, 14);
 
 
-	setPropertySlow(0,11,CMD,0,CMD_HI);
+    setPropertySlow(0,11,CMD,0,CMD_HI);
     usleep(2e6);
 #if 1
-	setPropertySlow(0,12,CMD,0,CMD_HI);
+    setPropertySlow(0,12,CMD,0,CMD_HI);
     usleep(2e6);
-	setPropertySlow(0,13,CMD,0,CMD_HI);
+    setPropertySlow(0,13,CMD,0,CMD_HI);
     usleep(2e6);
-	setPropertySlow(0,14,CMD,0,CMD_HI);
+    setPropertySlow(0,14,CMD,0,CMD_HI);
     usleep(2e6);
 #endif
     printf("\nBH8-280 Cycle Program - Motor: TEMP/THERM (press ctrl-c to exit)\n");
-	while(1){
-	    ++cycle;
-	    //printf("KP KD: "); scanf("%d %d", &kp, &kd);
-	    
-		//canClearMsg(0);
-		setPropertySlow(0,11,CMD,0,CMD_C);
+    while(1){
+        ++cycle;
+        //printf("KP KD: "); scanf("%d %d", &kp, &kd);
+
+        //canClearMsg(0);
+        setPropertySlow(0,11,CMD,0,CMD_C);
 #if 1
-		setPropertySlow(0,12,CMD,0,CMD_C);
-		setPropertySlow(0,13,CMD,0,CMD_C);
+        setPropertySlow(0,12,CMD,0,CMD_C);
+        setPropertySlow(0,13,CMD,0,CMD_C);
 #endif
         do getProperty(0,11,MODE,&reply); while (reply == 5);
 
-		//canClearMsg(0);
-		setPropertySlow(0,11,CMD,0,CMD_O);
+        //canClearMsg(0);
+        setPropertySlow(0,11,CMD,0,CMD_O);
 #if 1
-		setPropertySlow(0,12,CMD,0,CMD_O);
-		setPropertySlow(0,13,CMD,0,CMD_O);
+        setPropertySlow(0,12,CMD,0,CMD_O);
+        setPropertySlow(0,13,CMD,0,CMD_O);
 #endif
         do getProperty(0,11,MODE,&reply); while (reply == 5);
 #if 1
-		canClearMsg(0);
-		setPropertySlow(0,14,CMD,0,CMD_C);
+        canClearMsg(0);
+        setPropertySlow(0,14,CMD,0,CMD_C);
         do getProperty(0,14,MODE,&reply); while (reply == 5);
-		
-		canClearMsg(0);
-		setPropertySlow(0,14,CMD,0,CMD_O);
+
+        canClearMsg(0);
+        setPropertySlow(0,14,CMD,0,CMD_O);
         do getProperty(0,14,MODE,&reply); while (reply == 5);
 #endif
         // Get temps
         getProperty(0,11,TEMP,&temp1);
-		getProperty(0,12,TEMP,&temp2);
-		getProperty(0,13,TEMP,&temp3);
-		getProperty(0,14,TEMP,&temp4);
-		getProperty(0,11,THERM,&therm1);
-		getProperty(0,12,THERM,&therm2);
-		getProperty(0,13,THERM,&therm3);
-		getProperty(0,14,THERM,&therm4);
-		
-		printf("Cycle: %ld -- M1: %ld/%ld, M2: %ld/%ld, M3: %ld/%ld, M4: %ld/%ld\t\t\r",
-		cycle, temp1, therm1, temp2, therm2, temp3, therm3, temp4, therm4);
-		fflush(stdout);
-	}
-	
+        getProperty(0,12,TEMP,&temp2);
+        getProperty(0,13,TEMP,&temp3);
+        getProperty(0,14,TEMP,&temp4);
+        getProperty(0,11,THERM,&therm1);
+        getProperty(0,12,THERM,&therm2);
+        getProperty(0,13,THERM,&therm3);
+        getProperty(0,14,THERM,&therm4);
+
+        printf("Cycle: %ld -- M1: %ld/%ld, M2: %ld/%ld, M3: %ld/%ld, M4: %ld/%ld\t\t\r",
+        cycle, temp1, therm1, temp2, therm2, temp3, therm3, temp4, therm4);
+        fflush(stdout);
+    }
+
 }
 
 void strainHand(void){
-	int err;
-	int id_in, len_in;
-	char data[8];
-	int bus = 0;
-	long strain1, strain2, strain3;
-	int kp, kd;
-	
-	wakePuck(0, 11);
-	wakePuck(0, 12);
-	wakePuck(0, 13);
-	//wakePuck(0, 14);
+    int err;
+    int id_in, len_in;
+    char data[8];
+    int bus = 0;
+    long strain1, strain2, strain3;
+    int kp, kd;
+
+    wakePuck(0, 11);
+    wakePuck(0, 12);
+    wakePuck(0, 13);
+    //wakePuck(0, 14);
 
 
-	setPropertySlow(0,11,CMD,0,CMD_HI);
+    setPropertySlow(0,11,CMD,0,CMD_HI);
     usleep(2e6);
-	setPropertySlow(0,12,CMD,0,CMD_HI);
+    setPropertySlow(0,12,CMD,0,CMD_HI);
     usleep(2e6);
-	setPropertySlow(0,13,CMD,0,CMD_HI);
+    setPropertySlow(0,13,CMD,0,CMD_HI);
     usleep(2e6);
-	//setPropertySlow(0,14,CMD,0,CMD_HI);
+    //setPropertySlow(0,14,CMD,0,CMD_HI);
     //usleep(2e6);
 
     printf("\nStrain Gages... (press ctrl-c to exit)\n");
-	while(1){
+    while(1){
 
-		getProperty(0,11,SG,&strain1);
-		getProperty(0,12,SG,&strain2);
-		getProperty(0,13,SG,&strain3);
-		printf("F1: %8ld, F2: %8ld, F3: %8ld\r", strain1, strain2, strain3);
-		fflush(stdout);
-		usleep(1e5);
-	}
-	
+        getProperty(0,11,SG,&strain1);
+        getProperty(0,12,SG,&strain2);
+        getProperty(0,13,SG,&strain3);
+        printf("F1: %8ld, F2: %8ld, F3: %8ld\r", strain1, strain2, strain3);
+        fflush(stdout);
+        usleep(1e5);
+    }
+
 }
 
 void handleMenu(int argc, char **argv)
@@ -1321,11 +1323,11 @@ void handleMenu(int argc, char **argv)
    long        vers;
    char        *c;
    char        fn[255];
-   
+
    c = argv[1];
    while(*c == '-') c++;
    *c = toupper(*c);
-   
+
    switch(*c) { /* Only getBusStatus if not BHandDL, PuckDL, PuckID, or Quit */
    case 'B': case 'D': case 'I': case 'Q':
    break;
@@ -1333,7 +1335,7 @@ void handleMenu(int argc, char **argv)
       //canClearMsg(0);
       getBusStatus(0, status);
    }
-   
+
    switch(*c) {
    case 'H':
       printf("\n\nCheck hall feedback on motor: ");
@@ -1342,7 +1344,7 @@ void handleMenu(int argc, char **argv)
          printf("%d", arg1);
       }else
          scanf("%d", &arg1);
-      
+
       checkHalls(arg1);
    break;
    case 'I':
@@ -1353,15 +1355,15 @@ void handleMenu(int argc, char **argv)
       }else{
          scanf("%d", &arg1);
       }
-      
+
       if(argc >= 5){
          arg2 = atol(argv[4]);
          printf("\nNew ID: %d", arg2);
       }else{
          printf("\nNew ID: ");
          scanf("%d", &arg2);
-      } 
-      
+      }
+
       arg3 = -1;
       if(argc >= 7){
          arg3 = atol(argv[6]);
@@ -1410,17 +1412,17 @@ void handleMenu(int argc, char **argv)
       }else{
          scanf("%d", &arg1);
       }
-      
+
       if(argc >= 5){
          arg2 = atol(argv[4]);
          printf("\nLike ID: %d", arg2);
       }else{
          printf("\nLike ID: ");
          scanf("%d", &arg2);
-      } 
+      }
       paramDefaults(arg1,arg2);
       break;
-   
+
    case 'G':
       printf("\n\nGet params from puck ID: ");
       if(argc >= 3){
@@ -1432,7 +1434,7 @@ void handleMenu(int argc, char **argv)
       getParams(arg1);
       break;
    case 'D':
-      printf("\n\nDownload firmware to puck ID: "); 
+      printf("\n\nDownload firmware to puck ID: ");
       if(argc >= 3){
          arg1 = atol(argv[2]);
          printf("%d", arg1);
@@ -1447,8 +1449,8 @@ void handleMenu(int argc, char **argv)
          printf("\nFile: ");
          scanf("%s", fn);
          firmwareDL(arg1, fn);
-      } 
-      
+      }
+
       break;
    case 'T':
       printf("\n\nTension cable for puck ID: ");
@@ -1511,7 +1513,7 @@ void handleMenu(int argc, char **argv)
 #if 0
 void tensionCable(void)
 {
-   
+
 
 }
 
@@ -1550,9 +1552,9 @@ void tensionCable2(void)
 #endif
 
 /* Firmware download sample code.
- 
-   Note: ReadSerial(char *inputBuffer, int charCt); 
-         WriteSerial(char *outputBuffer, int charCt); 
+
+   Note: ReadSerial(char *inputBuffer, int charCt);
+         WriteSerial(char *outputBuffer, int charCt);
     ...must be created under your operating system.
 */
 int ReadSerial(char *buf, int bytesToRead)
@@ -1674,10 +1676,10 @@ int BHFirmwareDL(char *fname)
    Write('X'); //Write to MC68HC811 e<X>ternal EEPROM
 
    printf( "\nPower up the hand to begin download...\n" );
-   
+
    /* Turn on the hand power via the parallel port ...*/
    outb((unsigned char)0x05, 0x378); // Output Data to the Parallel Port
-   
+
    while ( Read() != ':' && errcnt<50) {
       errcnt++; //Wait for RESET
    }
@@ -1769,9 +1771,9 @@ int BHandDL(void)
 
    /** Set the baud rate */
    serialSetBaud(&p, 9600);
-   
+
    /* Turn off power via the parallel port (will be re-enabled in BHFirmwareDL())*/
-   if (ioperm(0x378,1,1)) 
+   if (ioperm(0x378,1,1))
          fprintf(stderr, "ERROR: Can't gain access to parallel port\n"), exit(1);
    outb((unsigned char)0x00, 0x378); // Output Data to the Parallel Port
    sleep(3);
