@@ -1347,11 +1347,13 @@ void ProcessInput(int c) //{{{ Takes last keypress and performs appropriate acti
         parseInput(&cmd);
         break;
     case 'G'://Toggle gcravity compensation mode
-        if (GetGravityUsingCalibrated(wam[0]))
-            SetGravityUsingCalibrated(wam[0],0);
-        else
-            SetGravityUsingCalibrated(wam[0],1);
-        break;
+      if (GetGravityUsingCalibrated(wam[0]))
+         for(i = 0; i < busCount; i++)
+            SetGravityUsingCalibrated(wam[i],0);
+      else
+         for(i = 0; i < busCount; i++)
+            SetGravityUsingCalibrated(wam[i],1);
+      break;
 
     case '_'://Refresh display
         clearScreen();
