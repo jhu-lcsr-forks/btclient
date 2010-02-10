@@ -4,7 +4,7 @@
 include ../../config.mk
 include ../../common.mk
 
-OBJS = btdiag.o bhand.o
+OBJS = btdiag.o
 TARG = btdiag
 
 # Done with defines, now for the real work
