@@ -80,6 +80,29 @@
 #include "ntcan.h"
 #endif
 
+#ifdef SOCKET_CAN
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+ 
+#include <linux/can.h>
+#include <linux/can/raw.h>
+#include <string.h>
+ 
+/* At time of writing, these constants are not defined in the headers */
+#ifndef PF_CAN
+#define PF_CAN 29
+#endif
+ 
+#ifndef AF_CAN
+#define AF_CAN PF_CAN
+#endif
+
+typedef int HANDLE;
+typedef long DWORD;
+#endif
+
 #include "btcan.h"
 #include "btos.h"
 
@@ -278,7 +301,8 @@ void allowMessage(int bus, int id, int mask)
    //Allows all messages
    CAN_ResetFilter(canDev[bus]);
 
-#else
+#endif
+#ifdef ESD_CAN
 
    int i;
    for(i = 0; i < 2048; i++)
@@ -355,6 +379,37 @@ int initCAN(int bus, int port)
    
 #endif /* PEAK_CAN */
 
+#ifdef SOCKET_CAN
+   char devname[10];
+   sprintf(devname, "rtcan%d", port);
+   syslog(LOG_ERR, "CAN device = %s", devname);
+/* Create the socket */
+   int skt = socket( PF_CAN, SOCK_RAW, CAN_RAW );
+   syslog(LOG_ERR, "socket = %d", skt);
+   /* Locate the interface you wish to use */
+   struct ifreq ifr;
+   strcpy(ifr.ifr_name, devname);
+   ioctl(skt, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled 
+                                  * with that device's index */
+ 
+   /* Select that CAN interface, and bind the socket to it. */
+   struct sockaddr_can addr;
+   addr.can_family = AF_CAN;
+   addr.can_ifindex = ifr.ifr_ifindex;
+   bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
+ 
+   canDev[bus] = skt;
+   if (!canDev[bus])
+   {
+      syslog(LOG_ERR, "initCAN(): CAN_Open(): cannot open device with");
+      syslog(LOG_ERR, "type=pci, port=%d", port);
+      return(1);
+   }
+   
+   
+
+#endif
+
 #ifdef ESD_CAN
    //Opening can for esd.
    retvalue = canOpen(port, 0, TX_QUEUE_SIZE, RX_QUEUE_SIZE, TX_TIMEOUT, RX_TIMEOUT, &canDev[bus]);
@@ -404,7 +459,8 @@ void freeCAN(int bus)
 {
 #ifdef PEAK_CAN
    CAN_Close(canDev[bus]);
-#else
+#endif
+#ifdef ESD_CAN
    canClose(canDev[bus]);
 #endif
 }
@@ -416,7 +472,8 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
    TPCANRdMsg  msg;
    int       pendread;
    int       pendwrite;
-#else
+#endif
+#ifdef ESD_CAN
    CMSG    msg;
 #endif
 
@@ -424,6 +481,23 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
    long      msgCt = 1;
    int       i;
    int      filterOK = 0;
+
+#ifdef SOCKET_CAN
+   struct can_frame frame;
+   
+   /* Read a message back from the CAN bus */
+   int bytes_read = read( canDev[bus], &frame, sizeof(frame) );
+   
+   if(bytes_read > 0)
+   {
+      *id = frame.can_id;
+      *len = frame.can_dlc;
+      for(i = 0; i < frame.can_dlc; i++)
+         data[i] = frame.data[i];
+
+      return(0);
+   }
+#endif
 
 #ifdef PEAK_CAN
 
@@ -473,7 +547,9 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
 
       return(0);
    }
-#else
+#endif
+#ifdef ESD_CAN
+
    if(blocking)
    {
       //while(!filterOK){
@@ -520,7 +596,8 @@ int canSendMsg(int bus, int id, char len, unsigned char *data, int blocking){
    int       pendread;
    int       pendwrite=1;
 
-#else
+#endif
+#ifdef ESD_CAN
 
    CMSG    msg;
 
@@ -530,6 +607,20 @@ int canSendMsg(int bus, int id, char len, unsigned char *data, int blocking){
    long      msgCt = 1;
    int       i;
 
+#ifdef SOCKET_CAN
+
+/* Send a message to the CAN bus */
+   struct can_frame frame;
+   frame.can_id = id;
+   //strcpy( &frame.data, "foo" );
+   frame.can_dlc = len; //strlen( &frame.data );
+   for(i = 0; i < len; i++)
+      frame.data[i] = data[i];
+	  
+   int bytes_sent = write( canDev[bus], &frame, sizeof(frame) );
+ 
+   
+#endif
 
 #ifdef PEAK_CAN
 
@@ -565,7 +656,9 @@ int canSendMsg(int bus, int id, char len, unsigned char *data, int blocking){
    }
    return(0);
 
-#else
+#endif
+
+#ifdef ESD_CAN
 
    msg.id = id;
    msg.len = len & 0x0F;
@@ -612,7 +705,7 @@ int canClearMsg(int bus)
 
    retvalue = LINUX_CAN_Extended_Status(canDev[bus], &pendread, &pendwrite);
 
-   while(!retvalue && pendread)
+   while(pendread!=0)
    {
       retvalue =  canReadMsg(bus, &id, &len, d, 1);
       //retvalue = LINUX_CAN_Read(canDev[bus], &msg);
@@ -637,7 +730,7 @@ int canClearMsg(int bus)
 int wakePuck(int bus, int who)
 {
    setProperty(bus, who, 5, FALSE, STATUS_READY); // Must use '5' for STAT
-   usleep(500000); // Wait 500ms for puck to initialize
+   usleep(300000); // Wait 300ms for puck to initialize
 
    return(0);
 }
@@ -875,7 +968,7 @@ int getBusStatus(int bus, long *status)
    for(id = 0; id < MAX_NODES; id++)
    {
       if (status[id] != -1)
-         syslog(LOG_ERR,"getBusStatus: status[%d] = %d", id, status[id]);
+         syslog(LOG_ERR,"getBusStatus: status[%d] = %ld", id, status[id]);
    }
 #endif
 }
@@ -1257,7 +1350,7 @@ void initPropertyDefs(int firmwareVersion){
       IOFF = i++; /* 32-Bit */
       IOFF2 = i++;
       MPE = i++;
-      HOLD = i++;
+      EN = i++;
       TSTOP = i++;
       KP = i++;
       KD = i++;
@@ -1274,12 +1367,7 @@ void initPropertyDefs(int firmwareVersion){
       IKP = i++;
       IKI = i++;
       IKCOR = i++;
-      EN = i++;
-      EN2 = i++;
-      JP = i++;
-      JP2 = i++;
-      JOFST = i++;
-      JOFST2 = i++;
+      HOLD = i++;
       TIE = i++;
       ECMAX = i++;
       ECMIN = i++;
