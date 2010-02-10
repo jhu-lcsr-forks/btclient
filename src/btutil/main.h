@@ -85,7 +85,7 @@ struct defaultStruct bh8Defs[] =
    &TIE, 0,
    &ACCEL, 200,
    &AP, 0,
-   &CT, -200e3,
+   &CT, -195e3,
    &OT, 0,
    &CTS, 4096,
    &DP, -45e3,
