@@ -81,27 +81,12 @@
 #endif
 
 #ifdef SOCKET_CAN
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
- 
-#include <linux/can.h>
-#include <linux/can/raw.h>
-#include <string.h>
- 
-/* At time of writing, these constants are not defined in the headers */
-#ifndef PF_CAN
-#define PF_CAN 29
-#endif
- 
-#ifndef AF_CAN
-#define AF_CAN PF_CAN
-#endif
+#include <rtdm/rtcan.h>
 
 typedef int HANDLE;
 typedef long DWORD;
 #endif
+
 
 #include "btcan.h"
 #include "btos.h"
@@ -309,11 +294,10 @@ void allowMessage(int bus, int id, int mask)
       if((i & ~mask) == id)
          canIdAdd(canDev[bus], i);
 #endif
+#ifdef SOCKET_CAN
+
+#endif
 }
-
-
-
-
 
 int initCAN(int bus, int port)
 {
@@ -381,33 +365,80 @@ int initCAN(int bus, int port)
 
 #ifdef SOCKET_CAN
    char devname[10];
+   struct ifreq ifr;
+   struct sockaddr_can to_addr;
+   int ret, s;
+   nanosecs_rel_t timeout;
+   can_baudrate_t *baudrate;
+   can_mode_t *mode;
+   
    sprintf(devname, "rtcan%d", port);
    syslog(LOG_ERR, "CAN device = %s", devname);
-/* Create the socket */
-   int skt = socket( PF_CAN, SOCK_RAW, CAN_RAW );
-   syslog(LOG_ERR, "socket = %d", skt);
-   /* Locate the interface you wish to use */
-   struct ifreq ifr;
-   strcpy(ifr.ifr_name, devname);
-   ioctl(skt, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled 
-                                  * with that device's index */
- 
-   /* Select that CAN interface, and bind the socket to it. */
-   struct sockaddr_can addr;
-   addr.can_family = AF_CAN;
-   addr.can_ifindex = ifr.ifr_ifindex;
-   bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
- 
-   canDev[bus] = skt;
-   if (!canDev[bus])
-   {
-      syslog(LOG_ERR, "initCAN(): CAN_Open(): cannot open device with");
-      syslog(LOG_ERR, "type=pci, port=%d", port);
-      return(1);
-   }
    
-   
+	/* Create the socket */
+	ret = rt_dev_socket(PF_CAN, SOCK_RAW, CAN_RAW);
+    if (ret < 0) {
+		syslog(LOG_ERR, "rt_dev_socket: %s\n", strerror(-ret));
+		syslog(LOG_ERR, "initCAN(): CAN_Open(): cannot open device with type=pci, port=%d", port);
+		return -1;
+    }
+    s = ret;
+    
+	strncpy(ifr.ifr_name, devname, IFNAMSIZ);
 
+    ret = rt_dev_ioctl(s, SIOCGIFINDEX, &ifr);
+    if (ret < 0) {
+		syslog(LOG_ERR, "rt_dev_ioctl(SIOCGIFINDEX): %s\n", strerror(-ret));
+		ret = rt_dev_close(s);
+		return -1;
+    }
+/*
+	baudrate = (can_baudrate_t *)&ifr.ifr_ifru;
+	*baudrate = 1000000L;
+	ret = rt_dev_ioctl(s, SIOCSCANBAUDRATE, &ifr);
+	if (ret) {
+		syslog(LOG_ERR, "rt_dev_ioctl(SIOCSCANBAUDRATE): %s\n", strerror(-ret));
+		ret = rt_dev_close(s);
+		return -1;
+    }
+    
+	mode = (can_mode_t *)&ifr.ifr_ifru;
+    *mode = CAN_MODE_START;
+	ret = rt_dev_ioctl(s, SIOCSCANMODE, &ifr);
+	if (ret) {
+		syslog(LOG_ERR, "rt_dev_ioctl(SIOCSCANMODE): %s\n", strerror(-ret));
+		ret = rt_dev_close(s);
+		return -1;
+    }
+    */
+    memset(&to_addr, 0, sizeof(to_addr));
+    to_addr.can_ifindex = ifr.ifr_ifindex;
+    to_addr.can_family = AF_CAN;
+
+	/* Suppress definiton of a default receive filter list 
+	ret = rt_dev_setsockopt(s, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
+	if (ret < 0) {
+	    syslog(LOG_ERR, "rt_dev_setsockopt: %s\n", strerror(-ret));
+	    ret = rt_dev_close(s);
+	    return -1;
+	}*/
+
+	ret = rt_dev_bind(s, (struct sockaddr *)&to_addr, sizeof(to_addr));
+	if (ret < 0) {
+	    syslog(LOG_ERR, "rt_dev_bind: %s\n", strerror(-ret));
+	    ret = rt_dev_close(s);
+	    return -1;
+	}
+	
+	timeout = (nanosecs_rel_t)RTDM_TIMEOUT_INFINITE;
+	ret = rt_dev_ioctl(s, RTCAN_RTIOC_RCV_TIMEOUT, &timeout);
+	if (ret) {
+	    syslog(LOG_ERR, "rt_dev_ioctl(RCV_TIMEOUT): %s\n", strerror(-ret));
+	    ret = rt_dev_close(s);
+	    return -1;
+	}
+	
+   canDev[bus] = s;
 #endif
 
 #ifdef ESD_CAN
@@ -463,6 +494,17 @@ void freeCAN(int bus)
 #ifdef ESD_CAN
    canClose(canDev[bus]);
 #endif
+#ifdef SOCKET_CAN
+	struct  ifreq ifr;
+	can_mode_t *mode;
+	int ret;
+	
+   mode = (can_mode_t *)&ifr.ifr_ifru;
+    *mode = CAN_MODE_STOP;
+	ret = rt_dev_ioctl(canDev[bus], SIOCSCANMODE, &ifr);
+	
+	ret = rt_dev_close(canDev[bus]);
+#endif
 }
 
 
@@ -473,30 +515,61 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
    int       pendread;
    int       pendwrite;
 #endif
+
 #ifdef ESD_CAN
    CMSG    msg;
 #endif
 
    long     retvalue=0;
    long      msgCt = 1;
-   int       i;
+   int       i, ret;
    int      filterOK = 0;
 
 #ifdef SOCKET_CAN
    struct can_frame frame;
    
    /* Read a message back from the CAN bus */
-   int bytes_read = read( canDev[bus], &frame, sizeof(frame) );
+   //syslog(LOG_ERR, "rt_dev_recv: about to read");
+   if(blocking){
+	   ret = rt_dev_recv(canDev[bus], (void *)&frame, sizeof(can_frame_t), 0);
+	}else{
+		ret = rt_dev_recv(canDev[bus], (void *)&frame, sizeof(can_frame_t), MSG_DONTWAIT);
+	}
    
-   if(bytes_read > 0)
-   {
-      *id = frame.can_id;
-      *len = frame.can_dlc;
-      for(i = 0; i < frame.can_dlc; i++)
-         data[i] = frame.data[i];
-
-      return(0);
-   }
+   if (ret < 0) {
+	    switch (ret) {
+	    case -ETIMEDOUT:
+		    syslog(LOG_ERR, "rt_dev_recv: timed out");
+		    return(1);
+		break;
+	    case -EBADF:
+		    syslog(LOG_ERR, "rt_dev_recv: aborted because socket was closed");
+		    return(2);
+		case -EAGAIN: // -EWOULDBLOCK
+			//syslog(LOG_ERR, "rt_dev_recv: no data available during non-blocking read");
+		    return(2);
+		break;
+	    default:
+			syslog(LOG_ERR, "rt_dev_recv: %s\n", strerror(-ret));
+			return(2);
+	    }
+	}
+	//syslog(LOG_ERR, "rt_dev_recv: read %d bytes", frame.can_dlc);
+	
+	*id = frame.can_id;
+	*len = frame.can_dlc;
+	for (i = 0; i < frame.can_dlc; i++) {
+		data[i] = frame.data[i];
+	}
+		
+	if (frame.can_id & CAN_ERR_FLAG) {
+		if (frame.can_id & CAN_ERR_BUSOFF)
+			syslog(LOG_ERR, "bus-off");
+		if (frame.can_id & CAN_ERR_CRTL)
+			syslog(LOG_ERR, "controller problem");
+		return(2);
+	}
+	return(0);
 #endif
 
 #ifdef PEAK_CAN
@@ -605,7 +678,7 @@ int canSendMsg(int bus, int id, char len, unsigned char *data, int blocking){
 
    DWORD     retvalue;
    long      msgCt = 1;
-   int       i;
+   int       i, ret;
 
 #ifdef SOCKET_CAN
 
@@ -617,8 +690,29 @@ int canSendMsg(int bus, int id, char len, unsigned char *data, int blocking){
    for(i = 0; i < len; i++)
       frame.data[i] = data[i];
 	  
-   int bytes_sent = write( canDev[bus], &frame, sizeof(frame) );
- 
+	  //syslog(LOG_ERR, "rt_dev_recv: about to send");
+	ret = rt_dev_send(canDev[bus], (void *)&frame, sizeof(can_frame_t), 0);
+	if (ret < 0) {
+	    switch (ret) {
+	    case -ETIMEDOUT:
+		    syslog(LOG_ERR, "rt_dev_send: timed out");
+		    return(1);
+		break;
+	    case -EBADF:
+		    syslog(LOG_ERR, "rt_dev_send: aborted because socket was closed");
+		    return(2);
+		case -EAGAIN: // -EWOULDBLOCK
+			syslog(LOG_ERR, "rt_dev_send: data would block during non-blocking send (output buffer full)");
+		    return(2);
+		break;
+	    default:
+			syslog(LOG_ERR, "rt_dev_send: %s\n", strerror(-ret));
+			return(2);
+	    }
+	}
+	//syslog(LOG_ERR, "rt_dev_recv: sent %d bytes", frame.can_dlc);
+   //int bytes_sent = write( canDev[bus], &frame, sizeof(frame) );
+ return(0);
    
 #endif
 
@@ -719,6 +813,7 @@ int canClearMsg(int bus)
 
 #else
    //find a better way of clearing the bus
+   
    while(!canReadMsg(canDev[bus], &id_in, &len_in, CANdata, FALSE))
    {
       syslog(LOG_ERR, "Cleared unexpected message from CANbus");
@@ -957,8 +1052,9 @@ int getBusStatus(int bus, long *status)
          }
 
       }
-      else
-         syslog(LOG_ERR, "getBusStatus(): canReadMsg returned error");
+      else{
+         //syslog(LOG_ERR, "getBusStatus(): canReadMsg returned error");
+	 }
    }
 
    btrt_mutex_unlock(&commMutex[bus]);
