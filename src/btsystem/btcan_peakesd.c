@@ -379,7 +379,7 @@ int initCAN(int bus, int port)
 	ret = rt_dev_socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if (ret < 0) {
 		syslog(LOG_ERR, "rt_dev_socket: %s\n", strerror(-ret));
-		syslog(LOG_ERR, "initCAN(): CAN_Open(): cannot open device with type=pci, port=%d", port);
+		syslog(LOG_ERR, "initCAN(): rt_dev_socket(): cannot open device with type=socket, port=%d", port);
 		return -1;
     }
     s = ret;
@@ -531,7 +531,7 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
    /* Read a message back from the CAN bus */
    //syslog(LOG_ERR, "rt_dev_recv: about to read");
    if(blocking){
-	   ret = rt_dev_recv(canDev[bus], (void *)&frame, sizeof(can_frame_t), 0);
+	   ret = rt_dev_recv(canDev[bus], (void *)&frame, sizeof(can_frame_t), 0);  // can_frame != can_frame_t, but this is how the example does it...
 	}else{
 		ret = rt_dev_recv(canDev[bus], (void *)&frame, sizeof(can_frame_t), MSG_DONTWAIT);
 	}
