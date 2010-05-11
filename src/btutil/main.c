@@ -1337,6 +1337,12 @@ void handleMenu(int argc, char **argv)
    }
 
    switch(*c) {
+   case 'W':
+	printf("\n\nGet PPS data: \n");
+	vers = 999;
+	getProperty(0, 1, 34, &vers);
+	printf("\nResponse = [0x%04x]\n", vers);
+	break;
    case 'H':
       printf("\n\nCheck hall feedback on motor: ");
       if(argc >= 3) {

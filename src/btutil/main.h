@@ -95,7 +95,7 @@ struct defaultStruct bh8Defs[] =
    &MOV, 200,
    &OT, 0,
    &HOLD, 0,
-   &TSTOP, 1000,
+   &TSTOP, 250,
    &OTEMP, 60,
    &PTEMP, 0,
    &POLES, 6,
