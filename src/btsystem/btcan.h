@@ -322,6 +322,10 @@ int HOLD;
 int TIE;
 int LFLAGS;
 int LCTC;
+int JP;
+int JP2; 
+int JOFST;
+int JOFST2;
 
 
 #ifdef __cplusplus

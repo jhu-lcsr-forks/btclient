@@ -1446,7 +1446,7 @@ void initPropertyDefs(int firmwareVersion){
       IOFF = i++; /* 32-Bit */
       IOFF2 = i++;
       MPE = i++;
-      EN = i++;
+	HOLD = i++;
       TSTOP = i++;
       KP = i++;
       KD = i++;
@@ -1463,7 +1463,12 @@ void initPropertyDefs(int firmwareVersion){
       IKP = i++;
       IKI = i++;
       IKCOR = i++;
-      HOLD = i++;
+      EN = i++;
+	EN2 = i++;
+	JP = i++;
+	JP2 = i++;
+	JOFST = i++;
+	JOFST2 = i++;
       TIE = i++;
       ECMAX = i++;
       ECMIN = i++;
