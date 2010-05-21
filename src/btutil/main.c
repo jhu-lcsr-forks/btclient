@@ -132,6 +132,7 @@ int termX = 0, termY = 20;
 int enumX = 39, enumY = 2;
 int watchX = 39, watchY = 20;
 int curses = FALSE;
+int canport = 0;
 
 btrt_thread_struct disp_thd;
 btrt_mutex disp_mutex;
@@ -467,7 +468,7 @@ void Startup(void *thd){
    //printf("a=%d, s=%s\n", argc, argv[1]);
 
    /* Initialize CAN */
-   if(err = initCAN(0, 0)) {
+   if(err = initCAN(0, canport)) {
       syslog(LOG_ERR, "initCAN returned err=%d", err);
    }
 
@@ -529,6 +530,12 @@ int main( int argc, char **argv )
    args.b = argv;
 
    mlockall(MCL_CURRENT | MCL_FUTURE);
+
+   if(fopen("port1", "r")){
+      canport = 1;
+   }else{
+      canport = 0;
+   }
 
    /* Initialize syslogd */
    openlog("PUCK", LOG_CONS | LOG_NDELAY, LOG_USER);
@@ -1338,11 +1345,11 @@ void handleMenu(int argc, char **argv)
 
    switch(*c) {
    case 'W':
-	printf("\n\nGet PPS data: \n");
-	vers = 999;
-	getProperty(0, 1, 34, &vers);
-	printf("\nResponse = [0x%04x]\n", vers);
-	break;
+   printf("\n\nGet PPS data: \n");
+   vers = 999;
+   getProperty(0, 1, 34, &vers);
+   printf("\nResponse = [0x%04x]\n", vers);
+   break;
    case 'H':
       printf("\n\nCheck hall feedback on motor: ");
       if(argc >= 3) {
