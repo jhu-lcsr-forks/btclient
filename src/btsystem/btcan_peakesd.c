@@ -9,7 +9,7 @@
  *                                                                          *
  *  Note: This file may be linked against a closed-source proprietary
  *        driver library (libntcan) from esd electronics
- *        (http://esd-electronics.com) 
+ *        (http://esd-electronics.com)
  *                                                                          *
  *  **********************************************************************  *
  *                                                                          *
@@ -309,7 +309,7 @@ int initCAN(int bus, int port)
    //btrt_mutex_create(&commMutex);
    btrt_mutex_init(&commMutex[bus]);
 
-   
+
 #ifdef PEAK_CAN
    //assign ports and irqs to buses *needs to be updated to read ports from cat /proc/pcan/
 #ifdef ISA_CAN
@@ -357,10 +357,10 @@ int initCAN(int bus, int port)
       syslog(LOG_ERR, "initCAN(): CAN_Init() failed with %d", errno);
       return(1);
    }
-   
+
    CAN_ResetFilter(canDev[bus]);
    CAN_MsgFilter(canDev[bus], 0x0000, 0x053F, MSGTYPE_STANDARD);
-   
+
 #endif /* PEAK_CAN */
 
 #ifdef SOCKET_CAN
@@ -371,73 +371,73 @@ int initCAN(int bus, int port)
    nanosecs_rel_t timeout;
    can_baudrate_t *baudrate;
    can_mode_t *mode;
-   
+
    sprintf(devname, "rtcan%d", port);
    syslog(LOG_ERR, "CAN device = %s", devname);
-   
-	/* Create the socket */
-	ret = rt_dev_socket(PF_CAN, SOCK_RAW, CAN_RAW);
+
+   /* Create the socket */
+   ret = rt_dev_socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if (ret < 0) {
-		syslog(LOG_ERR, "rt_dev_socket: %s\n", strerror(-ret));
-		syslog(LOG_ERR, "initCAN(): rt_dev_socket(): cannot open device with type=socket, port=%d", port);
-		return -1;
+      syslog(LOG_ERR, "rt_dev_socket: %s\n", strerror(-ret));
+      syslog(LOG_ERR, "initCAN(): rt_dev_socket(): cannot open device with type=socket, port=%d", port);
+      return -1;
     }
     s = ret;
-    
-	strncpy(ifr.ifr_name, devname, IFNAMSIZ);
+
+   strncpy(ifr.ifr_name, devname, IFNAMSIZ);
 
     ret = rt_dev_ioctl(s, SIOCGIFINDEX, &ifr);
     if (ret < 0) {
-		syslog(LOG_ERR, "rt_dev_ioctl(SIOCGIFINDEX): %s\n", strerror(-ret));
-		ret = rt_dev_close(s);
-		return -1;
+      syslog(LOG_ERR, "rt_dev_ioctl(SIOCGIFINDEX): %s\n", strerror(-ret));
+      ret = rt_dev_close(s);
+      return -1;
     }
 /*
-	baudrate = (can_baudrate_t *)&ifr.ifr_ifru;
-	*baudrate = 1000000L;
-	ret = rt_dev_ioctl(s, SIOCSCANBAUDRATE, &ifr);
-	if (ret) {
-		syslog(LOG_ERR, "rt_dev_ioctl(SIOCSCANBAUDRATE): %s\n", strerror(-ret));
-		ret = rt_dev_close(s);
-		return -1;
+   baudrate = (can_baudrate_t *)&ifr.ifr_ifru;
+   *baudrate = 1000000L;
+   ret = rt_dev_ioctl(s, SIOCSCANBAUDRATE, &ifr);
+   if (ret) {
+      syslog(LOG_ERR, "rt_dev_ioctl(SIOCSCANBAUDRATE): %s\n", strerror(-ret));
+      ret = rt_dev_close(s);
+      return -1;
     }
-    
-	mode = (can_mode_t *)&ifr.ifr_ifru;
+
+   mode = (can_mode_t *)&ifr.ifr_ifru;
     *mode = CAN_MODE_START;
-	ret = rt_dev_ioctl(s, SIOCSCANMODE, &ifr);
-	if (ret) {
-		syslog(LOG_ERR, "rt_dev_ioctl(SIOCSCANMODE): %s\n", strerror(-ret));
-		ret = rt_dev_close(s);
-		return -1;
+   ret = rt_dev_ioctl(s, SIOCSCANMODE, &ifr);
+   if (ret) {
+      syslog(LOG_ERR, "rt_dev_ioctl(SIOCSCANMODE): %s\n", strerror(-ret));
+      ret = rt_dev_close(s);
+      return -1;
     }
     */
     memset(&to_addr, 0, sizeof(to_addr));
     to_addr.can_ifindex = ifr.ifr_ifindex;
     to_addr.can_family = AF_CAN;
 
-	/* Suppress definiton of a default receive filter list 
-	ret = rt_dev_setsockopt(s, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
-	if (ret < 0) {
-	    syslog(LOG_ERR, "rt_dev_setsockopt: %s\n", strerror(-ret));
-	    ret = rt_dev_close(s);
-	    return -1;
-	}*/
+   /* Suppress definiton of a default receive filter list
+   ret = rt_dev_setsockopt(s, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
+   if (ret < 0) {
+       syslog(LOG_ERR, "rt_dev_setsockopt: %s\n", strerror(-ret));
+       ret = rt_dev_close(s);
+       return -1;
+   }*/
 
-	ret = rt_dev_bind(s, (struct sockaddr *)&to_addr, sizeof(to_addr));
-	if (ret < 0) {
-	    syslog(LOG_ERR, "rt_dev_bind: %s\n", strerror(-ret));
-	    ret = rt_dev_close(s);
-	    return -1;
-	}
-	
-	timeout = (nanosecs_rel_t)RTDM_TIMEOUT_INFINITE;
-	ret = rt_dev_ioctl(s, RTCAN_RTIOC_RCV_TIMEOUT, &timeout);
-	if (ret) {
-	    syslog(LOG_ERR, "rt_dev_ioctl(RCV_TIMEOUT): %s\n", strerror(-ret));
-	    ret = rt_dev_close(s);
-	    return -1;
-	}
-	
+   ret = rt_dev_bind(s, (struct sockaddr *)&to_addr, sizeof(to_addr));
+   if (ret < 0) {
+       syslog(LOG_ERR, "rt_dev_bind: %s\n", strerror(-ret));
+       ret = rt_dev_close(s);
+       return -1;
+   }
+
+   timeout = (nanosecs_rel_t)RTDM_TIMEOUT_INFINITE;
+   ret = rt_dev_ioctl(s, RTCAN_RTIOC_RCV_TIMEOUT, &timeout);
+   if (ret) {
+       syslog(LOG_ERR, "rt_dev_ioctl(RCV_TIMEOUT): %s\n", strerror(-ret));
+       ret = rt_dev_close(s);
+       return -1;
+   }
+
    canDev[bus] = s;
 #endif
 
@@ -457,7 +457,7 @@ int initCAN(int bus, int port)
       syslog(LOG_ERR, "initCAN(): canSetBaudrate() failed with error %d", retvalue);
       return(1);
    }
-   
+
    allowMessage(bus, 0x0000, 0x03E0); // Messages sent directly to host
    allowMessage(bus, 0x0403, 0x03E0); // Group 3 messages
    allowMessage(bus, 0x0406, 0x03E0); // Group 6 messages
@@ -495,15 +495,15 @@ void freeCAN(int bus)
    canClose(canDev[bus]);
 #endif
 #ifdef SOCKET_CAN
-	struct  ifreq ifr;
-	can_mode_t *mode;
-	int ret;
-	
+   struct  ifreq ifr;
+   can_mode_t *mode;
+   int ret;
+
    mode = (can_mode_t *)&ifr.ifr_ifru;
     *mode = CAN_MODE_STOP;
-	ret = rt_dev_ioctl(canDev[bus], SIOCSCANMODE, &ifr);
-	
-	ret = rt_dev_close(canDev[bus]);
+   ret = rt_dev_ioctl(canDev[bus], SIOCSCANMODE, &ifr);
+
+   ret = rt_dev_close(canDev[bus]);
 #endif
 }
 
@@ -527,49 +527,49 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
 
 #ifdef SOCKET_CAN
    struct can_frame frame;
-   
+
    /* Read a message back from the CAN bus */
    //syslog(LOG_ERR, "rt_dev_recv: about to read");
    if(blocking){
-	   ret = rt_dev_recv(canDev[bus], (void *)&frame, sizeof(can_frame_t), 0);  // can_frame != can_frame_t, but this is how the example does it...
-	}else{
-		ret = rt_dev_recv(canDev[bus], (void *)&frame, sizeof(can_frame_t), MSG_DONTWAIT);
-	}
-   
+      ret = rt_dev_recv(canDev[bus], (void *)&frame, sizeof(can_frame_t), 0);  // can_frame != can_frame_t, but this is how the example does it...
+   }else{
+      ret = rt_dev_recv(canDev[bus], (void *)&frame, sizeof(can_frame_t), MSG_DONTWAIT);
+   }
+
    if (ret < 0) {
-	    switch (ret) {
-	    case -ETIMEDOUT:
-		    syslog(LOG_ERR, "rt_dev_recv: timed out");
-		    return(1);
-		break;
-	    case -EBADF:
-		    syslog(LOG_ERR, "rt_dev_recv: aborted because socket was closed");
-		    return(2);
-		case -EAGAIN: // -EWOULDBLOCK
-			//syslog(LOG_ERR, "rt_dev_recv: no data available during non-blocking read");
-		    return(2);
-		break;
-	    default:
-			syslog(LOG_ERR, "rt_dev_recv: %s\n", strerror(-ret));
-			return(2);
-	    }
-	}
-	//syslog(LOG_ERR, "rt_dev_recv: read %d bytes", frame.can_dlc);
-	
-	*id = frame.can_id;
-	*len = frame.can_dlc;
-	for (i = 0; i < frame.can_dlc; i++) {
-		data[i] = frame.data[i];
-	}
-		
-	if (frame.can_id & CAN_ERR_FLAG) {
-		if (frame.can_id & CAN_ERR_BUSOFF)
-			syslog(LOG_ERR, "bus-off");
-		if (frame.can_id & CAN_ERR_CRTL)
-			syslog(LOG_ERR, "controller problem");
-		return(2);
-	}
-	return(0);
+       switch (ret) {
+       case -ETIMEDOUT:
+          syslog(LOG_ERR, "rt_dev_recv: timed out");
+          return(1);
+      break;
+       case -EBADF:
+          syslog(LOG_ERR, "rt_dev_recv: aborted because socket was closed");
+          return(2);
+      case -EAGAIN: // -EWOULDBLOCK
+         //syslog(LOG_ERR, "rt_dev_recv: no data available during non-blocking read");
+          return(2);
+      break;
+       default:
+         syslog(LOG_ERR, "rt_dev_recv: %s\n", strerror(-ret));
+         return(2);
+       }
+   }
+   //syslog(LOG_ERR, "rt_dev_recv: read %d bytes", frame.can_dlc);
+
+   *id = frame.can_id;
+   *len = frame.can_dlc;
+   for (i = 0; i < frame.can_dlc; i++) {
+      data[i] = frame.data[i];
+   }
+
+   if (frame.can_id & CAN_ERR_FLAG) {
+      if (frame.can_id & CAN_ERR_BUSOFF)
+         syslog(LOG_ERR, "bus-off");
+      if (frame.can_id & CAN_ERR_CRTL)
+         syslog(LOG_ERR, "controller problem");
+      return(2);
+   }
+   return(0);
 #endif
 
 #ifdef PEAK_CAN
@@ -580,7 +580,7 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
    {//attempt to read till there is a message available
       //while(!filterOK){
          retvalue = LINUX_CAN_Read(canDev[bus], &msg);
-         /* Apply private acceptance filter 
+         /* Apply private acceptance filter
          for(i = 0; i < MAX_FILTERS; i++){
             if((msg.Msg.ID & ~mask[i]) == can_accept[i]){
                filterOK = 1;
@@ -627,7 +627,7 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
    {
       //while(!filterOK){
          retvalue = canRead(canDev[bus], &msg, &msgCt, NULL);
-         /* Apply private acceptance filter 
+         /* Apply private acceptance filter
          for(i = 0; i < MAX_FILTERS; i++){
             if((msg.id & ~mask[i]) == can_accept[i]){
                filterOK = 1;
@@ -656,7 +656,7 @@ int canReadMsg(int bus, int *id, int *len, unsigned char *data, int blocking)
       return(0);
    }
 #endif
-   
+
    return(1); // No message received, return err
 }
 
@@ -689,31 +689,31 @@ int canSendMsg(int bus, int id, char len, unsigned char *data, int blocking){
    frame.can_dlc = len; //strlen( &frame.data );
    for(i = 0; i < len; i++)
       frame.data[i] = data[i];
-	  
-	  //syslog(LOG_ERR, "rt_dev_recv: about to send");
-	ret = rt_dev_send(canDev[bus], (void *)&frame, sizeof(can_frame_t), 0);
-	if (ret < 0) {
-	    switch (ret) {
-	    case -ETIMEDOUT:
-		    syslog(LOG_ERR, "rt_dev_send: timed out");
-		    return(1);
-		break;
-	    case -EBADF:
-		    syslog(LOG_ERR, "rt_dev_send: aborted because socket was closed");
-		    return(2);
-		case -EAGAIN: // -EWOULDBLOCK
-			syslog(LOG_ERR, "rt_dev_send: data would block during non-blocking send (output buffer full)");
-		    return(2);
-		break;
-	    default:
-			syslog(LOG_ERR, "rt_dev_send: %s\n", strerror(-ret));
-			return(2);
-	    }
-	}
-	//syslog(LOG_ERR, "rt_dev_recv: sent %d bytes", frame.can_dlc);
+
+     //syslog(LOG_ERR, "rt_dev_recv: about to send");
+   ret = rt_dev_send(canDev[bus], (void *)&frame, sizeof(can_frame_t), 0);
+   if (ret < 0) {
+       switch (ret) {
+       case -ETIMEDOUT:
+          syslog(LOG_ERR, "rt_dev_send: timed out");
+          return(1);
+      break;
+       case -EBADF:
+          syslog(LOG_ERR, "rt_dev_send: aborted because socket was closed");
+          return(2);
+      case -EAGAIN: // -EWOULDBLOCK
+         syslog(LOG_ERR, "rt_dev_send: data would block during non-blocking send (output buffer full)");
+          return(2);
+      break;
+       default:
+         syslog(LOG_ERR, "rt_dev_send: %s\n", strerror(-ret));
+         return(2);
+       }
+   }
+   //syslog(LOG_ERR, "rt_dev_recv: sent %d bytes", frame.can_dlc);
    //int bytes_sent = write( canDev[bus], &frame, sizeof(frame) );
  return(0);
-   
+
 #endif
 
 #ifdef PEAK_CAN
@@ -758,7 +758,7 @@ int canSendMsg(int bus, int id, char len, unsigned char *data, int blocking){
    msg.len = len & 0x0F;
    for(i = 0; i < len; i++)
       msg.data[i] = data[i];
-   
+
    if(blocking)
    {
       retvalue = canWrite(canDev[bus], &msg, &msgCt, NULL);
@@ -794,7 +794,7 @@ int canClearMsg(int bus)
 #endif
    int id, len;
    unsigned char d[8];
-   
+
 #ifdef PEAK_CAN
 
    retvalue = LINUX_CAN_Extended_Status(canDev[bus], &pendread, &pendwrite);
@@ -804,7 +804,7 @@ int canClearMsg(int bus)
       retvalue =  canReadMsg(bus, &id, &len, d, 1);
       //retvalue = LINUX_CAN_Read(canDev[bus], &msg);
       retvalue = LINUX_CAN_Extended_Status(canDev[bus], &pendread, &pendwrite);
-      
+
       //syslog(LOG_ERR, "Cleared unexpected message from CANbus: ID[%4x] LEN[%d] DATA[%2x %2x %2x %2x %2x %2x %2x %2x]",
       //   id, len, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       //usleep(1);
@@ -813,7 +813,7 @@ int canClearMsg(int bus)
 
 #else
    //find a better way of clearing the bus
-   
+
    while(!canReadMsg(canDev[bus], &id_in, &len_in, CANdata, FALSE))
    {
       syslog(LOG_ERR, "Cleared unexpected message from CANbus");
@@ -825,7 +825,7 @@ int canClearMsg(int bus)
 int wakePuck(int bus, int who)
 {
    setProperty(bus, who, 5, FALSE, STATUS_READY); // Must use '5' for STAT
-   usleep(300000); // Wait 300ms for puck to initialize
+   usleep(500000); // Wait 500ms for puck to initialize
 
    return(0);
 }
@@ -1054,7 +1054,7 @@ int getBusStatus(int bus, long *status)
       }
       else{
          //syslog(LOG_ERR, "getBusStatus(): canReadMsg returned error");
-	 }
+    }
    }
 
    btrt_mutex_unlock(&commMutex[bus]);
@@ -1071,22 +1071,22 @@ int getBusStatus(int bus, long *status)
 
 /** Parse the data payload received from a Barrett Motor Controller.
     Allows selection of the CAN controller.
-    
+
     \return 0 for no error
     \return 1 for <illegal message header> (syslog output is generated)
-   
+
    \verbatim
    THIS (OPTIONAL) INFO WILL BE PLACED IN A GREY BOX AS PRE-FORMATTED TEXT
- 
+
      You may draw simple diagrams explaining key concepts this way:
-     
+
               -----Head-----
               |            |
           --Node1--      Node2
           |       |
         Sub1     Sub2
-        
-   \endverbatim  
+
+   \endverbatim
 */
 int parseMessage(
    /* Input */
@@ -1115,20 +1115,20 @@ int parseMessage(
       *value |= ( (long)messageData[0] << 16) & 0x003F0000;
       *value |= ( (long)messageData[1] << 8 ) & 0x0000FF00;
       *value |= ( (long)messageData[2] ) & 0x000000FF;
-      
+
       if (*value & 0x00200000) /* If negative */
          *value |= 0xFFC00000; /* Sign-extend */
 
       *property = AP;
-      
+
       jointPosition[*node] = 0;
       jointPosition[*node] |= ( (long)messageData[3] << 16) & 0x003F0000;
       jointPosition[*node] |= ( (long)messageData[4] << 8 ) & 0x0000FF00;
       jointPosition[*node] |= ( (long)messageData[5] ) & 0x000000FF;
-      
+
       if (jointPosition[*node] & 0x00200000) /* If negative */
          jointPosition[*node] |= 0xFFC00000; /* Sign-extend */
-        
+
       //syslog(LOG_ERR,"Received packed set property: %d from node: %d value:%d",*property,*node,*value);
       break;
    case 2:  /* Data is normal, SET */
@@ -1157,12 +1157,12 @@ int parseMessage(
 }
 
 /** Convert a property and value into a valid btcan packet.
-    Used by getProperty() and setProperty() to build the data payload 
+    Used by getProperty() and setProperty() to build the data payload
     section of a CAN message based on a given property and value.
-    
+
     \return 0 for success
     \return non-zero, otherwise
-   
+
 */
 int compile(
    int property        /** The property being compiled (use the enumerations in btcan.h) */,
@@ -1446,7 +1446,7 @@ void initPropertyDefs(int firmwareVersion){
       IOFF = i++; /* 32-Bit */
       IOFF2 = i++;
       MPE = i++;
-	HOLD = i++;
+   HOLD = i++;
       TSTOP = i++;
       KP = i++;
       KD = i++;
@@ -1464,17 +1464,19 @@ void initPropertyDefs(int firmwareVersion){
       IKI = i++;
       IKCOR = i++;
       EN = i++;
-	EN2 = i++;
-	JP = i++;
-	JP2 = i++;
-	JOFST = i++;
-	JOFST2 = i++;
+   EN2 = i++;
+   JP = i++;
+   JP2 = i++;
+   JOFST = i++;
+   JOFST2 = i++;
       TIE = i++;
       ECMAX = i++;
       ECMIN = i++;
       LFLAGS = i++;
       LCTC = i++;
       LCVC = i++;
+      TACT = i++;
+      TACTID = i++;
 
       PROP_END = i++;
 
