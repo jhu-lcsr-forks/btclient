@@ -224,7 +224,10 @@ typedef struct btwam_struct
 
 
 /*************  WAM  API  ******************/
-
+//NEED THIS - DHG
+#ifdef __cplusplus
+extern "C" {
+#endif/* __cplusplus */
 wam_struct* OpenWAM(char *wamfile, int bus); //NULL -> wam.conf
 void CloseWAM(wam_struct* wam); //Cleanupint BlankWAMcallback(struct btwam_struct *wam);
 
@@ -275,7 +278,9 @@ int AddEndpointForce(wam_struct* wam,vect_n *force); //Cartesian only
 
 long GetTime(); //Wrapper for rt_get_cpu_time_ns()
 long GetElapsedTime(); //Static time variable
-
+#ifdef __cplusplus
+}
+#endif/* __cplusplus */
 
 /******************************************/
 
