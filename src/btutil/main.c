@@ -897,6 +897,8 @@ void paramDefaults(int newID,int targID)
          setPropertySlow(0,newID,GRPB,0,1);
          setPropertySlow(0,newID,GRPC,0,4);
 
+      setPropertySlow(0,newID,JIDX,0,targID);
+
       } else if(targID <= 7) { //Wrist
          setPropertySlow(0,newID,IKCOR,0,819);
          setPropertySlow(0,newID,IKP,0,4096);
@@ -904,6 +906,7 @@ void paramDefaults(int newID,int targID)
          setPropertySlow(0,newID,GRPA,0,0);
          setPropertySlow(0,newID,GRPB,0,2);
          setPropertySlow(0,newID,GRPC,0,4);
+      setPropertySlow(0,newID,JIDX,0,targID);
          if(targID != 7) {
             setPropertySlow(0,newID,IPNM,0,6500);
             //setPropertySlow(0,newID,IPNM,0,4961);
@@ -918,6 +921,7 @@ void paramDefaults(int newID,int targID)
           for(i = 0; bh8Defs[i].key; i++){
              setPropertySlow(0, newID, *bh8Defs[i].key, 0, bh8Defs[i].val);
           }
+      setPropertySlow(0,newID,JIDX,0,targID-3);
           if(targID == 14) { // Spread on BH8-280
               setPropertySlow(0,newID,CT,0,35950);
               setPropertySlow(0,newID,DP,0,17975);
@@ -928,7 +932,6 @@ void paramDefaults(int newID,int targID)
             }
       }
 
-      setPropertySlow(0,newID,JIDX,0,targID-3);
       setPropertySlow(0,newID,PIDX,0,((targID-1)%4)+1);
       break;
 
