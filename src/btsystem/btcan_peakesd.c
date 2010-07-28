@@ -1341,6 +1341,141 @@ void initPropertyDefs(int firmwareVersion){
       VALUE32 = i++;
       */
    }
+   else if(firmwareVersion < 132)
+   {
+      /* Common */
+      VERS = i++;
+      ROLE = i++; /* P=PRODUCT, R=ROLE: XXXX PPPP XXXX RRRR */
+      SN = i++;
+      ID = i++;
+      ERROR = i++;
+      STAT = i++;
+      ADDR = i++;
+      VALUE = i++;
+      MODE = i++;
+      TEMP = i++;
+      PTEMP = i++;
+      OTEMP = i++;
+      BAUD = i++;
+      _LOCK = i++;
+      DIG0 = i++;
+      DIG1 = i++;
+      FET0 = i++;
+      FET1 = i++;
+      ANA0 = i++;
+      ANA1 = i++;
+      THERM = i++;
+      VBUS = i++;
+      IMOTOR = i++;
+      VLOGIC = i++;
+      ILOGIC = i++;
+      SG = i++;
+      GRPA = i++;
+      GRPB = i++;
+      GRPC = i++;
+      CMD = i++; /* For commands w/o values: RESET,HOME,KEEP,PASS,LOOP,HI,IC,IO,TC,TO,C,O,T */
+      SAVE = i++;
+      LOAD = i++;
+      DEF = i++;
+      FIND = i++;
+      X0 = i++;
+      X1 = i++;
+      X2 = i++;
+      X3 = i++;
+      X4 = i++;
+      X5 = i++;
+      X6 = i++;
+      X7 = i++;
+
+      COMMON_END = i++;
+
+      /* Safety */
+      i = COMMON_END;
+      ZERO = i++;
+      PEN = i++;
+      SAFE = i++;
+      VL1 = i++;
+      VL2 = i++;
+      TL1 = i++;
+      TL2 = i++;
+      VOLTL1 = i++;
+      VOLTL2 = i++;
+      VOLTH1 = i++;
+      VOLTH2 = i++;
+      PWR = i++;
+      MAXPWR = i++;
+      IFAULT = i++;
+      VNOM = i++;
+
+      SAFETY_END = i++;
+
+      /* Tater */
+      i = COMMON_END;
+      T = i++;
+      MT = i++;
+      V = i++;
+      MV = i++;
+      MCV = i++;
+      MOV = i++;
+      P = i++; /* 32-Bit Present Position */
+      P2 = i++;
+      DP = i++; /* 32-Bit Default Position */
+      DP2 = i++;
+      E = i++; /* 32-Bit Endpoint */
+      E2 = i++;
+      OT = i++; /* 32-Bit Open Target */
+      OT2 = i++;
+      CT = i++; /* 32-Bit Close Target */
+      CT2 = i++;
+      M = i++; /* 32-Bit Move command for CAN*/
+      M2 = i++;
+      _DS = i++;
+      MOFST = i++;
+      IOFST = i++;
+      UPSECS = i++;
+      OD = i++;
+      MDS = i++;
+      MECH = i++; /* 32-Bit */
+      MECH2 = i++;
+      CTS = i++; /* 32-Bit */
+      CTS2 = i++;
+      PIDX = i++;
+      HSG = i++;
+      LSG = i++;
+      IVEL = i++;
+      IOFF = i++; /* 32-Bit */
+      IOFF2 = i++;
+      MPE = i++;
+      EN = i++;
+      TSTOP = i++;
+      KP = i++;
+      KD = i++;
+      KI = i++;
+      ACCEL = i++;
+      TENST = i++;
+      TENSO = i++;
+      JIDX = i++;
+      IPNM = i++;
+      HALLS = i++;
+      HALLH = i++; /* 32-Bit */
+      HALLH2 = i++;
+      POLES = i++;
+      IKP = i++;
+      IKI = i++;
+      IKCOR = i++;
+      HOLD = i++;
+      TIE = i++;
+      ECMAX = i++;
+      ECMIN = i++;
+      LFLAGS = i++;
+      LCTC = i++;
+      LCVC = i++;
+
+      PROP_END = i++;
+
+      AP = P; // Handle parameter name change
+      TENSION = FET1;
+   }
    else
    {
       /* Common */

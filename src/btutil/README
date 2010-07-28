@@ -1,0 +1,43 @@
+/*** btutil Usage ***/
+
+Enumerate pucks on the bus:
+./btutil -e
+
+Set the ID and (optionally) ROLE
+./btutil -i oldID -l newID -r role
+./btutil -i 15 -l 12 -r 256
+
+ROLE, lower 8 bits:
+WAM Puck = 0x00
+Safety = 0x02
+Wraptor = 0x03
+BHand = 0x05
+Force = 0x06
+
+ROLE, upper 8 bits:
+MagEnc on Serial = 0x01
+MagEnc on Hall = 0x02
+MagEnc on Enc = 0x04
+Strain = 0x08 (unused)
+Tactile = 0x10
+IMU = 0x20
+
+Example:
+BHand puck with MagEnc on Hall and Enc, plus Tactile:
+0x0005
+0x0200
+0x0400
+0x1000
+------
+0x1605 = 5637
+
+Set defaults for this puck (ID and ROLE should already be set):
+./btutil -d puckID -l likePuckID (usually the same ID)
+./btutil -d 2 -l 2
+
+Get puck properties:
+./btutil -g puckID
+./btutil -g 2
+
+Launch interactive application:
+./btutil

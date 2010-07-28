@@ -113,7 +113,7 @@ struct defaultStruct bh8Defs[] =
    &LSG, 0,
    &GRPA, 0,
    &GRPB, 7,
-   &GRPC, 8,
+   &GRPC, 5,
 
    NULL, 0
 };

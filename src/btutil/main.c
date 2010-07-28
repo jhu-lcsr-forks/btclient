@@ -871,7 +871,8 @@ void paramDefaults(int newID,int targID)
    long vers, role;
 
    wakePuck(0,newID);
-   //getProperty(0, newID, VERS, &vers);
+   getProperty(0, newID, VERS, &vers);
+   initPropertyDefs(vers);
    getProperty(0, newID, ROLE, &role);
 
    switch(role & 0x00FF){
@@ -902,7 +903,7 @@ void paramDefaults(int newID,int targID)
          setPropertySlow(0,newID,IKI,0,819);
          setPropertySlow(0,newID,GRPA,0,0);
          setPropertySlow(0,newID,GRPB,0,2);
-         setPropertySlow(0,newID,GRPC,0,5);
+         setPropertySlow(0,newID,GRPC,0,4);
          if(targID != 7) {
             setPropertySlow(0,newID,IPNM,0,6500);
             //setPropertySlow(0,newID,IPNM,0,4961);
@@ -918,8 +919,8 @@ void paramDefaults(int newID,int targID)
              setPropertySlow(0, newID, *bh8Defs[i].key, 0, bh8Defs[i].val);
           }
           if(targID == 14) { // Spread on BH8-280
-              setPropertySlow(0,newID,CT,0,-35950);
-              setPropertySlow(0,newID,DP,0,-17975);
+              setPropertySlow(0,newID,CT,0,35950);
+              setPropertySlow(0,newID,DP,0,17975);
               setPropertySlow(0,newID,MV,0,50);
               setPropertySlow(0,newID,HSG,0,0);
               setPropertySlow(0,newID,LSG,0,0);
