@@ -875,7 +875,7 @@ void paramDefaults(int newID,int targID)
    initPropertyDefs(vers);
    getProperty(0, newID, ROLE, &role);
 
-   switch(role & 0x00FF){
+   switch(role & 0x001F){
       case ROLE_TATER:
       case ROLE_BHAND:
       if(targID >= 1 && targID <= 7) { // WAM pucks
@@ -1128,7 +1128,7 @@ getParams(int newID)
    getProperty(0,newID,VERS,&reply);
    printf("VERS = %ld\n",reply);
    getProperty(0,newID,ROLE,&reply);
-   printf("ROLE = %ld (ROLE = %d, OPT = 0x%02X)\n",reply, reply & 0x00FF, (reply >> 8) & 0x00FF);
+   printf("ROLE = %ld (ROLE = %d, OPT = 0x%02X)\n",reply, reply & 0x001F, (reply >> 8) & 0x00FF);
    getProperty(0,newID,JIDX,&reply);
    printf("JIDX = %ld\n",reply);
    getProperty(0,newID,PIDX,&reply);
