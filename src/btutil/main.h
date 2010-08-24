@@ -69,7 +69,7 @@ struct defaultStruct taterDefs[] =
    &MOV, 100,
    &OT, 0,
    &HOLD, 0,
-   &TSTOP, 1000,
+   &TSTOP, 0,
    &OTEMP, 60,
    &PTEMP, 0,
    &_DS, -256,
