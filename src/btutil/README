@@ -7,7 +7,7 @@ Set the ID and (optionally) ROLE
 ./btutil -i oldID -l newID -r role
 ./btutil -i 15 -l 12 -r 256
 
-ROLE, lower 8 bits:
+ROLE, lower 5 bits:
 WAM Puck = 0x00
 Safety = 0x02
 Wraptor = 0x03
@@ -21,6 +21,10 @@ MagEnc on Enc = 0x04
 Strain = 0x08 (unused)
 Tactile = 0x10
 IMU = 0x20
+
+ROLE, bit 7:
+32 MHz = 0
+20 MHz = 1
 
 Example:
 BHand puck with MagEnc on Hall and Enc, plus Tactile:
