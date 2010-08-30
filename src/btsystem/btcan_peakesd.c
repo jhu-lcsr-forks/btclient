@@ -825,7 +825,7 @@ int canClearMsg(int bus)
 int wakePuck(int bus, int who)
 {
    setProperty(bus, who, 5, FALSE, STATUS_READY); // Must use '5' for STAT
-   usleep(500000); // Wait 500ms for puck to initialize
+   usleep(1000000); // Wait 500ms for puck to initialize
 
    return(0);
 }
