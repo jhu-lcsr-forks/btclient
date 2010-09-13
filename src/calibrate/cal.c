@@ -286,7 +286,7 @@ void magenc_thd_function(void *thd)
    
    /* Detect puck versions */
    for (i=0; i<wam->dof; i++)
-      mz_mechset[i] = (GetProp(i,VERS) >= 118 && GetProp(i,ROLE) == 256) ? 1 : 0;
+      mz_mechset[i] = (GetProp(i,VERS) >= 118 && GetProp(i,ROLE) & 768) ? 1 : 0;
    
    while (!btrt_thread_done((btrt_thread_struct*)thd))
    {
