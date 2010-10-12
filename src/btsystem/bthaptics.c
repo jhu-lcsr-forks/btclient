@@ -446,18 +446,19 @@ int magneticwall_nf(struct bthaptic_object_struct *obj, btreal depth, vect_n *no
    double magforce = 0.1;
    double oprange = 0.5;
    double threshold = 0.01;
-   double yval = -1.0*norm_eff->K1*threshold;
-   double xval = sqrt(magforce/(-1.0*yval));
-   double shift = threshold - xval;
+   double yval; // = -1.0*norm_eff->K1*threshold;
+   double xval; // = sqrt(magforce/(-1.0*yval));
+   double shift; // = threshold - xval;
 
    WallStiff = 0.0;
    WallDamp = 0.0;
 
    norm_eff = (bteffect_magneticwall*)obj->norm_eff;
+   yval = -1.0*norm_eff->K1*threshold;
+   xval = sqrt(magforce/(-1.0*yval));
+   shift = threshold - xval;
+
    Vel = dot_v3((vect_3*)norm,(vect_3*)vel);
-
-
-
 
    if (depth > threshold)
    {
