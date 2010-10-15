@@ -36,8 +36,8 @@ BHand puck with MagEnc on Hall and Enc, plus Tactile:
 0x1605 = 5637
 
 Set defaults for this puck (ID and ROLE should already be set):
-./btutil -d puckID -l likePuckID (usually the same ID)
-./btutil -d 2 -l 2
+./btutil -p puckID -l likePuckID (usually the same ID)
+./btutil -p 2 -l 2
 
 Get puck properties:
 ./btutil -g puckID
