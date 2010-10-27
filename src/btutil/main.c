@@ -898,8 +898,9 @@ void paramDefaults(int newID,int targID)
          setPropertySlow(0,newID,GRPC,0,4);
 
       setPropertySlow(0,newID,JIDX,0,targID);
-
-      } else if(targID <= 7) { //Wrist
+         setPropertySlow(0,newID,PIDX,0,targID);
+         
+     } else if(targID <= 7) { //Wrist
          setPropertySlow(0,newID,IKCOR,0,819);
          setPropertySlow(0,newID,IKP,0,4096);
          setPropertySlow(0,newID,IKI,0,819);
@@ -915,6 +916,8 @@ void paramDefaults(int newID,int targID)
             setPropertySlow(0,newID,IPNM,0,17474);
             setPropertySlow(0,newID,POLES,0,6);
          }
+         
+         setPropertySlow(0,newID,PIDX,0,targID-4);
       }
 
       if(targID >= 11 && targID <= 14){ // BH8-280
@@ -930,9 +933,10 @@ void paramDefaults(int newID,int targID)
               setPropertySlow(0,newID,LSG,0,0);
               setPropertySlow(0,newID,HOLD,0,1);
             }
+            
+         setPropertySlow(0,newID,PIDX,0,targID-10);
       }
 
-      setPropertySlow(0,newID,PIDX,0,((targID-1)%4)+1);
       break;
 
       case ROLE_SAFETY:
