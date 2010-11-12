@@ -21,6 +21,7 @@ MagEnc on Enc = 0x04
 Strain = 0x08 (unused)
 Tactile = 0x10
 IMU = 0x20
+OpticalEnc on Enc = 0x40
 
 ROLE, bit 7:
 32 MHz = 0

@@ -239,6 +239,7 @@ int KI;
 int SAMPLE;
 int ACCEL;
 int TENSION;
+int BRAKE;
 int UNITS;
 int  RATIO;
 int LOG;

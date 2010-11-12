@@ -1046,9 +1046,9 @@ void setMofst(int newID)
    printf("\nThe old IOFST was: %d",dat);
 
    // Get a valid IOFST
-   #define IOFST_MIN (1900)
+   #define IOFST_MIN (1800)
    #define IOFST_MAX (2230)
-   #define IOFST_STDEV (10.0)
+   #define IOFST_STDEV (15.0)
 
    // Collect stats
    sumX = sumX2 = 0;

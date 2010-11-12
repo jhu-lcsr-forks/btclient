@@ -367,6 +367,7 @@ int initCAN(int bus, int port)
    char devname[10];
    struct ifreq ifr;
    struct sockaddr_can to_addr;
+   struct can_filter recvFilter[1];
    int ret, s;
    nanosecs_rel_t timeout;
    can_baudrate_t *baudrate;
@@ -422,6 +423,15 @@ int initCAN(int bus, int port)
        ret = rt_dev_close(s);
        return -1;
    }*/
+
+   recvFilter[0].can_id = 0 | CAN_INV_FILTER;
+   recvFilter[0].can_mask = 0x3e0;
+   ret = rt_dev_setsockopt(s, SOL_CAN_RAW, CAN_RAW_FILTER, &recvFilter, sizeof(recvFilter));
+   if (ret < 0) {
+      syslog(LOG_ERR, "rt_dev_setsockopt(CAN_RAW_FILTER): %s\n", strerror(-ret));
+      ret = rt_dev_close(s);
+      return -1;
+   }
 
    ret = rt_dev_bind(s, (struct sockaddr *)&to_addr, sizeof(to_addr));
    if (ret < 0) {
@@ -1105,7 +1115,7 @@ int parseMessage(
    *node = ADDR2NODE(id);
    if (*node == -1)
       syslog(LOG_ERR,"msgID:%x ",id);
-   dataHeader = ((messageData[0] >> 6) & 0x0002) | ((id & 0x041F) == 0x0403);
+   dataHeader = ((messageData[0] >> 6) & 0x0002) | ((id & 0x041F) == 0x0403) | ((id & 0x41F) == 0x0407);
    //messageData[0] &= 0x7F;
    //syslog(LOG_ERR,"Entering parsemessage");
    switch (dataHeader)
@@ -1119,15 +1129,20 @@ int parseMessage(
       if (*value & 0x00200000) /* If negative */
          *value |= 0xFFC00000; /* Sign-extend */
 
-      *property = AP;
+      if((id & 0x041F) == 0x0403)
+        *property = P;
+      else
+        *property = JP;
 
       jointPosition[*node] = 0;
-      jointPosition[*node] |= ( (long)messageData[3] << 16) & 0x003F0000;
-      jointPosition[*node] |= ( (long)messageData[4] << 8 ) & 0x0000FF00;
-      jointPosition[*node] |= ( (long)messageData[5] ) & 0x000000FF;
+      if(len > 3){
+        jointPosition[*node] |= ( (long)messageData[3] << 16) & 0x003F0000;
+        jointPosition[*node] |= ( (long)messageData[4] << 8 ) & 0x0000FF00;
+        jointPosition[*node] |= ( (long)messageData[5] ) & 0x000000FF;
 
-      if (jointPosition[*node] & 0x00200000) /* If negative */
-         jointPosition[*node] |= 0xFFC00000; /* Sign-extend */
+        if (jointPosition[*node] & 0x00200000) /* If negative */
+           jointPosition[*node] |= 0xFFC00000; /* Sign-extend */
+      }
 
       //syslog(LOG_ERR,"Received packed set property: %d from node: %d value:%d",*property,*node,*value);
       break;
@@ -1475,6 +1490,8 @@ void initPropertyDefs(int firmwareVersion){
 
       AP = P; // Handle parameter name change
       TENSION = FET1;
+      BRAKE = FET0;
+      TORQ = T;
    }
    else
    {
@@ -1617,5 +1634,7 @@ void initPropertyDefs(int firmwareVersion){
 
       AP = P; // Handle parameter name change
       TENSION = FET1;
+      BRAKE = FET0;
+      TORQ = T;
    }
 }
