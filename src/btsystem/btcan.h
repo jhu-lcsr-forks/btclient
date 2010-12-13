@@ -179,6 +179,7 @@ int TORQ;
 int MD;
 int V;
 int B;
+int P_OLD;
 int P;
 int P2;
 int E;

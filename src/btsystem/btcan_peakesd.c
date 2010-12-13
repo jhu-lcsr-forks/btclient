@@ -1232,7 +1232,7 @@ void initPropertyDefs(int firmwareVersion){
       MODE = i++;
       D = i++;
       TORQ = i++;
-      P = i++;
+      P_OLD = i++;
       V = i++;
       E = i++;
       B = i++;
@@ -1336,6 +1336,7 @@ void initPropertyDefs(int firmwareVersion){
       T = TORQ;
       FET0 = B;
       FET1 = TENSION;
+      P = AP;
       /*
       HALLS = i++;
       HALLH = i++;
