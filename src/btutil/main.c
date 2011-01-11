@@ -908,8 +908,8 @@ void paramDefaults(int newID,int targID)
          setPropertySlow(0,newID,GRPB,0,2);
          setPropertySlow(0,newID,GRPC,0,4);
 		 setPropertySlow(0,newID,JIDX,0,targID);
-         //if(targID != 7) {
-		 if(1) { // Temp fix for WK Song
+         if(targID != 7) {
+	//	 if(1) { // Temp fix for WK Song
             setPropertySlow(0,newID,IPNM,0,6500);
             //setPropertySlow(0,newID,IPNM,0,4961);
             setPropertySlow(0,newID,POLES,0,8);
