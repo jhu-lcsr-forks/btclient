@@ -1182,9 +1182,10 @@ getParams(int newID)
    printf("HALLS = 0x%04lX\n",reply);
    getProperty(0,newID,HALLH,&reply);
    printf("HALLH = %ld\n",reply);
+   getProperty(0,newID,TEMP,&reply);
+   printf("TEMP = %ld\n",reply);
    getProperty(0,newID,PTEMP,&reply);
    printf("PTEMP = %ld\n",reply);
-
 
    /* Commutation data */
    getProperty(0,newID,CTS,&reply);
