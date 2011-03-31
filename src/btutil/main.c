@@ -882,6 +882,7 @@ void paramDefaults(int newID,int targID)
           for(i = 0; taterDefs[i].key; i++){
              setPropertySlow(0, newID, *taterDefs[i].key, 0, taterDefs[i].val);
           }
+          setPropertySlow(0, newID, MT, 0, wamDefaultMT[targID-1]);
       }
       //if(role & 0x0100)
       //   setPropertySlow(0, newID, CTS, 0, 4096);

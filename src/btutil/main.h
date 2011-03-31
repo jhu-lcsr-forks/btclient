@@ -63,7 +63,6 @@ struct defaultStruct taterDefs[] =
    &OT, 0,
    &CTS, 4096,
    &DP, 0,
-   &MT, 3300,
    &MV, 100,
    &MCV, 100,
    &MOV, 100,
@@ -79,6 +78,7 @@ struct defaultStruct taterDefs[] =
 
    NULL, 0
 };
+long wamDefaultMT[] = {4860, 4860, 4860, 4320, 3900, 3900, 1600};
 
 struct defaultStruct bh8Defs[] =
 {
