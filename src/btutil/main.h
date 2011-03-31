@@ -89,7 +89,7 @@ struct defaultStruct bh8Defs[] =
    &OT, 0,
    &CTS, 4096,
    &DP, 45e3,
-   &MT, 5000,
+   &MT, 1700,
    &MV, 200,
    &MCV, 200,
    &MOV, 200,
