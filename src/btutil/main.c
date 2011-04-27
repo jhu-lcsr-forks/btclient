@@ -1232,7 +1232,18 @@ void cycleHand(void){
     long reply;
     int kp, kd;
     long temp1, temp2, temp3, temp4;
+    long ltemp1 = 100, ltemp2 = 100, ltemp3 = 100, ltemp4 = 100; //low temp
+    long htemp1 = 0, htemp2 = 0, htemp3 = 0, htemp4 = 0; //high temp
+    float atemp1 = 0, atemp2 = 0, atemp3 = 0, atemp4 = 0; //average temp
+    long ttemp1 = 0, ttemp2 = 0, ttemp3 = 0, ttemp4 = 0; //temp sums
     long therm1, therm2, therm3, therm4;
+    long ltherm1 = 500, ltherm2 = 500, ltherm3 = 500, ltherm4 = 500; //low therm
+    long htherm1 = 0, htherm2 = 0, htherm3 = 0, htherm4 = 0; //high therm
+    float atherm1 = 0, atherm2 = 0, atherm3 = 0, atherm4 = 0; //average therm
+    long ttherm1 = 0, ttherm2 = 0, ttherm3 = 0, ttherm4 = 0; //sum therm counter
+    long strain1, strain2, strain3;
+    long vibe = 0;
+    long cyclein = 0;
     long cycle = 0;
 
     wakePuck(0, 11);
@@ -1240,6 +1251,7 @@ void cycleHand(void){
     wakePuck(0, 13);
     wakePuck(0, 14);
 
+	printf("\n\nPlease wait, hand is now initializing...\n\n");
 
     setPropertySlow(0,11,CMD,0,CMD_HI);
     usleep(2e6);
@@ -1251,18 +1263,48 @@ void cycleHand(void){
     setPropertySlow(0,14,CMD,0,CMD_HI);
     usleep(2e6);
 #endif
-    printf("\nBH8-280 Cycle Program - Motor: TEMP/THERM (press ctrl-c to exit)\n");
-    while(1){
+	printf("\n\nBH8-280 Cycle Program\n\n");
+	printf("How many cycles would you like to run?\n\n");
+        scanf("%d",&cyclein);
+	printf("\n\nIs this a Vibration Test? Enter 1 for YES. 0 for NO.\n\n");
+        scanf("%d", &vibe);
+	if (vibe == 1)
+		{
+		printf("\nVibration mode has been selected, spread action has been disabled.\nPlease imobilize the spread.\n\n");
+		}
+	else
+		{
+		printf("\nVibration mode not selected, spread will operate normally.\n\n");        
+		}
+
+	// printf("vibe is %d", vibe); initial test.
+	printf("\nProgram will now run hand for %d cycles.\n", cyclein);
+	
+        printf("\nCycle Data - Motor Number: TEMP / THERM / STRAIN GUAGE (press ctrl-c to exit)\n\n");
+   
+       while(cycle < cyclein){
         ++cycle;
+
+	
         //printf("KP KD: "); scanf("%d %d", &kp, &kd);
 
         //canClearMsg(0);
+
+	//change led to red for close.
+	setProperty(0,14,TENSION, FALSE,0);	
+	setProperty(0,14,BRAKE, FALSE, 1);
+
         setPropertySlow(0,11,CMD,0,CMD_C);
 #if 1
         setPropertySlow(0,12,CMD,0,CMD_C);
         setPropertySlow(0,13,CMD,0,CMD_C);
 #endif
         do getProperty(0,11,MODE,&reply); while (reply == 5);
+	
+	//change led to green for open
+	setProperty(0,14,BRAKE,FALSE, 0);
+        setProperty(0,14,TENSION,FALSE,1);	
+	
 
         //canClearMsg(0);
         setPropertySlow(0,11,CMD,0,CMD_O);
@@ -1273,27 +1315,165 @@ void cycleHand(void){
         do getProperty(0,11,MODE,&reply); while (reply == 5);
 #if 1
         canClearMsg(0);
-        setPropertySlow(0,14,CMD,0,CMD_C);
+       
+	if (vibe != 1)
+	{
+	setProperty(0,14,BRAKE,FALSE, 1);
+        setProperty(0,14,TENSION,FALSE,1);	
+
+	setPropertySlow(0,14,CMD,0,CMD_C);
         do getProperty(0,14,MODE,&reply); while (reply == 5);
 
         canClearMsg(0);
         setPropertySlow(0,14,CMD,0,CMD_O);
         do getProperty(0,14,MODE,&reply); while (reply == 5);
+
+	setProperty(0,14,BRAKE,FALSE, 0);
+        setProperty(0,14,TENSION,FALSE,0);
+
+	}
+
+
 #endif
         // Get temps
         getProperty(0,11,TEMP,&temp1);
-        getProperty(0,12,TEMP,&temp2);
+        getProperty(0,12,TEMP,&temp2);    
         getProperty(0,13,TEMP,&temp3);
         getProperty(0,14,TEMP,&temp4);
         getProperty(0,11,THERM,&therm1);
         getProperty(0,12,THERM,&therm2);
         getProperty(0,13,THERM,&therm3);
         getProperty(0,14,THERM,&therm4);
+	getProperty(0,11,SG,&strain1);
+        getProperty(0,12,SG,&strain2);
+        getProperty(0,13,SG,&strain3);
 
-        printf("Cycle: %ld -- M1: %ld/%ld, M2: %ld/%ld, M3: %ld/%ld, M4: %ld/%ld\t\t\r",
-        cycle, temp1, therm1, temp2, therm2, temp3, therm3, temp4, therm4);
+	//calculations of temps
+		//P1
+		if (temp1 > htemp1)
+		{
+			htemp1=temp1;
+		}
+		if (temp1 < ltemp1)
+		{
+			ltemp1 = temp1;
+		}
+		ttemp1 = (ttemp1+temp1);
+		//P2
+		if (temp2 > htemp2)
+		{
+			htemp2=temp2;
+		}
+		if (temp2 < ltemp2)
+		{
+			ltemp2 = temp2;
+		}
+		ttemp2 = (ttemp2+temp2);
+		//P3
+		if (temp3 > htemp3)
+		{
+			htemp3=temp3;
+		}
+		if (temp3 < ltemp3)
+		{
+			ltemp3 = temp3;
+		}
+		ttemp3 = (ttemp3+temp3);
+		//P4
+		if (temp4 > htemp4)
+		{
+			htemp4=temp4;
+		}
+		if (temp4 < ltemp4)
+		{
+			ltemp4 = temp4;
+		}
+		ttemp4 = (ttemp4+temp4);	
+	//Therm Calculations
+
+		//M1
+		if (therm1 > htherm1)
+		{
+			htherm1=therm1;
+		}
+		if (therm1 < ltherm1)
+		{
+			ltherm1 = therm1;
+		}
+		ttherm1 = (ttherm1+therm1);
+		//M2
+		if (therm2 > htherm2)
+		{
+			htherm2=therm2;
+		}
+		if (therm2 < ltherm2)
+		{
+			ltherm2 = therm2;
+		}
+		ttherm2 = (ttherm2+therm2);
+		//M3
+		if (therm3 > htherm3)
+		{
+			htherm3=therm3;
+		}
+		if (therm3 < ltherm3)
+		{
+			ltherm3 = therm3;
+		}
+		ttherm3 = (ttherm3+therm3);
+		//M4
+		if (therm4 > htherm4)
+		{
+			htherm4=therm4;
+		}
+		if (therm4 < ltherm4)
+		{
+			ltherm4 = therm4;
+		}
+		ttherm4 = (ttherm4+therm4);	
+
+
+
+
+	
+	if (cycle==1 | cycle%25==0)
+		{
+        printf("Cycle: %4ld -- M1: %ld / %ld / %4ld, M2: %ld / %ld / %4ld, M3: %ld / %ld / %4ld, M4: %ld / %ld / XXXX\t\t\r\n",
+        cycle, temp1, therm1, strain1, temp2, therm2, strain2, temp3, therm3, strain3, temp4, therm4);
         fflush(stdout);
+		
+
+		}
     }
+	
+
+	//Find Averages TEMP
+	atemp1 = (ttemp1/cyclein);
+	atemp2 = (ttemp2/cyclein);
+	atemp3 = (ttemp3/cyclein);
+	atemp4 = (ttemp4/cyclein);
+
+	//Find Averages TEMP
+	atherm1 = (ttherm1/cyclein);
+	atherm2 = (ttherm2/cyclein);
+	atherm3 = (ttherm3/cyclein);
+	atherm4 = (ttherm4/cyclein);
+
+	//Results
+	printf("\n\nProgram has now completed %d cycles.", cyclein);
+	printf("\n\nRESULTS:\n");
+	printf("	Puck 11: High Temp  %d, Low Temp  %d, Average Temp  %f \n", htemp1, ltemp1, atemp1);
+	printf("	Puck 12: High Temp  %d, Low Temp  %d, Average Temp  %f \n", htemp2, ltemp2, atemp2);
+	printf("	Puck 13: High Temp  %d, Low Temp  %d, Average Temp  %f \n", htemp3, ltemp3, atemp3);
+	printf("	Puck 14: High Temp  %d, Low Temp  %d, Average Temp  %f \n\n", htemp4, ltemp4, atemp4);
+	printf("	Motor 1: High Therm %d, Low Therm %d, Average Therm %f \n", htherm1, ltherm1, atherm1);
+	printf("	Motor 2: High Therm %d, Low Therm %d, Average Therm %f \n", htherm2, ltherm2, atherm2);
+	printf("	Motor 3: High Therm %d, Low Therm %d, Average Therm %f \n", htherm3, ltherm3, atherm3);
+	printf("	Motor 4: High Therm %d, Low Therm %d, Average Therm %f \n", htherm4, ltherm4, atherm4);
+
+
+
+
 
 }
 
