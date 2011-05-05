@@ -934,9 +934,21 @@ void paramDefaults(int newID,int targID)
               setPropertySlow(0,newID,HSG,0,0);
               setPropertySlow(0,newID,LSG,0,0);
               setPropertySlow(0,newID,HOLD,0,1);
+              setPropertySlow(0,newID,TSTOP,0,150);
+              setPropertySlow(0,newID,KP,0,1000);
+              setPropertySlow(0,newID,KD,0,10000);
             }
             
          setPropertySlow(0,newID,PIDX,0,targID-10);
+         
+         // set IHIT
+         if (vers >= 175) {
+         	if (targID == 14) {
+	         	setPropertySlow(0,newID,108,0, 2200);  // spread
+         	} else {
+	         	setPropertySlow(0,newID,108,0, 1700);  // fingers
+         	}
+         }
       }
 
       break;
