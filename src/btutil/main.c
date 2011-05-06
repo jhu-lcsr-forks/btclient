@@ -1456,7 +1456,7 @@ void cycleHand(void){
 		}
 	else
 	   {
-		   printf("Cycle: %4ld",cycle);
+		   printf("Cycle: %4ld\r",cycle);
 		   fflush(stdout);
 	   }
 
