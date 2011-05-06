@@ -1356,7 +1356,7 @@ void cycleHand(void){
         getProperty(0,12,THERM,&therm2);
         getProperty(0,13,THERM,&therm3);
         getProperty(0,14,THERM,&therm4);
-	getProperty(0,11,SG,&strain1);
+		getProperty(0,11,SG,&strain1);
         getProperty(0,12,SG,&strain2);
         getProperty(0,13,SG,&strain3);
 
@@ -1456,6 +1456,11 @@ void cycleHand(void){
 		
 
 		}
+	else
+	   {
+		   printf("Cycle: %4ld",cycle);
+	   }
+
     }
 	
 
