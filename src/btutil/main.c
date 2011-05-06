@@ -1453,12 +1453,11 @@ void cycleHand(void){
         printf("Cycle: %4ld -- M1: %ld / %ld / %4ld, M2: %ld / %ld / %4ld, M3: %ld / %ld / %4ld, M4: %ld / %ld / XXXX\t\t\r\n",
         cycle, temp1, therm1, strain1, temp2, therm2, strain2, temp3, therm3, strain3, temp4, therm4);
         fflush(stdout);
-		
-
 		}
 	else
 	   {
 		   printf("Cycle: %4ld",cycle);
+		   fflush(stdout);
 	   }
 
     }
