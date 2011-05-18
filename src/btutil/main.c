@@ -1304,9 +1304,11 @@ void cycleHand(void){
 
 	//change led to red for close.
 	setProperty(0,14,TENSION, FALSE,0);	
-	setProperty(0,14,BRAKE, FALSE, 1);
+	setProperty(0,14,BRAKE, FALSE, 1);      
 
-        setPropertySlow(0,11,CMD,0,CMD_C);
+	 usleep(1500000); // wait 1.5 seconds
+
+	setPropertySlow(0,11,CMD,0,CMD_C);
 #if 1
         setPropertySlow(0,12,CMD,0,CMD_C);
         setPropertySlow(0,13,CMD,0,CMD_C);
@@ -1319,6 +1321,9 @@ void cycleHand(void){
 	
 
         //canClearMsg(0);
+	
+	 usleep(1500000);//wait 1.5 sec
+
         setPropertySlow(0,11,CMD,0,CMD_O);
 #if 1
         setPropertySlow(0,12,CMD,0,CMD_O);
