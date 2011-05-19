@@ -120,7 +120,7 @@ where command is:
 
 enum{SCREEN_MAIN, SCREEN_HELP};
 #define MAX_WATCH (20)
-#define SET_SLEEP (100)
+#define SET_SLEEP (1000)
 
 int screen = SCREEN_MAIN;
 int entryLine;
