@@ -1253,10 +1253,12 @@ void cycleHand(void){
     long htherm1 = 0, htherm2 = 0, htherm3 = 0, htherm4 = 0; //high therm
     float atherm1 = 0, atherm2 = 0, atherm3 = 0, atherm4 = 0; //average therm
     long ttherm1 = 0, ttherm2 = 0, ttherm3 = 0, ttherm4 = 0; //sum therm counter
-    long strain1, strain2, strain3;
+    long strain1, strain2, strain3, strain4;
     long vibe = 0;
     long cyclein = 0;
     long cycle = 0;
+    int sgcount = 0;
+    int rework = 0;
 
     wakePuck(0, 11);
     wakePuck(0, 12);
@@ -1286,8 +1288,33 @@ void cycleHand(void){
 		}
 	else
 		{
-		printf("\nVibration mode not selected, spread will operate normally.\n\n");        
+		printf("\nVibration mode not selected, spread will operate normally.\n");        
 		}
+
+
+	printf("\nChecking the P4 A to D reading.");
+	
+	while ((sgcount >= 10000) & (rework == 0))
+		{
+			getProperty(0,14,SG,&strain4); // check P4 sg rework
+
+			if ((strain4 <= 1900) |(strain4 >= 2300)) // if the A2D on p 14 is flored at one of the extremes, then the puck may need to have vias 7 and 8 tied.
+				{
+					printf("\n\nWARNING: Puck 14's strian gage value is %4ld. This puck may need the rework.\nTie vias 7 & 8 together with bus wire.", strain4);
+					rework = 1; 
+				}
+
+			sgcount = sgcount + 1;// move the counter
+		}
+
+
+
+	if (rework == 0 )
+		{
+			printf("\n\nA to D Value on Puck 14 is valid.\n");			
+		}
+
+
 
 	// printf("vibe is %d", vibe); initial test.
 	printf("\nProgram will now run hand for %d cycles.\n", cyclein);
@@ -1306,7 +1333,7 @@ void cycleHand(void){
 	setProperty(0,14,TENSION, FALSE,0);	
 	setProperty(0,14,BRAKE, FALSE, 1);      
 
-	 usleep(1500000); // wait 1.5 seconds
+	 usleep(500000); // wait 0.5 seconds
 
 	setPropertySlow(0,11,CMD,0,CMD_C);
 #if 1
@@ -1322,7 +1349,7 @@ void cycleHand(void){
 
         //canClearMsg(0);
 	
-	 usleep(1500000);//wait 1.5 sec
+	 usleep(500000);//wait 0.5 sec
 
         setPropertySlow(0,11,CMD,0,CMD_O);
 #if 1
@@ -1361,9 +1388,11 @@ void cycleHand(void){
         getProperty(0,12,THERM,&therm2);
         getProperty(0,13,THERM,&therm3);
         getProperty(0,14,THERM,&therm4);
-		getProperty(0,11,SG,&strain1);
+	getProperty(0,11,SG,&strain1);
         getProperty(0,12,SG,&strain2);
         getProperty(0,13,SG,&strain3);
+	getProperty(0,14,SG,&strain4);
+	
 
 	//calculations of temps
 		//P1
@@ -1455,8 +1484,8 @@ void cycleHand(void){
 	
 	if (cycle==1 | cycle%25==0)
 		{
-        printf("Cycle: %4ld -- M1: %ld / %ld / %4ld, M2: %ld / %ld / %4ld, M3: %ld / %ld / %4ld, M4: %ld / %ld / XXXX\t\t\r\n",
-        cycle, temp1, therm1, strain1, temp2, therm2, strain2, temp3, therm3, strain3, temp4, therm4);
+        printf("Cycle: %4ld -- M1: %ld / %ld / %4ld, M2: %ld / %ld / %4ld, M3: %ld / %ld / %4ld, M4: %ld / %ld / %4ld \t\t\r\n",
+        cycle, temp1, therm1, strain1, temp2, therm2, strain2, temp3, therm3, strain3, temp4, therm4, strain4);
         fflush(stdout);
 		}
 	else
