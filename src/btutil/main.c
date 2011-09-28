@@ -195,14 +195,17 @@ void enumeratePucks(void *data){
    int y;
    long status[MAX_NODES];
    long monVers, mainVers;
+   long puckRole;
 
    x = enumX; y = enumY;
 
+   VERS = 0; STAT = 5; ROLE = 1;
+   monVers = mainVers = puckRole = -1;
    clearScreen();
    getBusStatus(0, status);
    usleep(500000);
-   mvprintw(y++, x, "PUCK  MON MAIN");
-   mvprintw(y++, x, "---- ---- ----");
+   mvprintw(y++, x, "PUCK  MON MAIN ROLE");
+   mvprintw(y++, x, "---- ---- ---- ----");
    for(id = 0; id < MAX_NODES; id++) {
       monVers = mainVers = 0;
       switch(status[id]){
@@ -210,10 +213,11 @@ void enumeratePucks(void *data){
          break;
          case 0: // Reset
          getProperty(0, id, VERS, &monVers);
-         wakePuck(0, id);
-         getProperty(0, id, VERS, &mainVers);
-         setPropertySlow(0, id, STAT, FALSE, 0); // Reset the puck
-         mvprintw(y++, x, "%3d %4ld %4ld", id, monVers, mainVers);
+         getProperty(0, id, ROLE, &puckRole);
+         //wakePuck(0, id);
+         //getProperty(0, id, VERS, &mainVers);
+         //setPropertySlow(0, id, STAT, FALSE, 0); // Reset the puck
+         mvprintw(y++, x, " %3d %4ld %4ld %4ld", id, monVers, mainVers, puckRole);
          break;
          case 2: // Ready
          getProperty(0, id, VERS, &mainVers);
@@ -507,7 +511,7 @@ void Startup(void *thd){
             ProcessInput(chr);
          ProcessWatch();
 
-         usleep(100000); // Sleep for 0.1s
+         usleep(100); // Sleep for 0.1s
       }
    }
 
