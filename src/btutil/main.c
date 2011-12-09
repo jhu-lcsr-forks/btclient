@@ -1531,6 +1531,41 @@ void cycleHand(void){
 
 }
 
+void showSense(int id){
+	double sumX, sumX2, max, min, mean, stdev = 0;
+	long value, cycles;
+	
+	wakePuck(0, id);
+	printf("\nPress Ctrl-C to exit...\n");
+	setPropertySlow(0, id, ADDR, 0, 0x7108);
+	setPropertySlow(0, id, TSTOP, 0, 0);
+	setPropertySlow(0, id, MODE, 0, 2);
+	
+	sumX = sumX2 = 0;
+	max = -2E9;
+	min = +2E9;
+	cycles = 0;
+	while(1){
+		++cycles;
+		getProperty(0, id, VALUE, &value);
+		value >>= 4;
+		value &= 0x00000FFF;
+		
+		if(value > max) max = value;
+		if(value < min) min = value;
+		sumX += value;
+		sumX2 += value * value;
+		
+		mean = 1.0 * sumX / cycles;
+		if(cycles > 1)
+			stdev = sqrt((1.0 * cycles * sumX2 - sumX * sumX) / (cycles * cycles - cycles));
+			
+		printf("\rSample = %ld, Value = %ld, Min = %4.0lf, Max = %4.0lf, Mean = %6.2lf, Stdev = %4.2lf\t\t", cycles, value, min, max, mean, stdev);
+		usleep(50000);
+	}
+	
+}
+
 void strainHand(void){
     int err;
     int id_in, len_in;
@@ -1661,6 +1696,17 @@ void handleMenu(int argc, char **argv)
       }
 
       setMofst(arg1);
+      break;
+	case 'R': // iSense
+		printf("\n\nDisplay iSense reading for puck: ");
+		if(argc >= 3){
+			 arg1 = atol(argv[2]);
+			 printf("%d", arg1);
+		  }else{
+			 scanf("%d", &arg1);
+		  }
+
+      showSense(arg1);
       break;
    case 'P':
       printf("\n\nSet defaults for puck ID: ");
