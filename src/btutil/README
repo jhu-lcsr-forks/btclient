@@ -46,3 +46,7 @@ Get puck properties:
 
 Launch interactive application:
 ./btutil
+
+Update BHand firmware:
+for i in 11 12 13 14; do ./btutil -d $i -f puck2.tek.r200; done;
+for i in 11 12 13 14; do ./btutil -p $i -l $i; done;
