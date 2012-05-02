@@ -1281,6 +1281,11 @@ void cycleHand(void){
     setPropertySlow(0,14,CMD,0,CMD_HI);
     usleep(2e6);
 #endif
+	// Disable self-preservation for this test
+	setPropertySlow(0,11,HSG,0,10000);
+	setPropertySlow(0,12,HSG,0,10000);
+	setPropertySlow(0,13,HSG,0,10000);
+	
 	printf("\n\nBH8-280 Cycle Program\n\n");
 	printf("How many cycles would you like to run?\n\n");
         scanf("%d",&cyclein);
