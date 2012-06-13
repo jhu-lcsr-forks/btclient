@@ -6,7 +6,7 @@ CC = gcc
 # Compiler flags common to every system
 CFLAGS += -g -I./include -I../../include -I/usr/include
 LDFLAGS += -L/usr/lib -L/usr/local/lib -L../../lib 
-LDFLAGS += -lpthread -lncurses -lm -lbtwam -lbtsystem
+LDFLAGS += -lpthread -lncurses -lbtwam -lbtsystem -lm
 LDFLAGS += -Wl,-Map=$(TARG).map,--cref
 
 # Choose the correct CAN library
