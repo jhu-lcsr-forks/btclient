@@ -27,6 +27,10 @@ ROLE, bit 7:
 32 MHz = 0
 20 MHz = 1
 
+ROLE, bit 6:
+SPI temp = 0
+Internal therm = 1
+
 Example:
 BHand puck with MagEnc on Hall and Enc, plus Tactile:
 0x0005

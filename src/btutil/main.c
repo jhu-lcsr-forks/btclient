@@ -164,6 +164,8 @@ void hallCheck(void *data);
 void tensionCable(void *data);
 void findOffset(void *data);
 void exitProgram(void *data);
+void torqueSwitch(int puckID);
+void torqueSwitch2(int puckID);
 
 struct fcnStruct fcn[] = {
    activePuck, "Change active puck (1-9)",
@@ -511,7 +513,7 @@ void Startup(void *thd){
             ProcessInput(chr);
          ProcessWatch();
 
-         usleep(100); // Sleep for 0.1s
+         usleep(10); // Sleep for 0.1s
       }
    }
 
@@ -849,6 +851,124 @@ void checkTemp(int puckID){
    }
    */
 
+   printf("\nDone. ");
+   printf("\n");
+}
+
+void torqueSwitch(int puckID){
+   long ret;
+   int err = 0;
+
+   // Wake the puck
+   wakePuck(0, puckID);
+   
+   setPropertySlow(0, puckID, P, 0, 0);
+   
+   // Configure the trap motion profile
+   setPropertySlow(0, puckID, MV, 0, 5);
+   setPropertySlow(0, puckID, ACCEL, 0, 2000);
+   
+   // Activate the solenoids
+   setPropertySlow(0, puckID, FET0, 0, 1);
+   setPropertySlow(0, puckID, FET1, 0, 1);
+   
+   // Wait for the clutch to engage
+   usleep(100E3);
+   
+   // Begin moving
+   setPropertySlow(0, puckID, E, 0, 20E3);
+   setPropertySlow(0, puckID, MODE, 0, 5);
+   
+   // After a moment, reduce the current to the solenoids
+   usleep(100E3);
+   //setPropertySlow(0, puckID, FET0, 0, 20);
+   //setPropertySlow(0, puckID, FET1, 0, 20);
+   
+   // Wait for move to complete
+   printf("\n\n");
+   do{
+	   getProperty(0, puckID, P, &ret);
+	   printf("\rPosition = %ld\t\t", ret);
+	   fflush(stdout);
+	   
+	   getProperty(0, puckID, MODE, &ret);
+	   usleep(100E3);
+   }while(ret == 5);
+   printf("\n\n");
+   
+   // Turn off solenoids
+   setPropertySlow(0, puckID, FET0, 0, 0);
+   setPropertySlow(0, puckID, FET1, 0, 0);
+   
+   // Back up 10 degrees
+   setPropertySlow(0, puckID, E, 0, 20E3-120);
+   setPropertySlow(0, puckID, MODE, 0, 5);
+   
+   // Wait for move to complete
+   do{
+	   getProperty(0, puckID, MODE, &ret);
+	   usleep(100E3);
+   }while(ret == 5);
+   
+   printf("\nDone. ");
+   printf("\n");
+}
+
+void torqueSwitch2(int puckID){
+   long ret;
+   int err = 0;
+
+   // Wake the puck
+   wakePuck(0, puckID);
+   
+   setPropertySlow(0, puckID, P, 0, 0);
+   
+   // Configure the trap motion profile
+   setPropertySlow(0, puckID, MV, 0, 5);
+   setPropertySlow(0, puckID, ACCEL, 0, 2000);
+   
+   // Activate the solenoids
+   setPropertySlow(0, puckID, FET0, 0, 1);
+   setPropertySlow(0, puckID, FET1, 0, 1);
+   
+   // Wait for the clutch to engage
+   usleep(100E3);
+   
+   // Begin moving
+   setPropertySlow(0, puckID, E, 0, -20E3);
+   setPropertySlow(0, puckID, MODE, 0, 5);
+   
+   // After a moment, reduce the current to the solenoids
+   //usleep(100E3);
+   //setPropertySlow(0, puckID, FET0, 0, 20);
+   //setPropertySlow(0, puckID, FET1, 0, 20);
+   
+   // Wait for move to complete
+   printf("\n\n");
+   do{
+	   getProperty(0, puckID, P, &ret);
+	   printf("\rPosition = %ld\t\t", ret);
+	   fflush(stdout);
+	   
+	   getProperty(0, puckID, MODE, &ret);
+	   usleep(100E3);
+   }while(ret == 5);
+   printf("\n\n");
+   
+   // Turn off solenoids
+   setPropertySlow(0, puckID, FET0, 0, 0);
+   setPropertySlow(0, puckID, FET1, 0, 0);
+   
+   // Back up 10 degrees
+   setPropertySlow(0, puckID, E, 0, -20E3+120);
+   setPropertySlow(0, puckID, MODE, 0, 5);
+   
+   // Wait for move to complete
+   do{
+	   getProperty(0, puckID, MODE, &ret);
+	   usleep(100E3);
+   }while(ret == 5);
+   
    printf("\nDone. ");
    printf("\n");
 }
@@ -1240,6 +1360,102 @@ enum {
     CMD_TC, CMD_TO, CMD_C, CMD_M, CMD_O, CMD_T, CMD_HELP, CMD_END
 };
 
+void testStops(void){
+	long torque, maxTorque, position, mode, cycle = 1, backstep = 4000, position2;
+	
+	wakePuck(0, 7);
+	printf("\n\n");
+	
+	setPropertySlow(0,7,KP,0,1000);
+	setPropertySlow(0,7,KD,0,2500);
+	
+	// Enable HOLD
+	setPropertySlow(0,7,HOLD,0,1);
+	
+	getProperty(0,7,MT,&maxTorque);
+	//while(1){
+	#if 1
+		// Move clockwise until MT is reached
+		// Disable TSTOP
+		setPropertySlow(0,7,MV,0,25);
+		setPropertySlow(0,7,ACCEL,0,25);
+		setPropertySlow(0,7,TSTOP,0,0);
+		setPropertySlow(0,7,V,0,-10);
+		setPropertySlow(0,7,MODE,0,4);
+		printf("\nMoving to stop...\n");
+		do{
+			getProperty(0,7,T,&torque);
+			usleep(10000); // Wait 1/100 sec
+			//printf("\rTorque = %ld, maxTorque = %ld\t\t", torque, maxTorque);
+		}while(abs(torque) < maxTorque);
+		#endif
+		
+		// Stop applying torque
+		setPropertySlow(0,7,MODE,0,0);
+		
+		// Record position p
+		getProperty(0,7,P,&position);
+		printf("Stop position = %ld\n", position);
+		
+		// Move to p - backstep
+		// Enable TSTOP
+		setPropertySlow(0,7,MV,0,10);
+		setPropertySlow(0,7,TSTOP,0,50);
+		setPropertySlow(0,7,E,0,position - backstep);
+		setPropertySlow(0,7,MODE,0,5);
+		printf("Moving to %ld-4000 (%ld)\n", position, position-4000);
+		
+		// Wait for MODE 3
+		do{
+			getProperty(0,7,MODE,&mode);
+			usleep(100000); // Wait 1/10 sec
+		}while(mode != 3);
+		printf("At start position\n");
+		
+	//}
+	while(1){
+		printf("About to slam...\n");
+		getProperty(0,7,P,&position);
+		setPropertySlow(0,7,MODE,0,2);
+		setPropertySlow(0,7,T,0,-maxTorque);
+		do{
+			position2 = position;
+			usleep(10000); // Wait 1/100 sec
+			getProperty(0,7,P,&position);
+			
+			//printf("\rTorque = %ld, maxTorque = %ld\t\t", torque, maxTorque);
+		}while(labs(position - position2) > 2);
+		printf("Hit stop.\n");
+		// Stop applying torque
+		setPropertySlow(0,7,MODE,0,0);
+		
+		// Record position p
+		getProperty(0,7,P,&position);
+		printf("Stop position = %ld\n", position);
+		printf("Moving to %ld-4000 (%ld)\n", position, position-4000);
+		
+		// Move to p - backstep
+		// Enable TSTOP
+		setPropertySlow(0,7,ACCEL,0,10);
+		setPropertySlow(0,7,MV,0,10);
+		setPropertySlow(0,7,TSTOP,0,250);
+		setPropertySlow(0,7,E,0,position - backstep);
+		setPropertySlow(0,7,MODE,0,5);
+		
+		// Wait for MODE 3
+		do{
+			getProperty(0,7,MODE,&mode);
+			usleep(100000); // Wait 1/10 sec
+		}while(mode != 3);
+		printf("At start position\n");
+		
+		// Show status
+		printf("Cycle = %ld, MT = %ld\t\t\n", cycle, maxTorque);
+		++cycle;
+	}
+	
+}
+
 void cycleHand(void){
     int err;
     int id_in, len_in;
@@ -1539,10 +1755,10 @@ void cycleHand(void){
 void showSense(int id){
 	double sumX, sumX2, max, min, mean, stdev = 0;
 	long value, cycles;
-	
+
 	wakePuck(0, id);
 	printf("\nPress Ctrl-C to exit...\n");
-	setPropertySlow(0, id, ADDR, 0, 0x7108);
+	setPropertySlow(0, id, ADDR, 0, 0x7108); // ADCRESULT0
 	setPropertySlow(0, id, TSTOP, 0, 0);
 	setPropertySlow(0, id, MODE, 0, 2);
 	
@@ -1566,6 +1782,57 @@ void showSense(int id){
 			stdev = sqrt((1.0 * cycles * sumX2 - sumX * sumX) / (cycles * cycles - cycles));
 			
 		printf("\rSample = %ld, Value = %ld, Min = %4.0lf, Max = %4.0lf, Mean = %6.2lf, Stdev = %4.2lf\t\t", cycles, value, min, max, mean, stdev);
+		usleep(50000);
+	}
+	
+}
+
+#define taon (0x86D5)
+#define tbon (0x86DA)
+#define tcon (0x86CC)
+
+#define cmpr1 (0x7417)
+#define cmpr2 (0x7418)
+#define cmpr3 (0x7419)
+
+void collectPWM(int id){
+	long mech, a, b, c, mofst, isqref = 500, ikp = 5000, iki = 0, ikcor = 0;
+	FILE *fhook;
+	char fn[200];
+	
+	//Open the output file
+	sprintf(fn, "nosense_t%ld_p%ld_i%ld_c%ld.csv", isqref, ikp, iki, ikcor);
+   if((fhook=fopen(fn,"w")) == NULL) {
+      printf("\nUNABLE TO CREATE OUTPUT FILE.\n");
+      return(1);
+   }
+   
+	wakePuck(0, id);
+	printf("\nPress Ctrl-C to exit...\n");
+	getProperty(0, id, MOFST, &mofst);
+	
+	setPropertySlow(0, id, IKCOR, 0, ikcor);
+	setPropertySlow(0, id, IKP, 0, ikp);
+	setPropertySlow(0, id, IKI, 0, iki);
+	setPropertySlow(0, id, MODE, 0, 2);
+	setPropertySlow(0, id, T, 0, isqref);
+
+   printf("\nisqref = %ld, mofst = %ld, iki = %ld, ikp = %ld, ikcor = %ld\n", isqref, mofst, iki, ikp, ikcor);
+   //fprintf(fhook, "isqref = %ld, mofst = %ld, iki = %ld, ikp = %ld, ikcor = %ld\n", isqref, mofst, iki, ikp, ikcor);
+	while(1){
+		getProperty(0, id, MECH, &mech);
+		if((mech >= mofst) && (mech <= mofst + 683)){ // ctsPerRev / Poles * 2 = 683
+			setProperty(0, id, ADDR, 0, cmpr1);
+			getProperty(0, id, VALUE, &a);
+			setProperty(0, id, ADDR, 0, cmpr2);
+			getProperty(0, id, VALUE, &b);
+			setProperty(0, id, ADDR, 0, cmpr3);
+			getProperty(0, id, VALUE, &c);
+			
+			printf("%ld, %ld, %ld, %ld\n", mech-mofst, a, b, c);
+			fprintf(fhook, "%ld, %ld, %ld, %ld\n", mech-mofst, a, b, c);
+		}
+		
 		usleep(50000);
 	}
 	
@@ -1713,6 +1980,17 @@ void handleMenu(int argc, char **argv)
 
       showSense(arg1);
       break;
+	case 'K': // Collect PWM duty cycle data
+		printf("\n\nCollect duty cycle data for puck: ");
+		if(argc >= 3){
+			 arg1 = atol(argv[2]);
+			 printf("%d", arg1);
+		  }else{
+			 scanf("%d", &arg1);
+		  }
+
+      collectPWM(arg1);
+      break;
    case 'P':
       printf("\n\nSet defaults for puck ID: ");
       if(argc >= 3){
@@ -1742,6 +2020,29 @@ void handleMenu(int argc, char **argv)
       }
       getParams(arg1);
       break;
+      
+   case 'L':
+      printf("\n\nTest TorqueSwitch on puck ID: ");
+      if(argc >= 3){
+         arg1 = atol(argv[2]);
+         printf("%d", arg1);
+      }else{
+         scanf("%d", &arg1);
+      }
+      torqueSwitch(arg1);
+      break;   
+      
+   case 'M':
+      printf("\n\nTest TorqueSwitch on puck ID: ");
+      if(argc >= 3){
+         arg1 = atol(argv[2]);
+         printf("%d", arg1);
+      }else{
+         scanf("%d", &arg1);
+      }
+      torqueSwitch2(arg1);
+      break;  
+      
    case 'D':
       printf("\n\nDownload firmware to puck ID: ");
       if(argc >= 3){
@@ -1801,6 +2102,9 @@ void handleMenu(int argc, char **argv)
    //   printf("\n\n");
       done = TRUE;
       break;
+	case 'V':
+		testStops();
+		break;
    default:
       printf("\n\nExample usage:");
       printf("\nbtutil -e             Enumerate bus");
