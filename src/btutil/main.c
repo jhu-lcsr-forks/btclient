@@ -1519,13 +1519,13 @@ void cycleHand(void){
 
 	printf("\nChecking the P4 A to D reading.");
 	
-	while ((sgcount >= 10000) & (rework == 0))
+	while ((sgcount <= 10000) & (rework == 0))
 		{
 			getProperty(0,14,SG,&strain4); // check P4 sg rework
 
 			if ((strain4 <= 1900) |(strain4 >= 2300)) // if the A2D on p 14 is flored at one of the extremes, then the puck may need to have vias 7 and 8 tied.
 				{
-					printf("\n\nWARNING: Puck 14's strian gage value is %4ld. This puck may need the rework.\nTie vias 7 & 8 together with bus wire.", strain4);
+					printf("\n\nWARNING: Puck 14's strain gauge value is %4ld. This puck may need the rework.\nTie vias 7 & 8 together with bus wire.", strain4);
 					rework = 1; 
 				}
 
