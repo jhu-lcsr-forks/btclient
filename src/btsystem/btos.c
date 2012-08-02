@@ -49,6 +49,8 @@
 #include <stdlib.h>
 #include "btos.h"
 
+#define T_PRIMARY T_CONFORMING
+
 /*==============================*
  * GLOBAL file-scope variables  *
  *==============================*/
