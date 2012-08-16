@@ -1049,6 +1049,8 @@ void paramDefaults(int newID,int targID)
       if(targID >= 11 && targID <= 14){ // BH8-280
           for(i = 0; bh8Defs[i].key; i++){
              setPropertySlow(0, newID, *bh8Defs[i].key, 0, bh8Defs[i].val);
+	     //Temporary stopgap.  TSTOP for pucks 11-13 was being set to 0.  Check bh8Defs.
+	     setPropertySlow(0,newID,TSTOP,0,50);
           }
       setPropertySlow(0,newID,JIDX,0,targID-3);
           if(targID == 14) { // Spread on BH8-280
