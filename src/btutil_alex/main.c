@@ -185,12 +185,12 @@ int canSendMsg();
 float jVel = 0.5; // max velocity at joints, rad/s
 float jAcc = 0.5; // max acceleration at joints, rad/s^2
 
-int     idA = 3;//id of puck on Position Motor (1)
-int     idB = 4;//id of puck on Torque Motor (2)
+int     idA = 2;//id of puck on Position Motor (1)
+int     idB = 3;//id of puck on Torque Motor (2)
 
 long    encoder = 4096; //4096 encoder counts per rev by default, gets set later
-float   g = 3.0;//gearbox input:output ratio
-float   d = 37.38;//diameter of pinion (on MB) in mm
+float   g = 10.0;//gearbox input:output ratio
+float   d = 19.0;//diameter of pinion (on MB) in mm
 
 int     MAminT = 4000;//didnt seem to matter what the low end was, so made it a large value
 int     timestep = 1e4;//PID timestep - 1e3 was too quick sometimes? but 75us should be enough
