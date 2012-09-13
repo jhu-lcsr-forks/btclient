@@ -614,7 +614,7 @@ void mountCable(){
          dpB = gposB - cposB;
          //limit low torq for human interaction - might need to up depending on motor
          //when I changed pucks 200 was a bit hard
-         dp_to_torq(idB, dpB, 150, 175, 0.1, timestep);//minT, maxT, kp, timestep
+         dp_to_torq(idB, dpB, 150, 300, 0.1, timestep);//minT, maxT, kp, timestep
 			// getProperty(0,idB,42,&mBgotTorq);
 			// printf("\nmotor B torque: %d",mBgotTorq);
       }
