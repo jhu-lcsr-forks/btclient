@@ -185,12 +185,14 @@ int canSendMsg();
 float jVel = 0.5; // max velocity at joints, rad/s
 float jAcc = 0.5; // max acceleration at joints, rad/s^2
 
-int     idA = 2;//id of puck on Position Motor (1)
-int     idB = 3;//id of puck on Torque Motor (2)
+int     idA = 3;//id of puck on Position Motor (A)
+int     idB = 4;//id of puck on Torque Motor (B)
 
 long    encoder = 4096; //4096 encoder counts per rev by default, gets set later
-float   g = 10.0;//gearbox input:output ratio
-float   d = 19.0;//diameter of pinion (on MB) in mm
+float   g = 3.0;//gearbox output:input ratio
+float   d = 37.38;//diameter of pinion (on MB) in mm
+
+float   gt = 1.5; //The transmission ratio of the torque motor.
 
 int     MAminT = 4000;//didnt seem to matter what the low end was, so made it a large value
 int     timestep = 1e4;//PID timestep - 1e3 was too quick sometimes? but 75us should be enough
@@ -501,8 +503,8 @@ void dp_to_torq(int id, long dp, int minT, int maxT, float kp, int timestep){
 //Jessie wrote this
 void mountCable(){
    int ch;
-   long iposA, cposA, gposA, dpA;
-   long iposB, cposB, pposB, gposB, dpB;
+   long iposB, cposB, gposB, dpB;
+   long iposA, cposA, pposA, gposA, dpA;
    bool problem = false;
    bool mounted = false;
    bool waiting;
@@ -582,8 +584,8 @@ void mountCable(){
 
       //Directions: 1st set
       printf("0. Remove Motor A (MA) safety shield. Lift primary safety shield.\n");
-      printf("1. Put cable ball end into Motor B (MB) pinion mount.\n");
-      printf("2. Wrap two rotations by hand on MB.\n");
+      printf("1. Put cable ball end into Motor A (MA) pinion mount.\n");
+      printf("2. Wrap two rotations by hand on MA.\n");
       printf("3. Hold on to the cable loosely. If the cable is frayed use gloves.\n");
       printf("4. Type 's' and hit ENTER to spool\n  -->Pinion will wrap to end.\n");
    
@@ -598,35 +600,35 @@ void mountCable(){
       }
 
    
-      //set MB to torque mode, get initial pos
-      setPropertySlow(0,idB,8,FALSE,2);
-      getProperty(0,idB,48,&iposB);
+      //set MA to torque mode, get initial pos
+      setPropertySlow(0,idA,8,FALSE,2);
+      getProperty(0,idA,48,&iposA);
       usleep(2e4);//after getProperty
-      cposB = iposB;
+      cposA = iposA;
    
-      //MB to goal position
-      gposB = cposB + 33*encoder;
-      dpB = gposB - cposB;
+      //MA to goal position
+      gposA = cposA + 27*g*encoder;
+      dpA = gposA - cposA;
 
-     while ( fabs(dpB) > maxErr ){
-         getProperty(0,idB,48,&cposB);
+     while ( fabs(dpA) > maxErr ){
+         getProperty(0,idA,48,&cposA);
          usleep(2e4);//after getProperty
-         dpB = gposB - cposB;
+         dpA = gposA - cposA;
          //limit low torq for human interaction - might need to up depending on motor
          //when I changed pucks 200 was a bit hard
-         dp_to_torq(idB, dpB, 150, 300, 0.1, timestep);//minT, maxT, kp, timestep
+         dp_to_torq(idA, dpA, 150, 230, 0.1, timestep);//minT, maxT, kp, timestep
 			// getProperty(0,idB,42,&mBgotTorq);
-			// printf("\nmotor B torque: %d",mBgotTorq);
+			// printf("\nmotor A torque: %d",mAgotTorq);
       }
 
-      //stop MB from spinning
-      setPropertySlow(0,idB,42,FALSE,0);
+      //stop MA from spinning
+      setPropertySlow(0,idA,42,FALSE,0);
          
       
       //Directions: 2nd set
       printf("\n5. Put other cable ball end into pulley mount and tape over ball\n");
       printf("   (you might need to pull some length off the pinion/wrap around the pulley,\n    both are OK).\n");
-      printf("6. Rotate gearbox input to make cable taut, \n   close primary safety shield and put MA shield down.\n");
+      printf("6. Rotate gearbox input to make cable taut, \n   close primary safety shield and put MB shield down.\n");
       printf("7. Type 's' and hit ENTER to spool to end.\n");
       printf("  --> Type 'l' (CCW) or ';' (CW) to turn the pulley to make it easier to mount.");
       
@@ -639,78 +641,78 @@ void mountCable(){
          }
          else if (ch == 'l'){//"left turn" = CCW dir
             printf("rotate CCW\n");
-            setPropertySlow(0,idA,8,FALSE,2);
-            getProperty(0,idA,48,&iposA);
+            setPropertySlow(0,idB,8,FALSE,2);
+            getProperty(0,idB,48,&iposB);
             usleep(2e4);//after getProperty
-            cposA = iposA;
-            gposA = iposA + encoder*g/8.0;//CCW = + dir
-            dpA = gposA - cposA;
+            cposB = iposB;
+            gposB = iposB + encoder*g/8.0;//CCW = + dir
+            dpB = gposB - cposB;
 
-            while ( fabs(dpA) > maxErr*g ){
-               dp_to_torq(idA, dpA, 100*g, torqueCap, kp, timestep);//1000 for human interaction
+            while ( fabs(dpB) > maxErr*g ){
+               dp_to_torq(idB, dpB, 100*g, torqueCap, kp, timestep);//1000 for human interaction
                //get positions and recalculate difference
-               getProperty(0,idA,48,&cposA);
+               getProperty(0,idB,48,&cposB);
                usleep(2e4);//after getProperty
-               dpA = gposA - cposA;
+               dpB = gposB - cposB;
             }
-            setPropertySlow(0,idA,42,FALSE,0);
+            setPropertySlow(0,idB,42,FALSE,0);
          }
          else if (ch == ';'){//CW dir
             printf("rotate CW\n");
-            setPropertySlow(0,idA,8,FALSE,2);
-            getProperty(0,idA,48,&iposA);
+            setPropertySlow(0,idB,8,FALSE,2);
+            getProperty(0,idB,48,&iposB);
             usleep(2e4);//after getProperty
-            cposA = iposA;
-            gposA = iposA - encoder*g/8.0;//CW = - dir
-            dpA = gposA - cposA;
+            cposB = iposB;
+            gposB = iposB - encoder*g/8.0;//CW = - dir
+            dpB = gposB - cposB;
 
-            while ( fabs(dpA) > maxErr*g ){
-               dp_to_torq(idA, dpA, 100*g, torqueCap, kp, timestep);//1000 for human interaction
+            while ( fabs(dpB) > maxErr*g ){
+               dp_to_torq(idB, dpB, 100*g, torqueCap, kp, timestep);//1000 for human interaction
                //get positions and recalculate difference
-               getProperty(0,idA,48,&cposA);
+               getProperty(0,idB,48,&cposB);
                usleep(2e4);//after getProperty
-               dpA = gposA - cposA;
+               dpB = gposB - cposB;
             }
-            setPropertySlow(0,idA,42,FALSE,0);
+            setPropertySlow(0,idB,42,FALSE,0);
          }
 
          while ((ch = getchar()) != '\n' && ch != EOF);//puts("Flushing input");
       }
 
-      //MA will move MB via cable, so set goal on MB
-      getProperty(0,idB,48,&cposB);
+      //MB will move MA via cable, so set goal on MA
+      getProperty(0,idA,48,&cposA);
       usleep(2e4);//after getProperty
-      dpB = cposB - iposB -encoder*4;
+      dpA = cposA - iposA -encoder*4*g;
    
-      //set MA to torque mode, give 600
-      setPropertySlow(0, idA, 8, FALSE, 2);
-      setPropertySlow(0,idA,42,FALSE,-600);//needs to turn CW (-) to mount cable under
+      //set MB to torque mode, give 1000
+      setPropertySlow(0, idB, 8, FALSE, 2);
+      setPropertySlow(0,idB,42,FALSE,-1500);//needs to turn CW (-) to mount cable under
       usleep(1e6);//wait a sec
 
-      //check MB position
-      while ( fabs(dpB) > maxErr && !problem){
+      //check MA position
+      while ( fabs(dpA) > maxErr && !problem){
          usleep(2e4);
-         pposB = cposB;
-         getProperty(0,idB,48,&cposB);
-         dpB = cposB - iposB -encoder*5;
-         if (fabs(pposB-cposB) < 1){
+         pposA = cposA;
+         getProperty(0,idA,48,&cposA);
+         dpA = cposA - iposA -encoder*g*5;
+         if (fabs(pposA-cposA) < 1){
             problem = true;
          }
       }
 
-      //immediately turn off MA
-      setPropertySlow(0,idA,42,FALSE,0);
+      //immediately turn off MB
+      setPropertySlow(0,idB,42,FALSE,0);
       usleep(SET_SLEEP);
       if(problem){
-         setPropertySlow(0,idA,8,FALSE,0);
          setPropertySlow(0,idB,8,FALSE,0);
+         setPropertySlow(0,idA,8,FALSE,0);
          printf("\nCable fell off, please try again\n\n");
          problem = false;
       }
      else{
-         //set MA to hold and MB to tension cable
-         setPropertySlow(0, idA, 42, FALSE, 0);
-         setPropertySlow(0, idB, 42, FALSE, 200);
+         //set MB to hold and MA to tension cable
+         setPropertySlow(0, idB, 42, FALSE, 0);
+         setPropertySlow(0, idA, 42, FALSE, 200);
          printf("\nCable Mounted.\n");
          mounted = true;
       }

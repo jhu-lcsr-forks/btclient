@@ -392,7 +392,7 @@ LOAD /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
                 0x00000000080497d8                strcpy@@GLIBC_2.0
                 0x00000000080497e8                rt_task_wait_period
 
-.text           0x0000000008049800     0xb230
+.text           0x0000000008049800     0xb2d0
  *(.text .stub .text.* .gnu.linkonce.t.*)
  .text          0x0000000008049800       0x24 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
                 0x0000000008049800                _start
@@ -404,187 +404,187 @@ LOAD /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
  *fill*         0x0000000008049856        0xa 90909090
  .text          0x0000000008049860       0x72 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
  *fill*         0x00000000080498d2        0x2 90909090
- .text          0x00000000080498d4     0x5f5e main.o
-                0x000000000804cbf8                DisplayThread
-                0x000000000804f760                Write
-                0x000000000804f730                Read
-                0x000000000804d50a                paramDefaults
+ .text          0x00000000080498d4     0x5ff3 main.o
+                0x000000000804cc8d                DisplayThread
+                0x000000000804f7f5                Write
+                0x000000000804f7c5                Read
+                0x000000000804d59f                paramDefaults
                 0x000000000804a46b                mountCable
-                0x000000000804c858                findOffset
+                0x000000000804c8ed                findOffset
                 0x0000000008049a99                saveToFile
-                0x000000000804aefb                cableTester
-                0x000000000804f688                ReadSerial
-                0x000000000804c296                kbhit
-                0x000000000804c581                firmwarePuck
-                0x000000000804c8bb                ProcessWatch
+                0x000000000804af90                cableTester
+                0x000000000804f71d                ReadSerial
+                0x000000000804c32b                kbhit
+                0x000000000804c616                firmwarePuck
+                0x000000000804c950                ProcessWatch
                 0x0000000008049a1e                setPropertySlow
-                0x000000000804c33e                enumeratePucks
-                0x000000000804dd23                setMofst
-                0x000000000804dbbd                changeID
-                0x000000000804c7a8                setDefaults
-                0x000000000804d19e                firmwareDL
+                0x000000000804c3d3                enumeratePucks
+                0x000000000804ddb8                setMofst
+                0x000000000804dc52                changeID
+                0x000000000804c83d                setDefaults
+                0x000000000804d233                firmwareDL
                 0x000000000804a315                dp_to_torq
-                0x000000000804cafe                Cleanup
-                0x000000000804ce8c                ProcessInput
-                0x000000000804c6b3                watchProperty
+                0x000000000804cb93                Cleanup
+                0x000000000804cf21                ProcessInput
+                0x000000000804c748                watchProperty
                 0x0000000008049a50                wakePucks
-                0x000000000804d128                mygetch
+                0x000000000804d1bd                mygetch
                 0x0000000008049ced                newExp
-                0x000000000804c880                init_ncurses
-                0x000000000804e795                handleMenu
-                0x000000000804ccd2                finish_entry
-                0x000000000804cb18                main
-                0x000000000804cc7b                start_entry
-                0x000000000804d47e                checkTemp
-                0x000000000804c602                terminalMode
+                0x000000000804c915                init_ncurses
+                0x000000000804e82a                handleMenu
+                0x000000000804cd67                finish_entry
+                0x000000000804cbad                main
+                0x000000000804cd10                start_entry
+                0x000000000804d513                checkTemp
+                0x000000000804c697                terminalMode
                 0x0000000008049ef2                loadFile
-                0x000000000804e169                getParams
-                0x000000000804c94d                Startup
-                0x000000000804f793                EchoWrite
-                0x000000000804f70f                WriteSerial
-                0x000000000804c531                activePuck
-                0x000000000804d0ef                clearScreen
+                0x000000000804e1fe                getParams
+                0x000000000804c9e2                Startup
+                0x000000000804f828                EchoWrite
+                0x000000000804f7a4                WriteSerial
+                0x000000000804c5c6                activePuck
+                0x000000000804d184                clearScreen
                 0x000000000804a2ac                isCableMounted
-                0x000000000804cd44                RenderMAIN_SCREEN
-                0x000000000804c871                exitProgram
- *fill*         0x000000000804f832        0x2 90909090
- .text          0x000000000804f834     0x2310 ../../lib/libbtsystem.a(btcan_peakesd.o)
-                0x000000000804fd29                wakePuck
-                0x000000000804fcd9                canClearMsg
-                0x00000000080501ef                getBusStatus
-                0x000000000804f97e                allowMessage
-                0x000000000804fb3c                canReadMsg
-                0x0000000008050028                setProperty
-                0x00000000080503c7                parseMessage
-                0x000000000804fb1f                freeCAN
-                0x000000000804fd5d                setTorques
-                0x00000000080500f0                getProperty
-                0x000000000804f9c2                initCAN
-                0x0000000008050712                initPropertyDefs
-                0x000000000804fef2                getPositions
-                0x000000000804fc1d                canSendMsg
-                0x0000000008050694                compile
- .text          0x0000000008051b44      0x72b ../../lib/libbtsystem.a(btos.o)
-                0x0000000008051ec3                new_btthread
-                0x0000000008052238                btrt_mutex_unlock
-                0x0000000008051d21                btmutex_lock
-                0x0000000008051c8e                syslog_backtrace
-                0x000000000805215a                btrt_task_wait_period
-                0x0000000008051dc5                btptr_chk
-                0x00000000080520ed                btrt_thread_create
-                0x0000000008052201                btrt_mutex_lock
-                0x0000000008051ef6                free_btthread
-                0x00000000080520ad                btthread_exit
-                0x0000000008051e2c                test_and_log
-                0x0000000008051ede                new_btrt_thread
-                0x0000000008052134                btrt_set_mode_hard
-                0x0000000008052141                btrt_get_time
-                0x00000000080520bd                btrt_thread_stop
-                0x0000000008051d8f                btptr_ok
-                0x0000000008051cd0                btmutex_init
-                0x0000000008051ff5                btthread_done
-                0x0000000008051d58                btmutex_unlock
-                0x0000000008052181                btrt_mutex_create
-                0x0000000008052065                btthread_stop
-                0x00000000080521b0                btrt_mutex_init
-                0x0000000008052127                btrt_set_mode_soft
-                0x0000000008051e61                btmalloc
-                0x0000000008051ea2                btfree
-                0x0000000008052167                btrt_thread_join
-                0x00000000080520dd                btrt_thread_exit
-                0x0000000008051de6                idx_bounds_ok
-                0x000000000805202d                btrt_thread_done
-                0x0000000008051f0c                btthread_create
- *fill*         0x000000000805226f        0x1 90909090
- .text          0x0000000008052270      0x50f ../../lib/libbtsystem.a(btserial.o)
-                0x0000000008052395                serialClose
-                0x00000000080523c9                serialRead
-                0x00000000080524dd                serialWriteString
-                0x0000000008052505                serialLook
-                0x0000000008052530                serialSetBaud
-                0x0000000008052270                serialOpen
-                0x0000000008052424                serialReadLine
-                0x00000000080524a4                serialWrite
-                0x0000000008052770                signal_handler_IO
- *fill*         0x000000000805277f        0x1 90909090
- .text          0x0000000008052780     0x2189 /usr/local/lib/libntcan.a(ntcan.o)
-                0x0000000008054640                _canIdAdd
-                0x0000000008054000                canTake
-                0x0000000008053ce0                canGetBaudrate
-                0x00000000080547f0                _canReadEvent
-                0x00000000080543c0                canTakeT
-                0x00000000080545b0                _canGetBaudrate
-                0x0000000008054670                _canIdDelete
-                0x0000000008053f90                canGetOverlappedResult
-                0x0000000008054820                _canSendEvent
-                0x0000000008054700                _canRead
-                0x0000000008054150                canSendT
-                0x0000000008054430                canReadT
-                0x0000000008053af0                canOpen
-                0x0000000008054510                canIoctl
-                0x00000000080544a0                canStatus
-                0x0000000008053f60                canIdDelete
-                0x0000000008054850                _canStatus
-                0x00000000080548b0                _canIdRangeDelete
-                0x0000000008054580                _canSetBaudrate
-                0x0000000008053c70                canSetBaudrate
-                0x0000000008054880                _canIdRangeAdd
-                0x0000000008053d50                canClose
-                0x0000000008054730                _canSend
-                0x0000000008054320                canReadEvent
-                0x0000000008054620                _canClose
-                0x0000000008053e30                canIdRangeAdd
-                0x00000000080548e0                _canIoctl
-                0x0000000008053ea0                canIdAdd
-                0x00000000080546a0                _canGetOverlappedResult
-                0x0000000008053ed0                canIdRangeDelete
-                0x00000000080545e0                _canOpen
-                0x0000000008054230                canWriteT
-                0x00000000080542a0                canSendEvent
-                0x0000000008052780                canOpenInternalLxCandev
-                0x0000000008054070                canRead
-                0x00000000080546d0                _canTake
-                0x00000000080528f0                canOpenInternalLxEsdcan
-                0x00000000080541c0                canWrite
-                0x00000000080540e0                canSend
-                0x00000000080547c0                _canWriteT
-                0x0000000008054760                _canSendT
-                0x0000000008054790                _canWrite
- *fill*         0x0000000008054909        0x7 90909090
- .text          0x0000000008054910       0xab /usr/lib/libc_nonshared.a(elf-init.oS)
-                0x0000000008054970                __libc_csu_fini
-                0x0000000008054910                __libc_csu_init
- *fill*         0x00000000080549bb        0x5 90909090
- .text          0x00000000080549c0       0x3b /usr/lib/libc_nonshared.a(atexit.oS)
-                0x00000000080549c0                atexit
- *fill*         0x00000000080549fb        0x5 90909090
- .text          0x0000000008054a00       0x30 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtend.o
+                0x000000000804cdd9                RenderMAIN_SCREEN
+                0x000000000804c906                exitProgram
+ *fill*         0x000000000804f8c7        0x1 90909090
+ .text          0x000000000804f8c8     0x2310 ../../lib/libbtsystem.a(btcan_peakesd.o)
+                0x000000000804fdbd                wakePuck
+                0x000000000804fd6d                canClearMsg
+                0x0000000008050283                getBusStatus
+                0x000000000804fa12                allowMessage
+                0x000000000804fbd0                canReadMsg
+                0x00000000080500bc                setProperty
+                0x000000000805045b                parseMessage
+                0x000000000804fbb3                freeCAN
+                0x000000000804fdf1                setTorques
+                0x0000000008050184                getProperty
+                0x000000000804fa56                initCAN
+                0x00000000080507a6                initPropertyDefs
+                0x000000000804ff86                getPositions
+                0x000000000804fcb1                canSendMsg
+                0x0000000008050728                compile
+ .text          0x0000000008051bd8      0x72b ../../lib/libbtsystem.a(btos.o)
+                0x0000000008051f57                new_btthread
+                0x00000000080522cc                btrt_mutex_unlock
+                0x0000000008051db5                btmutex_lock
+                0x0000000008051d22                syslog_backtrace
+                0x00000000080521ee                btrt_task_wait_period
+                0x0000000008051e59                btptr_chk
+                0x0000000008052181                btrt_thread_create
+                0x0000000008052295                btrt_mutex_lock
+                0x0000000008051f8a                free_btthread
+                0x0000000008052141                btthread_exit
+                0x0000000008051ec0                test_and_log
+                0x0000000008051f72                new_btrt_thread
+                0x00000000080521c8                btrt_set_mode_hard
+                0x00000000080521d5                btrt_get_time
+                0x0000000008052151                btrt_thread_stop
+                0x0000000008051e23                btptr_ok
+                0x0000000008051d64                btmutex_init
+                0x0000000008052089                btthread_done
+                0x0000000008051dec                btmutex_unlock
+                0x0000000008052215                btrt_mutex_create
+                0x00000000080520f9                btthread_stop
+                0x0000000008052244                btrt_mutex_init
+                0x00000000080521bb                btrt_set_mode_soft
+                0x0000000008051ef5                btmalloc
+                0x0000000008051f36                btfree
+                0x00000000080521fb                btrt_thread_join
+                0x0000000008052171                btrt_thread_exit
+                0x0000000008051e7a                idx_bounds_ok
+                0x00000000080520c1                btrt_thread_done
+                0x0000000008051fa0                btthread_create
+ *fill*         0x0000000008052303        0x1 90909090
+ .text          0x0000000008052304      0x50f ../../lib/libbtsystem.a(btserial.o)
+                0x0000000008052429                serialClose
+                0x000000000805245d                serialRead
+                0x0000000008052571                serialWriteString
+                0x0000000008052599                serialLook
+                0x00000000080525c4                serialSetBaud
+                0x0000000008052304                serialOpen
+                0x00000000080524b8                serialReadLine
+                0x0000000008052538                serialWrite
+                0x0000000008052804                signal_handler_IO
+ *fill*         0x0000000008052813        0xd 90909090
+ .text          0x0000000008052820     0x2189 /usr/local/lib/libntcan.a(ntcan.o)
+                0x00000000080546e0                _canIdAdd
+                0x00000000080540a0                canTake
+                0x0000000008053d80                canGetBaudrate
+                0x0000000008054890                _canReadEvent
+                0x0000000008054460                canTakeT
+                0x0000000008054650                _canGetBaudrate
+                0x0000000008054710                _canIdDelete
+                0x0000000008054030                canGetOverlappedResult
+                0x00000000080548c0                _canSendEvent
+                0x00000000080547a0                _canRead
+                0x00000000080541f0                canSendT
+                0x00000000080544d0                canReadT
+                0x0000000008053b90                canOpen
+                0x00000000080545b0                canIoctl
+                0x0000000008054540                canStatus
+                0x0000000008054000                canIdDelete
+                0x00000000080548f0                _canStatus
+                0x0000000008054950                _canIdRangeDelete
+                0x0000000008054620                _canSetBaudrate
+                0x0000000008053d10                canSetBaudrate
+                0x0000000008054920                _canIdRangeAdd
+                0x0000000008053df0                canClose
+                0x00000000080547d0                _canSend
+                0x00000000080543c0                canReadEvent
+                0x00000000080546c0                _canClose
+                0x0000000008053ed0                canIdRangeAdd
+                0x0000000008054980                _canIoctl
+                0x0000000008053f40                canIdAdd
+                0x0000000008054740                _canGetOverlappedResult
+                0x0000000008053f70                canIdRangeDelete
+                0x0000000008054680                _canOpen
+                0x00000000080542d0                canWriteT
+                0x0000000008054340                canSendEvent
+                0x0000000008052820                canOpenInternalLxCandev
+                0x0000000008054110                canRead
+                0x0000000008054770                _canTake
+                0x0000000008052990                canOpenInternalLxEsdcan
+                0x0000000008054260                canWrite
+                0x0000000008054180                canSend
+                0x0000000008054860                _canWriteT
+                0x0000000008054800                _canSendT
+                0x0000000008054830                _canWrite
+ *fill*         0x00000000080549a9        0x7 90909090
+ .text          0x00000000080549b0       0xab /usr/lib/libc_nonshared.a(elf-init.oS)
+                0x0000000008054a10                __libc_csu_fini
+                0x00000000080549b0                __libc_csu_init
+ *fill*         0x0000000008054a5b        0x5 90909090
+ .text          0x0000000008054a60       0x3b /usr/lib/libc_nonshared.a(atexit.oS)
+                0x0000000008054a60                atexit
+ *fill*         0x0000000008054a9b        0x5 90909090
+ .text          0x0000000008054aa0       0x30 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtend.o
  *(.text.*personality*)
  *(.gnu.warning)
 
-.fini           0x0000000008054a30       0x1b
+.fini           0x0000000008054ad0       0x1b
  *(.fini)
- .fini          0x0000000008054a30       0x12 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crti.o
-                0x0000000008054a30                _fini
- .fini          0x0000000008054a42        0x5 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
- .fini          0x0000000008054a47        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
-                0x0000000008054a4b                PROVIDE (__etext, .)
-                0x0000000008054a4b                PROVIDE (_etext, .)
-                0x0000000008054a4b                PROVIDE (etext, .)
+ .fini          0x0000000008054ad0       0x12 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crti.o
+                0x0000000008054ad0                _fini
+ .fini          0x0000000008054ae2        0x5 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
+ .fini          0x0000000008054ae7        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
+                0x0000000008054aeb                PROVIDE (__etext, .)
+                0x0000000008054aeb                PROVIDE (_etext, .)
+                0x0000000008054aeb                PROVIDE (etext, .)
 
-.rodata         0x0000000008054a60     0x1ec2
+.rodata         0x0000000008054b00     0x1ee2
  *(.rodata .rodata.* .gnu.linkonce.r.*)
- .rodata        0x0000000008054a60        0x8 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
-                0x0000000008054a60                _fp_hw
-                0x0000000008054a64                _IO_stdin_used
- .rodata        0x0000000008054a68     0x1975 main.o
- *fill*         0x00000000080563dd        0x3 00
- .rodata        0x00000000080563e0      0x3fd ../../lib/libbtsystem.a(btcan_peakesd.o)
-                0x00000000080563e0                dataType
- *fill*         0x00000000080567dd        0x3 00
- .rodata        0x00000000080567e0      0x137 ../../lib/libbtsystem.a(btos.o)
+ .rodata        0x0000000008054b00        0x8 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
+                0x0000000008054b00                _fp_hw
+                0x0000000008054b04                _IO_stdin_used
+ .rodata        0x0000000008054b08     0x197d main.o
+ *fill*         0x0000000008056485       0x1b 00
+ .rodata        0x00000000080564a0      0x3fd ../../lib/libbtsystem.a(btcan_peakesd.o)
+                0x00000000080564a0                dataType
+ *fill*         0x000000000805689d        0x3 00
+ .rodata        0x00000000080568a0      0x137 ../../lib/libbtsystem.a(btos.o)
  .rodata.str1.1
-                0x0000000008056917        0xb /usr/local/lib/libntcan.a(ntcan.o)
+                0x00000000080569d7        0xb /usr/local/lib/libntcan.a(ntcan.o)
 
 .rodata1
  *(.rodata1)
@@ -592,15 +592,15 @@ LOAD /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
 .eh_frame_hdr
  *(.eh_frame_hdr)
 
-.eh_frame       0x0000000008056924        0x4
+.eh_frame       0x00000000080569e4        0x4
  *(.eh_frame)
- .eh_frame      0x0000000008056924        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtend.o
+ .eh_frame      0x00000000080569e4        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtend.o
 
 .gcc_except_table
  *(.gcc_except_table)
  *(.gcc_except_table.*)
-                0x0000000008056928                . = (ALIGN (0x1000) - ((0x1000 - .) & 0xfff))
-                0x0000000008057928                . = (0x1000 DATA_SEGMENT_ALIGN 0x1000)
+                0x00000000080569e8                . = (ALIGN (0x1000) - ((0x1000 - .) & 0xfff))
+                0x00000000080579e8                . = (0x1000 DATA_SEGMENT_ALIGN 0x1000)
 
 .eh_frame
  *(.eh_frame)
@@ -615,329 +615,330 @@ LOAD /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
 .tbss
  *(.tbss .tbss.* .gnu.linkonce.tb.*)
  *(.tcommon)
-                0x0000000008057928                . = ALIGN (0x4)
-                0x0000000008057928                PROVIDE (__preinit_array_start, .)
+                0x00000000080579e8                . = ALIGN (0x4)
+                0x00000000080579e8                PROVIDE (__preinit_array_start, .)
 
 .preinit_array
  *(.preinit_array)
-                0x0000000008057928                PROVIDE (__preinit_array_end, .)
-                0x0000000008057928                PROVIDE (__init_array_start, .)
+                0x00000000080579e8                PROVIDE (__preinit_array_end, .)
+                0x00000000080579e8                PROVIDE (__init_array_start, .)
 
 .init_array
  *(.init_array)
-                0x0000000008057928                PROVIDE (__init_array_end, .)
-                0x0000000008057928                PROVIDE (__fini_array_start, .)
+                0x00000000080579e8                PROVIDE (__init_array_end, .)
+                0x00000000080579e8                PROVIDE (__fini_array_start, .)
 
 .fini_array
  *(.fini_array)
-                0x0000000008057928                PROVIDE (__fini_array_end, .)
+                0x00000000080579e8                PROVIDE (__fini_array_end, .)
 
-.ctors          0x0000000008057928        0x8
+.ctors          0x00000000080579e8        0x8
  *crtbegin*.o(.ctors)
  *(EXCLUDE_FILE(*crtend*.o) .ctors)
- .ctors         0x0000000008057928        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
+ .ctors         0x00000000080579e8        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
  *(SORT(.ctors.*))
  *(.ctors)
- .ctors         0x000000000805792c        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtend.o
+ .ctors         0x00000000080579ec        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtend.o
 
-.dtors          0x0000000008057930        0x8
+.dtors          0x00000000080579f0        0x8
  *crtbegin*.o(.dtors)
  *(EXCLUDE_FILE(*crtend*.o) .dtors)
- .dtors         0x0000000008057930        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
+ .dtors         0x00000000080579f0        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
  *(SORT(.dtors.*))
  *(.dtors)
- .dtors         0x0000000008057934        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtend.o
+ .dtors         0x00000000080579f4        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtend.o
 
-.jcr            0x0000000008057938        0x4
+.jcr            0x00000000080579f8        0x4
  *(.jcr)
- .jcr           0x0000000008057938        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtend.o
+ .jcr           0x00000000080579f8        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtend.o
 
-.data.rel.ro    0x0000000008057940       0x70
+.data.rel.ro    0x0000000008057a00       0x70
  *(.data.rel.ro.local)
  .data.rel.ro.local
-                0x0000000008057940       0x70 /usr/local/lib/libntcan.a(ntcan.o)
+                0x0000000008057a00       0x70 /usr/local/lib/libntcan.a(ntcan.o)
  *(.data.rel.ro*)
 
-.dynamic        0x00000000080579b0       0xe8
+.dynamic        0x0000000008057a70       0xe8
  *(.dynamic)
- .dynamic       0x00000000080579b0       0xe8 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
-                0x00000000080579b0                _DYNAMIC
+ .dynamic       0x0000000008057a70       0xe8 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
+                0x0000000008057a70                _DYNAMIC
 
-.got            0x0000000008057a98        0x8
+.got            0x0000000008057b58        0x8
  *(.got)
- .got           0x0000000008057a98        0x8 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
+ .got           0x0000000008057b58        0x8 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
 
-.got.plt        0x0000000008057aa0      0x15c
-                0x0000000008057aa0                . = DATA_SEGMENT_RELRO_END ((. + 0xc))
+.got.plt        0x0000000008057b60      0x15c
+                0x0000000008057b60                . = DATA_SEGMENT_RELRO_END ((. + 0xc))
  *(.got.plt)
- .got.plt       0x0000000008057aa0      0x15c /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
-                0x0000000008057aa0                _GLOBAL_OFFSET_TABLE_
+ .got.plt       0x0000000008057b60      0x15c /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
+                0x0000000008057b60                _GLOBAL_OFFSET_TABLE_
 
-.data           0x0000000008057c00      0x664
+.data           0x0000000008057cc0      0x664
  *(.data .data.* .gnu.linkonce.d.*)
- .data          0x0000000008057c00        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
-                0x0000000008057c00                data_start
-                0x0000000008057c00                __data_start
- .data          0x0000000008057c04        0x8 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
-                0x0000000008057c04                __dso_handle
- *fill*         0x0000000008057c0c       0x14 00
- .data          0x0000000008057c20      0x644 main.o
-                0x0000000008057fe4                ext
-                0x0000000008057fa4                tens_torq
-                0x0000000008057f70                idB
-                0x0000000008057e20                wraptorDefs
-                0x0000000008057c40                taterDefs
-                0x0000000008057c20                statusTxt
-                0x0000000008057f60                watchY
-                0x0000000008057fc4                dataFolder
-                0x0000000008057f78                g
-                0x0000000008057fb0                kiA
-                0x0000000008057d00                bh8Defs
-                0x0000000008057f74                encoder
-                0x0000000008057f84                timestep
-                0x0000000008057f4c                arrow
-                0x0000000008057f64                jVel
-                0x0000000008057f8c                torqueCap
-                0x0000000008057fac                kdA
-                0x0000000008057f54                enumX
-                0x0000000008057f9c                maxPTurns
-                0x0000000008057f48                id
-                0x0000000008057f6c                idA
-                0x0000000008058000                fcn
-                0x0000000008057ff5                mount_clockwise
-                0x0000000008057f88                maxErr
-                0x0000000008057f5c                watchX
-                0x0000000008057ff4                pulley_left_of_pinion
-                0x0000000008057fa8                kpA
-                0x0000000008057f58                enumY
-                0x0000000008057f80                MAminT
-                0x0000000008057fec                startupTravs
-                0x0000000008057f7c                d
-                0x0000000008057f90                runRest
-                0x0000000008057f98                maxAcc
-                0x0000000008057f68                jAcc
-                0x0000000008057f94                maxVel
-                0x0000000008057f50                termY
-                0x0000000008057fd4                temperatureFolder
-                0x0000000008057ff0                kp
-                0x0000000008057fb4                expFolder
-                0x0000000008057fa0                minPTurns
-                0x0000000008057ce0                wamDefaultMT
-                0x0000000008057f00                safetyDefs
+ .data          0x0000000008057cc0        0x4 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
+                0x0000000008057cc0                data_start
+                0x0000000008057cc0                __data_start
+ .data          0x0000000008057cc4        0x8 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
+                0x0000000008057cc4                __dso_handle
+ *fill*         0x0000000008057ccc       0x14 00
+ .data          0x0000000008057ce0      0x644 main.o
+                0x00000000080580a8                ext
+                0x0000000008058068                tens_torq
+                0x0000000008058030                idB
+                0x0000000008057ee0                wraptorDefs
+                0x0000000008057d00                taterDefs
+                0x0000000008057ce0                statusTxt
+                0x0000000008058020                watchY
+                0x0000000008058088                dataFolder
+                0x0000000008058038                g
+                0x0000000008058074                kiA
+                0x0000000008057dc0                bh8Defs
+                0x0000000008058034                encoder
+                0x0000000008058048                timestep
+                0x000000000805800c                arrow
+                0x0000000008058024                jVel
+                0x0000000008058050                torqueCap
+                0x0000000008058070                kdA
+                0x0000000008058014                enumX
+                0x0000000008058060                maxPTurns
+                0x0000000008058008                id
+                0x000000000805802c                idA
+                0x00000000080580c0                fcn
+                0x00000000080580b9                mount_clockwise
+                0x000000000805804c                maxErr
+                0x000000000805801c                watchX
+                0x00000000080580b8                pulley_left_of_pinion
+                0x000000000805806c                kpA
+                0x0000000008058018                enumY
+                0x0000000008058044                MAminT
+                0x00000000080580b0                startupTravs
+                0x000000000805803c                d
+                0x0000000008058054                runRest
+                0x0000000008058040                gt
+                0x000000000805805c                maxAcc
+                0x0000000008058028                jAcc
+                0x0000000008058058                maxVel
+                0x0000000008058010                termY
+                0x0000000008058098                temperatureFolder
+                0x00000000080580b4                kp
+                0x0000000008058078                expFolder
+                0x0000000008058064                minPTurns
+                0x0000000008057da0                wamDefaultMT
+                0x0000000008057fc0                safetyDefs
  *(.gnu.linkonce.d.*personality*)
 
 .data1
  *(.data1)
-                0x0000000008058264                _edata = .
-                0x0000000008058264                PROVIDE (edata, .)
-                0x0000000008058264                __bss_start = .
+                0x0000000008058324                _edata = .
+                0x0000000008058324                PROVIDE (edata, .)
+                0x0000000008058324                __bss_start = .
 
-.bss            0x0000000008058280      0xacc
+.bss            0x0000000008058340      0xacc
  *(.dynbss)
- .dynbss        0x0000000008058280        0x8 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
-                0x0000000008058280                stdout@@GLIBC_2.0
-                0x0000000008058284                stdscr
+ .dynbss        0x0000000008058340        0x8 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
+                0x0000000008058340                stdout@@GLIBC_2.0
+                0x0000000008058344                stdscr
  *(.bss .bss.* .gnu.linkonce.b.*)
- .bss           0x0000000008058288        0x1 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
- *fill*         0x0000000008058289        0x3 00
- .bss           0x000000000805828c       0x1c main.o
-                0x00000000080582a0                startDone
-                0x000000000805828c                screen
-                0x0000000008058290                done
-                0x0000000008058294                termX
-                0x000000000805829c                canport
-                0x0000000008058298                curses
-                0x00000000080582a4                torqueMin
- .bss           0x00000000080582a8        0x4 ../../lib/libbtsystem.a(btserial.o)
-                0x00000000080582a8                got_sigio
- *fill*         0x00000000080582ac       0x14 00
- .bss           0x00000000080582c0      0x400 /usr/local/lib/libntcan.a(ntcan.o)
+ .bss           0x0000000008058348        0x1 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
+ *fill*         0x0000000008058349        0x3 00
+ .bss           0x000000000805834c       0x1c main.o
+                0x0000000008058360                startDone
+                0x000000000805834c                screen
+                0x0000000008058350                done
+                0x0000000008058354                termX
+                0x000000000805835c                canport
+                0x0000000008058358                curses
+                0x0000000008058364                torqueMin
+ .bss           0x0000000008058368        0x4 ../../lib/libbtsystem.a(btserial.o)
+                0x0000000008058368                got_sigio
+ *fill*         0x000000000805836c       0x14 00
+ .bss           0x0000000008058380      0x400 /usr/local/lib/libntcan.a(ntcan.o)
  *(COMMON)
- COMMON         0x00000000080586c0      0x464 main.o
-                0x00000000080586c0                VOLTH2
-                0x00000000080586c4                JP2
-                0x00000000080586c8                LFS
-                0x00000000080586cc                TL1
-                0x00000000080586d0                TSTOP
-                0x00000000080586d4                KD
-                0x00000000080586d8                D
-                0x00000000080586dc                VERS
-                0x00000000080586e0                IOFF2
-                0x00000000080586e4                AP2
-                0x00000000080586e8                MDS
-                0x00000000080586ec                DIG1
-                0x00000000080586f0                VL1
-                0x00000000080586f4                X5
-                0x00000000080586f8                LFLAGS
-                0x00000000080586fc                JOFST
-                0x0000000008058700                args
-                0x0000000008058708                LCTC
-                0x000000000805870c                ROLE
-                0x0000000008058710                p
-                0x0000000008058720                MD
-                0x0000000008058724                EN
-                0x0000000008058728                UNITS
-                0x000000000805872c                IPNM
-                0x0000000008058730                MOV
-                0x0000000008058734                _DS
-                0x0000000008058738                IFAULT
-                0x000000000805873c                LOCK
-                0x0000000008058740                TENSO
-                0x0000000008058744                SAVE
-                0x0000000008058760                watch
-                0x0000000008058800                CTS
-                0x0000000008058804                PROP_END
-                0x0000000008058808                VBUS
-                0x000000000805880c                MODE
-                0x0000000008058810                GAIN3
-                0x0000000008058814                KP
-                0x0000000008058818                X7
-                0x0000000008058820                disp_thd
-                0x0000000008058898                DUMP
-                0x000000000805889c                TENST
-                0x00000000080588a0                StartupThread
-                0x0000000008058918                MT
-                0x000000000805891c                TENSION
-                0x0000000008058920                FET1
-                0x0000000008058924                VOLTL1
-                0x0000000008058928                HOLD
-                0x000000000805892c                ID
-                0x0000000008058930                OFFSET1
-                0x0000000008058934                ADDR
-                0x0000000008058938                TIE
-                0x000000000805893c                LOG1
-                0x0000000008058940                BRAKE
-                0x0000000008058944                X2
-                0x0000000008058948                JOFST2
-                0x000000000805894c                LOG4
-                0x0000000008058950                P2
-                0x0000000008058954                VOLTL2
-                0x0000000008058958                BAUD
-                0x000000000805895c                IKP
-                0x0000000008058960                ISQ
-                0x0000000008058964                OFFSET3
-                0x0000000008058968                IMOTOR
-                0x000000000805896c                DEF
-                0x0000000008058970                E2
-                0x0000000008058974                POLES
-                0x0000000008058978                PTEMP
-                0x000000000805897c                CT2
-                0x0000000008058980                T
-                0x0000000008058984                JIDX
-                0x0000000008058988                CTS2
-                0x000000000805898c                OD
-                0x0000000008058990                RATIO
-                0x0000000008058994                GAIN2
-                0x0000000008058998                X4
-                0x000000000805899c                GAIN1
-                0x00000000080589a0                TORQ
-                0x00000000080589a4                TEMP
-                0x00000000080589a8                GRPC
-                0x00000000080589ac                LOAD
-                0x00000000080589b0                B
-                0x00000000080589b4                LCV
-                0x00000000080589b8                OT
-                0x00000000080589bc                EN2
-                0x00000000080589c0                MECH2
-                0x00000000080589c4                VALUE
-                0x00000000080589c8                THERM
-                0x00000000080589cc                V
-                0x00000000080589d0                GRPA
-                0x00000000080589d4                MOFST
-                0x00000000080589d8                HALLH2
-                0x00000000080589dc                VL2
-                0x00000000080589e0                MCV
-                0x00000000080589e4                IOFST
-                0x00000000080589e8                FIND
-                0x00000000080589ec                HALLH
-                0x00000000080589f0                ANA0
-                0x00000000080589f4                MECH
-                0x00000000080589f8                LOG
-                0x00000000080589fc                X1
-                0x0000000008058a00                LSG
-                0x0000000008058a04                STAT
-                0x0000000008058a08                ACCEL
-                0x0000000008058a0c                CMD
-                0x0000000008058a10                ILOGIC
-                0x0000000008058a14                LOG2
-                0x0000000008058a18                CT
-                0x0000000008058a1c                VOLTH1
-                0x0000000008058a20                LCVC
-                0x0000000008058a24                VALUE32
-                0x0000000008058a28                MAXPWR
-                0x0000000008058a2c                SAMPLE
-                0x0000000008058a30                X3
-                0x0000000008058a34                _LOCK
-                0x0000000008058a38                SAFE
-                0x0000000008058a3c                DIG0
-                0x0000000008058a40                P_OLD
-                0x0000000008058a44                PIDX
-                0x0000000008058a48                HALLS
-                0x0000000008058a4c                SG
-                0x0000000008058a50                TACTID
-                0x0000000008058a54                ERROR
-                0x0000000008058a58                GRPB
-                0x0000000008058a5c                ANA1
-                0x0000000008058a60                OTEMP
-                0x0000000008058a64                IKCOR
-                0x0000000008058a68                SN
-                0x0000000008058a6c                IKI
-                0x0000000008058a70                SAFETY_END
-                0x0000000008058a74                X6
-                0x0000000008058a78                DP2
-                0x0000000008058a7c                E
-                0x0000000008058a80                IVEL
-                0x0000000008058a84                HSG
-                0x0000000008058a88                entryLine
-                0x0000000008058a8c                M
-                0x0000000008058a90                LFDP
-                0x0000000008058a94                FET0
-                0x0000000008058a98                TACT
-                0x0000000008058a9c                DP
-                0x0000000008058aa0                OT2
-                0x0000000008058aa4                COMMON_END
-                0x0000000008058aa8                ECMIN
-                0x0000000008058aac                ECMAX
-                0x0000000008058ab0                disp_mutex
-                0x0000000008058ac8                LFAP
-                0x0000000008058acc                PWR
-                0x0000000008058ad0                JP
-                0x0000000008058ad4                X0
-                0x0000000008058ad8                IOFF
-                0x0000000008058adc                LOG3
-                0x0000000008058ae0                KI
-                0x0000000008058ae4                M2
-                0x0000000008058ae8                OFFSET2
-                0x0000000008058aec                AP
-                0x0000000008058af0                MV
-                0x0000000008058af4                VNOM
-                0x0000000008058af8                mBgotTorq
-                0x0000000008058afc                PEN
-                0x0000000008058b00                UPSECS
-                0x0000000008058b04                TETAE
-                0x0000000008058b08                ZERO
-                0x0000000008058b0c                MPE
-                0x0000000008058b10                LFV
-                0x0000000008058b14                VLOGIC
-                0x0000000008058b18                P
-                0x0000000008058b1c                LFT
-                0x0000000008058b20                TL2
- *fill*         0x0000000008058b24       0x1c 00
- COMMON         0x0000000008058b40      0x120 ../../lib/libbtsystem.a(btcan_peakesd.o)
-                0x0000000008058b40                mask
-                0x0000000008058b4c                canDev
-                0x0000000008058b5c                can_accept
-                0x0000000008058b80                commMutex
-                0x0000000008058be0                jointPosition
- COMMON         0x0000000008058c60       0xec ../../lib/libbtsystem.a(btos.o)
-                0x0000000008058c60                backtracesize
-                0x0000000008058c80                backtracearray
-                0x0000000008058d48                backtracestrings
-                0x0000000008058d4c                . = ALIGN (0x4)
-                0x0000000008058d4c                . = ALIGN (0x4)
-                0x0000000008058d4c                _end = .
-                0x0000000008058d4c                PROVIDE (end, .)
-                0x0000000008058d4c                . = DATA_SEGMENT_END (.)
+ COMMON         0x0000000008058780      0x464 main.o
+                0x0000000008058780                VOLTH2
+                0x0000000008058784                JP2
+                0x0000000008058788                LFS
+                0x000000000805878c                TL1
+                0x0000000008058790                TSTOP
+                0x0000000008058794                KD
+                0x0000000008058798                D
+                0x000000000805879c                VERS
+                0x00000000080587a0                IOFF2
+                0x00000000080587a4                AP2
+                0x00000000080587a8                MDS
+                0x00000000080587ac                DIG1
+                0x00000000080587b0                VL1
+                0x00000000080587b4                X5
+                0x00000000080587b8                LFLAGS
+                0x00000000080587bc                JOFST
+                0x00000000080587c0                args
+                0x00000000080587c8                LCTC
+                0x00000000080587cc                ROLE
+                0x00000000080587d0                p
+                0x00000000080587e0                MD
+                0x00000000080587e4                EN
+                0x00000000080587e8                UNITS
+                0x00000000080587ec                IPNM
+                0x00000000080587f0                MOV
+                0x00000000080587f4                _DS
+                0x00000000080587f8                IFAULT
+                0x00000000080587fc                LOCK
+                0x0000000008058800                TENSO
+                0x0000000008058804                SAVE
+                0x0000000008058820                watch
+                0x00000000080588c0                CTS
+                0x00000000080588c4                PROP_END
+                0x00000000080588c8                VBUS
+                0x00000000080588cc                MODE
+                0x00000000080588d0                GAIN3
+                0x00000000080588d4                KP
+                0x00000000080588d8                X7
+                0x00000000080588e0                disp_thd
+                0x0000000008058958                DUMP
+                0x000000000805895c                TENST
+                0x0000000008058960                StartupThread
+                0x00000000080589d8                MT
+                0x00000000080589dc                TENSION
+                0x00000000080589e0                FET1
+                0x00000000080589e4                VOLTL1
+                0x00000000080589e8                HOLD
+                0x00000000080589ec                ID
+                0x00000000080589f0                OFFSET1
+                0x00000000080589f4                ADDR
+                0x00000000080589f8                TIE
+                0x00000000080589fc                LOG1
+                0x0000000008058a00                BRAKE
+                0x0000000008058a04                X2
+                0x0000000008058a08                JOFST2
+                0x0000000008058a0c                LOG4
+                0x0000000008058a10                P2
+                0x0000000008058a14                VOLTL2
+                0x0000000008058a18                BAUD
+                0x0000000008058a1c                IKP
+                0x0000000008058a20                ISQ
+                0x0000000008058a24                OFFSET3
+                0x0000000008058a28                IMOTOR
+                0x0000000008058a2c                DEF
+                0x0000000008058a30                E2
+                0x0000000008058a34                POLES
+                0x0000000008058a38                PTEMP
+                0x0000000008058a3c                CT2
+                0x0000000008058a40                T
+                0x0000000008058a44                JIDX
+                0x0000000008058a48                CTS2
+                0x0000000008058a4c                OD
+                0x0000000008058a50                RATIO
+                0x0000000008058a54                GAIN2
+                0x0000000008058a58                X4
+                0x0000000008058a5c                GAIN1
+                0x0000000008058a60                TORQ
+                0x0000000008058a64                TEMP
+                0x0000000008058a68                GRPC
+                0x0000000008058a6c                LOAD
+                0x0000000008058a70                B
+                0x0000000008058a74                LCV
+                0x0000000008058a78                OT
+                0x0000000008058a7c                EN2
+                0x0000000008058a80                MECH2
+                0x0000000008058a84                VALUE
+                0x0000000008058a88                THERM
+                0x0000000008058a8c                V
+                0x0000000008058a90                GRPA
+                0x0000000008058a94                MOFST
+                0x0000000008058a98                HALLH2
+                0x0000000008058a9c                VL2
+                0x0000000008058aa0                MCV
+                0x0000000008058aa4                IOFST
+                0x0000000008058aa8                FIND
+                0x0000000008058aac                HALLH
+                0x0000000008058ab0                ANA0
+                0x0000000008058ab4                MECH
+                0x0000000008058ab8                LOG
+                0x0000000008058abc                X1
+                0x0000000008058ac0                LSG
+                0x0000000008058ac4                STAT
+                0x0000000008058ac8                ACCEL
+                0x0000000008058acc                CMD
+                0x0000000008058ad0                ILOGIC
+                0x0000000008058ad4                LOG2
+                0x0000000008058ad8                CT
+                0x0000000008058adc                VOLTH1
+                0x0000000008058ae0                LCVC
+                0x0000000008058ae4                VALUE32
+                0x0000000008058ae8                MAXPWR
+                0x0000000008058aec                SAMPLE
+                0x0000000008058af0                X3
+                0x0000000008058af4                _LOCK
+                0x0000000008058af8                SAFE
+                0x0000000008058afc                DIG0
+                0x0000000008058b00                P_OLD
+                0x0000000008058b04                PIDX
+                0x0000000008058b08                HALLS
+                0x0000000008058b0c                SG
+                0x0000000008058b10                TACTID
+                0x0000000008058b14                ERROR
+                0x0000000008058b18                GRPB
+                0x0000000008058b1c                ANA1
+                0x0000000008058b20                OTEMP
+                0x0000000008058b24                IKCOR
+                0x0000000008058b28                SN
+                0x0000000008058b2c                IKI
+                0x0000000008058b30                SAFETY_END
+                0x0000000008058b34                X6
+                0x0000000008058b38                DP2
+                0x0000000008058b3c                E
+                0x0000000008058b40                IVEL
+                0x0000000008058b44                HSG
+                0x0000000008058b48                entryLine
+                0x0000000008058b4c                M
+                0x0000000008058b50                LFDP
+                0x0000000008058b54                FET0
+                0x0000000008058b58                TACT
+                0x0000000008058b5c                DP
+                0x0000000008058b60                OT2
+                0x0000000008058b64                COMMON_END
+                0x0000000008058b68                ECMIN
+                0x0000000008058b6c                ECMAX
+                0x0000000008058b70                disp_mutex
+                0x0000000008058b88                LFAP
+                0x0000000008058b8c                PWR
+                0x0000000008058b90                JP
+                0x0000000008058b94                X0
+                0x0000000008058b98                IOFF
+                0x0000000008058b9c                LOG3
+                0x0000000008058ba0                KI
+                0x0000000008058ba4                M2
+                0x0000000008058ba8                OFFSET2
+                0x0000000008058bac                AP
+                0x0000000008058bb0                MV
+                0x0000000008058bb4                VNOM
+                0x0000000008058bb8                mBgotTorq
+                0x0000000008058bbc                PEN
+                0x0000000008058bc0                UPSECS
+                0x0000000008058bc4                TETAE
+                0x0000000008058bc8                ZERO
+                0x0000000008058bcc                MPE
+                0x0000000008058bd0                LFV
+                0x0000000008058bd4                VLOGIC
+                0x0000000008058bd8                P
+                0x0000000008058bdc                LFT
+                0x0000000008058be0                TL2
+ *fill*         0x0000000008058be4       0x1c 00
+ COMMON         0x0000000008058c00      0x120 ../../lib/libbtsystem.a(btcan_peakesd.o)
+                0x0000000008058c00                mask
+                0x0000000008058c0c                canDev
+                0x0000000008058c1c                can_accept
+                0x0000000008058c40                commMutex
+                0x0000000008058ca0                jointPosition
+ COMMON         0x0000000008058d20       0xec ../../lib/libbtsystem.a(btos.o)
+                0x0000000008058d20                backtracesize
+                0x0000000008058d40                backtracearray
+                0x0000000008058e08                backtracestrings
+                0x0000000008058e0c                . = ALIGN (0x4)
+                0x0000000008058e0c                . = ALIGN (0x4)
+                0x0000000008058e0c                _end = .
+                0x0000000008058e0c                PROVIDE (end, .)
+                0x0000000008058e0c                . = DATA_SEGMENT_END (.)
 
 .stab
  *(.stab)
@@ -1002,28 +1003,28 @@ LOAD /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
                 0x00000000000000d8       0x30 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
 
 .debug_pubnames
-                0x0000000000000000     0x1505
+                0x0000000000000000     0x150c
  *(.debug_pubnames)
  .debug_pubnames
                 0x0000000000000000       0x25 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
  .debug_pubnames
-                0x0000000000000025      0xac3 main.o
+                0x0000000000000025      0xaca main.o
  .debug_pubnames
-                0x0000000000000ae8      0x6d9 ../../lib/libbtsystem.a(btcan_peakesd.o)
+                0x0000000000000aef      0x6d9 ../../lib/libbtsystem.a(btcan_peakesd.o)
  .debug_pubnames
-                0x00000000000011c1      0x286 ../../lib/libbtsystem.a(btos.o)
+                0x00000000000011c8      0x286 ../../lib/libbtsystem.a(btos.o)
  .debug_pubnames
-                0x0000000000001447       0xbe ../../lib/libbtsystem.a(btserial.o)
+                0x000000000000144e       0xbe ../../lib/libbtsystem.a(btserial.o)
 
-.debug_info     0x0000000000000000     0x76fa
+.debug_info     0x0000000000000000     0x770b
  *(.debug_info .gnu.linkonce.wi.*)
  .debug_info    0x0000000000000000      0x116 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
  .debug_info    0x0000000000000116       0xb6 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crti.o
- .debug_info    0x00000000000001cc     0x3aa0 main.o
- .debug_info    0x0000000000003c6c     0x1bdf ../../lib/libbtsystem.a(btcan_peakesd.o)
- .debug_info    0x000000000000584b     0x1178 ../../lib/libbtsystem.a(btos.o)
- .debug_info    0x00000000000069c3      0xc81 ../../lib/libbtsystem.a(btserial.o)
- .debug_info    0x0000000000007644       0xb6 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
+ .debug_info    0x00000000000001cc     0x3ab1 main.o
+ .debug_info    0x0000000000003c7d     0x1bdf ../../lib/libbtsystem.a(btcan_peakesd.o)
+ .debug_info    0x000000000000585c     0x1178 ../../lib/libbtsystem.a(btos.o)
+ .debug_info    0x00000000000069d4      0xc81 ../../lib/libbtsystem.a(btserial.o)
+ .debug_info    0x0000000000007655       0xb6 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
 
 .debug_abbrev   0x0000000000000000      0x92b
  *(.debug_abbrev)
@@ -1035,15 +1036,15 @@ LOAD /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
  .debug_abbrev  0x00000000000007a2      0x179 ../../lib/libbtsystem.a(btserial.o)
  .debug_abbrev  0x000000000000091b       0x10 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
 
-.debug_line     0x0000000000000000     0x1397
+.debug_line     0x0000000000000000     0x139b
  *(.debug_line)
  .debug_line    0x0000000000000000       0x96 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crt1.o
  .debug_line    0x0000000000000096       0xc5 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crti.o
- .debug_line    0x000000000000015b      0x9fa main.o
- .debug_line    0x0000000000000b55      0x41c ../../lib/libbtsystem.a(btcan_peakesd.o)
- .debug_line    0x0000000000000f71      0x243 ../../lib/libbtsystem.a(btos.o)
- .debug_line    0x00000000000011b4      0x13f ../../lib/libbtsystem.a(btserial.o)
- .debug_line    0x00000000000012f3       0xa4 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
+ .debug_line    0x000000000000015b      0x9fe main.o
+ .debug_line    0x0000000000000b59      0x41c ../../lib/libbtsystem.a(btcan_peakesd.o)
+ .debug_line    0x0000000000000f75      0x243 ../../lib/libbtsystem.a(btos.o)
+ .debug_line    0x00000000000011b8      0x13f ../../lib/libbtsystem.a(btserial.o)
+ .debug_line    0x00000000000012f7       0xa4 /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
 
 .debug_frame    0x0000000000000000      0xf24
  *(.debug_frame)
@@ -2925,6 +2926,7 @@ group_member@GLIBC_2.0                            /lib/libc.so.6
 gsignal                                           /lib/libc.so.6
 gsignal@@GLIBC_2.0                                /lib/libc.so.6
 gsignal@GLIBC_2.0                                 /lib/libc.so.6
+gt                                                main.o
 handleMenu                                        main.o
 hasmntopt                                         /lib/libc.so.6
 hasmntopt@@GLIBC_2.0                              /lib/libc.so.6
