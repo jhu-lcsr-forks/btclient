@@ -404,109 +404,109 @@ LOAD /usr/lib/gcc/i486-slackware-linux/3.4.6/../../../crtn.o
  *fill*         0x0000000008049856        0xa 90909090
  .text          0x0000000008049860       0x72 /usr/lib/gcc/i486-slackware-linux/3.4.6/crtbegin.o
  *fill*         0x00000000080498d2        0x2 90909090
- .text          0x00000000080498d4     0x5ff3 main.o
-                0x000000000804cc8d                DisplayThread
-                0x000000000804f7f5                Write
-                0x000000000804f7c5                Read
-                0x000000000804d59f                paramDefaults
+ .text          0x00000000080498d4     0x5ffb main.o
+                0x000000000804cc95                DisplayThread
+                0x000000000804f7fd                Write
+                0x000000000804f7cd                Read
+                0x000000000804d5a7                paramDefaults
                 0x000000000804a46b                mountCable
-                0x000000000804c8ed                findOffset
+                0x000000000804c8f5                findOffset
                 0x0000000008049a99                saveToFile
                 0x000000000804af90                cableTester
-                0x000000000804f71d                ReadSerial
-                0x000000000804c32b                kbhit
-                0x000000000804c616                firmwarePuck
-                0x000000000804c950                ProcessWatch
+                0x000000000804f725                ReadSerial
+                0x000000000804c333                kbhit
+                0x000000000804c61e                firmwarePuck
+                0x000000000804c958                ProcessWatch
                 0x0000000008049a1e                setPropertySlow
-                0x000000000804c3d3                enumeratePucks
-                0x000000000804ddb8                setMofst
-                0x000000000804dc52                changeID
-                0x000000000804c83d                setDefaults
-                0x000000000804d233                firmwareDL
+                0x000000000804c3db                enumeratePucks
+                0x000000000804ddc0                setMofst
+                0x000000000804dc5a                changeID
+                0x000000000804c845                setDefaults
+                0x000000000804d23b                firmwareDL
                 0x000000000804a315                dp_to_torq
-                0x000000000804cb93                Cleanup
-                0x000000000804cf21                ProcessInput
-                0x000000000804c748                watchProperty
+                0x000000000804cb9b                Cleanup
+                0x000000000804cf29                ProcessInput
+                0x000000000804c750                watchProperty
                 0x0000000008049a50                wakePucks
-                0x000000000804d1bd                mygetch
+                0x000000000804d1c5                mygetch
                 0x0000000008049ced                newExp
-                0x000000000804c915                init_ncurses
-                0x000000000804e82a                handleMenu
-                0x000000000804cd67                finish_entry
-                0x000000000804cbad                main
-                0x000000000804cd10                start_entry
-                0x000000000804d513                checkTemp
-                0x000000000804c697                terminalMode
+                0x000000000804c91d                init_ncurses
+                0x000000000804e832                handleMenu
+                0x000000000804cd6f                finish_entry
+                0x000000000804cbb5                main
+                0x000000000804cd18                start_entry
+                0x000000000804d51b                checkTemp
+                0x000000000804c69f                terminalMode
                 0x0000000008049ef2                loadFile
-                0x000000000804e1fe                getParams
-                0x000000000804c9e2                Startup
-                0x000000000804f828                EchoWrite
-                0x000000000804f7a4                WriteSerial
-                0x000000000804c5c6                activePuck
-                0x000000000804d184                clearScreen
+                0x000000000804e206                getParams
+                0x000000000804c9ea                Startup
+                0x000000000804f830                EchoWrite
+                0x000000000804f7ac                WriteSerial
+                0x000000000804c5ce                activePuck
+                0x000000000804d18c                clearScreen
                 0x000000000804a2ac                isCableMounted
-                0x000000000804cdd9                RenderMAIN_SCREEN
-                0x000000000804c906                exitProgram
- *fill*         0x000000000804f8c7        0x1 90909090
- .text          0x000000000804f8c8     0x2310 ../../lib/libbtsystem.a(btcan_peakesd.o)
-                0x000000000804fdbd                wakePuck
-                0x000000000804fd6d                canClearMsg
-                0x0000000008050283                getBusStatus
-                0x000000000804fa12                allowMessage
-                0x000000000804fbd0                canReadMsg
-                0x00000000080500bc                setProperty
-                0x000000000805045b                parseMessage
-                0x000000000804fbb3                freeCAN
-                0x000000000804fdf1                setTorques
-                0x0000000008050184                getProperty
-                0x000000000804fa56                initCAN
-                0x00000000080507a6                initPropertyDefs
-                0x000000000804ff86                getPositions
-                0x000000000804fcb1                canSendMsg
-                0x0000000008050728                compile
- .text          0x0000000008051bd8      0x72b ../../lib/libbtsystem.a(btos.o)
-                0x0000000008051f57                new_btthread
-                0x00000000080522cc                btrt_mutex_unlock
-                0x0000000008051db5                btmutex_lock
-                0x0000000008051d22                syslog_backtrace
-                0x00000000080521ee                btrt_task_wait_period
-                0x0000000008051e59                btptr_chk
-                0x0000000008052181                btrt_thread_create
-                0x0000000008052295                btrt_mutex_lock
-                0x0000000008051f8a                free_btthread
-                0x0000000008052141                btthread_exit
-                0x0000000008051ec0                test_and_log
-                0x0000000008051f72                new_btrt_thread
-                0x00000000080521c8                btrt_set_mode_hard
-                0x00000000080521d5                btrt_get_time
-                0x0000000008052151                btrt_thread_stop
-                0x0000000008051e23                btptr_ok
-                0x0000000008051d64                btmutex_init
-                0x0000000008052089                btthread_done
-                0x0000000008051dec                btmutex_unlock
-                0x0000000008052215                btrt_mutex_create
-                0x00000000080520f9                btthread_stop
-                0x0000000008052244                btrt_mutex_init
-                0x00000000080521bb                btrt_set_mode_soft
-                0x0000000008051ef5                btmalloc
-                0x0000000008051f36                btfree
-                0x00000000080521fb                btrt_thread_join
-                0x0000000008052171                btrt_thread_exit
-                0x0000000008051e7a                idx_bounds_ok
-                0x00000000080520c1                btrt_thread_done
-                0x0000000008051fa0                btthread_create
- *fill*         0x0000000008052303        0x1 90909090
- .text          0x0000000008052304      0x50f ../../lib/libbtsystem.a(btserial.o)
-                0x0000000008052429                serialClose
-                0x000000000805245d                serialRead
-                0x0000000008052571                serialWriteString
-                0x0000000008052599                serialLook
-                0x00000000080525c4                serialSetBaud
-                0x0000000008052304                serialOpen
-                0x00000000080524b8                serialReadLine
-                0x0000000008052538                serialWrite
-                0x0000000008052804                signal_handler_IO
- *fill*         0x0000000008052813        0xd 90909090
+                0x000000000804cde1                RenderMAIN_SCREEN
+                0x000000000804c90e                exitProgram
+ *fill*         0x000000000804f8cf        0x1 90909090
+ .text          0x000000000804f8d0     0x2310 ../../lib/libbtsystem.a(btcan_peakesd.o)
+                0x000000000804fdc5                wakePuck
+                0x000000000804fd75                canClearMsg
+                0x000000000805028b                getBusStatus
+                0x000000000804fa1a                allowMessage
+                0x000000000804fbd8                canReadMsg
+                0x00000000080500c4                setProperty
+                0x0000000008050463                parseMessage
+                0x000000000804fbbb                freeCAN
+                0x000000000804fdf9                setTorques
+                0x000000000805018c                getProperty
+                0x000000000804fa5e                initCAN
+                0x00000000080507ae                initPropertyDefs
+                0x000000000804ff8e                getPositions
+                0x000000000804fcb9                canSendMsg
+                0x0000000008050730                compile
+ .text          0x0000000008051be0      0x72b ../../lib/libbtsystem.a(btos.o)
+                0x0000000008051f5f                new_btthread
+                0x00000000080522d4                btrt_mutex_unlock
+                0x0000000008051dbd                btmutex_lock
+                0x0000000008051d2a                syslog_backtrace
+                0x00000000080521f6                btrt_task_wait_period
+                0x0000000008051e61                btptr_chk
+                0x0000000008052189                btrt_thread_create
+                0x000000000805229d                btrt_mutex_lock
+                0x0000000008051f92                free_btthread
+                0x0000000008052149                btthread_exit
+                0x0000000008051ec8                test_and_log
+                0x0000000008051f7a                new_btrt_thread
+                0x00000000080521d0                btrt_set_mode_hard
+                0x00000000080521dd                btrt_get_time
+                0x0000000008052159                btrt_thread_stop
+                0x0000000008051e2b                btptr_ok
+                0x0000000008051d6c                btmutex_init
+                0x0000000008052091                btthread_done
+                0x0000000008051df4                btmutex_unlock
+                0x000000000805221d                btrt_mutex_create
+                0x0000000008052101                btthread_stop
+                0x000000000805224c                btrt_mutex_init
+                0x00000000080521c3                btrt_set_mode_soft
+                0x0000000008051efd                btmalloc
+                0x0000000008051f3e                btfree
+                0x0000000008052203                btrt_thread_join
+                0x0000000008052179                btrt_thread_exit
+                0x0000000008051e82                idx_bounds_ok
+                0x00000000080520c9                btrt_thread_done
+                0x0000000008051fa8                btthread_create
+ *fill*         0x000000000805230b        0x1 90909090
+ .text          0x000000000805230c      0x50f ../../lib/libbtsystem.a(btserial.o)
+                0x0000000008052431                serialClose
+                0x0000000008052465                serialRead
+                0x0000000008052579                serialWriteString
+                0x00000000080525a1                serialLook
+                0x00000000080525cc                serialSetBaud
+                0x000000000805230c                serialOpen
+                0x00000000080524c0                serialReadLine
+                0x0000000008052540                serialWrite
+                0x000000000805280c                signal_handler_IO
+ *fill*         0x000000000805281b        0x5 90909090
  .text          0x0000000008052820     0x2189 /usr/local/lib/libntcan.a(ntcan.o)
                 0x00000000080546e0                _canIdAdd
                 0x00000000080540a0                canTake

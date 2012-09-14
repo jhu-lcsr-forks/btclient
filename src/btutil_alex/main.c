@@ -202,7 +202,7 @@ int	  torqueMin = 0; // motors must be at least this to spin
 int	  runRest = 70; // time in ms between position reversals 
 int	  maxVel = 50;
 int	  maxAcc = 75;
-int	  maxPTurns = 26;
+int	  maxPTurns = 18;
 int     minPTurns = 3;
 long    tens_torq = 2440;
 
@@ -785,8 +785,9 @@ void cableTester(float pulleysize, double turns, long travs, long const_torq, ch
 
 
    //calculate constants
-   km = g*d/pulleysize;//km is positive when cable is attached outside 
+   km = (g/gt)*(d/pulleysize);//km is positive when cable is attached outside 
    //km is negative when cable is crossed over
+   //g is transmission ratio of position motor, gt is transmission ratio of torque motor
    //ex: position motor moves km*5 turns, torque motor moves 5 turns
 	// maxVel = km*13.69;
 	
@@ -832,14 +833,14 @@ void cableTester(float pulleysize, double turns, long travs, long const_torq, ch
    while (!exit && !pause){
    
    		if (!(x%10)) { // autotension every 10 runs
-				//start MB pulling CW
+				//start MB pulling CCW makes the pulley move CW
 				setPropertySlow(0, idA, MODE, FALSE, 3); // PID mode to hold position
 				setPropertySlow(0, idB, MT, FALSE, tens_torq); // max T is desired T
-				setPropertySlow(0, idB, V, FALSE, 10); // low velocity -> low cable impulse
+				setPropertySlow(0, idB, V, FALSE, -10); // low velocity -> low cable impulse
 				setPropertySlow(0, idB, MODE, FALSE, 4); // set to constant velocity mode
 				printf("\ntensioning...\n");
 				usleep(5e5);
-				setPropertySlow(0, idB, V, FALSE, 500); // set an unattainable V so T is maintained
+				setPropertySlow(0, idB, V, FALSE, -500); // set an unattainable V so T is maintained
 				usleep(1e6);
 				// setPropertySlow(0, idB, MODE, FALSE, 3); // PID mode to hold position
 	
@@ -851,7 +852,7 @@ void cableTester(float pulleysize, double turns, long travs, long const_torq, ch
 				usleep(2e4);//after getProperty
 				cposA = iposA;
 				travel = km*turns*encoder;
-				gposA = iposA + travel;
+				gposA = iposA + travel; 
 
 				if (const_torq<tens_torq) {
 					const_torq = const_torq + 100;
