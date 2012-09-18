@@ -164,8 +164,8 @@ void hallCheck(void *data);
 void tensionCable(void *data);
 void findOffset(void *data);
 void exitProgram(void *data);
-void torqueSwitch(int puckID);
-void torqueSwitch2(int puckID);
+void torqueSwitch(int puckID, int which);
+void torqueSwitch2(int puckID, int which);
 
 struct fcnStruct fcn[] = {
    activePuck, "Change active puck (1-9)",
@@ -855,7 +855,7 @@ void checkTemp(int puckID){
    printf("\n");
 }
 
-void torqueSwitch(int puckID){
+void torqueSwitch(int puckID, int which){
    long ret;
    int err = 0;
 
@@ -865,11 +865,13 @@ void torqueSwitch(int puckID){
    setPropertySlow(0, puckID, P, 0, 0);
    
    // Configure the trap motion profile
-   setPropertySlow(0, puckID, MV, 0, 5);
+   setPropertySlow(0, puckID, MV, 0, 20);
    setPropertySlow(0, puckID, ACCEL, 0, 2000);
    
    // Activate the solenoids
+if(which & 0x0001)
    setPropertySlow(0, puckID, FET0, 0, 1);
+if(which & 0x0002)
    setPropertySlow(0, puckID, FET1, 0, 1);
    
    // Wait for the clutch to engage
@@ -897,7 +899,9 @@ void torqueSwitch(int puckID){
    printf("\n\n");
    
    // Turn off solenoids
+if(which & 0x0001)
    setPropertySlow(0, puckID, FET0, 0, 0);
+if(which & 0x0002)
    setPropertySlow(0, puckID, FET1, 0, 0);
    
    // Back up 10 degrees
@@ -914,7 +918,7 @@ void torqueSwitch(int puckID){
    printf("\n");
 }
 
-void torqueSwitch2(int puckID){
+void torqueSwitch2(int puckID, int which){
    long ret;
    int err = 0;
 
@@ -924,11 +928,13 @@ void torqueSwitch2(int puckID){
    setPropertySlow(0, puckID, P, 0, 0);
    
    // Configure the trap motion profile
-   setPropertySlow(0, puckID, MV, 0, 5);
+   setPropertySlow(0, puckID, MV, 0, 20);
    setPropertySlow(0, puckID, ACCEL, 0, 2000);
    
    // Activate the solenoids
+if(which & 0x0001)
    setPropertySlow(0, puckID, FET0, 0, 1);
+if(which & 0x0002)
    setPropertySlow(0, puckID, FET1, 0, 1);
    
    // Wait for the clutch to engage
@@ -939,7 +945,7 @@ void torqueSwitch2(int puckID){
    setPropertySlow(0, puckID, MODE, 0, 5);
    
    // After a moment, reduce the current to the solenoids
-   //usleep(100E3);
+   usleep(100E3);
    //setPropertySlow(0, puckID, FET0, 0, 20);
    //setPropertySlow(0, puckID, FET1, 0, 20);
    
@@ -956,9 +962,11 @@ void torqueSwitch2(int puckID){
    printf("\n\n");
    
    // Turn off solenoids
+if(which & 0x0001)
    setPropertySlow(0, puckID, FET0, 0, 0);
+if(which & 0x0002)
    setPropertySlow(0, puckID, FET1, 0, 0);
-   
+
    // Back up 10 degrees
    setPropertySlow(0, puckID, E, 0, -20E3+120);
    setPropertySlow(0, puckID, MODE, 0, 5);
@@ -2031,7 +2039,8 @@ void handleMenu(int argc, char **argv)
       }else{
          scanf("%d", &arg1);
       }
-      torqueSwitch(arg1);
+printf("\nWhich: %d %d\n", atoi(argv[3]) & 0x0001, atoi(argv[3]) & 0x0002);
+      torqueSwitch(arg1, atoi(argv[3]));
       break;   
       
    case 'M':
@@ -2042,7 +2051,7 @@ void handleMenu(int argc, char **argv)
       }else{
          scanf("%d", &arg1);
       }
-      torqueSwitch2(arg1);
+      torqueSwitch2(arg1, atoi(argv[3]));
       break;  
       
    case 'D':

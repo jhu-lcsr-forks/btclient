@@ -492,7 +492,7 @@ int EnumerateSystem()
       }
 
       /* Since 1 puck controls 3 passive gimbals joints, reduce expected_cnt by 2 */
-      if(gimbalsInit)
+      if(0)//gimbalsInit)
          expected_cnt -= 2;
 
       extra_pucks = status_cnt - expected_cnt;

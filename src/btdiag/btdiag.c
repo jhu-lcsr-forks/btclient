@@ -1091,6 +1091,8 @@ void RenderMAIN_SCREEN()
       line+=1;
       mvprintw(line, 0, "J Torque   : %s ", sprint_vn(vect_buf1, wam[cnt]->Jtrq));
       line+=1;
+      mvprintw(line, 0, "Test: %f ", wam[cnt]->Jtrq->q[0]);
+      line+=1;
       mvprintw(line, 0, "C Position : \n%s ", sprint_mn(vect_buf1, (matr_mn*)wam[cnt]->HMpos));
       line+=5;
       

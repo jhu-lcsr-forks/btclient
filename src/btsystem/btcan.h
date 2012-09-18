@@ -70,7 +70,7 @@ extern "C"
 /* #define D(x) x       ...for debug info */
 #define D(x)
 #define SAFETY_MODULE (10)
-#define MAX_NODES    (31)
+#define MAX_NODES    (32)
 
 #define L08       (1)
 #define L16       (2)
