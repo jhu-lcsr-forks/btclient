@@ -49,8 +49,9 @@
 #include <stdlib.h>
 #include "btos.h"
 
+#ifdef xeno_conform
 #define T_PRIMARY T_CONFORMING
-//#define T_CONFORMING T_PRIMARY
+#endif /*xeno_conform*/
 
 /*==============================*
  * GLOBAL file-scope variables  *
