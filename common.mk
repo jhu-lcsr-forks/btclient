@@ -51,7 +51,7 @@ XENO_CONFIG       ?= $(XENO_DIR)/bin/xeno-config
 XENO_LIB_DIR      ?= $(shell $(XENO_CONFIG) --library-dir) -Wl,-rpath $(shell $(XENO_CONFIG) --library-dir)
 XENO_VERSION      ?= $(shell $(XENO_CONFIG) --version)
 ifeq ($(XENO_VERSION),2.6.1)
-CFLAGS += -Dxeno_26
+CFLAGS += -Dxeno_conform
 endif
 
 ### User space application compile options #########################
