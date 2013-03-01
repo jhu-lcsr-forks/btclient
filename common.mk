@@ -44,7 +44,7 @@ ifeq ($(TARGET_OS),xenomai)
 CFLAGS += -DXENOMAI
 CFLAGS += -I/usr/xenomai/include
 LDFLAGS += -L/usr/xenomai/lib -rdynamic -lnative
-SKIN = xeno
+SKIN = native 
 ### Xenomai directory, xeno-config and library directory ###########
 XENO_DIR          ?= /usr/xenomai
 XENO_CONFIG       ?= $(XENO_DIR)/bin/xeno-config
@@ -56,8 +56,8 @@ endif
 
 ### User space application compile options #########################
 USERAPP_LIBS      ?= -lnative 
-USERAPP_LDFLAGS   ?= $(shell $(XENO_CONFIG) --$(SKIN)-ldflags) -L$(XENO_LIB_DIR)
-USERAPP_CFLAGS    ?= $(shell $(XENO_CONFIG) --$(SKIN)-cflags)
+USERAPP_LDFLAGS   ?= $(shell $(XENO_CONFIG) --skin=$(SKIN) --ldflags) -L$(XENO_LIB_DIR)
+USERAPP_CFLAGS    ?= $(shell $(XENO_CONFIG) --skin=$(SKIN) --cflags)
 
 CFLAGS += ${USERAPP_CFLAGS}
 LDFLAGS += ${USERAPP_LDFLAGS} ${USERAPP_LIBS}
